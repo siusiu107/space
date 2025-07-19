@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우주 생존 클릭커</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #1a1a2e;
+      color: #ffffff;
+    }
+
+    #resource-bar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 200px;
+      background: #0f3460;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    #resource-bar span {
+      display: block;
+      font-size: 16px;
+      margin: 5px 0;
+      font-weight: bold;
+    }
+
+    #ship-upgrade {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 160px;
+      height: 80px;
+      background: #444444;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    #ship-upgrade span {
+      font-size: 16px;
+      color: #ffffff;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    #ship-upgrade button {
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: #00aaff;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #ship-upgrade button:hover {
+      background-color: #0088cc;
+    }
+
+    #container {
+      margin: 150px auto;
+      max-width: 800px;
+      padding: 20px;
+      border-radius: 15px;
+      background: linear-gradient(145deg, #2e2e2e, #1c1c1c);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #00d4ff;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 15px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      background-color: #00aaff;
+      color: #ffffff;
+      transition: transform 0.2s ease, background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0088cc;
+      transform: scale(1.05);
+    }
+
+    #reset-button {
+      background-color: #ff5c5c;
+    }
+
+    #reset-button:hover {
+      background-color: #ff3a3a;
+    }
+
+    #google-login-button {
+      padding: 10px 20px;
+      background-color: #4285F4;
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #google-login-button:hover {
+      background-color: #357AE8;
+    }
+
+    .tab-content {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    nav {
+      margin-top: 20px;
+    }
+
+    .tab {
+      display: inline-block;
+      background: #333;
+      color: #fff;
+      padding: 10px;
+      margin: 0 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .tab.active {
+      background: #00aaff;
+    }
+  </style>
+</head>
+<body>
+  <div id="resource-bar">
+    <span id="score">자원: 0</span>
+    <span id="coins">코인: 0</span>
+  </div>
+
+  <div id="ship-upgrade">
+    <span id="ship-level">우주선 업그레이드 1렙 (20 코인)</span>
+    <button id="upgrade-ship">업그레이드</button>
+  </div>
+
+  <div id="container">
+    <h1>우주 생존 클릭커</h1>
+
+    <!-- Google 로그인 버튼 -->
+    <button id="google-login-button">Google로 로그인</button>
+
+    <div id="user-greeting"></div> <!-- 사용자 환영 메시지 표시 영역 -->
+
+    <nav>
+      <div class="tab active" data-tab="main">메인</div>
+      <div class="tab" data-tab="workers">우주인 알바</div>
+      <div class="tab" data-tab="upgrades">클릭당 자원 업그레이드</div>
+      <div class="tab" data-tab="reset">초기화</div>
+    </nav>
+
+    <div id="main-content" class="tab-content active">
+      <p>"자원을 모아 우주선을 수리하고, 달로 향하는 모험을 시작하세요!"</p>
+      <button id="collect-button">자원 수집</button>
+      <button id="convert-button">자원 10개 -> 코인 1개</button>
+    </div>
+
+    <div id="workers-content" class="tab-content">
+      <h2>우주인 알바 관리</h2>
+      <p>우주인 알바를 고용하여 자원을 자동으로 수집할 수 있습니다.</p>
+      <button id="hire-worker">새 우주인 알바 고용 (10 코인)</button>
+      <div id="worker-list"></div>
+    </div>
+
+    <div id="upgrades-content" class="tab-content">
+      <h2>클릭당 자원 업그레이드</h2>
+      <p>현재 클릭당 자원: <span id="click-power">1</span></p>
+      <button id="click-upgrade">클릭당 자원 증가 (15 코인)</button>
+    </div>
+
+    <div id="reset-content" class="tab-content">
+      <h2>게임 초기화</h2>
+      <button id="reset-button">모든 데이터를 초기화합니다.</button>
+    </div>
+  </div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    // 게임 데이터 변수
+    let resources = 0;
+    let coins = 0;
+    let clickPower = 1;
+    let shipLevel = 1;
+    let shipUpgradeCost = 20;
+    let workerCount = 0;
+    let userId = '';  // 구글 사용자 ID 저장 변수
+
+    // 로컬 저장소 대신, 구글 로그인 후 사용자의 게임 데이터를 로드
+    function loadGameData(userData) {
+      userId = userData.sub; // 구글 사용자 ID 사용
+      const gameData = JSON.parse(localStorage.getItem(userId)); // 사용자별로 데이터 저장
+      if (gameData) {
+        resources = gameData.resources;
+        coins = gameData.coins;
+        clickPower = gameData.clickPower;
+        shipLevel = gameData.shipLevel;
+        shipUpgradeCost = gameData.shipUpgradeCost;
+      }
+      updateUI();
+    }
+
+    // 게임 데이터를 로컬 저장소에 저장
+    function saveGameData() {
+      const gameData = {
+        resources: resources,
+        coins: coins,
+        clickPower: clickPower,
+        shipLevel: shipLevel,
+        shipUpgradeCost: shipUpgradeCost,
+        workerCount: workerCount
+      };
+      localStorage.setItem(userId, JSON.stringify(gameData));
+    }
+
+    // 게임 UI 업데이트
+    function updateUI() {
+      document.getElementById('score').innerText = '자원: ' + resources;
+      document.getElementById('coins').innerText = '코인: ' + coins;
+      document.getElementById('ship-level').innerText = `우주선 업그레이드 ${shipLevel}렙 (${shipUpgradeCost} 코인)`;
+      document.getElementById('click-power').innerText = clickPower;
+      let workerListHTML = '';
+      for (let i = 0; i < workerCount; i++) {
+        workerListHTML += `<p>우주인 ${i + 1}</p>`;
+      }
+      document.getElementById('worker-list').innerHTML = workerListHTML;
+    }
+
+    // 구글 로그인 후 처리
+    function handleCredentialResponse(response) {
+      const userData = jwt_decode(response.credential);
+      document.getElementById('google-login-button').innerHTML = `로그인 완료 - ${userData.name}`;
+
+      // 로그인 후 사용자의 이름을 화면에 표시
+      document.getElementById('user-greeting').innerHTML = `<p>환영합니다, ${userData.name}님!</p>`;
+
+      // 로그인 후 게임 데이터를 로드
+      loadGameData(userData);
+    }
+
+    // Google 로그인 API 초기화
+    window.onload = function () {
+      google.accounts.id.initialize({
+        client_id: "1097829744687-2oihfe2muorkbbarfl61olean10edi2b.apps.googleusercontent.com", // 구글 클라우드 콘솔에서 생성한 클라이언트 ID 입력
+        callback: handleCredentialResponse,
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById("google-login-button"),
+        { theme: "outline", size: "large" }
+      );
+      
+      google.accounts.id.prompt(); // 자동 로그인 시도
+    };
+
+    // 자원 수집 버튼 클릭 처리
+    document.getElementById('collect-button').addEventListener('click', function() {
+      resources += clickPower;
+      updateUI();
+      saveGameData();
+    });
+
+    // 자원 변환 버튼 클릭 처리
+    document.getElementById('convert-button').addEventListener('click', function() {
+      if (resources >= 10) {
+        resources -= 10;
+        coins += 1;
+        updateUI();
+        saveGameData();
+      } else {
+        alert('자원이 부족합니다!');
+      }
+    });
+
+    // 우주선 업그레이드 버튼 클릭 처리
+    document.getElementById('upgrade-ship').addEventListener('click', function() {
+      if (coins >= shipUpgradeCost) {
+        coins -= shipUpgradeCost;
+        shipLevel += 1;
+        shipUpgradeCost *= 2;
+        updateUI();
+        saveGameData();
+      } else {
+        alert('코인이 부족합니다!');
+      }
+    });
+
+    // 우주인 알바 고용 버튼 클릭 처리
+    document.getElementById('hire-worker').addEventListener('click', function() {
+      if (coins >= 10) {
+        coins -= 10;
+        workerCount += 1;
+        updateUI();
+        saveGameData();
+      } else {
+        alert('코인이 부족합니다!');
+      }
+    });
+
+    // 클릭당 자원 업그레이드 버튼 클릭 처리
+    document.getElementById('click-upgrade').addEventListener('click', function() {
+      if (coins >= 15) {
+        coins -= 15;
+        clickPower += 1;
+        updateUI();
+        saveGameData();
+      } else {
+        alert('코인이 부족합니다!');
+      }
+    });
+
+    // 초기화 버튼 클릭 처리
+    document.getElementById('reset-button').addEventListener('click', function() {
+      resources = 0;
+      coins = 0;
+      clickPower = 1;
+      shipLevel = 1;
+      shipUpgradeCost = 20;
+      workerCount = 0;
+      updateUI();
+      localStorage.removeItem(userId);
+    });
+
+    // 탭 클릭 처리
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        const tabName = this.getAttribute('data-tab');
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(content => {
+          if (content.id === `${tabName}-content`) {
+            content.classList.add('active');
+          } else {
+            content.classList.remove('active');
+          }
+        });
+        tabs.forEach(tab => tab.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
