@@ -46,6 +46,7 @@
     <p id="auth-error" style="color:#f66;"></p>
   </div>
   <button id="logout-btn">로그아웃</button>
+
   <div id="top-bar">
     <div class="bar-group">
       <img src="images/resource-icon.png" alt="Resource" />
@@ -59,6 +60,7 @@
       <button id="upgrade-ship">업그레이드</button>
     </div>
   </div>
+
   <div id="container">
     <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
     <nav>
@@ -68,10 +70,12 @@
       <div class="tab" data-tab="planets">행성 구매</div>
       <div class="tab" data-tab="reset">초기화</div>
     </nav>
+
     <div id="main-content" class="tab-content active">
       <img src="images/ore.png" id="ore" alt="광석" title="클릭해서 자원 수집!" />
       <button id="convert-button" class="general">10자원 → 1코인</button>
     </div>
+
     <div id="workers-content" class="tab-content">
       <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
       <button id="hire-worker" class="general">알바 고용</button>
@@ -80,31 +84,36 @@
       <button id="hire-conversion" class="general">코인 알바</button>
       <div id="conversion-list"></div>
     </div>
+
     <div id="upgrades-content" class="tab-content">
       <p>클릭당 자원: <span id="click-power">1</span></p>
       <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
     </div>
+
     <div id="planets-content" class="tab-content">
       <div id="planet-list"></div>
     </div>
+
     <div id="reset-content" class="tab-content">
       <button id="reset-button" class="general">초기화</button>
     </div>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
+    // siu-studio Firebase 설정
     const firebaseConfig = {
-      apiKey: "AIzaSyBGE7mWUDMcA8u4yclWsCtvGbzjojvUgAE",
-      authDomain: "easylogin-63aa9.firebaseapp.com",
-      databaseURL: "https://easylogin-63aa9-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "easylogin-63aa9",
-      storageBucket: "easylogin-63aa9.appspot.com",
-      messagingSenderId: "730585187202",
-      appId: "1:730585187202:web:5196b346c5bc80cdb3459b",
-      measurementId: "G-5GE2CYEQ09"
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.firebasestorage.app",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
     };
 
     const app = initializeApp(firebaseConfig);
