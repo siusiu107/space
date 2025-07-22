@@ -1,3 +1,4 @@
+나의 말:
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -28,8 +29,10 @@
     .tab.active { background: #00aaff; }
     .tab-content { display: none; margin-top: 12px; font-size: 14px; position: relative; }
     .tab-content.active { display: block; }
+    /* 파티클 스타일 */
     .particle { position: absolute; width: 6px; height: 6px; background: #ffd700; border-radius: 50%; pointer-events: none; opacity: 0.8; animation: floatUp 0.8s ease-out forwards; }
     @keyframes floatUp { to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
+    /* 광석 이미지 스타일 */
     #ore { width: 200px; cursor: pointer; user-select: none; margin: 20px auto; }
     @media (max-width: 480px) { #top-bar { flex-direction: column; font-size: 11px; } nav { margin-bottom: 10px; } h1 { font-size: 1.4em; } button.general { padding: 8px; font-size: 12px; } #container { margin: 70px auto 20px; padding: 16px; } #ore { width: 140px; } }
   </style>
@@ -71,18 +74,15 @@
 
     <div id="main-content" class="tab-content active">
       <img src="images/ore.png" id="ore" alt="광석" title="클릭해서 자원 수집!" />
-      <div style="display:flex; justify-content:center; gap:8px; align-items:center;">
-        <button id="convert-button" class="general" style="flex:1;">10자원 → 1코인</button>
-        <button id="auto-convert-buy" class="general" style="width:100px; font-size:12px; padding:6px;">자동변환 구매<br>(100코인)</button>
-      </div>
+      <button id="convert-button" class="general">10자원 → 1코인</button>
     </div>
 
     <div id="workers-content" class="tab-content">
       <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
-      <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
+      <button id="hire-worker" class="general">알바 고용</button>
       <div id="worker-list"></div>
       <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
-      <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
+      <button id="hire-conversion" class="general">코인 알바</button>
       <div id="conversion-list"></div>
     </div>
 
@@ -103,8 +103,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
+    // siu-studio Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -115,6 +116,7 @@
       appId: "1:830887143444:web:70b45fc12140e893c31f01",
       measurementId: "G-1Y090YJDB6"
     };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -129,135 +131,15 @@
     const topBar = document.getElementById('top-bar');
     const container = document.getElementById('container');
 
-    let uid;
-    const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, ownedPlanets:[], autoConvertBought:false };
-    let state = { ...defaultData };
-
+    let uid = null;
+    const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, ownedPlanets:[] };
+    let resources=0, coins=0, clickPower=1;
+    let shipLevel=1, shipUpgradeCost=20;
+    let workerCount=0, conversionCount=0, ownedPlanets=[];
     const initialWorkerCost=10, workerCostGrowth=1.15;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
-    const initialConversionCost=50, conversionCostGrowth=1.3, conversionPower=1;
-
-    function getWorkerCost() { return Math.floor(initialWorkerCost * Math.pow(workerCostGrowth, state.workerCount)); }
-    function getWorkerPower() { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
-    function getConversionCost() { return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
-
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        uid = user.uid;
-        authContainer.style.display = 'none';
-        logoutBtn.style.display = 'block';
-        topBar.style.visibility = 'visible'; container.style.visibility = 'visible';
-        const dataRef = ref(db, `users/${uid}/gameData`);
-        onValue(dataRef, snap => {
-          if (snap.exists()) state = { ...defaultData, ...snap.val() };
-          else set(dataRef, defaultData);
-          updateUI(); renderPlanets();
-        });
-      } else {
-        authContainer.style.display = 'block'; logoutBtn.style.display = 'none';
-        topBar.style.visibility = 'hidden'; container.style.visibility = 'hidden';
-      }
-    });
-
-    loginBtn.addEventListener('click', () =>
-      signInWithEmailAndPassword(auth, emailInput.value, pwdInput.value).catch(e=>authError.innerText=e.message)
-    );
-    signupBtn.addEventListener('click', () =>
-      createUserWithEmailAndPassword(auth, emailInput.value, pwdInput.value).catch(e=>authError.innerText=e.message)
-    );
-    logoutBtn.addEventListener('click', () => signOut(auth));
-
-    function save() { set(ref(db, `users/${uid}/gameData`), state); }
-
-    function updateUI() {
-      document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
-      document.getElementById('coins').innerText = `코인: ${Math.floor(state.coins)}`;
-      document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
-      document.getElementById('ship-img').src = `images/ship-level${state.shipLevel}.png`;
-      document.getElementById('click-power').innerText = state.clickPower;
-      document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower()).toFixed(1);
-      document.getElementById('coin-per-sec').innerText = (state.conversionCount * conversionPower).toFixed(1);
-      document.getElementById('worker-cost').innerText = getWorkerCost();
-      document.getElementById('conversion-cost').innerText = getConversionCost();
-      document.getElementById('hire-worker').innerText = `알바 고용 (${getWorkerCost()}코인)`;
-      document.getElementById('hire-conversion').innerText = `코인 알바 (${getConversionCost()}코인)`;
-      document.getElementById('auto-convert-buy').disabled = state.autoConvertBought || state.coins < 100;
-    }
-
-    function renderPlanets() {
-      const list = document.getElementById('planet-list');
-      list.innerHTML = state.ownedPlanets.map(i=>"").join(''); // clear
-      planets.forEach((p,i)=>{
-        const owned = state.ownedPlanets.includes(i);
-        const canBuy = state.shipLevel>=p.requiredShipLevel;
-        const div = document.createElement('div');
-        div.style.margin='8px 0'; div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
-        const btn = document.createElement('button');
-        btn.textContent = owned? '구매 완료' : canBuy? '구매' : '레벨 부족';
-        btn.disabled = owned || !canBuy;
-        btn.addEventListener('click', () => {
-          if (state.coins>=p.cost) { state.coins -= p.cost; state.ownedPlanets.push(i); save(); }
-          else alert('코인 부족!');
-        });
-        div.appendChild(document.createElement('br'));
-        div.appendChild(btn);
-        list.appendChild(div);
-      });
-    }
-
-    window.onload = () => {
-      const ore = document.getElementById('ore');
-      ore.addEventListener('click', e => {
-        for (let i=0;i<15;i++){ /* particle code omitted for brevity */ }
-        state.resources += state.clickPower;
-        save(); updateUI();
-      });
-
-      document.getElementById('convert-button').addEventListener('click', () => {
-        if (state.resources>=10) { state.resources -=10; state.coins++; save(); updateUI(); }
-        else alert('자원 부족!');
-      });
-
-      document.getElementById('auto-convert-buy').addEventListener('click', () => {
-        if (state.coins>=100 && !state.autoConvertBought) {
-          state.coins -=100; state.autoConvertBought = true; save(); updateUI();
-        }
-      });
-
-      document.getElementById('upgrade-ship').addEventListener('click', () => {
-        if (state.coins>=state.shipUpgradeCost) {
-          state.coins -= state.shipUpgradeCost;
-          state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost*2+30);
-          save(); updateUI();
-        } else alert('코인 부족!');
-      });
-
-      // other buttons: click-upgrade, hire-worker, hire-conversion ...
-      // interval auto income & auto-convert
-      setInterval(()=>{
-        if(state.workerCount>0) state.resources += state.workerCount*getWorkerPower();
-        if(state.conversionCount>0) state.coins += state.conversionCount*conversionPower;
-        if(state.autoConvertBought) {
-          while(state.resources>=10) { state.resources-=10; state.coins++; }
-        }
-        save(); updateUI();
-      },1000);
-
-      document.getElementById('reset-button').addEventListener('click', ()=>{
-        if(confirm('정말 초기화하시겠습니까?')){
-          state = { ...defaultData }; save(); updateUI(); renderPlanets();
-        }
-      });
-
-      document.querySelectorAll('.tab').forEach(tab=> tab.addEventListener('click', ()=>{
-        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-        document.querySelector(`#${tab.dataset.tab}-content`).classList.add('active');
-        document.querySelectorAll('.tab').forEach(tb=>tb.classList.remove('active'));
-        tab.classList.add('active');
-      }));
-    };
-
-    const planets = [
+    const initialConversionCost=50, conversionCostGrowth=1.5, conversionPower=1;
+    const planets=[
       {name:'달', cost:100, requiredShipLevel:1},
       {name:'수성', cost:500, requiredShipLevel:2},
       {name:'금성', cost:2000, requiredShipLevel:3},
@@ -268,6 +150,193 @@
       {name:'천왕성', cost:5000000, requiredShipLevel:8},
       {name:'해왕성', cost:20000000, requiredShipLevel:9}
     ];
+
+    function getWorkerCost() { return Math.floor(initialWorkerCost * Math.pow(workerCostGrowth, workerCount)); }
+    function getWorkerPower() { return initialWorkerPower * Math.pow(workerPowerGrowth, workerCount); }
+    function getConversionCost() { return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, conversionCount)); }
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        uid = user.uid;
+        authContainer.style.display = 'none';
+        logoutBtn.style.display = 'block';
+        topBar.style.visibility = 'visible';
+        container.style.visibility = 'visible';
+        loadGameData();
+      } else {
+        authContainer.style.display = 'block';
+        logoutBtn.style.display = 'none';
+        topBar.style.visibility = 'hidden';
+        container.style.visibility = 'hidden';
+      }
+    });
+
+    loginBtn.addEventListener('click', () =>
+      signInWithEmailAndPassword(auth, emailInput.value, pwdInput.value).catch(err => authError.innerText = err.message)
+    );
+    signupBtn.addEventListener('click', () =>
+      createUserWithEmailAndPassword(auth, emailInput.value, pwdInput.value).catch(err => authError.innerText = err.message)
+    );
+    logoutBtn.addEventListener('click', () => signOut(auth));
+
+    function loadGameData() {
+      get(ref(db, users/${uid}/gameData)).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          resources = data.resources;
+          coins = data.coins;
+          clickPower = data.clickPower;
+          shipLevel = data.shipLevel;
+          shipUpgradeCost = data.shipUpgradeCost;
+          workerCount = data.workerCount;
+          conversionCount = data.conversionCount;
+          ownedPlanets = data.ownedPlanets || [];
+        } else {
+          set(ref(db, users/${uid}/gameData), defaultData);
+        }
+        updateUI(); renderPlanets();
+      });
+    }
+
+    function saveGameData() {
+      set(ref(db, users/${uid}/gameData), { resources, coins, clickPower, shipLevel, shipUpgradeCost, workerCount, conversionCount, ownedPlanets });
+    }
+
+    function updateUI() {
+      document.getElementById('score').innerText = 자원: ${Math.floor(resources)};
+      document.getElementById('coins').innerText = 코인: ${coins};
+      document.getElementById('ship-level').innerText = ${shipLevel}렙 (${shipUpgradeCost}코인);
+      document.getElementById('ship-img').src = images/ship-level${shipLevel}.png;
+      document.getElementById('click-power').innerText = clickPower;
+      document.getElementById('resource-per-sec').innerText = (workerCount * getWorkerPower()).toFixed(1);
+      document.getElementById('coin-per-sec').innerText = (conversionCount * conversionPower).toFixed(1);
+      document.getElementById('hire-worker').innerText = 알바 고용 (${getWorkerCost()}코인);
+      document.getElementById('hire-conversion').innerText = 코인 알바 (${getConversionCost()}코인);
+    }
+
+    function renderPlanets() {
+      const list = document.getElementById('planet-list');
+      list.innerHTML = planets.map((p,i) => {
+        const owned = ownedPlanets.includes(i);
+        const canBuy = shipLevel >= p.requiredShipLevel;
+        return <div style="margin:8px 0;"><strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}<br><button ${owned||!canBuy?'disabled':''} data-idx="${i}">${owned?'구매 완료':canBuy?'구매':'레벨 부족'}</button></div>;
+      }).join('');
+      list.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+        const idx = +btn.dataset.idx;
+        if (coins >= planets[idx].cost) {
+          coins -= planets[idx].cost;
+          ownedPlanets.push(idx);
+          saveGameData(); updateUI(); renderPlanets();
+        } else {
+          alert('코인 부족!');
+        }
+      }));
+    }
+
+    window.onload = () => {
+      const ore = document.getElementById('ore');
+      ore.addEventListener('click', e => {
+        for (let i = 0; i < 15; i++) {
+          const p = document.createElement('div');
+          p.className = 'particle';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 50 + Math.random() * 30;
+          p.style.setProperty('--dx', ${Math.cos(angle)*dist}px);
+          p.style.setProperty('--dy', ${-Math.sin(angle)*dist}px);
+          const rect = ore.getBoundingClientRect();
+          p.style.left = ${e.clientX-rect.left-3}px;
+          p.style.top  = ${e.clientY-rect.top-3}px;
+          ore.parentElement.appendChild(p);
+          p.addEventListener('animationend', ()=>p.remove());
+        }
+        resources += clickPower;
+        saveGameData();
+        updateUI();
+      });
+
+      document.getElementById('convert-button').addEventListener('click', () => {
+        if (resources >= 10) {
+          resources -= 10;
+          coins++;
+          saveGameData();
+          updateUI();
+        } else {
+          alert('자원 부족!');
+        }
+      });
+
+      document.getElementById('upgrade-ship').addEventListener('click', () => {
+        if (coins >= shipUpgradeCost) {
+          coins -= shipUpgradeCost;
+          shipLevel++;
+          shipUpgradeCost = Math.floor(shipUpgradeCost*2 + 30);
+          saveGameData();
+          updateUI();
+        } else {
+          alert('코인 부족!');
+        }
+      });
+
+      document.getElementById('click-upgrade').addEventListener('click', () => {
+        if (coins >= 15) {
+          coins -= 15;
+          clickPower++;
+          saveGameData();
+          updateUI();
+        } else {
+          alert('코인 부족!');
+        }
+      });
+
+      document.getElementById('hire-worker').addEventListener('click', () => {
+        const cost = getWorkerCost();
+        if (coins >= cost) {
+          coins -= cost;
+          workerCount++;
+          saveGameData();
+          updateUI();
+        } else {
+          alert('코인 부족!');
+        }
+      });
+
+      document.getElementById('hire-conversion').addEventListener('click', () => {
+        const cost = getConversionCost();
+        if (coins >= cost) {
+          coins -= cost;
+          conversionCount++;
+          saveGameData();
+          updateUI();
+        } else {
+          alert('코인 부족!');
+        }
+      });
+
+      document.getElementById('reset-button').addEventListener('click', () => {
+        if (confirm('정말 초기화하시겠습니까?')) {
+          resources = 0; coins = 0; clickPower = 1;
+          shipLevel = 1; shipUpgradeCost = 20;
+          workerCount = 0; conversionCount = 0; ownedPlanets = [];
+          saveGameData();
+          updateUI();
+          renderPlanets();
+        }
+      });
+
+      setInterval(() => {
+        if (workerCount > 0) resources += workerCount * getWorkerPower();
+        if (conversionCount > 0) coins += conversionCount * conversionPower;
+        saveGameData();
+        updateUI();
+      }, 1000);
+
+      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+        const target = tab.dataset.tab + '-content';
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === target));
+        document.querySelectorAll('.tab').forEach(tb => tb.classList.remove('active'));
+        tab.classList.add('active');
+      }));
+    };
   </script>
 </body>
 </html>
