@@ -309,7 +309,7 @@
     disablePaste: true,       // 붙여넣기 차단 (Ctrl+V)
     clearIntervalWhenDevOpenTrigger: true,
     ondevtoolopen(type, next) {
-      alert('개발자 도구가 감지되었습니다 (type=' + type + '). 페이지를 종료합니다.');
+      alert('개발자 도구는 사용이 제한됩니다. (type=' + type + '). 페이지를 종료합니다.');
       next();  // 기본 동작: 브라우저 닫기 또는 리다이렉트
     },
     ondevtoolclose() {
