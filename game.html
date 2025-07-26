@@ -299,6 +299,23 @@
       );
     };
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+<script>
+  DisableDevtool({
+    disableMenu: true,        // 우클릭 메뉴 비활성화
+    disableSelect: true,      // 텍스트 선택 비활성화
+    disableCopy: true,        // 복사 차단 (Ctrl+C)
+    disableCut: true,         // 잘라내기 차단 (Ctrl+X)
+    disablePaste: true,       // 붙여넣기 차단 (Ctrl+V)
+    clearIntervalWhenDevOpenTrigger: true,
+    ondevtoolopen(type, next) {
+      alert('개발자 도구가 감지되었습니다 (type=' + type + '). 페이지를 종료합니다.');
+      next();  // 기본 동작: 브라우저 닫기 또는 리다이렉트
+    },
+    ondevtoolclose() {
+      console.warn('DevTools 닫힘 감지됨');
+    }
+  });
+ </script>
 </body>
 </html>
-
