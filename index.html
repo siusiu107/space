@@ -92,10 +92,37 @@
       font-size: 24px;
       margin-bottom: 10px;
       color: #f4b400;
+      text-align: center;
     }
-    .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
-    .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
-    .panel ul li { margin-bottom: 8px; font-size: 14px; }
+    .lang-switch {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .lang-switch button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      transition: background 0.3s;
+    }
+    .lang-switch button.active {
+      background: rgba(244,180,0,0.8);
+      color: #000;
+    }
+    .panel-content { display: none; }
+    .panel-content.active { display: block; }
+    .panel-content p, .panel-content ul {
+      margin-bottom: 15px;
+      line-height: 1.5;
+      color: #ddd;
+      font-size: 14px;
+    }
+    .panel-content ul { margin-left: 20px; }
+    .panel-content ul li { margin-bottom: 8px; }
     .panel .close-btn {
       display: block;
       margin: 0 auto;
@@ -127,7 +154,7 @@
     <nav class="sidebar">
       <button id="show-license">라이센스 정보</button>
       <button id="show-contact">Contact Us</button>
-    </nav>
+    <//nav>
     <div class="content">
       <div class="overlay">
         <h1>태양계 정복</h1>
@@ -135,17 +162,36 @@
       </div>
       <div class="panel" id="license-panel">
         <h2>라이센스 정보</h2>
-        <p>© 2025. SIU Studio All rights reserved.</p>
-        <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
-        <ul>
-          <li>복사(Copying)</li>
-          <li>수정(Modification)</li>
-          <li>리버스 엔지니어링(Reverse Engineering)</li>
-          <li>재배포(Redistribution)</li>
-          <li>상업적 이용(Commercial Use)</li>
-        </ul>
-        <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
-        <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="ko">한국어</button>
+          <button class="lang-btn" data-lang="en">English</button>
+        </div>
+        <div class="panel-content active" id="content-ko">
+          <p>© 2025. SIU Studio All rights reserved.</p>
+          <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
+          <ul>
+            <li>복사(Copying)</li>
+            <li>수정(Modification)</li>
+            <li>리버스 엔지니어링(Reverse Engineering)</li>
+            <li>재배포(Redistribution)</li>
+            <li>상업적 이용(Commercial Use)</li>
+          </ul>
+          <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
+          <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
+        </div>
+        <div class="panel-content" id="content-en">
+          <p>© 2025 SIU Studio. All rights reserved.</p>
+          <p>All source code and resources of this game (including but not limited to images, sounds, designs, and scripts) are protected by copyright laws and are strictly prohibited without the explicit written permission of the creator:</p>
+          <ul>
+            <li>Copying</li>
+            <li>Modification</li>
+            <li>Reverse Engineering</li>
+            <li>Redistribution</li>
+            <li>Commercial Use</li>
+          </ul>
+          <p>However, individuals are allowed to record and upload gameplay videos of this game to video-sharing platforms (e.g., YouTube, Twitch) for non-commercial purposes only.</p>
+          <p>Violation of these terms may result in civil and/or criminal legal action.</p>
+        </div>
         <button class="close-btn" data-target="license-panel">닫기</button>
       </div>
       <div class="panel" id="contact-panel">
@@ -157,6 +203,15 @@
     </div>
   </div>
   <script>
+    function switchLang(lang) {
+      document.querySelectorAll('.panel-content').forEach(div => div.classList.remove('active'));
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('content-' + lang).classList.add('active');
+      document.querySelector('.lang-btn[data-lang="' + lang + '"]').classList.add('active');
+    }
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchLang(btn.getAttribute('data-lang')));
+    });
     document.querySelectorAll('.close-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
