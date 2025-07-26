@@ -92,6 +92,7 @@
       margin-bottom: 10px;
       color: #f4b400;
       text-align: center;
+      font-weight: bold;
     }
     .lang-switch {
       display: flex;
@@ -111,6 +112,7 @@
     .lang-switch button.active {
       background: rgba(244,180,0,0.8);
       color: #000;
+      font-weight: bold;
     }
     .panel-content { display: none; }
     .panel-content.active { display: block; }
@@ -119,6 +121,10 @@
       line-height: 1.5;
       color: #ddd;
       font-size: 14px;
+    }
+    .panel-content p strong, .panel-content ul li strong {
+      color: #f4b400;
+      font-weight: bold;
     }
     .panel-content ul { margin-left: 20px; }
     .panel-content ul li { margin-bottom: 8px; }
@@ -166,37 +172,37 @@
           <button class="lang-btn" data-lang="en">English</button>
         </div>
         <div class="panel-content active" id="content-ko">
-          <p>© 2025. SIU Studio All rights reserved.</p>
-          <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
+          <p><strong>© 2025. SIU Studio All rights reserved.</strong></p>
+          <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 <strong>서면 허가</strong> 없이 다음 행위를 모두 <strong>금지</strong>합니다:</p>
           <ul>
-            <li>복사(Copying)</li>
-            <li>수정(Modification)</li>
-            <li>리버스 엔지니어링(Reverse Engineering)</li>
-            <li>재배포(Redistribution)</li>
-            <li>상업적 이용(Commercial Use)</li>
+            <li><strong>복사(Copying)</strong></li>
+            <li><strong>수정(Modification)</strong></li>
+            <li><strong>리버스 엔지니어링(Reverse Engineering)</strong></li>
+            <li><strong>재배포(Redistribution)</strong></li>
+            <li><strong>상업적 이용(Commercial Use)</strong></li>
           </ul>
-          <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
-          <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
+          <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 <strong>녹화</strong>하여 YouTube, Twitch 등 동영상 플랫폼에 <strong>게시</strong>하는 행위는 허용됩니다.</p>
+          <p>위 조건을 위반할 경우 <strong>민·형사상 법적 조치</strong>를 받을 수 있습니다.</p>
         </div>
         <div class="panel-content" id="content-en">
-          <p>© 2025. SIU Studio All rights reserved.</p>
-          <p>All source code and resources of this game (including but not limited to images, sounds, designs, and scripts) are protected by copyright laws and are strictly prohibited without the explicit written permission of the creator:</p>
+          <p><strong>© 2025 SIU Studio. All rights reserved.</strong></p>
+          <p>All source code and resources of this game (including but not limited to images, sounds, designs, and scripts) are protected by copyright laws and are strictly prohibited without the explicit <strong>written permission</strong> of the creator:</p>
           <ul>
-            <li>Copying</li>
-            <li>Modification</li>
-            <li>Reverse Engineering</li>
-            <li>Redistribution</li>
-            <li>Commercial Use</li>
+            <li><strong>Copying</strong></li>
+            <li><strong>Modification</strong></li>
+            <li><strong>Reverse Engineering</strong></li>
+            <li><strong>Redistribution</strong></li>
+            <li><strong>Commercial Use</strong></li>
           </ul>
-          <p>However, individuals are allowed to record and upload gameplay videos of this game to video-sharing platforms (e.g., YouTube, Twitch) for non-commercial purposes only.</p>
-          <p>Violation of these terms may result in civil and/or criminal legal action.</p>
+          <p>However, individuals are allowed to record and upload gameplay videos of this game to video-sharing platforms (e.g., YouTube, Twitch) for <strong>non-commercial purposes only</strong>.</p>
+          <p>Violation of these terms may result in <strong>civil and/or criminal legal action</strong>.</p>
         </div>
         <button class="close-btn" data-target="license-panel">닫기</button>
       </div>
       <div class="panel" id="contact-panel">
         <h2>Contact Us</h2>
         <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
-        <p><a href="mailto:siustudio@zohomail.com" style="color: #f4b400; text-decoration: none;">siustudio@zohomail.com</a></p>
+        <p><a href="mailto:siustudio@zohomail.com" style="color: #1f3e93; text-decoration: none;"><strong>siustudio@zohomail.com</strong></a></p>
         <button class="close-btn" data-target="contact-panel">닫기</button>
       </div>
     </div>
