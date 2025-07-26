@@ -318,10 +318,25 @@
         save(); updateUI();
       }, 1000);
     };
-  </script>
+</script>
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
-    DisableDevtool({ disableMenu:true, disableSelect:true, disableCopy:true, disableCut:true, disablePaste:true, clearIntervalWhenDevOpenTrigger:true, ondevtoolopen(type,next){ alert('개발자 도구 감지('+type+')'); next(); }, ondevtoolclose(){ console.warn('DevTools 닫힘'); } });
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        window.close();  // 묻지도 따지지도 않고 바로 탭 닫기
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
   </script>
 </body>
 </html>
+
