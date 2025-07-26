@@ -101,10 +101,6 @@
   </div>
 
   <script type="module">
-    /* Firebase 양방향 실시간 동기화 구현 */
-    // 서버 → 클라이언트: onValue 리스너가 gameData 변경 시 state에 자동 적용
-    // 클라이언트 → 서버: save() 호출 시 변경된 state를 실시간으로 DB에 저장
-
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
@@ -135,7 +131,6 @@
     function getWorkerPower() { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost() { return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
 
-    // 자원 10개 당 코인 1개로 변환
     function convertResources(maxCount = null) {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
@@ -226,8 +221,15 @@
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button'); btn.className = 'general';
-        btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
-        btn.onclick = () => { if (state.coins >= p.cost) { state.coins -= p.cost; state.ownedPlanets.push(i); save(); updateUI(); renderPlanets(); } };
+        btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족');
+        btn.disabled = owned || !canBuy;
+        btn.onclick = () => {
+          if (state.coins >= p.cost) {
+            state.coins -= p.cost;
+            state.ownedPlanets.push(i);
+            save(); updateUI(); renderPlanets();
+          }
+        };
         div.appendChild(btn); list.appendChild(div);
       });
     }
@@ -235,27 +237,86 @@
     function spawnParticles(x,y) {
       for (let i=0; i<15; i++) {
         const span = document.createElement('span'); span.className = 'particle';
-        span.style.setProperty('--dx', (Math.random()-0.5)*100+'px'); span.style.setProperty('--dy', (Math.random()-1)*100+'px');
+        span.style.setProperty('--dx', (Math.random()-0.5)*100+'px');
+        span.style.setProperty('--dy', (Math.random()-1)*100+'px');
         span.style.left = x+'px'; span.style.top = y+'px';
-        document.getElementById('ore-container').appendChild(span); setTimeout(()=>span.remove(),800);
+        document.getElementById('ore-container').appendChild(span);
+        setTimeout(()=>span.remove(),800);
       }
     }
 
     window.onload = () => {
       document.getElementById('ore').addEventListener('click', e => {
-        const rect = e.target.getBoundingClientRect(); spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
+        const rect = e.target.getBoundingClientRect();
+        spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
         state.resources += state.clickPower;
-        convertResources(); save(); updateUI();
+        if (state.autoConvertBought) convertResources();
+        save(); updateUI();
       });
-      document.getElementById('convert-button').addEventListener('click', () => { convertResources(1); save(); updateUI(); });
-      document.getElementById('auto-convert-buy').addEventListener('click', () => { if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); } });
-      document.getElementById('hire-worker').addEventListener('click', () => { const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } });
-      document.getElementById('hire-conversion').addEventListener('click', () => { const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
-      document.getElementById('upgrade-ship').addEventListener('click', () => { if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
-      document.getElementById('click-upgrade').addEventListener('click', () => { if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
-      document.getElementById('reset-button').addEventListener('click', () => { if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
-      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(`${tab.dataset.tab}-content`).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
-      setInterval(() => { if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower(); convertResources(state.conversionCount); convertResources(); save(); updateUI(); }, 1000);
+      document.getElementById('convert-button').addEventListener('click', () => {
+        convertResources(1); save(); updateUI();
+      });
+      document.getElementById('auto-convert-buy').addEventListener('click', () => {
+        if (!state.autoConvertBought && state.coins >= 100) {
+          state.coins -= 100;
+          state.autoConvertBought = true;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('hire-worker').addEventListener('click', () => {
+        const cost = getWorkerCost();
+        if (state.coins >= cost) {
+          state.coins -= cost; state.workerCount++;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('hire-conversion').addEventListener('click', () => {
+        const cost = getConversionCost();
+        if (state.coins >= cost) {
+          state.coins -= cost; state.conversionCount++;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('upgrade-ship').addEventListener('click', () => {
+        if (state.coins >= state.shipUpgradeCost) {
+          state.coins -= state.shipUpgradeCost;
+          state.shipLevel++;
+          state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
+          save(); updateUI(); renderPlanets();
+        }
+      });
+      document.getElementById('click-upgrade').addEventListener('click', () => {
+        if (state.coins >= clickUpgradeCost) {
+          state.coins -= clickUpgradeCost;
+          state.clickPower++;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('reset-button').addEventListener('click', () => {
+        if (confirm('정말 초기화하시겠습니까?')) {
+          state = { ...defaultData };
+          save(); updateUI(); renderPlanets();
+        }
+      });
+      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      }));
+
+      setInterval(() => {
+        if (state.workerCount > 0) {
+          state.resources += state.workerCount * getWorkerPower();
+        }
+        // 코인 알바 작동
+        convertResources(state.conversionCount);
+        // 자동 변환은 구매 시에만
+        if (state.autoConvertBought) {
+          convertResources();
+        }
+        save(); updateUI();
+      }, 1000);
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
