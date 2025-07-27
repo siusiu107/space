@@ -345,7 +345,11 @@
         if (state.workerCount > 0) {
           state.resources += state.workerCount * getWorkerPower();
         }
-        convertResources(state.conversionCount);
+        // --- 여기부터 수정된 부분: 코인 알바는 매 초마다 conversionCount 만큼 바로 코인 생성 ---
+        if (state.conversionCount > 0) {
+          state.coins += state.conversionCount;
+        }
+        // --------------------------------------------------------------------------
         if (state.autoConvertBought) {
           convertResources();
         }
