@@ -13,17 +13,36 @@
     td { background:rgba(20,20,20,0.7); }
     tr:nth-child(even) td { background:rgba(20,20,20,0.5); }
     .btn { margin:10px 5px 0; padding:8px 16px; background:#00aaff; border:none; border-radius:4px; color:#fff; cursor:pointer; text-decoration:none; display:inline-block; }
+    #nickname-prompt { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; color:#fff; text-align:center; padding-top:20%; }
+    input[type="text"], input[type="checkbox"] { margin:6px; padding:6px; border-radius:4px; border:none; font-size:14px; }
+    #filter-container { margin-top:10px; }
   </style>
 </head>
 <body>
+  <!-- 닉네임 설정 모달 -->
+  <div id="nickname-prompt">
+    <h2>🎉 닉네임을 생성해주세요!</h2>
+    <p>이 닉네임은 랭킹에 표시되며 <strong>한 번 생성하면 변경할 수 없습니다.</strong></p>
+    <input type="text" id="nickname-input" placeholder="닉네임 입력" />
+    <br>
+    <button class="btn" id="submit-nickname">확인</button>
+  </div>
+
+  <!-- 랭킹 컨테이너 -->
   <div id="ranking-container">
     <h1>💰 코인 랭킹 Top 50</h1>
+    <div id="filter-container">
+      <label>
+        <input type="checkbox" id="toggle-no-nickname" checked>
+        닉네임 없는 사용자 표시
+      </label>
+    </div>
     <table>
       <thead>
-        <tr><th>순위</th><th>UID</th><th>코인</th></tr>
+        <tr><th>순위</th><th>닉네임</th><th>코인</th></tr>
       </thead>
       <tbody id="ranking-body">
-        <!-- 순위 항목 삽입 -->
+        <!-- 순위 항목이 여기에 삽입됩니다 -->
       </tbody>
     </table>
     <button id="logout-btn" class="btn">로그아웃</button>
@@ -33,8 +52,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
+    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -49,19 +69,48 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
+    // DOM 요소
     const rankingContainer = document.getElementById('ranking-container');
     const rankingBody = document.getElementById('ranking-body');
+    const nicknamePrompt = document.getElementById('nickname-prompt');
+    const nicknameInput = document.getElementById('nickname-input');
+    const submitBtn = document.getElementById('submit-nickname');
+    const toggleNoNick = document.getElementById('toggle-no-nickname');
+    let rankingList = [];
 
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        rankingContainer.style.display = 'block';
-        loadRanking();
-      } else {
+    // 인증 상태 확인
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
         alert('로그인 후 이용해주세요');
         window.location.href = 'game.html';
+        return;
+      }
+      const profileRef = ref(db, `users/${user.uid}/profile/nickname`);
+      const snap = await get(profileRef);
+      if (!snap.exists()) {
+        // 닉네임 설정 모달 표시
+        nicknamePrompt.style.display = 'block';
+        submitBtn.onclick = async () => {
+          const nick = nicknameInput.value.trim();
+          if (!nick) return alert('닉네임을 입력해주세요');
+          await set(profileRef, nick);
+          nicknamePrompt.style.display = 'none';
+          initRanking();
+        };
+      } else {
+        initRanking();
       }
     });
 
+    // 랭킹 초기화
+    function initRanking() {
+      nicknamePrompt.style.display = 'none';
+      rankingContainer.style.display = 'block';
+      loadRanking();
+      toggleNoNick.addEventListener('change', renderRanking);
+    }
+
+    // 로그아웃 처리
     document.getElementById('logout-btn').addEventListener('click', () => {
       signOut(auth).then(() => {
         alert('로그아웃 되었습니다');
@@ -69,28 +118,43 @@
       });
     });
 
+    // 랭킹 데이터 불러오기
     async function loadRanking() {
       const usersRef = ref(db, 'users');
       const snapshot = await get(usersRef);
-      const list = [];
+      rankingList = [];
       snapshot.forEach(userSnap => {
+        const profile = userSnap.child('profile').val() || {};
         const data = userSnap.child('gameData').val() || {};
         const coins = data.coins || 0;
-        const uid = userSnap.key;
-        list.push({ uid, coins: Math.floor(coins) });
+        const nickname = profile.nickname || '';
+        rankingList.push({ nickname, coins: Math.floor(coins) });
       });
-      list.sort((a, b) => b.coins - a.coins);
-      const top50 = list.slice(0, 50);
+      rankingList.sort((a, b) => b.coins - a.coins);
+      renderRanking();
+    }
 
+    // 랭킹 렌더링
+    function renderRanking() {
+      const showNoNick = toggleNoNick.checked;
       rankingBody.innerHTML = '';
-      top50.forEach((item, idx) => {
+      let rank = 1;
+      for (const item of rankingList) {
+        if (!showNoNick && !item.nickname) continue;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${idx + 1}</td><td>${item.uid}</td><td>${item.coins}</td>`;
+        tr.innerHTML = `
+          <td>${rank}</td>
+          <td>${item.nickname || '닉네임 없음'}</td>
+          <td>${item.coins}</td>
+        `;
         rankingBody.appendChild(tr);
-      });
+        rank++;
+        if (rank > 50) break;
+      }
     }
   </script>
 
+  <!-- 개발자 도구 차단 스크립트 -->
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
