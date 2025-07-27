@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌌 태양계 정복: 돈 랭킹 🌌</title>
+  <style>
+    body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:90%; max-width:500px; text-align:center; display:none; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { padding:8px; border-bottom:1px solid #444; font-size:14px; }
+    th { background:rgba(30,30,30,0.9); }
+    td { background:rgba(20,20,20,0.7); }
+    tr:nth-child(even) td { background:rgba(20,20,20,0.5); }
+    .btn { margin:10px 5px 0; padding:8px 16px; background:#00aaff; border:none; border-radius:4px; color:#fff; cursor:pointer; text-decoration:none; display:inline-block; }
+  </style>
+</head>
+<body>
+  <div id="ranking-container">
+    <h1>💰 코인 랭킹 Top 50</h1>
+    <table>
+      <thead>
+        <tr><th>순위</th><th>UID</th><th>코인</th></tr>
+      </thead>
+      <tbody id="ranking-body">
+        <!-- 순위 항목 삽입 -->
+      </tbody>
+    </table>
+    <button id="logout-btn" class="btn">로그아웃</button>
+    <a href="game.html" class="btn">게임으로</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const rankingContainer = document.getElementById('ranking-container');
+    const rankingBody = document.getElementById('ranking-body');
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        rankingContainer.style.display = 'block';
+        loadRanking();
+      } else {
+        alert('로그인 후 이용해주세요');
+        window.location.href = 'game.html';
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      signOut(auth).then(() => {
+        alert('로그아웃 되었습니다');
+        window.location.href = 'game.html';
+      });
+    });
+
+    async function loadRanking() {
+      const usersRef = ref(db, 'users');
+      const snapshot = await get(usersRef);
+      const list = [];
+      snapshot.forEach(userSnap => {
+        const data = userSnap.child('gameData').val() || {};
+        const coins = data.coins || 0;
+        const uid = userSnap.key;
+        list.push({ uid, coins: Math.floor(coins) });
+      });
+      list.sort((a, b) => b.coins - a.coins);
+      const top50 = list.slice(0, 50);
+
+      rankingBody.innerHTML = '';
+      top50.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${idx + 1}</td><td>${item.uid}</td><td>${item.coins}</td>`;
+        rankingBody.appendChild(tr);
+      });
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        window.close();
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+  </script>
+</body>
+</html>
