@@ -29,6 +29,27 @@
     .particle { position:absolute; width:6px; height:6px; background:#ffd700; border-radius:50%; opacity:.8; animation:floatUp .8s ease-out forwards; pointer-events:none; }
     @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
     #ore { width:200px; cursor:pointer; }
+    /* 커스텀 컨텍스트 메뉴 스타일 */
+    #custom-menu {
+      position: fixed;
+      display: none;
+      background: rgba(30,30,30,0.95);
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 8px 0;
+      z-index: 2000;
+      font-size: 14px;
+      color: #fff;
+      min-width: 160px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    #custom-menu .menu-item {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    #custom-menu .menu-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
   </style>
 </head>
 <body>
@@ -98,6 +119,13 @@
     <div id="reset-content" class="tab-content">
       <button id="reset-button" class="general">초기화</button>
     </div>
+  </div>
+
+  <!-- 커스텀 컨텍스트 메뉴 -->
+  <div id="custom-menu">
+    <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
+    <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
+    <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
 
   <script type="module">
@@ -230,8 +258,6 @@
             state.coins -= p.cost;
             state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
-
-            // 모든 행성을 구매했을 때 ending.html로 이동
             if (state.ownedPlanets.length === planets.length) {
               window.location.href = 'ending.html';
             }
@@ -327,6 +353,7 @@
       }, 1000);
     };
   </script>
+
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
@@ -342,6 +369,35 @@
       },
       ondevtoolclose() {
         console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+
+    // 커스텀 컨텍스트 메뉴 로직
+    const customMenu = document.getElementById('custom-menu');
+    window.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      customMenu.style.top  = `${e.clientY}px`;
+      customMenu.style.left = `${e.clientX}px`;
+      customMenu.style.display = 'block';
+    });
+    customMenu.addEventListener('click', e => {
+      const action = e.target.getAttribute('data-action');
+      if (!action) return;
+      switch(action) {
+        case 'menu':
+          window.location.href = 'index.html';
+          break;
+        case 'resume':
+          customMenu.style.display = 'none';
+          break;
+        case 'rank':
+          window.location.href = 'rankin.html';
+          break;
+      }
+    });
+    window.addEventListener('click', e => {
+      if (!customMenu.contains(e.target)) {
+        customMenu.style.display = 'none';
       }
     });
   </script>
