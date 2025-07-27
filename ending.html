@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌟 축하합니다! 태양계 정복 완료 🌟</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: url('images/ending-bg.jpg') center/cover no-repeat;
+      color: #fff;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .card {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+      text-align:center;
+      animation: fadeIn 1s ease-out;
+      position: relative;
+    }
+    .planet-image {
+      width:100px;
+      margin: 0 auto 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+    h1 {
+      font-size: 2.8em;
+      margin-bottom: 20px;
+      background: linear-gradient(90deg, #ff8a00, #e52e71);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    p {
+      font-size: 1.1em;
+      margin-bottom: 30px;
+      line-height:1.6;
+    }
+    button {
+      background: radial-gradient(circle at top left, #e52e71, #ff8a00);
+      border: none;
+      padding: 15px 35px;
+      font-size: 1.1em;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(0,0,0,0.7);
+    }
+    .hidden { display: none; }
+    @keyframes fadeIn { from {opacity:0; transform: translateY(30px);} to {opacity:1; transform: translateY(0);} }
+    @keyframes glow { from {text-shadow: 0 0 10px #ff8a00;} to {text-shadow: 0 0 25px #e52e71;} }
+  </style>
+</head>
+<body>
+  <div class="card" id="content">
+    <!-- 상단 우주 이미지 -->
+    <img src="images/planet-icon.png" alt="Planet Icon" class="planet-image" />
+    <h1 id="title">🎉 축하합니다! 🎉</h1>
+    <p id="message">행성 구매 확인 중...</p>
+    <button id="back-btn" class="hidden">게임으로 돌아가기</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const titleEl = document.getElementById('title');
+    const msgEl = document.getElementById('message');
+    const btn = document.getElementById('back-btn');
+
+    btn.addEventListener('click', () => { window.location.href = 'game.html'; });
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        titleEl.textContent = '로그인이 필요합니다.';
+        msgEl.textContent = '게임 정보에 접근하려면 로그인해주세요.';
+        btn.classList.remove('hidden');
+        return;
+      }
+      const dataRef = ref(db, `users/${user.uid}/gameData/ownedPlanets`);
+      get(dataRef).then(snapshot => {
+        const owned = snapshot.val() || [];
+        if (owned.length === 9) {
+          titleEl.textContent = '태양계 정복 완료!';
+          msgEl.textContent = '모든 행성을 정복하셨습니다. 진정한 우주 지배자이십니다!';
+        } else {
+          titleEl.textContent = '접근 불가';
+          msgEl.textContent = '행성을 모두 구매하지 않아 정보를 확인할 수 없습니다.';
+        }
+        btn.classList.remove('hidden');
+      }).catch(() => {
+        titleEl.textContent = '오류 발생';
+        msgEl.textContent = '데이터를 불러오는 중 오류가 발생했습니다.';
+        btn.classList.remove('hidden');
+      });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        window.close();
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+  </script>
+</body>
+</html>
