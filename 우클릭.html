@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>보안 적용된 사이트 예제</title>
+  <style>
+    /* 간단한 스타일 예시 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      text-align: center;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    p {
+      color: #666;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>보안 테스트 페이지</h1>
+    <p>우클릭, 개발자 도구 열기, 소스 보기 등이 차단됩니다.</p>
+  </div>
+
+  <script>
+    $(document).ready(function(){
+      // 마우스 우측 버튼 사용 막기
+      if (window.addEventListener) {
+        window.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          return false;
+        }, false);
+      } else {
+        window.attachEvent('oncontextmenu', function(e) {
+          e.preventDefault();
+          return false;
+        });
+      }
+
+      // 마우스 클릭 감지 (추가 차단)
+      var handlemouseEvent = function(e) {
+        if ((e.which && e.which === 3) || (e.button && e.button === 2)) {
+          e.preventDefault();
+          return false;
+        }
+      };
+      window.onmousedown = handlemouseEvent;
+      window.onmouseup = handlemouseEvent;
+
+      // 로그아웃 폼 생성 (개발자 도구 감지 시 강제 로그아웃)
+      var logOutForm = document.createElement('form');
+      logOutForm.name = "logOutForm";
+      logOutForm.id = "logOutForm";
+      logOutForm.action = "/logout"; // 실제 로그아웃 URL로 변경
+      logOutForm.method = "POST";
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = '${_csrf.parameterName}';  // 서버 사이드에서 동적으로 삽입
+      input.value = '${_csrf.token}';
+      logOutForm.appendChild(input);
+      document.body.appendChild(logOutForm);
+
+      // 개발자 도구 실행 감지
+      console.log(Object.defineProperties(new Error(), {
+        toString: {
+          value() {
+            if ((new Error()).stack.includes('toString@')) {
+              alert('개발자 도구가 감지되었습니다. 로그아웃 처리합니다.');
+            }
+          }
+        },
+        message: {
+          get() {
+            logOutForm.submit();
+          }
+        }
+      }));
+    });
+
+    // 개발자 도구 단축키 차단
+    window.addEventListener('keydown', function(e) {
+      if (
+        // F12
+        e.keyCode === 123 ||
+        // Ctrl+Shift+I/J/C / Cmd+Alt+I/J/C
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && [73,74,67].includes(e.keyCode)) ||
+        ((e.metaKey) && e.altKey && [73,74,67,85].includes(e.keyCode)) ||
+        // Ctrl+U / Cmd+Alt+U
+        ((e.ctrlKey || e.metaKey) && e.keyCode === 85)
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  </script>
+</body>
+</html>
