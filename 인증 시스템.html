@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube 멤버십 인증</title>
+  <!-- Firebase compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #loginPanel, #managePanel { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); color:#fff; overflow:auto; padding:20px; }
+    .card { background:#fff; color:#000; padding:10px; margin-bottom:10px; border-radius:8px; }
+    .card img { max-width:100px; max-height:100px; display:block; margin-bottom:5px; }
+    #secretTapArea { position: fixed; bottom:0; right:0; width:50px; height:50px; opacity:0; }
+  </style>
+</head>
+<body>
+  <h1>YouTube 멤버십 인증</h1>  <div id="uploadSection">
+    <p>1. 멤버십 확인용 스크린샷을 업로드하세요.</p>
+    <input type="file" id="screenshotInput" accept="image/*" />
+    <button id="checkBtn" disabled>AI로 확인</button>
+  </div>  <div id="nickSection" style="display:none; margin-top:20px;">
+    <p>2. 카카오톡 닉네임을 입력하세요.</p>
+    <input type="text" id="nicknameInput" placeholder="닉네임" />
+    <button id="submitBtn">제출</button>
+  </div>  <div id="loginPanel">
+    <h2>관리자 로그인</h2>
+    <input type="text" id="adminId" placeholder="아이디" /><br/>
+    <input type="password" id="adminPw" placeholder="비밀번호" /><br/>
+    <button id="loginBtn">로그인</button>
+    <button id="closeLogin">닫기</button>
+  </div>  <div id="managePanel">
+    <h2>관리자 패널</h2>
+    <div id="manageList"></div>
+    <button id="closeManage">닫기</button>
+  </div>  <div id="secretTapArea"></div>  <script>
+    // Firebase 초기화 (compat)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGE7mUDMcA8u4yclWsCtvGbzjojvUgAE",
+      authDomain: "easylogin-63aa9.firebaseapp.com",
+      databaseURL: "https://easylogin-63aa9-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "easylogin-63aa9",
+      storageBucket: "easylogin-63aa9.appspot.com",
+      messagingSenderId: "730585187202",
+      appId: "1:730585187202:web:5196b346c5bc80cdb3459b",
+      measurementId: "G-5GE2CYEQ09"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Gemini API 호출 엔드포인트 (직접)
+    const GEMINI_API_KEY = 'AIzaSyANaWQBRzoPPI-lXeZbgzE6KKniunwj6ZY';
+    const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:classify?key=${GEMINI_API_KEY}`;
+
+    // 파일→Base64
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // AI 검증
+    async function verifyMembership(imageBase64) {
+      const res = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instances:[{ content:imageBase64 }], parameters:{ confidenceThreshold:0.5 } })
+      });
+      if (!res.ok) throw new Error(`API Error ${res.status}`);
+      const data = await res.json();
+      const labels = data.predictions?.[0]?.labels || [];
+      return labels.includes('YouTube Membership');
+    }
+
+    // DOM 요소
+    const screenshotInput = document.getElementById('screenshotInput');
+    const checkBtn = document.getElementById('checkBtn');
+    const nickSection = document.getElementById('nickSection');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const loginPanel = document.getElementById('loginPanel');
+    const managePanel = document.getElementById('managePanel');
+    const manageList = document.getElementById('manageList');
+    const adminId = document.getElementById('adminId');
+    const adminPw = document.getElementById('adminPw');
+    const loginBtn = document.getElementById('loginBtn');
+    const closeLogin = document.getElementById('closeLogin');
+    const closeManage = document.getElementById('closeManage');
+    const secretTapArea = document.getElementById('secretTapArea');
+
+    let currentImageData = null;
+    let tapCount = 0;
+
+    // 파일 선택 활성화
+    screenshotInput.addEventListener('change', () => {
+      checkBtn.disabled = !screenshotInput.files.length;
+    });
+
+    // AI 검증 실행
+    checkBtn.addEventListener('click', async () => {
+      checkBtn.disabled = true;
+      try {
+        const file = screenshotInput.files[0];
+        const b64 = await fileToBase64(file);
+        currentImageData = b64;
+        const ok = await verifyMembership(b64);
+        if (ok) {
+          alert('AI 검증 완료: 멤버십 화면 확인');
+          nickSection.style.display = 'block';
+        } else {
+          alert('AI 검증 실패');
+          checkBtn.disabled = false;
+        }
+      } catch (err) {
+        alert('검증 중 오류 발생: ' + err.message);
+        checkBtn.disabled = false;
+      }
+    });
+
+    // 닉네임 제출
+    submitBtn.addEventListener('click', () => {
+      const nick = nicknameInput.value.trim();
+      if (!nick) return alert('닉네임을 입력하세요.');
+      db.ref('pending').push({ nick, img:currentImageData, ts:Date.now() })
+        .then(() => alert('제출 완료. 관리자 승인 대기 중'))
+        .catch(err => alert('DB 저장 실패: '+err.message));
+      screenshotInput.value = '';
+      nickSection.style.display = 'none';
+      nicknameInput.value = '';
+    });
+
+    // 관리자 패널 호출
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='s') loginPanel.style.display='block';
+    });
+    secretTapArea.addEventListener('click', () => {
+      tapCount++;
+      if (tapCount>=10) loginPanel.style.display='block';
+      setTimeout(() => tapCount=0, 1000);
+    });
+
+    // 로그인 및 관리 목록
+    loginBtn.addEventListener('click', () => {
+      if (adminId.value==='siusiu' && adminPw.value==='123409') {
+        loginPanel.style.display='none';
+        showManagePanel();
+      } else alert('로그인 실패');
+    });
+    closeLogin.addEventListener('click', () => loginPanel.style.display='none');
+    closeManage.addEventListener('click', () => managePanel.style.display='none');
+
+    function showManagePanel() {
+      managePanel.style.display='block';
+      db.ref('pending').on('value', snap => {
+        const data = snap.val()||{};
+        manageList.innerHTML='';
+        Object.entries(data).forEach(([key,item]) => {
+          const card=document.createElement('div'); card.className='card';
+          const img=document.createElement('img'); img.src='data:image/png;base64,'+item.img;
+          const p=document.createElement('p'); p.textContent=item.nick;
+          const btn=document.createElement('button'); btn.textContent='활성화';
+          btn.onclick=()=>{
+            db.ref('pending/'+key).remove()
+              .then(()=>console.log('삭제 성공:',key))
+              .catch(err=>{console.error('삭제 실패:',err);alert('삭제 오류:'+err.message);});
+          };
+          card.append(img,p,btn);
+          manageList.appendChild(card);
+        });
+      });
+    }
+  </script></body>
+</html>
