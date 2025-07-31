@@ -1,40 +1,48 @@
-<!DOCTYPE html><html lang="ko">
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube 멤버십 인증</title>
-  <!-- Firebase compat SDK -->
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>YouTube 멤버십 인증 테스트</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #loginPanel, #managePanel { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); color:#fff; overflow:auto; padding:20px; }
-    .card { background:#fff; color:#000; padding:10px; margin-bottom:10px; border-radius:8px; }
-    .card img { max-width:100px; max-height:100px; display:block; margin-bottom:5px; }
-    #secretTapArea { position: fixed; bottom:0; right:0; width:50px; height:50px; opacity:0; }
+    body { font-family: Arial; margin:20px; }
+    .card { background:#f9f9f9; padding:10px; margin:10px 0; border-radius:6px; color:#333; }
+    .card img { max-width:100px; display:block; margin-bottom:5px; }
+    #loginPanel, #managePanel { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:#fff; padding:20px; overflow:auto; }
+    #secretTapArea { position:fixed; bottom:0; right:0; width:50px; height:50px; opacity:0; }
   </style>
 </head>
 <body>
-  <h1>YouTube 멤버십 인증</h1>  <div id="uploadSection">
-    <p>1. 멤버십 확인용 스크린샷을 업로드하세요.</p>
-    <input type="file" id="screenshotInput" accept="image/*" />
-    <button id="checkBtn" disabled>AI로 확인</button>
-  </div>  <div id="nickSection" style="display:none; margin-top:20px;">
-    <p>2. 카카오톡 닉네임을 입력하세요.</p>
-    <input type="text" id="nicknameInput" placeholder="닉네임" />
+  <h1>YouTube 멤버십 인증</h1>
+  <div id="uploadSection">
+    <p>1. 멤버십 확인용 스크린샷 업로드</p>
+    <input type="file" id="screenshotInput" accept="image/*"/><br>
+    <button id="checkBtn" disabled>AI 검증</button>
+  </div>
+  <div id="nickSection" style="display:none">
+    <p>2. 카카오톡 닉네임 입력</p>
+    <input type="text" id="nicknameInput" placeholder="닉네임"/><br>
     <button id="submitBtn">제출</button>
-  </div>  <div id="loginPanel">
+  </div>
+
+  <div id="loginPanel">
     <h2>관리자 로그인</h2>
-    <input type="text" id="adminId" placeholder="아이디" /><br/>
-    <input type="password" id="adminPw" placeholder="비밀번호" /><br/>
+    <input type="text" id="adminId" placeholder="아이디"/><br>
+    <input type="password" id="adminPw" placeholder="비밀번호"/><br>
     <button id="loginBtn">로그인</button>
     <button id="closeLogin">닫기</button>
-  </div>  <div id="managePanel">
+  </div>
+  <div id="managePanel">
     <h2>관리자 패널</h2>
     <div id="manageList"></div>
     <button id="closeManage">닫기</button>
-  </div>  <div id="secretTapArea"></div>  <script>
-    // Firebase 초기화 (compat)
+  </div>
+  <div id="secretTapArea"></div>
+
+  <script>
+    // Firebase 설정 (당신이 제공한 설정 사용)
     const firebaseConfig = {
       apiKey: "AIzaSyBGE7mUDMcA8u4yclWsCtvGbzjojvUgAE",
       authDomain: "easylogin-63aa9.firebaseapp.com",
@@ -48,42 +56,40 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Gemini API 호출 엔드포인트 (직접)
-    const GEMINI_API_KEY = 'AIzaSyANaWQBRzoPPI-lXeZbgzE6KKniunwj6ZY';
-    const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:classify?key=${GEMINI_API_KEY}`;
+    // Gemini API 키
+    const GEMINI_KEY = 'AIzaSyANaWQBRzoPPI-lXeZbgzE6KKniunwj6ZY';
+    const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:classify?key=${GEMINI_KEY}`;
 
-    // 파일→Base64
     function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = e => res(e.target.result.split(',')[1]);
+        fr.onerror = rej;
+        fr.readAsDataURL(file);
       });
     }
 
-    // AI 검증
-    async function verifyMembership(imageBase64) {
-      const res = await fetch(GEMINI_ENDPOINT, {
+    async function verifyMembership(b64) {
+      const resp = await fetch(GEMINI_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instances:[{ content:imageBase64 }], parameters:{ confidenceThreshold:0.5 } })
+        body: JSON.stringify({ instances:[{ content:b64 }], parameters:{ confidenceThreshold:0.5 } })
       });
-      if (!res.ok) throw new Error(`API Error ${res.status}`);
-      const data = await res.json();
-      const labels = data.predictions?.[0]?.labels || [];
+      if (!resp.ok) throw new Error(`API ${resp.status}`);
+      const j = await resp.json();
+      const labels = j.predictions?.[0]?.labels || [];
       return labels.includes('YouTube Membership');
     }
 
-    // DOM 요소
+    // 요소 선택
     const screenshotInput = document.getElementById('screenshotInput');
     const checkBtn = document.getElementById('checkBtn');
     const nickSection = document.getElementById('nickSection');
     const nicknameInput = document.getElementById('nicknameInput');
     const submitBtn = document.getElementById('submitBtn');
-    const loginPanel = document.getElementById('loginPanel');
     const managePanel = document.getElementById('managePanel');
     const manageList = document.getElementById('manageList');
+    const loginPanel = document.getElementById('loginPanel');
     const adminId = document.getElementById('adminId');
     const adminPw = document.getElementById('adminPw');
     const loginBtn = document.getElementById('loginBtn');
@@ -91,86 +97,92 @@
     const closeManage = document.getElementById('closeManage');
     const secretTapArea = document.getElementById('secretTapArea');
 
-    let currentImageData = null;
+    let currentB64 = '';
     let tapCount = 0;
 
-    // 파일 선택 활성화
     screenshotInput.addEventListener('change', () => {
       checkBtn.disabled = !screenshotInput.files.length;
     });
 
-    // AI 검증 실행
     checkBtn.addEventListener('click', async () => {
       checkBtn.disabled = true;
       try {
         const file = screenshotInput.files[0];
-        const b64 = await fileToBase64(file);
-        currentImageData = b64;
-        const ok = await verifyMembership(b64);
+        currentB64 = await fileToBase64(file);
+        const ok = await verifyMembership(currentB64);
         if (ok) {
-          alert('AI 검증 완료: 멤버십 화면 확인');
+          alert('AI 검증 성공: 멤버십 화면');
           nickSection.style.display = 'block';
         } else {
           alert('AI 검증 실패');
           checkBtn.disabled = false;
         }
-      } catch (err) {
-        alert('검증 중 오류 발생: ' + err.message);
+      } catch(e) {
+        alert('검증 중 오류 발생: ' + e.message);
         checkBtn.disabled = false;
       }
     });
 
-    // 닉네임 제출
     submitBtn.addEventListener('click', () => {
       const nick = nicknameInput.value.trim();
-      if (!nick) return alert('닉네임을 입력하세요.');
-      db.ref('pending').push({ nick, img:currentImageData, ts:Date.now() })
-        .then(() => alert('제출 완료. 관리자 승인 대기 중'))
-        .catch(err => alert('DB 저장 실패: '+err.message));
+      if (!nick) {
+        alert('닉네임 입력');
+        return;
+      }
+      db.ref('pending').push({ nick, img:currentB64, ts:Date.now() })
+        .then(() => alert('제출 완료'))
+        .catch(err => alert('DB 저장 실패: ' + err.message));
       screenshotInput.value = '';
       nickSection.style.display = 'none';
-      nicknameInput.value = '';
+      checkBtn.disabled = true;
     });
 
-    // 관리자 패널 호출
     document.addEventListener('keydown', e => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='s') loginPanel.style.display='block';
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
+        loginPanel.style.display = 'block';
+      }
     });
     secretTapArea.addEventListener('click', () => {
       tapCount++;
-      if (tapCount>=10) loginPanel.style.display='block';
-      setTimeout(() => tapCount=0, 1000);
+      if (tapCount >= 10) loginPanel.style.display = 'block';
+      setTimeout(() => tapCount = 0, 1000);
     });
 
-    // 로그인 및 관리 목록
     loginBtn.addEventListener('click', () => {
-      if (adminId.value==='siusiu' && adminPw.value==='123409') {
-        loginPanel.style.display='none';
-        showManagePanel();
-      } else alert('로그인 실패');
+      if (adminId.value === 'siusiu' && adminPw.value === '123409') {
+        loginPanel.style.display = 'none';
+        showManage();
+      } else {
+        alert('로그인 실패');
+      }
     });
-    closeLogin.addEventListener('click', () => loginPanel.style.display='none');
-    closeManage.addEventListener('click', () => managePanel.style.display='none');
+    closeLogin.addEventListener('click', () => loginPanel.style.display = 'none');
+    closeManage.addEventListener('click', () => managePanel.style.display = 'none');
 
-    function showManagePanel() {
-      managePanel.style.display='block';
-      db.ref('pending').on('value', snap => {
-        const data = snap.val()||{};
-        manageList.innerHTML='';
-        Object.entries(data).forEach(([key,item]) => {
-          const card=document.createElement('div'); card.className='card';
-          const img=document.createElement('img'); img.src='data:image/png;base64,'+item.img;
-          const p=document.createElement('p'); p.textContent=item.nick;
-          const btn=document.createElement('button'); btn.textContent='활성화';
-          btn.onclick=()=>{
-            db.ref('pending/'+key).remove()
-              .then(()=>console.log('삭제 성공:',key))
-              .catch(err=>{console.error('삭제 실패:',err);alert('삭제 오류:'+err.message);});
+    function showManage() {
+      managePanel.style.display = 'block';
+      db.ref('pending').on('value', sn => {
+        const data = sn.val() || {};
+        manageList.innerHTML = '';
+        Object.entries(data).forEach(([k, item]) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          const img = document.createElement('img');
+          img.src = 'data:image/png;base64,' + item.img;
+          const p = document.createElement('p');
+          p.textContent = item.nick;
+          const btn = document.createElement('button');
+          btn.textContent = '활성화';
+          btn.onclick = () => {
+            db.ref('pending/' + k).remove()
+              .then(() => console.log('삭제', k))
+              .catch(e => alert('삭제 실패: ' + e.message));
           };
-          card.append(img,p,btn);
+          card.append(img, p, btn);
           manageList.appendChild(card);
         });
       });
     }
-  </script></body>
+  </script>
+</body>
 </html>
