@@ -29,27 +29,12 @@
     .particle { position:absolute; width:6px; height:6px; background:#ffd700; border-radius:50%; opacity:.8; animation:floatUp .8s ease-out forwards; pointer-events:none; }
     @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
     #ore { width:200px; cursor:pointer; }
-    /* 커스텀 컨텍스트 메뉴 스타일 */
     #custom-menu {
-      position: fixed;
-      display: none;
-      background: rgba(30,30,30,0.95);
-      border: 1px solid #555;
-      border-radius: 6px;
-      padding: 8px 0;
-      z-index: 2000;
-      font-size: 14px;
-      color: #fff;
-      min-width: 160px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      position: fixed; display: none; background: rgba(30,30,30,0.95);
+      border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
-    #custom-menu .menu-item {
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    #custom-menu .menu-item:hover {
-      background: rgba(255,255,255,0.1);
-    }
+    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
+    #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
@@ -131,17 +116,11 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-      authDomain: "siu-studio.firebaseapp.com",
-      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "siu-studio",
-      storageBucket: "siu-studio.appspot.com",
-      messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140e893c31f01",
-      measurementId: "G-1Y090YJDB6"
+      apiKey: "...", authDomain: "...", databaseURL: "...", projectId: "...",
+      storageBucket: "...", messagingSenderId: "...", appId: "...", measurementId: "..."
     };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -149,38 +128,61 @@
 
     let state = {};
     let uid = null;
-    const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[] };
-    const initialWorkerCost=10, workerCostGrowth=1.2;
-    const initialWorkerPower=1, workerPowerGrowth=1.05;
-    const initialConversionCost=50, conversionCostGrowth=1.3;
-    const clickUpgradeCost=15;
+    const defaultData = {
+      resources: 0, coins: 0, clickPower: 1,
+      shipLevel: 1, shipUpgradeCost: 20,
+      workerCount: 0, conversionCount: 0,
+      autoConvertBought: false, ownedPlanets: []
+    };
+    const initialWorkerCost = 10, workerCostGrowth = 1.2;
+    const initialWorkerPower = 1, workerPowerGrowth = 1.05;
+    const initialConversionCost = 50, conversionCostGrowth = 1.3;
+    const clickUpgradeCost = 15;
 
     function getWorkerCost() { return Math.floor(initialWorkerCost * Math.pow(workerCostGrowth, state.workerCount)); }
     function getWorkerPower() { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost() { return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
-
     function convertResources(maxCount = null) {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
-      if (count > 0) {
-        state.resources -= count * 10;
-        state.coins += count;
-      }
+      if (count > 0) { state.resources -= count * 10; state.coins += count; }
     }
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       document.getElementById('auth-error').innerText = '';
       if (user) {
         uid = user.uid;
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('logout-btn').style.display = 'block';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+
         const dataRef = ref(db, `users/${uid}/gameData`);
+        // 한 번만 get() 호출해서 신규 유저인지 확인
+        try {
+          const snapshot = await get(dataRef);
+          if (!snapshot.exists()) {
+            await set(dataRef, defaultData);
+            state = { ...defaultData };
+          } else {
+            state = { ...defaultData, ...snapshot.val() };
+          }
+        } catch(err) {
+          console.error("초기 데이터 로드 에러:", err);
+          // 에러 시에도 최소 defaultData 세팅
+          state = { ...defaultData };
+        }
+        updateUI();
+        renderPlanets();
+
+        // 이후 onValue로 실시간 업데이트(존재할 때만)
         onValue(dataRef, snap => {
-          state = snap.exists() ? { ...defaultData, ...snap.val() } : { ...defaultData };
-          if (!snap.exists()) set(dataRef, defaultData);
-          updateUI(); renderPlanets();
+          if (snap.exists()) {
+            state = { ...defaultData, ...snap.val() };
+            updateUI();
+            renderPlanets();
+          }
         });
+
       } else {
         document.getElementById('auth-container').style.display = 'block';
         document.getElementById('logout-btn').style.display = 'none';
@@ -189,45 +191,41 @@
     });
 
     document.getElementById('login-btn').addEventListener('click', () => {
-      signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
-        .catch(err => document.getElementById('auth-error').innerText = err.message);
+      signInWithEmailAndPassword(auth, email.value, password.value)
+        .catch(err => authError.innerText = err.message);
     });
     document.getElementById('signup-btn').addEventListener('click', e => {
       e.preventDefault();
-      createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
-        .catch(err => document.getElementById('auth-error').innerText = err.message);
+      createUserWithEmailAndPassword(auth, email.value, password.value)
+        .catch(err => authError.innerText = err.message);
     });
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-    function save() { set(ref(db, `users/${uid}/gameData`), state); }
+    function save() { update(ref(db, `users/${uid}/gameData`), state); }
 
     function updateUI() {
-      document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
-      document.getElementById('coins').innerText = `코인: ${Math.floor(state.coins)}`;
-      document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
-      document.getElementById('ship-img').src = `images/ship-level${state.shipLevel}.png`;
-      document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
+      score.innerText = `자원: ${Math.floor(state.resources)}`;
+      coins.innerText = `코인: ${Math.floor(state.coins)}`;
+      shipLevel.innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
+      shipImg.src = `images/ship-level${state.shipLevel}.png`;
+      upgradeShip.disabled = state.coins < state.shipUpgradeCost;
 
-      const clickUp = document.getElementById('click-upgrade');
-      clickUp.innerText = `클릭 업그레이드 (${clickUpgradeCost}코인)`;
-      clickUp.disabled = state.coins < clickUpgradeCost;
-      document.getElementById('click-power').innerText = state.clickPower;
+      clickUpgrade.innerText = `클릭 업그레이드 (${clickUpgradeCost}코인)`;
+      clickUpgrade.disabled = state.coins < clickUpgradeCost;
+      clickPower.innerText = state.clickPower;
 
-      const autoBtn = document.getElementById('auto-convert-buy');
-      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : '자동변환 구매<br>(100코인)';
-      autoBtn.disabled = state.autoConvertBought || state.coins < 100;
+      autoConvertBuy.innerHTML = state.autoConvertBought ? '구매 완료' : '자동변환 구매<br>(100코인)';
+      autoConvertBuy.disabled = state.autoConvertBought || state.coins < 100;
 
-      document.getElementById('convert-button').disabled = state.resources < 10;
+      convertButton.disabled = state.resources < 10;
 
-      const hireWork = document.getElementById('hire-worker');
-      hireWork.innerText = `알바 고용 (${getWorkerCost()}코인)`;
-      hireWork.disabled = state.coins < getWorkerCost();
-      document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower()).toFixed(1);
+      hireWorker.innerText = `알바 고용 (${getWorkerCost()}코인)`;
+      hireWorker.disabled = state.coins < getWorkerCost();
+      resourcePerSec.innerText = (state.workerCount * getWorkerPower()).toFixed(1);
 
-      const hireConv = document.getElementById('hire-conversion');
-      hireConv.innerText = `코인 알바 (${getConversionCost()}코인)`;
-      hireConv.disabled = state.coins < getConversionCost();
-      document.getElementById('coin-per-sec').innerText = state.conversionCount;
+      hireConversion.innerText = `코인 알바 (${getConversionCost()}코인)`;
+      hireConversion.disabled = state.coins < getConversionCost();
+      coinPerSec.innerText = state.conversionCount;
     }
 
     function renderPlanets() {
@@ -242,9 +240,9 @@
         {name:'천왕성',cost:5000000,requiredShipLevel:8},
         {name:'해왕성',cost:20000000,requiredShipLevel:9}
       ];
-      const list = document.getElementById('planet-list');
+      const list = planetList;
       list.innerHTML = '';
-      planets.forEach((p, i) => {
+      planets.forEach((p,i) => {
         const div = document.createElement('div');
         const owned = state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
@@ -276,83 +274,65 @@
         span.style.setProperty('--dy', (Math.random()-1)*100+'px');
         span.style.left = x+'px';
         span.style.top = y+'px';
-        document.getElementById('ore-container').appendChild(span);
+        oreContainer.appendChild(span);
         setTimeout(() => span.remove(), 800);
       }
     }
 
     window.onload = () => {
-      document.getElementById('ore').addEventListener('click', e => {
+      ore.addEventListener('click', e => {
         const rect = e.target.getBoundingClientRect();
-        spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
+        spawnParticles(e.clientX-rect.left, e.clientY-rect.top);
         state.resources += state.clickPower;
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
-      document.getElementById('convert-button').addEventListener('click', () => {
-        convertResources(1); save(); updateUI();
-      });
-      document.getElementById('auto-convert-buy').addEventListener('click', () => {
-        if (!state.autoConvertBought && state.coins >= 100) {
-          state.coins -= 100;
-          state.autoConvertBought = true;
+      convertButton.addEventListener('click', () => { convertResources(1); save(); updateUI(); });
+      autoConvertBuy.addEventListener('click', () => {
+        if (!state.autoConvertBought && state.coins>=100) {
+          state.coins-=100; state.autoConvertBought=true;
           save(); updateUI();
         }
       });
-      document.getElementById('hire-worker').addEventListener('click', () => {
+      hireWorker.addEventListener('click', () => {
         const cost = getWorkerCost();
-        if (state.coins >= cost) {
-          state.coins -= cost; state.workerCount++;
-          save(); updateUI();
-        }
+        if (state.coins>=cost) { state.coins-=cost; state.workerCount++; save(); updateUI(); }
       });
-      document.getElementById('hire-conversion').addEventListener('click', () => {
+      hireConversion.addEventListener('click', () => {
         const cost = getConversionCost();
-        if (state.coins >= cost) {
-          state.coins -= cost; state.conversionCount++;
-          save(); updateUI();
-        }
+        if (state.coins>=cost) { state.coins-=cost; state.conversionCount++; save(); updateUI(); }
       });
-      document.getElementById('upgrade-ship').addEventListener('click', () => {
-        if (state.coins >= state.shipUpgradeCost) {
-          state.coins -= state.shipUpgradeCost;
+      upgradeShip.addEventListener('click', () => {
+        if (state.coins>=state.shipUpgradeCost) {
+          state.coins-=state.shipUpgradeCost;
           state.shipLevel++;
           state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
           save(); updateUI(); renderPlanets();
         }
       });
-      document.getElementById('click-upgrade').addEventListener('click', () => {
-        if (state.coins >= clickUpgradeCost) {
-          state.coins -= clickUpgradeCost;
+      clickUpgrade.addEventListener('click', () => {
+        if (state.coins>=clickUpgradeCost) {
+          state.coins-=clickUpgradeCost;
           state.clickPower++;
           save(); updateUI();
         }
       });
-      document.getElementById('reset-button').addEventListener('click', () => {
+      resetButton.addEventListener('click', () => {
         if (confirm('정말 초기화하시겠습니까?')) {
           state = { ...defaultData };
           save(); updateUI(); renderPlanets();
         }
       });
       document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
         document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
         tab.classList.add('active');
       }));
-
       setInterval(() => {
-        if (state.workerCount > 0) {
-          state.resources += state.workerCount * getWorkerPower();
-        }
-        // --- 여기부터 수정된 부분: 코인 알바는 매 초마다 conversionCount 만큼 바로 코인 생성 ---
-        if (state.conversionCount > 0) {
-          state.coins += state.conversionCount;
-        }
-        // --------------------------------------------------------------------------
-        if (state.autoConvertBought) {
-          convertResources();
-        }
+        if (state.workerCount>0) state.resources += state.workerCount * getWorkerPower();
+        if (state.conversionCount>0) state.coins += state.conversionCount;
+        if (state.autoConvertBought) convertResources();
         save(); updateUI();
       }, 1000);
     };
@@ -367,43 +347,28 @@
       disableCut: true,
       disablePaste: true,
       clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        window.close();
-        next();
-      },
-      ondevtoolclose() {
-        console.warn('DevTools 닫힘 감지됨');
-      }
+      ondevtoolopen(type, next) { window.close(); next(); },
+      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
 
-    // 커스텀 컨텍스트 메뉴 로직
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
-      customMenu.style.top  = `${e.clientY}px`;
+      customMenu.style.top = `${e.clientY}px`;
       customMenu.style.left = `${e.clientX}px`;
       customMenu.style.display = 'block';
     });
     customMenu.addEventListener('click', e => {
       const action = e.target.getAttribute('data-action');
       if (!action) return;
-      switch(action) {
-        case 'menu':
-          window.location.href = 'index.html';
-          break;
-        case 'resume':
-          customMenu.style.display = 'none';
-          break;
-        case 'rank':
-          window.location.href = 'ranking.html';
-          break;
-      }
+      if (action==='menu') window.location.href='index.html';
+      if (action==='resume') customMenu.style.display='none';
+      if (action==='rank') window.location.href='ranking.html';
     });
     window.addEventListener('click', e => {
-      if (!customMenu.contains(e.target)) {
-        customMenu.style.display = 'none';
-      }
+      if (!customMenu.contains(e.target)) customMenu.style.display='none';
     });
   </script>
 </body>
 </html>
+s
