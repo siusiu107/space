@@ -5,100 +5,81 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>404 • 페이지를 찾을 수 없습니다</title>
-  <link href="https://fonts.googleapis.com/css?family=Fredoka+One|Raleway:400,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body {
+    * {
       margin: 0;
       padding: 0;
-      background: #fafafa;
-      color: #333;
-      font-family: 'Raleway', sans-serif;
+      box-sizing: border-box;
+    }
+    body {
       height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: 'Raleway', sans-serif;
+      background: linear-gradient(135deg, #74ABE2 0%, #5563DE 100%);
+      color: #fff;
       text-align: center;
       padding: 1rem;
     }
     #notfound {
-      max-width: 400px;
+      max-width: 480px;
       width: 100%;
+      animation: fadeIn 1s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon {
+      font-size: 6rem;
+      margin-bottom: 0.5rem;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
     }
     h1 {
       font-family: 'Fredoka One', cursive;
-      font-size: 6rem;
-      margin: 0;
-      color: #2d9cdb;
+      font-size: 5rem;
+      margin-bottom: 0.2rem;
     }
     h2 {
-      font-size: 1.5rem;
-      margin: 1rem 0;
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
     }
     p {
-      font-size: 1rem;
+      font-size: 1.1rem;
+      line-height: 1.6;
       margin-bottom: 2rem;
-      line-height: 1.5;
-    }
-    .search-container {
-      display: flex;
-      margin-bottom: 1.5rem;
-    }
-    .search-container input[type="text"] {
-      flex: 1;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border: 2px solid #ddd;
-      border-right: none;
-      border-radius: 4px 0 0 4px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .search-container input[type="text"]:focus {
-      border-color: #2d9cdb;
-    }
-    .search-container button {
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      border: 2px solid #2d9cdb;
-      background: #2d9cdb;
-      color: #fff;
-      cursor: pointer;
-      border-radius: 0 4px 4px 0;
-      transition: background 0.2s, border-color 0.2s;
-    }
-    .search-container button:hover {
-      background: #1b7cb8;
-      border-color: #1b7cb8;
+      opacity: 0.9;
     }
     .btn-home {
       display: inline-block;
-      padding: 0.75rem 1.5rem;
-      background: #2d9cdb;
-      color: #fff;
-      text-decoration: none;
+      padding: 0.75rem 1.75rem;
+      background: #fff;
+      color: #5563DE;
       font-weight: 600;
-      border-radius: 4px;
-      transition: background 0.2s;
+      text-decoration: none;
+      border-radius: 50px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     .btn-home:hover {
-      background: #1b7cb8;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
   </style>
 </head>
 <body>
   <div id="notfound">
+    <div class="icon">🚧</div>
     <h1>404</h1>
-    <h2>죄송해요 😢 찾을 수 없는 페이지예요.</h2>
-    <p>주소가 잘못 입력되었거나, 페이지가 삭제되었을 수 있습니다.</p>
-
-    <!-- 사이트 내부 검색: siusiu107.github.io/space/ -->
-    <form class="search-container" method="get" action="https://www.google.com/search" target="_blank">
-      <!-- 이 값으로 검색 범위를 /space/ 하위로만 제한 -->
-      <input type="hidden" name="sitesearch" value="siusiu107.github.io/space/">
-      <input type="text" name="q" placeholder="사이트 내에서 검색하세요">
-      <button type="submit">검색</button>
-    </form>
-
+    <h2>페이지를 찾을 수 없어요</h2>
+    <p>입력하신 주소가 잘못되었거나, 페이지가 삭제되었을 수 있습니다.</p>
     <a class="btn-home" href="https://siusiu107.github.io/space/">홈으로 돌아가기</a>
   </div>
 </body>
