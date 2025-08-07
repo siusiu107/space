@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌟 축하합니다! 태양계 정복 완료 🌟</title>
+  <!-- 외부에서의 지정 연결 시 405 이동 -->
+  <script>
+    const ref = document.referrer;
+    if (!ref || !ref.startsWith(location.origin)) {
+      location.href = "/405.html";
+    }
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -22,61 +29,7 @@
       backdrop-filter: blur(8px);
       border-radius: 20px;
       padding: 40px;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-      text-align:center;
-      animation: fadeIn 1s ease-out;
-      position: relative;
-    }
-    .planet-image {
-      width:100px;
-      margin: 0 auto 20px;
-      animation: float 3s ease-in-out infinite;
-    }
-    @keyframes float {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-15px); }
-    }
-    h1 {
-      font-size: 2.8em;
-      margin-bottom: 20px;
-      background: linear-gradient(90deg, #ff8a00, #e52e71);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: glow 2s ease-in-out infinite alternate;
-    }
-    p {
-      font-size: 1.1em;
-      margin-bottom: 30px;
-      line-height:1.6;
-    }
-    button {
-      background: radial-gradient(circle at top left, #e52e71, #ff8a00);
-      border: none;
-      padding: 15px 35px;
-      font-size: 1.1em;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      color: #fff;
-      font-weight: 600;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 30px rgba(0,0,0,0.7);
-    }
-    .hidden { display: none; }
-    @keyframes fadeIn { from {opacity:0; transform: translateY(30px);} to {opacity:1; transform: translateY(0);} }
-    @keyframes glow { from {text-shadow: 0 0 10px #ff8a00;} to {text-shadow: 0 0 25px #e52e71;} }
-  </style>
-</head>
-<body>
-  <div class="card" id="content">
-    <!-- 상단 우주 이미지 -->
-    <img src="images/planet-icon.png" alt="Planet Icon" class="planet-image" />
-    <h1 id="title">🎉 축하합니다! 🎉</h1>
+      max-w하합니다! 🎉</h1>
     <p id="message">행성 구매 확인 중...</p>
     <button id="back-btn" class="hidden">게임으로 돌아가기</button>
   </div>
