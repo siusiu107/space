@@ -4,32 +4,114 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌟 축하합니다! 태양계 정복 완료 🌟</title>
-  <!-- 외부에서의 지정 연결 시 405 이동 -->
+
+  <!-- 직접 URL 접근 시 405로 리다이렉트 -->
   <script>
     const ref = document.referrer;
     if (!ref || !ref.startsWith(location.origin)) {
-      location.href = "/405.html";
+      location.href = "/404.html";
     }
   </script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
+      position: relative;
       font-family: 'Montserrat', sans-serif;
-      background: url('images/ending-bg.jpg') center/cover no-repeat;
-      color: #fff;
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
+      background: #000;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* 은하수 배경 효과 */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%; right: -50%; bottom: -50%;
+      background: url('images/galaxy-bg.jpg') center/cover no-repeat;
+      filter: brightness(0.4) blur(8px);
+      animation: rotateBg 60s linear infinite;
+      z-index: 0;
+    }
+    @keyframes rotateBg {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
     .card {
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
+      position: relative;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(12px);
       border-radius: 20px;
-      padding: 40px;
-      max-w하합니다! 🎉</h1>
+      padding: 50px 30px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      z-index: 1;
+      animation: fadeIn 1s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.9);} to { opacity:1; transform: scale(1);} }
+
+    .planet-image {
+      width: 120px;
+      margin: 0 auto 20px;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(10deg); }
+    }
+
+    h1 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #ff8a00, #e52e71);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleGlow 2s ease-in-out infinite alternate;
+    }
+    @keyframes titleGlow {
+      from { text-shadow: 0 0 8px #ff8a00; }
+      to { text-shadow: 0 0 20px #e52e71; }
+    }
+
+    p {
+      font-size: 1rem;
+      margin-bottom: 30px;
+      line-height: 1.6;
+      opacity: 0.9;
+    }
+
+    button {
+      background: linear-gradient(135deg, #e52e71, #ff8a00);
+      border: none;
+      padding: 15px 35px;
+      font-size: 1rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(229,46,113,0.6);
+    }
+    button:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 6px 30px rgba(229,46,113,0.8);
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card" id="content">
+    <img src="images/planet-icon.png" alt="Planet Icon" class="planet-image" />
+    <h1 id="title">🎉 축하합니다! 🎉</h1>
     <p id="message">행성 구매 확인 중...</p>
     <button id="back-btn" class="hidden">게임으로 돌아가기</button>
   </div>
