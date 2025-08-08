@@ -17,7 +17,7 @@
   </script>
 
   <style>
-    body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/image/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
     #auth-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:320px; text-align:center; z-index:1000; }
@@ -30,7 +30,7 @@
     .bar-group span { margin-right:12px; white-space: nowrap; }
     #container { margin:50px auto 20px; width:90%; max-width:640px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
     h1 { font-size:1.6em; margin-bottom:14px; color:#00d4ff; }
-    button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/image/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
+    button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
     #reset-button { background:rgba(255,92,92,0.9)!important; }
     nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; gap:6px; }
@@ -61,13 +61,13 @@
   <!-- 상단 바 -->
   <div id="top-bar">
     <div class="bar-group">
-      <img src="/image/resource-icon.png" alt="Resource" />
+      <img src="/images/resource-icon.png" alt="Resource" />
       <span id="score">자원: 0</span>
-      <img src="/image/coin-icon.png" alt="Coin" />
+      <img src="/images/coin-icon.png" alt="Coin" />
       <span id="coins">코인: 0</span>
     </div>
     <div class="bar-group">
-      <img id="ship-img" src="/image/ship-level1.png" alt="Ship" />
+      <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
     </div>
@@ -86,7 +86,7 @@
 
     <div id="main-content" class="tab-content active">
       <div id="ore-container" style="position:relative; display:inline-block;">
-        <img src="/image/ore.png" id="ore" alt="광석" />
+        <img src="/images/ore.png" id="ore" alt="광석" />
       </div>
       <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
         <button id="convert-button" class="general">10자원 → 1코인</button>
@@ -218,7 +218,7 @@
       document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
       document.getElementById('coins').innerText = `코인: ${Math.floor(state.coins)}`;
       document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
-      document.getElementById('ship-img').src = `/image/ship-level${state.shipLevel}.png`;
+      document.getElementById('ship-img').src = `/images/ship-level${state.shipLevel}.png`;
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
