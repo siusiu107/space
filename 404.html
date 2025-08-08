@@ -26,14 +26,12 @@
   p{font-size:1rem;line-height:1.6;margin-bottom:1.6rem;color:#555}
   .btn-home{display:inline-block;padding:.7rem 1.3rem;background:#2d9cdb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;transition:transform .12s,background .12s}
   .btn-home:hover{transform:translateY(-3px);background:#1b7cb8}
-  /* 로딩 인디케이터 (빠르게) */
   .loader {
     margin: 16px auto 8px; width:44px; height:44px; border-radius:50%;
     border:5px solid rgba(45,156,219,0.16); border-top-color:#2d9cdb;
     animation: spin .6s linear infinite;
   }
   @keyframes spin {to{transform:rotate(360deg)}}
-  /* 숨기기 전환: 거의 눈에 안 보이게 */
   .fade-out { opacity:0; transform: translateY(-6px) scale(.998); pointer-events:none; transition: opacity .06s ease, transform .06s ease; }
   .hint{font-size:0.9rem;color:#777;margin-top:8px}
   .link-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
@@ -60,9 +58,13 @@
 
 <script>
 /*
-  빠른 전환 버전:
-  - 후보 index 경로들을 병렬로 fetch해서 가장 빨리 성공한 것을 사용 (Promise.any)
-  - 페이드아웃 지연을 아주 짧게(≈60ms) 하여 전환이 거의 눈에 띄지 않게 처리
+동작 요약:
+- 만약 요청 경로가 /space/태양계정복 또는 /space/태양계정복/ 이고
+  (document.referrer 가 비어있거나 같은 origin에서 왔다면)
+    => 즉시 /space/index.html (우선) 또는 /index.html 을 fetch해서 바로 문서 교체 (지체 없음).
+  (하지만 document.referrer 가 외부 도메인이라면)
+    => 404 디자인을 유지하고 자동 즉시 전환하지 않음(사용자가 수동으로 이동 가능).
+- 그 외 경로는 기존의 병렬 빠른 전환 로직 사용 (가장 빨리 응답한 index 로 교체).
 */
 
 (async function(){
@@ -71,35 +73,97 @@
   const openDirect = document.getElementById('open-direct');
   const parts = location.pathname.split('/').filter(Boolean);
 
-  // 후보들: 루트, /<repo>/index.html, 현재 상위 index.html
+  // 즉시 처리 대상 경로
+  const immediatePaths = ['/space/태양계정복', '/space/태양계정복/'];
+  const currentPath = location.pathname;
+
+  // referrer 체크: 외부에서 왔는지 확인 (외부이면 true)
+  const ref = document.referrer || '';
+  const isExternalReferrer = ref && !(ref.startsWith(location.origin));
+
+  // helper: fetch text or null
+  async function fetchTextOrNull(url) {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error('bad ' + r.status);
+      return await r.text();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 즉시 대상 경로이면서 "외부 referrer 아님" (즉 직접 접근 또는 같은 origin에서 온 경우)
+  if (immediatePaths.includes(currentPath) && !isExternalReferrer) {
+    hint.textContent = '새로고침/직접접근 감지 — 바로 게임으로 이동합니다…';
+    // 숨김 처리(지체없이)
+    loader.style.display = 'none';
+
+    // 우선 시도: /space/index.html
+    let html = await fetchTextOrNull('/space/index.html');
+    if (!html) html = await fetchTextOrNull('/index.html');
+
+    if (html) {
+      try {
+        document.open();
+        document.write(html);
+        document.close();
+        try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
+        return;
+      } catch (e) {
+        console.error('즉시 문서 교체 실패:', e);
+        try { location.replace('/space/index.html'); } catch(e){ location.replace('/index.html'); }
+        return;
+      }
+    } else {
+      // 즉시 시도 실패 -> 폴백으로 일반 흐름 계속
+      loader.style.display = '';
+      hint.textContent = '즉시 로드에 실패했습니다. 자동 시도를 계속합니다…';
+    }
+  } else if (immediatePaths.includes(currentPath) && isExternalReferrer) {
+    // 즉시 대상 경로이지만 외부에서 링크로 왔다면 404 디자인을 보여주고 자동 즉시 로드는 하지 않음
+    loader.style.display = 'none';
+    hint.textContent = '외부에서 들어오셨습니다 — 이 페이지는 존재하지 않습니다.';
+    openDirect.style.display = 'inline-block';
+    openDirect.href = '/index.html';
+    return; // 아무 자동 전환 없이 디자인 유지
+  }
+
+  // ===== 일반 빠른 병렬 시도 =====
   const candidates = ['/index.html'];
   if (parts.length >= 1) candidates.push('/' + parts[0] + '/index.html');
   const up = location.pathname.replace(/\/+$/, '').replace(/\/[^\/]+$/, '');
   if (up && up !== '/') candidates.push((up.endsWith('/') ? up : up + '/') + 'index.html');
 
-  // 중복 제거
   const uniq = Array.from(new Set(candidates));
 
-  // helper: fetch a url and resolve with {url, text} or reject
   function fetchText(url) {
     return fetch(url, {cache:'no-store'}).then(r => {
-      if (!r.ok) throw new Error('bad status ' + r.status + ' for ' + url);
+      if (!r.ok) throw new Error('bad ' + r.status);
       return r.text().then(t => ({url, text:t}));
     });
   }
 
-  // 빠른 병렬 시도: Promise.any 사용 (가장 먼저 성공한 fetch를 사용)
   let result = null;
   try {
     const promises = uniq.map(u => fetchText(u));
-    // Promise.any returns the first fulfilled promise; if all reject, it throws AggregateError
-    result = await Promise.any(promises);
+    if (typeof Promise.any === 'function') {
+      result = await Promise.any(promises);
+    } else {
+      // Promise.any 없는 환경 폴백
+      result = await (async () => {
+        return await new Promise((resolve, reject) => {
+          let rejs = 0;
+          promises.forEach(p => p.then(resolve).catch(_ => {
+            rejs++;
+            if (rejs === promises.length) reject(new AggregateError([], 'All rejected'));
+          }));
+        });
+      })();
+    }
   } catch (e) {
-    // 모두 실패한 경우 처리
     loader.style.display = 'none';
     hint.textContent = '페이지를 불러오지 못했습니다. 아래 버튼으로 시도해 보세요.';
     openDirect.style.display = 'inline-block';
-    // openDirect에 repo 인덱스(있다면) 추가 힌트
     if (parts.length >= 1) {
       const repoIndex = '/' + parts[0] + '/index.html';
       hint.textContent += ' (또는 ' + repoIndex + ' 시도)';
@@ -107,23 +171,16 @@
     return;
   }
 
-  // 성공: result.url, result.text
   try {
-    // 짧은 전환: 바로 fade-out 클래스 추가 후 아주 짧게 대기
     document.getElementById('notfound').classList.add('fade-out');
-    // 거의 즉시 전환되도록 아주 짧은 지연 (60ms)
     await new Promise(res => setTimeout(res, 60));
-
-    // 문서 교체 — URL은 유지
     document.open();
     document.write(result.text);
     document.close();
     try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
-
   } catch (err) {
     console.error('전환 실패:', err);
-    // 최후 수단: 해당 index로 강제 이동
-    try { location.replace(result.url || '/index.html'); } catch(e){ /* ignore */ }
+    try { location.replace(result.url || '/index.html'); } catch(e){}
   }
 })();
 </script>
