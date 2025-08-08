@@ -149,8 +149,13 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
+    // ===== 수정 사항: 초기 로드 플래그와 onValue 구독 해제 관리 추가 =====
     let state = {};
     let uid = null;
+    let initialDataLoaded = false; // <- 초기 데이터 로드 완료 여부 체크
+    let unsubscribe = null;       // <- onValue 구독 해제 함수 보관
+    // ==============================================================
+
     const defaultData = {
       resources:0, coins:0, clickPower:1,
       shipLevel:1, shipUpgradeCost:20,
@@ -179,11 +184,17 @@
       document.getElementById('auth-error').innerText = '';
       if (user) {
         uid = user.uid;
+        // 로그인 시 초기로딩 전까지 저장을 막기 위해 플래그 초기화
+        initialDataLoaded = false;
+
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('logout-btn').style.display = 'block';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
 
         const dataRef = ref(db, `users/${uid}/gameData`);
+
+        // 이전에 남아있던 구독이 있으면 해제
+        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
 
         // ← 여기에 한 번만 초기화 체크 추가
         get(dataRef)
@@ -194,17 +205,26 @@
           })
           .catch(err => console.error('초기 데이터 확인 에러:', err));
 
-        // 기존 onValue 콜백
-        onValue(dataRef, snap => {
+        // 기존 onValue 콜백 — 구독(구독 해제 함수 저장)
+        unsubscribe = onValue(dataRef, snap => {
           state = snap.exists()
             ? { ...defaultData, ...snap.val() }
             : { ...defaultData };
           if (!snap.exists()) set(dataRef, defaultData);
+
+          // 최초 한 번만 true로 만들어 이후 save()가 원치않게 덮어쓰지 않게 함
+          initialDataLoaded = true;
+
           updateUI();
           renderPlanets();
         });
 
       } else {
+        // 로그아웃 시 상태 초기화 및 구독 해제
+        uid = null;
+        initialDataLoaded = false;
+        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+
         document.getElementById('auth-container').style.display = 'block';
         document.getElementById('logout-btn').style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
@@ -222,7 +242,18 @@
     });
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-    function save() { set(ref(db, `users/${uid}/gameData`), state); }
+    // save() 수정: uid가 없거나 초기 로드 전에는 DB에 덮어쓰지 않도록 방어
+    function save() {
+      if (!uid) {
+        console.warn('save() 호출 - uid 없음, 저장 생략');
+        return;
+      }
+      if (!initialDataLoaded) {
+        console.warn('save() 호출 - 초기 데이터 로드 대기 중, 저장 생략');
+        return;
+      }
+      set(ref(db, `users/${uid}/gameData`), state);
+    }
 
     function updateUI() {
       document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
