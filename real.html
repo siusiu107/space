@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>주소 위장 간단버전</title>
+<script>
+// 주소창 짧게 변경
+window.addEventListener("load", () => {
+    history.replaceState(null, "", "/short-url");
+});
+
+// 사용자가 새로고침하면 error.html로 이동
+window.addEventListener("beforeunload", (e) => {
+    location.href = "/error.html";
+});
+</script>
+</head>
+<body>
+<h1>여긴 실제 페이지</h1>
+<p>주소창엔 /short-url 로 보임. 새로고침 시 에러 페이지로 이동.</p>
+</body>
+</html>
