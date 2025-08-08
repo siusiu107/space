@@ -47,141 +47,71 @@
 
     <div id="state-area">
       <div class="loader" id="loader" title="로딩중" aria-hidden="true"></div>
-      <div class="hint" id="hint">게임을 불러오는 중입니다…</div>
+      <div class="hint" id="hint">상태를 확인 중입니다…</div>
     </div>
 
     <div class="link-row" style="margin-top:18px;">
-      <a class="btn-home" id="home-btn" href="/">홈으로 돌아가기</a>
+      <a class="btn-home" id="home-btn" href="/space/">홈으로 돌아가기</a>
       <a class="small-btn" id="open-direct" href="/index.html" style="display:none">직접 index 열기</a>
     </div>
   </div>
 
 <script>
 /*
-동작 요약:
-- 만약 요청 경로가 /space/태양계정복 또는 /space/태양계정복/ 이고
-  (document.referrer 가 비어있거나 같은 origin에서 왔다면)
-    => 즉시 /space/index.html (우선) 또는 /index.html 을 fetch해서 바로 문서 교체 (지체 없음).
-  (하지만 document.referrer 가 외부 도메인이라면)
-    => 404 디자인을 유지하고 자동 즉시 전환하지 않음(사용자가 수동으로 이동 가능).
-- 그 외 경로는 기존의 병렬 빠른 전환 로직 사용 (가장 빨리 응답한 index 로 교체).
+  정책:
+  - 만약 현재 요청 경로가 정확히 /space/태양계정복(또는 /space/태양계정복/) 이면
+      -> 즉시 /space/game.html 로 이동(location.replace)
+  - 그 외 경로(실제 404)라면 404 디자인을 보여주고 주소창을 /space/error404 로 바꿔 표시(history.replaceState)
 */
 
-(async function(){
-  const loader = document.getElementById('loader');
+(function(){
   const hint = document.getElementById('hint');
+  const loader = document.getElementById('loader');
   const openDirect = document.getElementById('open-direct');
-  const parts = location.pathname.split('/').filter(Boolean);
 
-  // 즉시 처리 대상 경로
-  const immediatePaths = ['/space/태양계정복', '/space/태양계정복/'];
-  const currentPath = location.pathname;
+  // 현재 path, repo(첫 세그먼트)
+  const pathname = location.pathname || '/';
+  const parts = pathname.split('/').filter(Boolean);
+  const repoSegment = parts.length >= 1 ? parts[0] : '';
+  // 우리가 보여주길 원하는 error path: /<repo>/error404  (repo 없으면 /error404)
+  const errorDisplayPath = repoSegment ? `/${repoSegment}/error404` : '/error404';
 
-  // referrer 체크: 외부에서 왔는지 확인 (외부이면 true)
-  const ref = document.referrer || '';
-  const isExternalReferrer = ref && !(ref.startsWith(location.origin));
+  // 사용자가 요청했을 때 즉시 이동시킬 정확한 path(요구대로)
+  const immediatePaths = [
+    '/space/태양계정복',
+    '/space/태양계정복/'
+  ];
 
-  // helper: fetch text or null
-  async function fetchTextOrNull(url) {
+  // 1) 만약 경로가 /space/태양계정복 이면 즉시 game.html로 이동
+  if (immediatePaths.includes(pathname)) {
+    // 즉시 이동: /space/game.html 로 replace
+    // (game.html은 /space/game.html 위치에 올라가 있어야 함)
     try {
-      const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error('bad ' + r.status);
-      return await r.text();
+      // 사용자에게 대기 메시지 잠깐 보여주지 않도록 바로 replace
+      location.replace('/space/game.html');
+      return;
     } catch (e) {
-      return null;
+      console.error('직접 이동 실패:', e);
+      // 폴백: 노출된 404 디자인으로 진행
+      loader.style.display = 'none';
+      hint.textContent = '게임으로 이동할 수 없습니다. 아래 버튼으로 시도해 주세요.';
+      openDirect.style.display = 'inline-block';
+      return;
     }
   }
 
-  // 즉시 대상 경로이면서 "외부 referrer 아님" (즉 직접 접근 또는 같은 origin에서 온 경우)
-  if (immediatePaths.includes(currentPath) && !isExternalReferrer) {
-    hint.textContent = '새로고침/직접접근 감지 — 바로 게임으로 이동합니다…';
-    // 숨김 처리(지체없이)
-    loader.style.display = 'none';
-
-    // 우선 시도: /space/index.html
-    let html = await fetchTextOrNull('/space/index.html');
-    if (!html) html = await fetchTextOrNull('/index.html');
-
-    if (html) {
-      try {
-        document.open();
-        document.write(html);
-        document.close();
-        try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
-        return;
-      } catch (e) {
-        console.error('즉시 문서 교체 실패:', e);
-        try { location.replace('/space/index.html'); } catch(e){ location.replace('/index.html'); }
-        return;
-      }
-    } else {
-      // 즉시 시도 실패 -> 폴백으로 일반 흐름 계속
-      loader.style.display = '';
-      hint.textContent = '즉시 로드에 실패했습니다. 자동 시도를 계속합니다…';
-    }
-  } else if (immediatePaths.includes(currentPath) && isExternalReferrer) {
-    // 즉시 대상 경로이지만 외부에서 링크로 왔다면 404 디자인을 보여주고 자동 즉시 로드는 하지 않음
-    loader.style.display = 'none';
-    hint.textContent = '외부에서 들어오셨습니다 — 이 페이지는 존재하지 않습니다.';
-    openDirect.style.display = 'inline-block';
-    openDirect.href = '/index.html';
-    return; // 아무 자동 전환 없이 디자인 유지
-  }
-
-  // ===== 일반 빠른 병렬 시도 =====
-  const candidates = ['/index.html'];
-  if (parts.length >= 1) candidates.push('/' + parts[0] + '/index.html');
-  const up = location.pathname.replace(/\/+$/, '').replace(/\/[^\/]+$/, '');
-  if (up && up !== '/') candidates.push((up.endsWith('/') ? up : up + '/') + 'index.html');
-
-  const uniq = Array.from(new Set(candidates));
-
-  function fetchText(url) {
-    return fetch(url, {cache:'no-store'}).then(r => {
-      if (!r.ok) throw new Error('bad ' + r.status);
-      return r.text().then(t => ({url, text:t}));
-    });
-  }
-
-  let result = null;
+  // 2) 그 외 실제 404: 404 디자인 유지 + 주소창만 /<repo>/error404 로 보이게 변경
   try {
-    const promises = uniq.map(u => fetchText(u));
-    if (typeof Promise.any === 'function') {
-      result = await Promise.any(promises);
-    } else {
-      // Promise.any 없는 환경 폴백
-      result = await (async () => {
-        return await new Promise((resolve, reject) => {
-          let rejs = 0;
-          promises.forEach(p => p.then(resolve).catch(_ => {
-            rejs++;
-            if (rejs === promises.length) reject(new AggregateError([], 'All rejected'));
-          }));
-        });
-      })();
-    }
+    history.replaceState(null, '', errorDisplayPath + location.hash);
   } catch (e) {
-    loader.style.display = 'none';
-    hint.textContent = '페이지를 불러오지 못했습니다. 아래 버튼으로 시도해 보세요.';
-    openDirect.style.display = 'inline-block';
-    if (parts.length >= 1) {
-      const repoIndex = '/' + parts[0] + '/index.html';
-      hint.textContent += ' (또는 ' + repoIndex + ' 시도)';
-    }
-    return;
+    // 무시
   }
 
-  try {
-    document.getElementById('notfound').classList.add('fade-out');
-    await new Promise(res => setTimeout(res, 60));
-    document.open();
-    document.write(result.text);
-    document.close();
-    try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
-  } catch (err) {
-    console.error('전환 실패:', err);
-    try { location.replace(result.url || '/index.html'); } catch(e){}
-  }
+  // 상태 표시 업데이트
+  loader.style.display = 'none';
+  hint.textContent = '요청하신 페이지를 찾을 수 없습니다. 주소를 확인해 주세요.';
+  openDirect.style.display = 'inline-block';
+  openDirect.href = repoSegment ? `/${repoSegment}/index.html` : '/index.html';
 })();
 </script>
 </body>
