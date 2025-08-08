@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 표시 경로: 항상 /게임 로고/해시 유지 -->
+  <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->
   <script>
     (function(){
       try {
-        // 호스트는 변경 불가. 현재 호스트에서 보이는 경로만 /게임 으로 바꾼다.
         history.replaceState(null, '', '/게임' + (location.hash || ''));
       } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
@@ -21,7 +20,7 @@
     body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/image/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
-    #auth-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:280px; text-align:center; z-index:1000; }
+    #auth-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:320px; text-align:center; z-index:1000; }
     #auth-container input { width:90%; padding:8px; margin:6px 0; border-radius:4px; border:none; }
     #auth-container button { width:95%; padding:10px; margin:6px 0; background:#00aaff; border:none; border-radius:4px; cursor:pointer; color:#fff; }
     #logout-btn { display:none; position:fixed; bottom:20px; right:10px; background:#f44; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; z-index:1001; }
@@ -29,13 +28,13 @@
     .bar-group { display:flex; align-items:center; }
     .bar-group img { width:16px; height:16px; margin-right:4px; }
     .bar-group span { margin-right:12px; white-space: nowrap; }
-    #container { margin:50px auto 20px; width:90%; max-width:600px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
+    #container { margin:50px auto 20px; width:90%; max-width:640px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
     h1 { font-size:1.6em; margin-bottom:14px; color:#00d4ff; }
-    button.general { width:calc(100% - 32px); max-width:280px; padding:10px; margin:6px auto; font-size:13px; background:url('/image/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
+    button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/image/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
     #reset-button { background:rgba(255,92,92,0.9)!important; }
-    nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; }
-    .tab { flex:1 1 45%; margin:4px; padding:8px; background:rgba(51,51,51,0.85); border-radius:6px; cursor:pointer; }
+    nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; gap:6px; }
+    .tab { flex:1 1 45%; min-width:120px; padding:8px; background:rgba(51,51,51,0.85); border-radius:6px; cursor:pointer; text-align:center; }
     .tab.active { background:#00aaff; }
     .tab-content { display:none; margin-top:12px; }
     .tab-content.active { display:block; }
@@ -273,7 +272,7 @@
             state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
             if (state.ownedPlanets.length === planets.length) {
-              window.location.href = 'ending.html';
+              window.location.href = '/ending.html';
             }
           }
         };
@@ -385,9 +384,9 @@
     customMenu.addEventListener('click', e => {
       const action = e.target.getAttribute('data-action');
       if (!action) return;
-      if (action === 'menu') window.location.href = 'index.html';
+      if (action === 'menu') window.location.href = '/index.html';
       if (action === 'resume') customMenu.style.display = 'none';
-      if (action === 'rank') window.location.href = 'ranking.html';
+      if (action === 'rank') window.location.href = '/ranking.html';
     });
     window.addEventListener('click', e => {
       if (!customMenu.contains(e.target)) customMenu.style.display = 'none';
