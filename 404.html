@@ -35,7 +35,6 @@
   .fade-out { opacity:0; transform: translateY(-6px) scale(.998); pointer-events:none; transition: opacity .06s ease, transform .06s ease; }
   .hint{font-size:0.9rem;color:#777;margin-top:8px}
   .link-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
-  .small-btn{padding:.5rem .9rem;border-radius:6px;background:#efefef;color:#333;text-decoration:none;font-weight:600}
 </style>
 </head>
 <body>
@@ -52,66 +51,44 @@
 
     <div class="link-row" style="margin-top:18px;">
       <a class="btn-home" id="home-btn" href="/space/">홈으로 돌아가기</a>
-      <a class="small-btn" id="open-direct" href="/index.html" style="display:none">직접 index 열기</a>
     </div>
   </div>
 
 <script>
 /*
-  정책:
-  - 만약 현재 요청 경로가 정확히 /space/태양계정복(또는 /space/태양계정복/) 이면
-      -> 즉시 /space/game.html 로 이동(location.replace)
-  - 그 외 경로(실제 404)라면 404 디자인을 보여주고 주소창을 /space/error404 로 바꿔 표시(history.replaceState)
+  요구 사항 구현:
+  - 만약 요청 경로가 정확히 /space/태양계정복 또는 /space/태양계정복/ 이면
+      -> 즉시 location.replace('/space/game.html') (바로 이동)
+  - 그 외의 (실제 404) 요청은 404 디자인을 그대로 보여주고
+      -> 주소창은 변경하지 않음 (원래 요청한 경로 유지)
+  - '직접 index 열기' 버튼은 제거됨
+  - game.html 은 /space/game.html 에 업로드되어 있어야 함
 */
 
 (function(){
-  const hint = document.getElementById('hint');
-  const loader = document.getElementById('loader');
-  const openDirect = document.getElementById('open-direct');
-
-  // 현재 path, repo(첫 세그먼트)
   const pathname = location.pathname || '/';
-  const parts = pathname.split('/').filter(Boolean);
-  const repoSegment = parts.length >= 1 ? parts[0] : '';
-  // 우리가 보여주길 원하는 error path: /<repo>/error404  (repo 없으면 /error404)
-  const errorDisplayPath = repoSegment ? `/${repoSegment}/error404` : '/error404';
+  // 즉시 이동할 정확한 경로들
+  const immediatePaths = ['/space/태양계정복', '/space/태양계정복/'];
 
-  // 사용자가 요청했을 때 즉시 이동시킬 정확한 path(요구대로)
-  const immediatePaths = [
-    '/space/태양계정복',
-    '/space/태양계정복/'
-  ];
-
-  // 1) 만약 경로가 /space/태양계정복 이면 즉시 game.html로 이동
+  // 즉시 이동 처리
   if (immediatePaths.includes(pathname)) {
-    // 즉시 이동: /space/game.html 로 replace
-    // (game.html은 /space/game.html 위치에 올라가 있어야 함)
     try {
-      // 사용자에게 대기 메시지 잠깐 보여주지 않도록 바로 replace
+      // 바로 교체(지체 없이)
       location.replace('/space/game.html');
       return;
     } catch (e) {
-      console.error('직접 이동 실패:', e);
-      // 폴백: 노출된 404 디자인으로 진행
-      loader.style.display = 'none';
-      hint.textContent = '게임으로 이동할 수 없습니다. 아래 버튼으로 시도해 주세요.';
-      openDirect.style.display = 'inline-block';
+      // 만약 replace 실패하면 404 디자인 유지 및 안내
+      console.error('즉시 이동 실패:', e);
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('hint').textContent = '게임으로 이동할 수 없습니다. 홈으로 돌아가 주세요.';
       return;
     }
   }
 
-  // 2) 그 외 실제 404: 404 디자인 유지 + 주소창만 /<repo>/error404 로 보이게 변경
-  try {
-    history.replaceState(null, '', errorDisplayPath + location.hash);
-  } catch (e) {
-    // 무시
-  }
-
-  // 상태 표시 업데이트
-  loader.style.display = 'none';
-  hint.textContent = '요청하신 페이지를 찾을 수 없습니다. 주소를 확인해 주세요.';
-  openDirect.style.display = 'inline-block';
-  openDirect.href = repoSegment ? `/${repoSegment}/index.html` : '/index.html';
+  // 그 외: 실제 404 — 그냥 원래 URL 유지하면서 404 디자인 보여줌
+  // (이전 버전에서 주소를 변경하던 부분을 제거하였음)
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('hint').textContent = '요청하신 페이지를 찾을 수 없습니다. 주소를 확인해 주세요.';
 })();
 </script>
 </body>
