@@ -13,7 +13,7 @@
         const parts = location.pathname.split('/').filter(Boolean); // 빈 항목 제거
         let displayPath = '/태양계정복'; // 디폴트(사용자 페이지일 경우)
         if (parts.length >= 1) {
-          // 첫 번째 세그먼트를 repo로 간주: /<repo>/태양계정복
+          // 첫 번째 세그먼트를 repo로 간주: /태양계정복
           displayPath = '/' + parts[0] + '/태양계정복';
         }
         history.replaceState(null, '', displayPath + location.hash);
@@ -435,3 +435,4 @@
   </script>
 </body>
 </html>
+
