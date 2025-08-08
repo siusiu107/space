@@ -4,6 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
+
+  <!-- ★ 해시 방식으로 표시 (새로고침도 작동) -->
+  <script>
+    window.addEventListener('load', () => {
+      try {
+        // 원하는 표시: #/space/태양계정복
+        if (!location.hash || !location.hash.startsWith('#/space/태양계정복')) {
+          // 현재 경로 끝에 해시만 붙여서 표시 (서버 요청 경로는 바뀌지 않음)
+          history.replaceState(null, '', location.pathname + '#/space/태양계정복');
+        }
+      } catch (e) {
+        console.warn('주소 표시 변경 실패:', e);
+      }
+    });
+  </script>
+
   <style>
     body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
