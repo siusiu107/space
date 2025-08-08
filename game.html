@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 경로 고정: 표시 경로를 항상 최상위 /태양계정복/ 로 설정 -->
+  <!-- 표시 경로: 항상 /게임 로고/해시 유지 -->
   <script>
     (function(){
       try {
-        // 항상 최상위에 '/태양계정복/'로 표시 (hash는 유지)
-        history.replaceState(null, '', '/태양계정복/' + (location.hash || ''));
+        // 호스트는 변경 불가. 현재 호스트에서 보이는 경로만 /게임 으로 바꾼다.
+        history.replaceState(null, '', '/게임' + (location.hash || ''));
       } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
       }
@@ -123,7 +123,6 @@
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
 
-  <!-- (이하 기존에 너가 준 Firebase + 게임 로직 스크립트들 전부 동일하게 복사) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -179,7 +178,6 @@
 
         const dataRef = ref(db, `users/${uid}/gameData`);
 
-        // ← 여기에 한 번만 초기화 체크 추가
         get(dataRef)
           .then(snap => {
             if (!snap.exists()) {
@@ -188,7 +186,6 @@
           })
           .catch(err => console.error('초기 데이터 확인 에러:', err));
 
-        // 기존 onValue 콜백
         onValue(dataRef, snap => {
           state = snap.exists()
             ? { ...defaultData, ...snap.val() }
