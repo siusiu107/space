@@ -5,19 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- ★ 해시 방식으로 표시 (새로고침도 작동) -->
+  <!-- ★ 표시 경로 자동 설정: https://<username>.github.io/<repo>/태양계정복 -->
   <script>
-    window.addEventListener('load', () => {
+    (function(){
       try {
-        // 원하는 표시: #/space/태양계정복
-        if (!location.hash || !location.hash.startsWith('#/space/태양계정복')) {
-          // 현재 경로 끝에 해시만 붙여서 표시 (서버 요청 경로는 바뀌지 않음)
-          history.replaceState(null, '', location.pathname + '#/space/태양계정복');
+        // path 예시: "/" (user site) or "/<repo>/" (project site) or "/<repo>/index.html"
+        const parts = location.pathname.split('/').filter(Boolean); // 빈 항목 제거
+        let displayPath = '/태양계정복'; // 디폴트(사용자 페이지일 경우)
+        if (parts.length >= 1) {
+          // 첫 번째 세그먼트를 repo로 간주: /<repo>/태양계정복
+          displayPath = '/' + parts[0] + '/태양계정복';
         }
+        history.replaceState(null, '', displayPath + location.hash);
       } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
       }
-    });
+    })();
   </script>
 
   <style>
@@ -126,6 +129,7 @@
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
 
+  <!-- (이하 기존에 너가 준 Firebase + 게임 로직 스크립트들 전부 동일하게 복사) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
