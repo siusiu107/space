@@ -17,27 +17,25 @@
     width:100%;max-width:420px;padding:2rem;border-radius:10px;
     background:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.08);
     text-align:center;position:relative;overflow:hidden;
-    transition:opacity .45s ease, transform .45s ease;
+    transition:opacity .12s ease, transform .12s ease;
   }
-  .icon{font-size:4.5rem;margin-bottom:0.4rem;display:inline-block;animation:shake 2s infinite ease-in-out;}
+  .icon{font-size:4.5rem;margin-bottom:0.4rem;display:inline-block;animation:shake 1.6s infinite ease-in-out;}
   @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(6deg)}75%{transform:rotate(-6deg)}}
   h1{font-family:'Fredoka One',cursive;font-size:4.8rem;color:#2d9cdb;margin-bottom:0.2rem;text-shadow:2px 2px 8px rgba(0,0,0,0.06)}
   h2{font-size:1.4rem;font-weight:600;margin-bottom:0.6rem}
   p{font-size:1rem;line-height:1.6;margin-bottom:1.6rem;color:#555}
-  .btn-home{display:inline-block;padding:.7rem 1.3rem;background:#2d9cdb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;transition:transform .18s,background .18s}
+  .btn-home{display:inline-block;padding:.7rem 1.3rem;background:#2d9cdb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;transition:transform .12s,background .12s}
   .btn-home:hover{transform:translateY(-3px);background:#1b7cb8}
-  /* 로딩 인디케이터 */
+  /* 로딩 인디케이터 (빠르게) */
   .loader {
-    margin: 18px auto 8px; width:48px; height:48px; border-radius:50%;
-    border:5px solid rgba(45,156,219,0.18); border-top-color:#2d9cdb;
-    animation: spin 1s linear infinite;
+    margin: 16px auto 8px; width:44px; height:44px; border-radius:50%;
+    border:5px solid rgba(45,156,219,0.16); border-top-color:#2d9cdb;
+    animation: spin .6s linear infinite;
   }
   @keyframes spin {to{transform:rotate(360deg)}}
-  /* 숨기기 전환 */
-  .fade-out { opacity:0; transform: translateY(-12px) scale(.995); pointer-events:none; }
-  /* 작은 안내 텍스트 */
+  /* 숨기기 전환: 거의 눈에 안 보이게 */
+  .fade-out { opacity:0; transform: translateY(-6px) scale(.998); pointer-events:none; transition: opacity .06s ease, transform .06s ease; }
   .hint{font-size:0.9rem;color:#777;margin-top:8px}
-  /* 링크 행 */
   .link-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
   .small-btn{padding:.5rem .9rem;border-radius:6px;background:#efefef;color:#333;text-decoration:none;font-weight:600}
 </style>
@@ -49,10 +47,9 @@
     <h2>페이지를 찾을 수 없어요</h2>
     <p>입력하신 주소가 잘못되었거나,<br>페이지가 삭제되었을 수 있습니다.</p>
 
-    <!-- 로더/상태 -->
     <div id="state-area">
       <div class="loader" id="loader" title="로딩중" aria-hidden="true"></div>
-      <div class="hint" id="hint">게임을 불러오는 중입니다… 잠시만 기다려 주세요.</div>
+      <div class="hint" id="hint">게임을 불러오는 중입니다…</div>
     </div>
 
     <div class="link-row" style="margin-top:18px;">
@@ -63,107 +60,70 @@
 
 <script>
 /*
-  동작:
-  1) 여러 후보 경로에서 index.html을 시도(fetch)
-     - /index.html
-     - /<repo>/index.html   (첫 path segment 사용)
-     - 현재 경로의 상위 index.html (fallback)
-  2) 가져오면 404 디자인을 페이드아웃 시킨 뒤 document.write로 index.html 전체를 교체
-     (이 방식은 index.html 내의 스크립트/모듈이 정상 실행되도록 함)
-  3) 실패하면 404 디자인을 유지하고 사용자에게 수동 링크 제공
+  빠른 전환 버전:
+  - 후보 index 경로들을 병렬로 fetch해서 가장 빨리 성공한 것을 사용 (Promise.any)
+  - 페이드아웃 지연을 아주 짧게(≈60ms) 하여 전환이 거의 눈에 띄지 않게 처리
 */
 
 (async function(){
   const loader = document.getElementById('loader');
   const hint = document.getElementById('hint');
   const openDirect = document.getElementById('open-direct');
-  const homeBtn = document.getElementById('home-btn');
-
-  // 유틸: fetch text, 실패 시 null 반환
-  async function tryFetchText(url){
-    try {
-      const r = await fetch(url, {cache: 'no-store'});
-      if (!r.ok) throw new Error('not ok: ' + url + ' ('+r.status+')');
-      return await r.text();
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // 후보 경로 배열 생성
-  const candidates = [];
-  // 1) 루트 index
-  candidates.push('/index.html');
-
-  // 2) repo 형태: /<first-segment>/index.html
   const parts = location.pathname.split('/').filter(Boolean);
-  if (parts.length >= 1) {
-    candidates.push('/' + parts[0] + '/index.html');
-  }
 
-  // 3) 상위 디렉토리 index (예: /repo/space/... -> /repo/index.html)
+  // 후보들: 루트, /<repo>/index.html, 현재 상위 index.html
+  const candidates = ['/index.html'];
+  if (parts.length >= 1) candidates.push('/' + parts[0] + '/index.html');
   const up = location.pathname.replace(/\/+$/, '').replace(/\/[^\/]+$/, '');
-  if (up && up !== '/') {
-    candidates.push((up.endsWith('/') ? up : up + '/') + 'index.html');
-  }
+  if (up && up !== '/') candidates.push((up.endsWith('/') ? up : up + '/') + 'index.html');
 
   // 중복 제거
-  const tried = [];
-  const uniqCandidates = candidates.filter(c => { if (tried.includes(c)) return false; tried.push(c); return true; });
+  const uniq = Array.from(new Set(candidates));
 
-  // 시도 시작
-  hint.textContent = '게임 파일을 찾는 중입니다…';
-  let foundHtml = null;
-  let foundUrl = null;
-  for (const url of uniqCandidates) {
-    hint.textContent = `index.html 시도: ${url}`;
-    const txt = await tryFetchText(url);
-    if (txt) { foundHtml = txt; foundUrl = url; break; }
+  // helper: fetch a url and resolve with {url, text} or reject
+  function fetchText(url) {
+    return fetch(url, {cache:'no-store'}).then(r => {
+      if (!r.ok) throw new Error('bad status ' + r.status + ' for ' + url);
+      return r.text().then(t => ({url, text:t}));
+    });
   }
 
-  if (!foundHtml) {
-    // 실패: 안내 및 직접 열기 링크 표시
+  // 빠른 병렬 시도: Promise.any 사용 (가장 먼저 성공한 fetch를 사용)
+  let result = null;
+  try {
+    const promises = uniq.map(u => fetchText(u));
+    // Promise.any returns the first fulfilled promise; if all reject, it throws AggregateError
+    result = await Promise.any(promises);
+  } catch (e) {
+    // 모두 실패한 경우 처리
     loader.style.display = 'none';
     hint.textContent = '페이지를 불러오지 못했습니다. 아래 버튼으로 시도해 보세요.';
     openDirect.style.display = 'inline-block';
-    // openDirect href는 먼저 /index.html로, 만약 repo형태면 그쪽도 시도하게 함
-    openDirect.href = '/index.html';
-    // 만약 첫 segment가 있으면 repo index 링크도 제공
+    // openDirect에 repo 인덱스(있다면) 추가 힌트
     if (parts.length >= 1) {
       const repoIndex = '/' + parts[0] + '/index.html';
-      // 홈 버튼을 repoIndex로 바꿔도 되지만 기본은 루트 유지
-      // 대신 hint에 repoIndex 제안
       hint.textContent += ' (또는 ' + repoIndex + ' 시도)';
-      openDirect.href = '/index.html'; // 기본
     }
     return;
   }
 
-  // 성공: foundHtml에 index.html 텍스트 담겨있음
-  // 부드러운 전환: 404 박스 페이드아웃 후 document.write로 교체
+  // 성공: result.url, result.text
   try {
-    hint.textContent = '게임을 불러왔습니다. 바로 이동합니다…';
+    // 짧은 전환: 바로 fade-out 클래스 추가 후 아주 짧게 대기
     document.getElementById('notfound').classList.add('fade-out');
-
-    // 페이드 아웃 애니메이션이 끝날 때까지 잠깐 대기 (450ms 기준)
-    await new Promise(res => setTimeout(res, 480));
+    // 거의 즉시 전환되도록 아주 짧은 지연 (60ms)
+    await new Promise(res => setTimeout(res, 60));
 
     // 문서 교체 — URL은 유지
-    try {
-      document.open();
-      document.write(foundHtml);
-      document.close();
-      // history는 그대로 유지해서 사용자가 본래 요청한 URL이 주소창에 남게 함
-      try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
-    } catch (e) {
-      // 안전하게 강제 리디렉트 (최후 수단)
-      console.error('document.write 실패:', e);
-      location.replace(foundUrl || '/index.html');
-    }
-  } catch (e) {
-    console.error('전환 중 오류:', e);
-    // 오류시 안전하게 index로 이동
-    location.replace(foundUrl || '/index.html');
+    document.open();
+    document.write(result.text);
+    document.close();
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch(e){}
+
+  } catch (err) {
+    console.error('전환 실패:', err);
+    // 최후 수단: 해당 index로 강제 이동
+    try { location.replace(result.url || '/index.html'); } catch(e){ /* ignore */ }
   }
 })();
 </script>
