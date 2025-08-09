@@ -1,6 +1,15 @@
 <!DOCTYPE html><html lang="ko">
 <!-- SEO 최적화(head) 포함 전체 HTML -->
 <head>
+   <script>
+    (function(){
+      try {
+        history.replaceState(null, '', '/메인메뉴' + (location.hash || ''));
+      } catch (e) {
+        console.warn('주소 표시 변경 실패:', e);
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">  <!-- 기본 메타 -->  <title>🌌 태양계 정복 - 우주 생존 클리커</title>
