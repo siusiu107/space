@@ -125,7 +125,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -143,6 +143,8 @@
 
     let state = {};
     let uid = null;
+    let dataRef = null;
+    let localLastWrite = 0; // 로컬에서 마지막으로 기록한 타임스탬프 (밀리초)
     const defaultData = {
       resources:0, coins:0, clickPower:1,
       shipLevel:1, shipUpgradeCost:20,
@@ -167,34 +169,74 @@
       }
     }
 
-    onAuthStateChanged(auth, user => {
+    // 안전 초기화: 거래(트랜잭션)로 없을 때만 기본값 넣기 (경합 방지)
+    async function ensureInitialData(refPath) {
+      try {
+        await runTransaction(refPath, current => {
+          if (current === null) {
+            return { ...defaultData, _lastUpdated: Date.now() };
+          }
+          return current; // 이미 있으면 변경하지 않음
+        });
+      } catch (err) {
+        console.error('초기화 트랜잭션 에러:', err);
+      }
+    }
+
+    // save: update() 사용. 전체를 덮어쓰기보다 병합형 업데이트로 다른 필드 손실 방지.
+    function save() {
+      if (!uid || !dataRef) return;
+      // 시간 기록
+      const now = Date.now();
+      state._lastUpdated = now;
+      localLastWrite = now;
+      // 복제해서 보낼 객체 생성 (숨겨진 필드도 전송)
+      const toSave = { ...state };
+      // update는 병합이라 안전함.
+      update(dataRef, toSave).catch(err => console.error('저장 에러:', err));
+    }
+
+    onAuthStateChanged(auth, async user => {
       document.getElementById('auth-error').innerText = '';
       if (user) {
         uid = user.uid;
+        dataRef = ref(db, `users/${uid}/gameData`);
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('logout-btn').style.display = 'block';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
 
-        const dataRef = ref(db, `users/${uid}/gameData`);
+        // 안전하게 초기화 (경합 없도록 transaction 사용)
+        await ensureInitialData(dataRef);
 
-        get(dataRef)
-          .then(snap => {
-            if (!snap.exists()) {
-              return set(dataRef, defaultData);
-            }
-          })
-          .catch(err => console.error('초기 데이터 확인 에러:', err));
-
+        // 실시간 리스너: 서버의 마지막 갱신 시간(_lastUpdated)을 기준으로 로컬 덮어쓰기 제어
         onValue(dataRef, snap => {
-          state = snap.exists()
-            ? { ...defaultData, ...snap.val() }
-            : { ...defaultData };
-          if (!snap.exists()) set(dataRef, defaultData);
+          const server = snap.exists() ? snap.val() : null;
+          if (!server) {
+            // 서버에 데이터가 전혀 없는 경우(희귀) — 이미 ensureInitialData로 처리되었을 것
+            state = { ...defaultData };
+            updateUI();
+            renderPlanets();
+            return;
+          }
+          const serverLast = server._lastUpdated || 0;
+          // 서버가 더 최신이면 서버 데이터로 교체
+          if (serverLast > localLastWrite) {
+            // 서버 데이터가 최신이므로 그대로 반영 (기본값과 병합)
+            state = { ...defaultData, ...server };
+            // localLastWrite는 건드리지 않음 (이미 서버가 최신)
+          } else {
+            // 로컬이 더 최근이거나 동기화 중: 서버에서 일부 필드만 온 경우가 있으므로 병합
+            state = { ...defaultData, ...server, ...state };
+            // 이 경우에도 _lastUpdated는 이미 localLastWrite가 최신일 수 있음
+          }
+          // UI 갱신
           updateUI();
           renderPlanets();
         });
 
       } else {
+        uid = null;
+        dataRef = null;
         document.getElementById('auth-container').style.display = 'block';
         document.getElementById('logout-btn').style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
@@ -211,8 +253,6 @@
         .catch(err => authError.innerText = err.message);
     });
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-
-    function save() { set(ref(db, `users/${uid}/gameData`), state); }
 
     function updateUI() {
       document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
@@ -259,7 +299,7 @@
       list.innerHTML = '';
       planets.forEach((p, i) => {
         const div = document.createElement('div');
-        const owned = state.ownedPlanets.includes(i);
+        const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button');
@@ -269,6 +309,7 @@
         btn.onclick = () => {
           if (state.coins >= p.cost) {
             state.coins -= p.cost;
+            if (!state.ownedPlanets) state.ownedPlanets = [];
             state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
             if (state.ownedPlanets.length === planets.length) {
