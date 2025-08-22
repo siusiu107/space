@@ -1,68 +1,125 @@
-<!DOCTYPE html><html lang="ko">
-<!-- SEO 최적화(head) 포함 전체 HTML -->
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-   <script>
-    (function(){
-      try {
-        history.replaceState(null, '', '/메인메뉴' + (location.hash || ''));
-      } catch (e) {
-        console.warn('주소 표시 변경 실패:', e);
-      }
-    })();
-  </script>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">  <!-- 기본 메타 -->  <title>🌌 태양계 정복 - 우주 생존 클리커</title>
-  <meta name="description" content="태양계 정복 게임에서 자원을 모으고 우주선을 강화하세요! '태양계 정복'의 메인 메뉴 페이지입니다.">
-  <meta name="keywords" content="태양계 정복 게임, 우주 클릭커, HTML5 우주 게임, 생존 클릭커, 태양계정복, 태양계 정복, html게임, 웹게임, 웹 게임, 태양계 정복 - 우주 생존 클리커">
-  <meta name="author" content="SIU Studio">
-  <meta name="robots" content="index, follow">  <!-- Canonical URL -->  <link rel="canonical" href="https://siusiu107.github.io/space/">  <!-- Favicon -->  <link rel="icon" href="/space/favicon.ico" type="image/x-icon">  <!-- Open Graph -->  <meta property="og:type" content="website">
-  <meta property="og:title" content="태양계 정복 - 우주 생존 클릭커">
-  <meta property="og:description" content="태양계 정복 게임에서 자원을 모으고 우주선을 강화하세요!">
-  <meta property="og:url" content="https://siusiu107.github.io/space/">
-  <meta property="og:image" content="https://siusiu107.github.io/space/assets/index-og.jpg">
-  <meta property="og:site_name" content="SIU Studio">  <!-- Twitter Card -->  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="태양계 정복 - 우주 생존 클릭커">
-  <meta name="twitter:description" content="태양계 정복 게임에서 자원을 모으고 우주선을 강화하세요!">
-  <meta name="twitter:image" content="https://siusiu107.github.io/space/assets/index-twitter.jpg">
-  <meta name="twitter:site" content="@SIUStudio">  <!-- JSON-LD 구조화 데이터 -->  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "VideoGame",
-    "name": "태양계 정복",
-    "url": "https://siusiu107.github.io/space/",
-    "description": "태양계 정복 게임에서 자원을 모으고 우주선을 강화하세요!",
-    "publisher": {
-      "@type": "Organization",
-      "name": "SIU Studio",
-      "url": "https://siusiu107.github.io/space/"
-    },
-    "image": "https://siusiu107.github.io/space/assets/index-og.jpg",
-    "genre": "Clicker, Survival",
-    "operatingSystem": "Web Browser"
-  }
-  </script>  <!-- Google Font -->  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>태양계 정복 - 메인 메뉴</title>
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
     .container { display: flex; flex-direction: row; height: 100vh; }
-    .sidebar { width: 250px; background: rgba(10,10,30,0.8); display: flex; flex-direction: column; align-items: center; padding-top: 40px; gap: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
-    .sidebar button { width: 80%; padding: 12px 0; color: #fff; background: rgba(255,255,255,0.1); border: none; border-radius: 30px; cursor: pointer; transition: background 0.3s, transform 0.2s; }
-    .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
-    .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
-    .content::after { content: ''; position: absolute; top:0;left:0;right:0;bottom:0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
-    .overlay { position: absolute; top:50%;left:50%; transform: translate(-50%,-50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
-    .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; }
-    .overlay a.start-btn { display:inline-block; padding:16px 32px; font-size:20px; background:linear-gradient(45deg,#f4b400,#ffea00); color:#000; text-decoration:none; border-radius:50px; box-shadow:0 0 15px rgba(244,180,0,0.7); transition: box-shadow 0.3s, transform 0.2s; }
-    .overlay a.start-btn:hover { box-shadow:0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); }
-    .panel { position:absolute; top:50%;left:50%; transform: translate(-50%,-50%); background: rgba(20,20,40,0.9); padding:30px; border-radius:10px; width:90%; max-width:500px; display:none; z-index:2; box-shadow:0 0 20px rgba(0,0,0,0.7); }
-    .panel.active { display:block; }
-    .panel h2 { font-size:24px; margin-bottom:10px; color:#f4b400; }
-    .panel p, .panel ul { color:#ddd; font-size:14px; margin-bottom:15px; }
-    .panel ul { margin-left:20px; }
-    .panel .close-btn { display:block; margin:0 auto; padding:10px 20px; background:#f44336; color:#fff; border:none; border-radius:5px; cursor:pointer; transition: background 0.3s; }
-    .panel .close-btn:hover { background:#e53935; }
-    @media(max-width:768px) { .container { flex-direction:column; } .sidebar { width:100%; flex-direction:row; justify-content:space-around; padding:10px 0; box-shadow:0 5px 15px rgba(0,0,0,0.5); } .sidebar button { padding:10px 15px; font-size:14px; } .overlay h1 { font-size:36px; } .overlay a.start-btn { padding:12px 24px; font-size:18px; } .panel { width:95%; } }
+    .sidebar {
+      width: 250px;
+      background: rgba(10, 10, 30, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 40px;
+      gap: 20px;
+      box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    }
+    .sidebar button {
+      width: 80%;
+      padding: 12px 0;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .sidebar button:hover {
+      background: rgba(244,180,0,0.8);
+      transform: scale(1.05);
+      color: #000;
+    }
+    .content {
+      flex: 1;
+      position: relative;
+      background: url('background.jpg') center/cover no-repeat;
+    }
+    .content::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8));
+    }
+    .overlay {
+      position: absolute;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      text-align: center;
+      color: #fff;
+      z-index: 1;
+      padding: 0 10px;
+    }
+    .overlay h1 {
+      font-size: 64px;
+      text-shadow: 0 0 10px rgba(244,180,0,0.8);
+      margin-bottom: 20px;
+    }
+    .overlay a.start-btn {
+      display: inline-block;
+      padding: 16px 32px;
+      font-size: 20px;
+      background: linear-gradient(45deg, #f4b400, #ffea00);
+      color: #000;
+      text-decoration: none;
+      border-radius: 50px;
+      box-shadow: 0 0 15px rgba(244,180,0,0.7);
+      transition: box-shadow 0.3s, transform 0.2s;
+    }
+    .overlay a.start-btn:hover {
+      box-shadow: 0 0 25px rgba(255,234,0,0.9);
+      transform: translateY(-5px);
+    }
+    .panel {
+      position: absolute;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(20,20,40,0.9);
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%; max-width: 500px;
+      display: none;
+      z-index: 2;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    }
+    .panel.active { display: block; }
+    .panel h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #f4b400;
+    }
+    .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
+    .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
+    .panel ul li { margin-bottom: 8px; font-size: 14px; }
+    .panel .close-btn {
+      display: block;
+      margin: 0 auto;
+      padding: 10px 20px;
+      background: #f44336;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .panel .close-btn:hover { background: #e53935; }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      .sidebar {
+        width: 100%; flex-direction: row; justify-content: space-around;
+        padding: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      }
+      .sidebar button { width: auto; padding: 10px 15px; font-size: 14px; }
+      .overlay h1 { font-size: 36px; }
+      .overlay a.start-btn { padding: 12px 24px; font-size: 18px; }
+      .panel { width: 95%; }
+    }
   </style>
 </head>
 <body>
@@ -74,35 +131,107 @@
     <div class="content">
       <div class="overlay">
         <h1>태양계 정복</h1>
-        <a href="game.html" class="start-btn">게임 시작</a>
+        <!-- 변경: href를 제거하고 id="start-btn" 추가하여 팝업으로 열도록 함 -->
+        <a href="#" id="start-btn" class="start-btn">게임 시작</a>
       </div>
       <div class="panel" id="license-panel">
         <h2>라이센스 정보</h2>
-        <p>© 2025. SIU Studio All rights reserved.</p>
-        <p>본 게임의 소스 코드 및 리소스(이미지, 사운드, 스크립트 등)는 제작자의 서면 허가 없이 복사, 수정, 리버스 엔지니어링, 재배포, 상업적 이용을 금지합니다.</p>
-        <p>단, 개인 비상업적 용도의 게임 플레이 영상 녹화 및 게시(YouTube, Twitch 등)는 허용됩니다.</p>
+        <p>© 2025 SIU Studio. All rights reserved.</p>
+        <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
+        <ul>
+          <li>복사(Copying)</li>
+          <li>수정(Modification)</li>
+          <li>리버스 엔지니어링(Reverse Engineering)</li>
+          <li>재배포(Redistribution)</li>
+          <li>상업적 이용(Commercial Use)</li>
+        </ul>
+        <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
+        <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
         <button class="close-btn" data-target="license-panel">닫기</button>
       </div>
       <div class="panel" id="contact-panel">
         <h2>Contact Us</h2>
-        <p>문의: <a href="mailto:siustudio@zohomail.com" style="color:#f4b400; text-decoration:none;">siustudio@zohomail.com</a></p>
+        <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
+        <p><a href="mailto:siustudio@zohomail.com" style="color: #f4b400; text-decoration: none;">siustudio@zohomail.com</a></p>
         <button class="close-btn" data-target="contact-panel">닫기</button>
       </div>
     </div>
   </div>
+
   <script>
-    document.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener('click', () => {
-      document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
-    }));
+    // 기존 패널 제어 스크립트 (원본 유지)
+    document.querySelectorAll('.close-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
+      });
+    });
     document.getElementById('show-license').addEventListener('click', () => document.getElementById('license-panel').classList.add('active'));
     document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
   </script>
+
+  <!-- 추가된 스크립트: 게임 시작을 팝업으로 여는 동작만 추가 -->
+  <script>
+    (function() {
+      const GAME_POPUP_WIDTH = 1024;   // 팝업 너비(px)
+      const GAME_POPUP_HEIGHT = 768;   // 팝업 높이(px)
+      const POPUP_NAME = 'gameWindow'; // 팝업 창 이름 (재사용 가능)
+
+      function openGamePopup(url) {
+        // 중앙 위치 계산
+        const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
+        const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
+
+        const opts = [
+          `width=${GAME_POPUP_WIDTH}`,
+          `height=${GAME_POPUP_HEIGHT}`,
+          `left=${left}`,
+          `top=${top}`,
+          'resizable=yes',
+          'scrollbars=yes',
+          'status=no',
+          'toolbar=no',
+          'menubar=no'
+        ].join(',');
+
+        const popup = window.open(url, POPUP_NAME, opts);
+
+        // 팝업 차단 여부 체크
+        if (!popup || popup.closed === undefined) {
+          // 팝업이 차단됐을 가능성
+          alert('팝업이 차단되었거나 열 수 없습니다. 브라우저의 팝업 차단 설정을 확인하세요.');
+          return null;
+        }
+
+        // 포커스 이동
+        try { popup.focus(); } catch (e) { /* 무시 */ }
+        return popup;
+      }
+
+      document.getElementById('start-btn').addEventListener('click', function (e) {
+        e.preventDefault();
+        // game.html을 팝업으로 엽니다. 필요하면 경로를 바꾸세요.
+        openGamePopup('game.html');
+      });
+    })();
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
-    DisableDevtool({ disableMenu:true, disableSelect:true, disableCopy:true, disableCut:true, disablePaste:true,
-      clearIntervalWhenDevOpenTrigger:true,
-      ondevtoolopen(type,next){ window.close(); next(); },
-      ondevtoolclose(){ console.warn('DevTools 닫힘 감지됨'); }
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        // 즉시 사이트 닫기
+        window.close();
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
     });
   </script>
 </body>
