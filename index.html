@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>태양계 정복 - 메인 메뉴</title>
+   <script>
+    (function(){
+      try {
+        history.replaceState(null, '', '/main' + (location.hash || ''));
+      } catch (e) {
+        console.warn('주소 표시 변경 실패:', e);
+      }
+    })();
+  </script>
+
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
   <style>
