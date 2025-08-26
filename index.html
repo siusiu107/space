@@ -1,232 +1,737 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>태양계 정복 - 메인 메뉴</title>
-   <script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>    <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->    <script>
     (function(){
       try {
-        history.replaceState(null, '', '/main' + (location.hash || ''));
+        history.replaceState(null, '', '/게임' + (location.hash || ''));
       } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
       }
     })();
-  </script>
+  </script>    <style>
+    body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    img { display:block; }
+    #top-bar, #container { visibility: hidden; }
+    #auth-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:320px; text-align:center; z-index:1000; }
+    #auth-container input { width:90%; padding:8px; margin:6px 0; border-radius:4px; border:none; }
+    #auth-container button { width:95%; padding:10px; margin:6px 0; background:#00aaff; border:none; border-radius:4px; cursor:pointer; color:#fff; }
+    #logout-btn { display:none; position:fixed; bottom:20px; right:10px; background:#f44; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; z-index:1001; }
+    #top-bar { position: fixed; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: center; background: rgba(30,30,30,0.85); padding:6px 10px; border-radius:8px; font-size:12px; z-index:1000; }
+    .bar-group { display:flex; align-items:center; }
+    .bar-group img { width:16px; height:16px; margin-right:4px; }
+    .bar-group span { margin-right:12px; white-space: nowrap; }
+    #container { margin:50px auto 20px; width:90%; max-width:640px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
+    h1 { font-size:1.6em; margin-bottom:14px; color:#00d4ff; }
+    button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
+    button.general:disabled { opacity:0.5; cursor:not-allowed; }
+    #reset-button { background:rgba(255,92,92,0.9)!important; }
+    nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; gap:6px; }
+    .tab { flex:1 1 45%; min-width:120px; padding:8px; background:rgba(51,51,51,0.85); border-radius:6px; cursor:pointer; text-align:center; }
+    .tab.active { background:#00aaff; }
+    .tab-content { display:none; margin-top:12px; }
+    .tab-content.active { display:block; }
+    .particle { position:absolute; width:6px; height:6px; background:#ffd700; border-radius:50%; opacity:.8; animation:floatUp .8s ease-out forwards; pointer-events:none; }
+    @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
+    #ore { width:200px; cursor:pointer; }
+    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.95); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
+    #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body, html { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
-    .container { display: flex; flex-direction: row; height: 100vh; }
-    .sidebar {
-      width: 250px;
-      background: rgba(10, 10, 30, 0.8);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 40px;
-      gap: 20px;
-      box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-    }
-    .sidebar button {
-      width: 80%;
-      padding: 12px 0;
-      text-align: center;
-      text-decoration: none;
-      color: #fff;
-      background: rgba(255,255,255,0.1);
-      border: none;
-      border-radius: 30px;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.2s;
-    }
-    .sidebar button:hover {
-      background: rgba(244,180,0,0.8);
-      transform: scale(1.05);
-      color: #000;
-    }
-    .content {
-      flex: 1;
-      position: relative;
-      background: url('background.jpg') center/cover no-repeat;
-    }
-    .content::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8));
-    }
-    .overlay {
-      position: absolute;
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      text-align: center;
-      color: #fff;
-      z-index: 1;
-      padding: 0 10px;
-    }
-    .overlay h1 {
-      font-size: 64px;
-      text-shadow: 0 0 10px rgba(244,180,0,0.8);
-      margin-bottom: 20px;
-    }
-    .overlay a.start-btn {
-      display: inline-block;
-      padding: 16px 32px;
-      font-size: 20px;
-      background: linear-gradient(45deg, #f4b400, #ffea00);
-      color: #000;
-      text-decoration: none;
-      border-radius: 50px;
-      box-shadow: 0 0 15px rgba(244,180,0,0.7);
-      transition: box-shadow 0.3s, transform 0.2s;
-    }
-    .overlay a.start-btn:hover {
-      box-shadow: 0 0 25px rgba(255,234,0,0.9);
-      transform: translateY(-5px);
-    }
-    .panel {
-      position: absolute;
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(20,20,40,0.9);
-      padding: 30px;
-      border-radius: 10px;
-      width: 90%; max-width: 500px;
+    /* === 팝업 차단용 오버레이 스타일 (추가) === */
+    #popup-blocker {
+      position: fixed;
+      inset: 0;
       display: none;
-      z-index: 2;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.9);
+      z-index: 3000; /* custom-menu(2000)보다 위 */
+      padding: 20px;
     }
-    .panel.active { display: block; }
-    .panel h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: #f4b400;
+    #popup-blocker.active { display: flex; }
+    #popup-blocker .box {
+      max-width: 560px;
+      background: #0b0b0f;
+      border: 1px solid #222;
+      padding: 24px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+      color: #ddd;
     }
-    .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
-    .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
-    .panel ul li { margin-bottom: 8px; font-size: 14px; }
-    .panel .close-btn {
-      display: block;
-      margin: 0 auto;
-      padding: 10px 20px;
-      background: #f44336;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .panel .close-btn:hover { background: #e53935; }
-    /* Responsive */
-    @media (max-width: 768px) {
-      .container { flex-direction: column; }
-      .sidebar {
-        width: 100%; flex-direction: row; justify-content: space-around;
-        padding: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      }
-      .sidebar button { width: auto; padding: 10px 15px; font-size: 14px; }
-      .overlay h1 { font-size: 36px; }
-      .overlay a.start-btn { padding: 12px 24px; font-size: 18px; }
-      .panel { width: 95%; }
-    }
+    #popup-blocker h2 { color: #ffcc00; margin-bottom: 10px; }
+    #popup-blocker p { margin-bottom: 16px; line-height: 1.4; color: #bbb; }
+    .popup-btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 700; margin: 6px; }
+    .popup-btn.primary { background: #00aaff; color: #000; }
+    .popup-btn.ghost { background: transparent; border: 1px solid #444; color: #fff; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <nav class="sidebar">
-      <button id="show-license">라이센스 정보</button>
-      <button id="show-contact">Contact Us</button>
-    </nav>
-    <div class="content">
-      <div class="overlay">
-        <h1>태양계 정복</h1>
-        <!-- 변경: href를 제거하고 id="start-btn" 추가하여 팝업으로 열도록 함 -->
-        <a href="#" id="start-btn" class="start-btn">게임 시작</a>
-      </div>
-      <div class="panel" id="license-panel">
-        <h2>라이센스 정보</h2>
-        <p>© 2025 SIU Studio. All rights reserved.</p>
-        <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
-        <ul>
-          <li>복사(Copying)</li>
-          <li>수정(Modification)</li>
-          <li>리버스 엔지니어링(Reverse Engineering)</li>
-          <li>재배포(Redistribution)</li>
-          <li>상업적 이용(Commercial Use)</li>
-        </ul>
-        <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
-        <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
-        <button class="close-btn" data-target="license-panel">닫기</button>
-      </div>
-      <div class="panel" id="contact-panel">
-        <h2>Contact Us</h2>
-        <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
-        <p><a href="mailto:siustudio@zohomail.com" style="color: #f4b400; text-decoration: none;">siustudio@zohomail.com</a></p>
-        <button class="close-btn" data-target="contact-panel">닫기</button>
-      </div>
+  <!-- 인증 -->
+  <div id="auth-container">
+    <h2>로그인 / 회원가입</h2>
+    <input type="email" id="email" placeholder="이메일" />
+    <input type="password" id="password" placeholder="비밀번호" />
+    <button id="login-btn">로그인</button>
+    <button id="signup-btn">회원가입</button>
+
+    <!-- ===== 아이디 찾기 삭제: 비밀번호 찾기 링크만 남김 ===== -->
+    <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
+      <a
+        id="find-pw"
+        href="find.html"
+        style="flex:1; max-width:320px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"
+        aria-label="비밀번호 찾기 (find.html으로 이동)"
+        title="비밀번호 찾기"
+      >
+        비밀번호 찾기
+      </a>
     </div>
+    <!-- ===== 변경 끝 ===== -->
+
+    <p id="auth-error" style="color:#f66;"></p>
   </div>
+  <button id="logout-btn">로그아웃</button>    <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
+  <div id="popup-blocker" role="alert" aria-live="assertive">
+    <div class="box">
+      <h2>잘못된 접근입니다</h2>
+      <p>이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p>
+      <div>
+        <button id="reopen-popup" class="popup-btn primary">팝업으로 열기</button>
+        <button id="close-tab" class="popup-btn ghost">이 탭 닫기</button>
+      </div>
+      <p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인한 뒤 다시 시도하세요.</p>
+    </div>
+  </div>    <!-- 상단 바 -->    <div id="top-bar">
+    <div class="bar-group">
+      <img src="/images/resource-icon.png" alt="Resource" />
+      <span id="score">자원: 0</span>
+      <img src="/images/coin-icon.png" alt="Coin" />
+      <span id="coins">코인: 0</span>
+    </div>
+    <div class="bar-group">
+      <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
+      <span id="ship-level">1렙 (20코인)</span>
+      <button id="upgrade-ship">업그레이드</button>
+    </div>
+  </div>    <!-- 메인 컨테이너 -->    <div id="container">
+    <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
+    <nav>
+      <div class="tab active" data-tab="main">메인</div>
+      <div class="tab" data-tab="workers">우주인 알바</div>
+      <div class="tab" data-tab="upgrades">클릭당 업그레이드</div>
+      <div class="tab" data-tab="planets">행성 구매</div>
+      <div class="tab" data-tab="reset">초기화</div>
+    </nav>  <div id="main-content" class="tab-content active">
+  <div id="ore-container" style="position:relative; display:inline-block;">
+    <img src="/images/ore.png" id="ore" alt="광석" />
+  </div>
+  <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
+    <button id="convert-button" class="general">10자원 → 1코인</button>
+    <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
+  </div>
+</div>
 
-  <script>
-    // 기존 패널 제어 스크립트 (원본 유지)
-    document.querySelectorAll('.close-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
-      });
+<div id="workers-content" class="tab-content">
+  <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
+  <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
+  <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
+  <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
+</div>
+
+<div id="upgrades-content" class="tab-content">
+  <p>클릭당 자원: <span id="click-power">1</span></p>
+  <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
+</div>
+
+<div id="planets-content" class="tab-content">
+  <div id="planet-list"></div>
+</div>
+
+<div id="reset-content" class="tab-content">
+  <button id="reset-button" class="general">초기화</button>
+</div>
+
+  </div>    <!-- 커스텀 컨텍스트 메뉴 -->    <div id="custom-menu">
+    <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
+    <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
+    <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
+  </div>    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let state = {};
+    let uid = null;
+    let dataRef = null;
+    let localLastWrite = 0; // 로컬에서 마지막으로 기록한 타임스탬프 (밀리초)
+    const defaultData = {
+      resources:0, coins:0, clickPower:1,
+      shipLevel:1, shipUpgradeCost:20,
+      workerCount:0, conversionCount:0,
+      autoConvertBought:false, ownedPlanets:[]
+    };
+    const initialWorkerCost=10, workerCostGrowth=1.2;
+    const initialWorkerPower=1, workerPowerGrowth=1.05;
+    const initialConversionCost=50, conversionCostGrowth=1.3;
+    const clickUpgradeCost=15;
+
+    function getWorkerCost() { return Math.floor(initialWorkerCost * Math.pow(workerCostGrowth, state.workerCount)); }
+    function getWorkerPower() { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
+    function getConversionCost() { return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
+
+    function convertResources(maxCount = null) {
+      const possible = Math.floor(state.resources / 10);
+      const count = maxCount === null ? possible : Math.min(possible, maxCount);
+      if (count > 0) {
+        state.resources -= count * 10;
+        state.coins += count;
+      }
+    }
+
+    // 안전 초기화: 거래(트랜잭션)로 없을 때만 기본값 넣기 (경합 방지)
+    async function ensureInitialData(refPath) {
+      try {
+        await runTransaction(refPath, current => {
+          if (current === null) {
+            return { ...defaultData, _lastUpdated: Date.now() };
+          }
+          return current; // 이미 있으면 변경하지 않음
+        });
+      } catch (err) {
+        console.error('초기화 트랜잭션 에러:', err);
+      }
+    }
+
+    // save: update() 사용. 전체를 덮어쓰기보다 병합형 업데이트로 다른 필드 손실 방지.
+    function save() {
+      if (!uid || !dataRef) return;
+      // 시간 기록
+      const now = Date.now();
+      state._lastUpdated = now;
+      localLastWrite = now;
+      // 복제해서 보낼 객체 생성 (숨겨진 필드도 전송)
+      const toSave = { ...state };
+      // update는 병합이라 안전함.
+      update(dataRef, toSave).catch(err => console.error('저장 에러:', err));
+    }
+
+    onAuthStateChanged(auth, async user => {
+      document.getElementById('auth-error').innerText = '';
+      if (user) {
+        uid = user.uid;
+        dataRef = ref(db, `users/${uid}/gameData`);
+        document.getElementById('auth-container').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'block';
+        ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+
+        // 안전하게 초기화 (경합 없도록 transaction 사용)
+        await ensureInitialData(dataRef);
+
+        // 실시간 리스너: 서버의 마지막 갱신 시간(_lastUpdated)을 기준으로 로컬 덮어쓰기 제어
+        onValue(dataRef, snap => {
+          const server = snap.exists() ? snap.val() : null;
+          if (!server) {
+            // 서버에 데이터가 전혀 없는 경우(희귀) — 이미 ensureInitialData로 처리되었을 것
+            state = { ...defaultData };
+            updateUI();
+            renderPlanets();
+            return;
+          }
+          const serverLast = server._lastUpdated || 0;
+          // 서버가 더 최신이면 서버 데이터로 교체
+          if (serverLast > localLastWrite) {
+            // 서버 데이터가 최신이므로 그대로 반영 (기본값과 병합)
+            state = { ...defaultData, ...server };
+            // localLastWrite는 건드리지 않음 (이미 서버가 최신)
+          } else {
+            // 로컬이 더 최근이거나 동기화 중: 서버에서 일부 필드만 온 경우가 있으므로 병합
+            state = { ...defaultData, ...server, ...state };
+            // 이 경우에도 _lastUpdated는 이미 localLastWrite가 최신일 수 있음
+          }
+          // UI 갱신
+          updateUI();
+          renderPlanets();
+        });
+
+      } else {
+        uid = null;
+        dataRef = null;
+        document.getElementById('auth-container').style.display = 'block';
+        document.getElementById('logout-btn').style.display = 'none';
+        ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
+      }
     });
-    document.getElementById('show-license').addEventListener('click', () => document.getElementById('license-panel').classList.add('active'));
-    document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
-  </script>
 
-  <!-- 추가된 스크립트: 게임 시작을 팝업으로 여는 동작만 추가 -->
-  <script>
-    (function() {
-      const GAME_POPUP_WIDTH = 1024;   // 팝업 너비(px)
-      const GAME_POPUP_HEIGHT = 768;   // 팝업 높이(px)
-      const POPUP_NAME = 'gameWindow'; // 팝업 창 이름 (재사용 가능)
+    document.getElementById('login-btn').addEventListener('click', () => {
+      signInWithEmailAndPassword(auth, email.value, password.value)
+        .catch(err => authError.innerText = err.message);
+    });
+    document.getElementById('signup-btn').addEventListener('click', e => {
+      e.preventDefault();
+      createUserWithEmailAndPassword(auth, email.value, password.value)
+        .catch(err => authError.innerText = err.message);
+    });
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-      function openGamePopup(url) {
-        // 중앙 위치 계산
-        const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
-        const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
+    function updateUI() {
+      document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
+      document.getElementById('coins').innerText = `코인: ${Math.floor(state.coins)}`;
+      document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
+      document.getElementById('ship-img').src = `/images/ship-level${state.shipLevel}.png`;
+      document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
-        const opts = [
-          `width=${GAME_POPUP_WIDTH}`,
-          `height=${GAME_POPUP_HEIGHT}`,
-          `left=${left}`,
-          `top=${top}`,
-          'resizable=yes',
-          'scrollbars=yes',
-          'status=no',
-          'toolbar=no',
-          'menubar=no'
-        ].join(',');
+      const clickUp = document.getElementById('click-upgrade');
+      clickUp.innerText = `클릭 업그레이드 (${clickUpgradeCost}코인)`;
+      clickUp.disabled = state.coins < clickUpgradeCost;
+      document.getElementById('click-power').innerText = state.clickPower;
 
-        const popup = window.open(url, POPUP_NAME, opts);
+      const autoBtn = document.getElementById('auto-convert-buy');
+      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : '자동변환 구매<br>(100코인)';
+      autoBtn.disabled = state.autoConvertBought || state.coins < 100;
 
-        // 팝업 차단 여부 체크
-        if (!popup || popup.closed === undefined) {
-          // 팝업이 차단됐을 가능성
-          alert('팝업이 차단되었거나 열 수 없습니다. 브라우저의 팝업 차단 설정을 확인하세요.');
-          return null;
+      document.getElementById('convert-button').disabled = state.resources < 10;
+
+      const hireWork = document.getElementById('hire-worker');
+      hireWork.innerText = `알바 고용 (${getWorkerCost()}코인)`;
+      hireWork.disabled = state.coins < getWorkerCost();
+      document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower()).toFixed(1);
+
+      const hireConv = document.getElementById('hire-conversion');
+      hireConv.innerText = `코인 알바 (${getConversionCost()}코인)`;
+      hireConv.disabled = state.coins < getConversionCost();
+      document.getElementById('coin-per-sec').innerText = state.conversionCount;
+    }
+
+    function renderPlanets() {
+      const planets = [
+        {name:'달',cost:100,requiredShipLevel:1},
+        {name:'수성',cost:500,requiredShipLevel:2},
+        {name:'금성',cost:2000,requiredShipLevel:3},
+        {name:'지구',cost:10000,requiredShipLevel:4},
+        {name:'화성',cost:50000,requiredShipLevel:5},
+        {name:'목성',cost:250000,requiredShipLevel:6},
+        {name:'토성',cost:1000000,requiredShipLevel:7},
+        {name:'천왕성',cost:5000000,requiredShipLevel:8},
+        {name:'해왕성',cost:20000000,requiredShipLevel:9}
+      ];
+      const list = document.getElementById('planet-list');
+      list.innerHTML = '';
+      planets.forEach((p, i) => {
+        const div = document.createElement('div');
+        const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
+        const canBuy = state.shipLevel >= p.requiredShipLevel;
+        div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
+        const btn = document.createElement('button');
+        btn.className = 'general';
+        btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족');
+        btn.disabled = owned || !canBuy;
+        btn.onclick = () => {
+          if (state.coins >= p.cost) {
+            state.coins -= p.cost;
+            if (!state.ownedPlanets) state.ownedPlanets = [];
+            state.ownedPlanets.push(i);
+            save(); updateUI(); renderPlanets();
+            if (state.ownedPlanets.length === planets.length) {
+              window.location.href = '/ending.html';
+            }
+          }
+        };
+        div.appendChild(btn);
+        list.appendChild(div);
+      });
+    }
+
+    function spawnParticles(x,y) {
+      for (let i=0; i<15; i++) {
+        const span = document.createElement('span');
+        span.className = 'particle';
+        span.style.setProperty('--dx', (Math.random()-0.5)*100+'px');
+        span.style.setProperty('--dy', (Math.random()-1)*100+'px');
+        span.style.left = x+'px';
+        span.style.top = y+'px';
+        document.getElementById('ore-container').appendChild(span);
+        setTimeout(() => span.remove(), 800);
+      }
+    }
+
+    window.onload = () => {
+      document.getElementById('ore').addEventListener('click', e => {
+        const rect = e.target.getBoundingClientRect();
+        spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
+        state.resources += state.clickPower;
+        if (state.autoConvertBought) convertResources();
+        save(); updateUI();
+      });
+      document.getElementById('convert-button').addEventListener('click', () => {
+        convertResources(1); save(); updateUI();
+      });
+      document.getElementById('auto-convert-buy').addEventListener('click', () => {
+        if (!state.autoConvertBought && state.coins >= 100) {
+          state.coins -= 100;
+          state.autoConvertBought = true;
+          save(); updateUI();
         }
+      });
+      document.getElementById('hire-worker').addEventListener('click', () => {
+        const cost = getWorkerCost();
+        if (state.coins >= cost) {
+          state.coins -= cost; state.workerCount++;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('hire-conversion').addEventListener('click', () => {
+        const cost = getConversionCost();
+        if (state.coins >= cost) {
+          state.coins -= cost; state.conversionCount++;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('upgrade-ship').addEventListener('click', () => {
+        if (state.coins >= state.shipUpgradeCost) {
+          state.coins -= state.shipUpgradeCost;
+          state.shipLevel++;
+          state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
+          save(); updateUI(); renderPlanets();
+        }
+      });
+      document.getElementById('click-upgrade').addEventListener('click', () => {
+        if (state.coins >= clickUpgradeCost) {
+          state.coins -= clickUpgradeCost;
+          state.clickPower++;
+          save(); updateUI();
+        }
+      });
+      document.getElementById('reset-button').addEventListener('click', () => {
+        if (confirm('정말 초기화하시겠습니까?')) {
+          state = { ...defaultData };
+          save(); updateUI(); renderPlanets();
+        }
+      });
+      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      }));
+      setInterval(() => {
+        if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
+        if (state.conversionCount > 0) state.coins += state.conversionCount;
+        if (state.autoConvertBought) convertResources();
+        save(); updateUI();
+      }, 1000);
+    };
+  </script>    <!-- === 팝업 검사 / 복구 / 키 차단 (강화된 버전) === -->    <script>
+    (function() {
+      const EXPECTED_POPUP_NAME = 'gameWindow';
+      const BLOCKER_ID = 'popup-blocker';
+      let blocker = document.getElementById(BLOCKER_ID);
+      // 블로커의 원본 템플릿(복원용)
+      let blockerTemplate = blocker ? blocker.cloneNode(true) : null;
 
-        // 포커스 이동
-        try { popup.focus(); } catch (e) { /* 무시 */ }
-        return popup;
+      // 새로고침/탭 닫기 제어 플래그
+      let allowUnload = false;
+      function allowTemporaryUnload(ms = 1000) {
+        allowUnload = true;
+        setTimeout(() => { allowUnload = false; }, ms);
       }
 
-      document.getElementById('start-btn').addEventListener('click', function (e) {
+      // beforeunload로 새로고침/닫기 방지
+      window.addEventListener('beforeunload', (e) => {
+        if (allowUnload) return;
         e.preventDefault();
-        // game.html을 팝업으로 엽니다. 필요하면 경로를 바꾸세요.
-        openGamePopup('game.html');
+        e.returnValue = '';
+        return '';
       });
-    })();
-  </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
-  <script>
+      // 팝업 판정 함수 (강화)
+      function isOpenedAsPopup() {
+        try {
+          // opener 존재 & 닫히지 않음 -> 높은 확률로 팝업
+          if (window.opener && !window.opener.closed) {
+            try {
+              if (window.opener.location && window.opener.location.origin === location.origin) return true;
+            } catch (e) {
+              return true;
+            }
+          }
+        } catch (e) {}
+
+        // 팝업 이름 확인
+        if (window.name === EXPECTED_POPUP_NAME) return true;
+
+        // 쿼리/해시 플래그
+        if (location.search.includes('popup=1') || location.hash.includes('popup=1')) return true;
+
+        // 창 크기 기준 (작은 창이면 팝업으로 간주)
+        try {
+          if (window.outerWidth && window.outerHeight) {
+            const smallWidth = screen.width - 100;
+            const smallHeight = screen.height - 100;
+            if (window.outerWidth <= smallWidth || window.outerHeight <= smallHeight) return true;
+          }
+        } catch (e) {}
+
+        // iframe 내부면 팝업 아님
+        try {
+          if (window.self !== window.top) return false;
+        } catch (e) {}
+
+        return false;
+      }
+
+      // (재)블로커 보여주기 — DOM 변조가 있어도 이걸 호출하면 복구/차단됨
+      function showBlocker() {
+        try {
+          blocker = document.getElementById(BLOCKER_ID);
+          if (!blocker) {
+            // 원본 템플릿이 있으면 복원, 없으면 간단 복구 노드 생성
+            if (blockerTemplate) {
+              document.body.appendChild(blockerTemplate.cloneNode(true));
+            } else {
+              const div = document.createElement('div');
+              div.id = BLOCKER_ID;
+              div.setAttribute('role','alert');
+              div.className = ' active';
+              div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:3000;padding:20px;';
+              div.innerHTML = '<div class="box" style="max-width:560px;background:#0b0b0f;border:1px solid #222;padding:24px;border-radius:10px;color:#ddd;text-align:center;"><h2 style="color:#ffcc00;margin-bottom:10px">잘못된 접근입니다</h2><p style="margin-bottom:16px;color:#bbb">이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p><div><button id="reopen-popup" class="popup-btn primary" style="padding:10px 14px;border-radius:8px;border:0;margin:6px;font-weight:700">팝업으로 열기</button><button id="close-tab" class="popup-btn ghost" style="padding:10px 14px;border-radius:8px;border:1px solid #444;margin:6px;background:transparent;color:#fff">이 탭 닫기</button></div><p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인하세요.</p></div>';
+              document.body.appendChild(div);
+            }
+            blocker = document.getElementById(BLOCKER_ID);
+            // 버튼 이벤트 다시 바인딩
+            bindBlockerButtons();
+          }
+          // 강제로 active 표시 (클래스와 스타일 둘 다 보장)
+          blocker.classList.add('active');
+          blocker.style.display = 'flex';
+          blocker.style.pointerEvents = 'auto';
+          blocker.style.zIndex = '999999'; // 최상단 보장
+        } catch (e) {
+          console.error('showBlocker error', e);
+        }
+      }
+
+      function hideBlocker() {
+        try {
+          blocker = document.getElementById(BLOCKER_ID);
+          if (!blocker) return;
+          blocker.classList.remove('active');
+          blocker.style.display = 'none';
+        } catch (e) {}
+      }
+
+      function tryOpenPopupFromThisTab() {
+        const w = 1024, h = 768;
+        const left = Math.max(0, Math.round((screen.width - w) / 2));
+        const top  = Math.max(0, Math.round((screen.height - h) / 2));
+        const opts = `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no`;
+        const popup = window.open(window.location.href + (location.search ? '&' : '?') + 'popup=1', EXPECTED_POPUP_NAME, opts);
+        if (!popup) {
+          alert('팝업이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인하세요.');
+          return;
+        }
+        try { popup.focus(); } catch(e) {}
+        setTimeout(()=>{   
+          try{   
+            allowTemporaryUnload(1500);
+            window.close();
+          } catch(e){}   
+        }, 300);
+      }
+
+      function bindBlockerButtons() {
+        try {
+          blocker = document.getElementById(BLOCKER_ID);
+          if (!blocker) return;
+          const reopenBtn = blocker.querySelector('#reopen-popup');
+          const closeBtn = blocker.querySelector('#close-tab');
+          if (reopenBtn) {
+            reopenBtn.addEventListener('click', tryOpenPopupFromThisTab);
+          }
+          if (closeBtn) {
+            closeBtn.addEventListener('click', function(){ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} });
+          }
+        } catch (e) {}
+      }
+
+      // DOM 무결성 감지: blocker, auth-container, top-bar, container의 제거/숨김을 감지하고 복구
+      function setupMutationProtection() {
+        // 저장해둔 템플릿 확보
+        blocker = document.getElementById(BLOCKER_ID);
+        if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true);
+
+        const watchTargets = ['auth-container','top-bar','container', BLOCKER_ID];
+        const body = document.body;
+
+        const observer = new MutationObserver((mutations) => {
+          try {
+            let shouldRestoreBlocker = false;
+            for (const m of mutations) {
+              // 자식 추가/삭제로 블로커가 사라지거나 변경되면 복구
+              if (m.type === 'childList') {
+                // 삭제된 노드에 blocker가 있으면 복구
+                for (const n of m.removedNodes) {
+                  if (n && n.id === BLOCKER_ID) shouldRestoreBlocker = true;
+                }
+                // 누군가가 blocker를 숨긴 경우도 체크
+                const b = document.getElementById(BLOCKER_ID);
+                if (!b) shouldRestoreBlocker = true;
+              }
+              // 속성 변경으로 display:none, visibility:hidden, style 변경된 경우
+              if (m.type === 'attributes' && (m.target && (m.target.id === BLOCKER_ID || watchTargets.includes(m.target.id)))) {
+                const t = m.target;
+                const style = window.getComputedStyle(t);
+                // 팝업이 아닌 상태라면 블로커는 항상 보여야 함 -> 숨겨졌다면 복구
+                if (!isOpenedAsPopup() && (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity || '1') < 0.1)) {
+                  shouldRestoreBlocker = true;
+                }
+              }
+            }
+
+            // 추가 안전 검사: 팝업이 아닌 상태인데 블로커가 없거나 숨겨져 있으면 복구
+            if (!isOpenedAsPopup()) {
+              const b = document.getElementById(BLOCKER_ID);
+              if (!b) shouldRestoreBlocker = true;
+              else {
+                const cs = window.getComputedStyle(b);
+                if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) shouldRestoreBlocker = true;
+              }
+            }
+
+            if (shouldRestoreBlocker) {
+              showBlocker();
+              bindBlockerButtons();
+            }
+          } catch (e) {
+            console.error('mutation observer error', e);
+          }
+        });
+
+        observer.observe(body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class'], attributeOldValue:true });
+
+        // 주기적 체크(추가 안전망)
+        setInterval(() => {
+          try {
+            if (!isOpenedAsPopup()) {
+              const b = document.getElementById(BLOCKER_ID);
+              if (!b) { showBlocker(); bindBlockerButtons(); return; }
+              const cs = window.getComputedStyle(b);
+              if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) {
+                showBlocker(); bindBlockerButtons(); return;
+              }
+              // blocker의 z-index가 낮아져서 클릭 가능한 경우에도 최상단으로 올림
+              const z = parseInt((b.style.zIndex || '0').replace(/[^0-9]/g,'')) || 0;
+              if (z < 99999) {
+                b.style.zIndex = '999999';
+              }
+            } else {
+              // 팝업이면 보통 블로커를 숨겨야 함
+              const b = document.getElementById(BLOCKER_ID);
+              if (b) {
+                hideBlocker();
+              }
+            }
+          } catch (e) {}
+        }, 600);
+
+      }
+
+      // 키보드 차단: F1~F12 중 F11은 허용. Ctrl/Alt/Meta 조합은 기본적으로 무시하되, 입력 폼에서 Ctrl+C/V 등 편집키는 허용
+      window.addEventListener('keydown', (e) => {
+        try {
+          const key = e.key || '';
+          const isFunctionKey = /^F\d{1,2}$/i.test(key);
+          const isModifierCombo = e.ctrlKey || e.altKey || e.metaKey;
+
+          const target = e.target || {};
+          const tag = (target.tagName || '').toUpperCase();
+          const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+
+          // 허용하는 F키: F11은 전체화면 토글 허용 (브라우저 기본 동작)
+          if (isFunctionKey && key.toUpperCase() !== 'F11') {
+            e.preventDefault(); e.stopPropagation(); return;
+          }
+
+          const k = key.toLowerCase();
+          // 리로드/탭 닫기 등 위험한 조합 우선 차단
+          if ((e.ctrlKey && (k === 'r' || k === 'w' || k === 'n' || k === 't' || k === 's')) ||
+              (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) ||
+              (key === 'F5')) {
+            if (isEditable) {
+              const allowedInEdit = ['c','v','x','z','y','a'];
+              if (e.ctrlKey && allowedInEdit.includes(k)) {
+                return; // 편집 관련 단축키는 허용
+              }
+            }
+            e.preventDefault(); e.stopPropagation(); return;
+          }
+
+          if (e.altKey && (k === 'f4')) {
+            e.preventDefault(); e.stopPropagation(); return;
+          }
+
+          // 기타 모디파이어 조합은 입력 필드가 아니면 무시
+          if (isModifierCombo && !isEditable) {
+            e.preventDefault(); e.stopPropagation(); return;
+          }
+        } catch (err) {}
+      }, {capture:true, passive:false});
+
+      // 전체화면 상태 변화 감지: F11 허용하지만, 팝업이 아닌 상태에서 전체화면이면 즉시 종료시키고 블로커 표시
+      document.addEventListener('fullscreenchange', () => {
+        try {
+          if (document.fullscreenElement && !isOpenedAsPopup()) {
+            // 전체화면 진입했지만 팝업이 아니면 즉시 종료
+            if (document.exitFullscreen) {
+              document.exitFullscreen().catch(()=>{});
+            }
+            showBlocker();
+          }
+        } catch (e) {}
+      });
+
+      // 마우스 휠 + Ctrl(줌) 차단 시도
+      window.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault(); e.stopPropagation();
+        }
+      }, {passive:false});
+
+      // 초기 실행: DOMContentLoaded 후 검사/설정
+      document.addEventListener('DOMContentLoaded', () => {
+        blocker = document.getElementById(BLOCKER_ID);
+        if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true);
+
+        if (!isOpenedAsPopup()) {
+          showBlocker();
+        } else {
+          hideBlocker();
+          console.log('팝업으로 열림 — 게임 실행 허용 (팝업 검사 통과)');
+        }
+
+        bindBlockerButtons();
+        setupMutationProtection();
+      });
+
+    })();
+  </script>    <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>    <script>
     DisableDevtool({
       disableMenu: true,
       disableSelect: true,
@@ -234,17 +739,27 @@
       disableCut: true,
       disablePaste: true,
       clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        // 즉시 사이트 닫기
-        window.close();
-        next();
-      },
-      ondevtoolclose() {
-        console.warn('DevTools 닫힘 감지됨');
-      }
+      ondevtoolopen(type, next) { window.close(); next(); },
+      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
-  </script>
-  <script>
+    const customMenu = document.getElementById('custom-menu');
+    window.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      customMenu.style.top = `${e.clientY}px`;
+      customMenu.style.left = `${e.clientX}px`;
+      customMenu.style.display = 'block';
+    });
+    customMenu.addEventListener('click', e => {
+      const action = e.target.getAttribute('data-action');
+      if (!action) return;
+      if (action === 'menu') window.location.href = '/index.html';
+      if (action === 'resume') customMenu.style.display = 'none';
+      if (action === 'rank') window.location.href = '/ranking.html';
+    });
+    window.addEventListener('click', e => {
+      if (!customMenu.contains(e.target)) customMenu.style.display = 'none';
+    });
+  </script>    <script>
   // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
   document.addEventListener('contextmenu', function (e) {
     // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
