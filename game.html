@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
-
-  <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->
-  <script>
+  <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>    <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->    <script>
     (function(){
       try {
         history.replaceState(null, '', '/게임' + (location.hash || ''));
@@ -14,9 +11,7 @@
         console.warn('주소 표시 변경 실패:', e);
       }
     })();
-  </script>
-
-  <style>
+  </script>    <style>
     body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
@@ -82,11 +77,34 @@
     <input type="password" id="password" placeholder="비밀번호" />
     <button id="login-btn">로그인</button>
     <button id="signup-btn">회원가입</button>
+
+    <!-- ===== 여기에 아이디/비밀번호 찾기 버튼을 추가했습니다 (로그인/회원가입 버튼 바로 아래) ===== -->
+    <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
+      <a
+        id="find-id"
+        href="find.html?type=id"
+        style="flex:1; max-width:150px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.02); color:#fff; font-weight:600; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"
+        aria-label="아이디 찾기 (find.html으로 이동)"
+        title="아이디 찾기"
+      >
+        아이디 찾기
+      </a>
+
+      <a
+        id="find-pw"
+        href="find.html?type=pw"
+        style="flex:1; max-width:150px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"
+        aria-label="비밀번호 찾기 (find.html으로 이동)"
+        title="비밀번호 찾기"
+      >
+        비밀번호 찾기
+      </a>
+    </div>
+    <!-- ===== 추가 끝 ===== -->
+
     <p id="auth-error" style="color:#f66;"></p>
   </div>
-  <button id="logout-btn">로그아웃</button>
-
-  <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
+  <button id="logout-btn">로그아웃</button>    <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
   <div id="popup-blocker" role="alert" aria-live="assertive">
     <div class="box">
       <h2>잘못된 접근입니다</h2>
@@ -97,10 +115,7 @@
       </div>
       <p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인한 뒤 다시 시도하세요.</p>
     </div>
-  </div>
-
-  <!-- 상단 바 -->
-  <div id="top-bar">
+  </div>    <!-- 상단 바 -->    <div id="top-bar">
     <div class="bar-group">
       <img src="/images/resource-icon.png" alt="Resource" />
       <span id="score">자원: 0</span>
@@ -112,10 +127,7 @@
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
     </div>
-  </div>
-
-  <!-- 메인 컨테이너 -->
-  <div id="container">
+  </div>    <!-- 메인 컨테이너 -->    <div id="container">
     <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
     <nav>
       <div class="tab active" data-tab="main">메인</div>
@@ -123,47 +135,41 @@
       <div class="tab" data-tab="upgrades">클릭당 업그레이드</div>
       <div class="tab" data-tab="planets">행성 구매</div>
       <div class="tab" data-tab="reset">초기화</div>
-    </nav>
-
-    <div id="main-content" class="tab-content active">
-      <div id="ore-container" style="position:relative; display:inline-block;">
-        <img src="/images/ore.png" id="ore" alt="광석" />
-      </div>
-      <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
-        <button id="convert-button" class="general">10자원 → 1코인</button>
-        <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
-      </div>
-    </div>
-
-    <div id="workers-content" class="tab-content">
-      <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
-      <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
-      <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
-      <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
-    </div>
-
-    <div id="upgrades-content" class="tab-content">
-      <p>클릭당 자원: <span id="click-power">1</span></p>
-      <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
-    </div>
-
-    <div id="planets-content" class="tab-content">
-      <div id="planet-list"></div>
-    </div>
-
-    <div id="reset-content" class="tab-content">
-      <button id="reset-button" class="general">초기화</button>
-    </div>
+    </nav>  <div id="main-content" class="tab-content active">
+  <div id="ore-container" style="position:relative; display:inline-block;">
+    <img src="/images/ore.png" id="ore" alt="광석" />
   </div>
+  <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
+    <button id="convert-button" class="general">10자원 → 1코인</button>
+    <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
+  </div>
+</div>
 
-  <!-- 커스텀 컨텍스트 메뉴 -->
-  <div id="custom-menu">
+<div id="workers-content" class="tab-content">
+  <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
+  <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
+  <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
+  <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
+</div>
+
+<div id="upgrades-content" class="tab-content">
+  <p>클릭당 자원: <span id="click-power">1</span></p>
+  <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
+</div>
+
+<div id="planets-content" class="tab-content">
+  <div id="planet-list"></div>
+</div>
+
+<div id="reset-content" class="tab-content">
+  <button id="reset-button" class="general">초기화</button>
+</div>
+
+  </div>    <!-- 커스텀 컨텍스트 메뉴 -->    <div id="custom-menu">
     <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
     <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
-  </div>
-
-  <script type="module">
+  </div>    <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
@@ -442,10 +448,7 @@
         save(); updateUI();
       }, 1000);
     };
-  </script>
-
-  <!-- === 팝업 검사 / 복구 / 키 차단 (강화된 버전) === -->
-  <script>
+  </script>    <!-- === 팝업 검사 / 복구 / 키 차단 (강화된 버전) === -->    <script>
     (function() {
       const EXPECTED_POPUP_NAME = 'gameWindow';
       const BLOCKER_ID = 'popup-blocker';
@@ -555,11 +558,11 @@
           return;
         }
         try { popup.focus(); } catch(e) {}
-        setTimeout(()=>{ 
-          try{ 
+        setTimeout(()=>{   
+          try{   
             allowTemporaryUnload(1500);
-            window.close(); 
-          } catch(e){} 
+            window.close();
+          } catch(e){}   
         }, 300);
       }
 
@@ -738,10 +741,7 @@
       });
 
     })();
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
-  <script>
+  </script>    <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>    <script>
     DisableDevtool({
       disableMenu: true,
       disableSelect: true,
@@ -769,8 +769,7 @@
     window.addEventListener('click', e => {
       if (!customMenu.contains(e.target)) customMenu.style.display = 'none';
     });
-  </script>
-  <script>
+  </script>    <script>
   // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
   document.addEventListener('contextmenu', function (e) {
     // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
@@ -785,4 +784,3 @@
   </script>
 </body>
 </html>
-
