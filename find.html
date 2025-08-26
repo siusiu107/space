@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>비밀번호 찾기 — 태양계 정복</title>
+  <style>
+    :root{
+      --card-bg: rgba(3,6,14,0.86);
+      --accent: #00aaff;
+      --muted: #9aa6c4;
+      --primary-text: #ffffff;
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,Arial,'Malgun Gothic',sans-serif;background:
+      linear-gradient(180deg,#000814 0%, #00122b 60%), url('/images/space-bg.jpg') center/cover no-repeat;color:var(--primary-text);}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
+    .card{width:360px;max-width:94%;background:var(--card-bg);border-radius:12px;padding:22px;box-shadow:0 10px 40px rgba(0,0,0,0.6);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,0.04);}
+    h1{margin:0 0 10px;font-size:18px;color:#c9f5ff;text-align:center;}
+    p.lead{margin:0 0 16px;color:var(--muted);font-size:13px;text-align:center;}
+    form{display:block;}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:8px;}
+    input[type="email"], input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:var(--primary-text);box-sizing:border-box;outline:none;}
+    .btn-row{display:flex;gap:8px;margin-top:14px;}
+    button.btn{flex:1;padding:10px;border-radius:8px;border:0;cursor:pointer;font-weight:700;}
+    button.primary{background:var(--accent);color:#001;box-shadow:0 6px 18px rgba(0,170,255,0.12);}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--primary-text);}
+    .helper{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;}
+    .result{margin-top:12px;padding:10px;border-radius:8px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.03);font-size:13px;}
+    .link-back{display:block;text-align:center;margin-top:12px;color:var(--accent);text-decoration:underline;cursor:pointer;}
+    footer{margin-top:14px;font-size:11px;color:var(--muted);text-align:center;}
+    @media (max-width:420px){ .card{padding:16px;} h1{font-size:16px;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="main" aria-labelledby="page-title">
+      <h1 id="page-title">비밀번호 찾기</h1>
+      <p class="lead">가입하신 이메일을 입력하면 비밀번호 재설정 링크를 전송합니다.</p>
+
+      <!-- 비밀번호 찾기 폼 (아이디 찾기 제거) -->
+      <form id="form-pw" autocomplete="off" novalidate>
+        <label for="pw-email">가입하신 이메일</label>
+        <input id="pw-email" type="email" placeholder="example@domain.com" required />
+        <label for="pw-id">가입 아이디 (선택)</label>
+        <input id="pw-id" type="text" placeholder="(있다면 입력)" />
+        <div class="btn-row">
+          <button type="button" class="btn primary" id="send-pw">비밀번호 재설정 링크 전송</button>
+          <button type="button" class="btn ghost" id="cancel-pw">취소</button>
+        </div>
+        <div class="helper">비밀번호 재설정 링크를 이메일로 보냅니다. 스팸함도 확인하세요.</div>
+      </form>
+
+      <div id="result" class="result" style="display:none" aria-live="polite"></div>
+
+      <a id="back-login" class="link-back">로그인 화면으로 돌아가기</a>
+
+      <footer>게임과 동일한 보안 정책(우클릭/개발자도구 차단)이 적용됩니다.</footer>
+    </div>
+  </div>
+
+  <!-- 우클릭/키/개발자도구 차단 스크립트 (게임에서 쓰던 것과 같은 로직) -->
+  <script>
+    // 간단 DOM 동작 (취소/뒤로가기)
+    (function(){
+      const resultEl = document.getElementById('result');
+      const backLink = document.getElementById('back-login');
+      document.getElementById('cancel-pw').addEventListener('click', () => history.back());
+      backLink.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
+      // 폼 submit 방지
+      document.getElementById('form-pw').addEventListener('submit', e => e.preventDefault());
+    })();
+  </script>
+
+  <!-- Firebase 비밀번호 재설정 (모듈 방식) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const pwEmail = document.getElementById('pw-email');
+    const sendPwBtn = document.getElementById('send-pw');
+    const resultEl = document.getElementById('result');
+
+    function showResult(msg, isError = false) {
+      resultEl.style.display = 'block';
+      resultEl.style.color = isError ? '#ffb3b3' : '#bfffdc';
+      resultEl.textContent = msg;
+    }
+
+    sendPwBtn.addEventListener('click', async () => {
+      const email = (pwEmail.value || '').trim().toLowerCase();
+      resultEl.style.display = 'none';
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showResult('유효한 이메일을 입력해주세요.', true);
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showResult('비밀번호 재설정 이메일을 발송했습니다. 스팸함도 확인하세요.');
+      } catch (err) {
+        console.error(err);
+        // 에러 메시지를 사용자 친화적으로 바꿔서 표시
+        if (err.code === 'auth/user-not-found') {
+          showResult('해당 이메일로 가입된 계정을 찾을 수 없습니다.', true);
+        } else {
+          showResult('재전송에 실패했습니다. 잠시 후 다시 시도하세요.', true);
+        }
+      }
+    });
+  </script>
+
+  <script>
+  // 우클릭 전체 차단하되 입력/편집 가능한 요소는 예외
+  document.addEventListener('contextmenu', function (e) {
+    if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+    e.preventDefault();
+  });
+
+  // 키 차단: F1~F12 (F11 제외), Ctrl/Alt/Meta 조합 차단(입력필드에서는 일부 허용)
+  window.addEventListener('keydown', (e) => {
+    try {
+      const key = e.key || '';
+      const isFunctionKey = /^F\d{1,2}$/i.test(key);
+      const isModifierCombo = e.ctrlKey || e.altKey || e.metaKey;
+      const target = e.target || {};
+      const tag = (target.tagName || '').toUpperCase();
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+
+      if (isFunctionKey && key.toUpperCase() !== 'F11') {
+        e.preventDefault(); e.stopPropagation(); return;
+      }
+
+      const k = key.toLowerCase();
+      if ((e.ctrlKey && (k === 'r' || k === 'w' || k === 'n' || k === 't' || k === 's')) ||
+          (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) ||
+          (key === 'F5')) {
+        if (isEditable) {
+          const allowedInEdit = ['c','v','x','z','y','a'];
+          if (e.ctrlKey && allowedInEdit.includes(k)) {
+            return;
+          }
+        }
+        e.preventDefault(); e.stopPropagation(); return;
+      }
+
+      if (e.altKey && (k === 'f4')) {
+        e.preventDefault(); e.stopPropagation(); return;
+      }
+
+      if (isModifierCombo && !isEditable) {
+        e.preventDefault(); e.stopPropagation(); return;
+      }
+    } catch (err) {}
+  }, {capture:true, passive:false});
+  </script>
+
+  <!-- 개발자 도구 차단 라이브러리 (외부 CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    try {
+      DisableDevtool({
+        disableMenu: true,
+        disableSelect: true,
+        disableCopy: true,
+        disableCut: true,
+        disablePaste: true,
+        clearIntervalWhenDevOpenTrigger: true,
+        ondevtoolopen(type, next) { try{ window.close(); }catch(e){}; next(); },
+        ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
+      });
+    } catch (e) {
+      console.warn('DisableDevtool init failed', e);
+    }
+  </script>
+</body>
+</html>
