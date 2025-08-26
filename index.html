@@ -238,5 +238,18 @@
       }
     });
   </script>
+   <script>
+  // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
+  document.addEventListener('contextmenu', function (e) {
+    // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
+    if (e.target.closest('input, textarea, [contenteditable="true"]')) {
+      return; // 허용
+    }
+
+    e.preventDefault();
+    // 선택적으로 사용자에게 알림 표시하려면 아래 주석 해제
+    // alert('우클릭이 비활성화되어 있습니다.');
+  });
+  </script>
 </body>
 </html>
