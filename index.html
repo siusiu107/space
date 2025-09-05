@@ -4,7 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>태양계 정복 - 메인 메뉴</title>
-      <script>
+  <meta name="description" content="태양계 정복 - 우주 생존 클릭커. 직관적인 조작과 화려한 그래픽의 HTML 게임입니다. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="./">
+
+  <!-- Open Graph / Social share (간단 설정, 공유 시 space-bg.jpg 사용) -->
+  <meta property="og:title" content="태양계 정복 - SIU Studio">
+  <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="space-bg.jpg">
+  <meta property="og:image:alt" content="태양계 정복 썸네일">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="태양계 정복 - SIU Studio">
+  <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="twitter:image" content="space-bg.jpg">
+
+  <!-- 공유/탭 아이콘: space-bg.jpg 사용 -->
+  <link rel="icon" href="space-bg.jpg" type="image/jpeg">
+
+  <script>
   try { history.replaceState(null, '', '/main' + (location.hash || '')); }
   catch(e){ console.warn('주소 표시 변경 실패:', e); }
 </script>
@@ -211,11 +232,31 @@
         return popup;
       }
 
-      document.getElementById('start-btn').addEventListener('click', function (e) {
+      const startBtn = document.getElementById('start-btn');
+
+      // 일반 클릭 (modifier 키 포함)에서도 항상 팝업으로 열리게 함
+      startBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        // game.html을 팝업으로 엽니다. 필요하면 경로를 바꾸세요.
         openGamePopup('game.html');
       });
+
+      // 휠/중간 버튼으로 클릭할 때도 팝업으로 열기 (auxclick)
+      startBtn.addEventListener('auxclick', function(e) {
+        // 중간 버튼(1)이나 다른 보조 버튼에 대해 팝업 열기
+        if (e.button === 1) {
+          e.preventDefault();
+          openGamePopup('game.html');
+        }
+      });
+
+      // 키보드로 포커스된 상태에서 Ctrl+Enter 같은 조합으로 열기(선택적 안전장치)
+      startBtn.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          openGamePopup('game.html');
+        }
+      });
+
     })();
   </script>
 
