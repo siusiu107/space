@@ -15,12 +15,50 @@
     })();
   </script>
   <style>
-    body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    /* 기본 레이아웃 (변경 없음) */
+    body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
-    #auth-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:320px; text-align:center; z-index:1000; }
-    #auth-container input { width:90%; padding:8px; margin:6px 0; border-radius:4px; border:none; }
-    #auth-container button { width:95%; padding:10px; margin:6px 0; background:#00aaff; border:none; border-radius:4px; cursor:pointer; color:#fff; }
+
+    /* === 로그인 카드 디자인 개선 === */
+    #auth-container {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000;
+      width:360px; max-width:92%; padding:22px; border-radius:14px; text-align:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(6,7,12,0.55));
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(6px);
+      transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
+    }
+    #auth-container.hidden { opacity:0; transform: translate(-50%, -46% ) scale(.98); pointer-events:none; visibility:hidden; }
+
+    #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
+    .auth-row { display:flex; gap:8px; align-items:center; justify-content:center; }
+    #auth-container input { width:100%; padding:12px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.25); color:#fff; outline:none; font-size:14px; }
+    #auth-container input:focus { box-shadow:0 8px 20px rgba(0,160,255,0.08); border-color:rgba(0,160,255,0.25); }
+    #auth-container .primary-btn { width:100%; padding:12px; margin-top:8px; border-radius:10px; background:linear-gradient(90deg,#00c0ff,#0077ff); color:#00120b; font-weight:800; border:none; cursor:pointer; box-shadow: 0 6px 18px rgba(0,120,255,0.12); }
+    #auth-container .ghost-btn { width:100%; padding:10px; margin-top:6px; border-radius:10px; background:transparent; color:#e6f5ff; border:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+
+    /* 에러 / 상태 메시지 */
+    .auth-status { margin-top:10px; min-height:22px; font-size:13px; color:#ffdede; opacity:0; transform:translateY(6px); transition:opacity .22s ease, transform .22s ease; }
+    .auth-status.show { opacity:1; transform:translateY(0); }
+
+    /* 로깅 오버레이 */
+    .login-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,12,0.55), rgba(2,6,12,0.75)); border-radius:14px; z-index:1100; opacity:0; pointer-events:none; transition:opacity .24s ease; }
+    .login-overlay.show { opacity:1; pointer-events:auto; }
+    .login-card { text-align:center; color:#e6f7ff; }
+    .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Google 버튼 (기존 스타일 유지하되 정렬 고침) */
+    .google-btn { width:95%; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:10px; margin:8px 0 4px; background:linear-gradient(180deg,#fff,#f2f2f2); color:#000; border-radius:8px; border:1px solid rgba(0,0,0,0.08); cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+    .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
+    .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
+    .google-btn small { font-weight:600; color:#666; font-size:11px; margin-left:6px; }
+
+    /* 작은 화면에서 조금 조정 */
+    @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
+
+    /* =============== 기존 스타일들 (변경 거의 없음) =============== */
     #logout-btn { display:none; position:fixed; bottom:20px; right:10px; background:#f44; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; z-index:1001; }
     #top-bar { position: fixed; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: center; background: rgba(30,30,30,0.85); padding:6px 10px; border-radius:8px; font-size:12px; z-index:1000; }
     .bar-group { display:flex; align-items:center; }
@@ -43,7 +81,7 @@
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-    /* === 팝업 차단용 오버레이 스타일 (추가) === */
+    /* === 팝업 차단용 오버레이 스타일 (변경 없음) === */
     #popup-blocker {
       position: fixed;
       inset: 0;
@@ -55,53 +93,22 @@
       padding: 20px;
     }
     #popup-blocker.active { display: flex; }
-    #popup-blocker .box {
-      max-width: 560px;
-      background: #0b0b0f;
-      border: 1px solid #222;
-      padding: 24px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-      color: #ddd;
-    }
+    #popup-blocker .box { max-width: 560px; background: #0b0b0f; border: 1px solid #222; padding: 24px; border-radius: 10px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.7); color: #ddd; }
     #popup-blocker h2 { color: #ffcc00; margin-bottom: 10px; }
     #popup-blocker p { margin-bottom: 16px; line-height: 1.4; color: #bbb; }
     .popup-btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 700; margin: 6px; }
     .popup-btn.primary { background: #00aaff; color: #000; }
     .popup-btn.ghost { background: transparent; border: 1px solid #444; color: #fff; }
-
-    /* --- Google 버튼 스타일 (auth-container 안에 추가) --- */
-    .google-btn {
-      width:95%;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      padding:10px;
-      margin:8px 0 4px;
-      background:linear-gradient(180deg,#fff,#f2f2f2);
-      color:#000;
-      border-radius:6px;
-      border:1px solid rgba(0,0,0,0.08);
-      cursor:pointer;
-      font-weight:700;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
-    .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
-    .google-btn small { font-weight:600; color:#666; font-size:11px; margin-left:6px; }
-    .google-btn:hover { transform: translateY(-1px); transition: transform .12s ease; }
   </style>
 </head>
 <body>
   <!-- 인증 -->
-  <div id="auth-container">
-    <h2>로그인 / 회원가입</h2>
-    <input type="email" id="email" placeholder="이메일" />
-    <input type="password" id="password" placeholder="비밀번호" />
-    <button id="login-btn">로그인</button>
-    <button id="signup-btn">회원가입</button>
+  <div id="auth-container" role="dialog" aria-labelledby="auth-title">
+    <h2 id="auth-title">로그인 / 회원가입</h2>
+    <input type="email" id="email" placeholder="이메일" autocomplete="username" />
+    <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" />
+    <button id="login-btn" class="primary-btn">로그인</button>
+    <button id="signup-btn" class="ghost-btn">회원가입</button>
 
     <!-- ===== Google 로그인 버튼 추가 (권장) ===== -->
     <button id="google-btn" aria-label="구글로 계속하기 (권장)" class="google-btn">
@@ -120,20 +127,21 @@
 
     <!-- ===== 아이디 찾기 삭제: 비밀번호 찾기 링크만 남김 ===== -->
     <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
-      <a
-        id="find-pw"
-        href="find.html"
-        style="flex:1; max-width:320px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"
-        aria-label="비밀번호 찾기 (find.html으로 이동)"
-        title="비밀번호 찾기"
-      >
-        비밀번호 찾기
-      </a>
+      <a id="find-pw" href="find.html" style="flex:1; max-width:320px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600; box-shadow: 0 2px 6px rgba(0,0,0,0.4);" aria-label="비밀번호 찾기 (find.html으로 이동)" title="비밀번호 찾기">비밀번호 찾기</a>
     </div>
     <!-- ===== 변경 끝 ===== -->
 
-    <p id="auth-error" style="color:#f66;"></p>
+    <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
+
+    <!-- 로그인 상태 오버레이 -->
+    <div id="login-overlay" class="login-overlay" aria-hidden="true">
+      <div class="login-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <div id="login-overlay-text">로그인 중…</div>
+      </div>
+    </div>
   </div>
+
   <button id="logout-btn">로그아웃</button>
 
   <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
@@ -236,12 +244,7 @@
     let uid = null;
     let dataRef = null;
     let localLastWrite = 0; // 로컬에서 마지막으로 기록한 타임스탬프 (밀리초)
-    const defaultData = {
-      resources:0, coins:0, clickPower:1,
-      shipLevel:1, shipUpgradeCost:20,
-      workerCount:0, conversionCount:0,
-      autoConvertBought:false, ownedPlanets:[]
-    };
+    const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[] };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
     const initialConversionCost=50, conversionCostGrowth=1.3;
@@ -287,14 +290,61 @@
       update(dataRef, toSave).catch(err => console.error('저장 에러:', err));
     }
 
+    // ===== 사용자 친화적 에러 메시지 매핑 =====
+    function friendlyAuthError(err) {
+      if (!err || !err.code) return '오류가 발생했습니다. 다시 시도해주세요.';
+      const code = err.code || '';
+      switch (code) {
+        case 'auth/wrong-password': return '비밀번호가 일치하지 않습니다. 다시 확인해 주세요.';
+        case 'auth/user-not-found': return '등록된 계정이 없습니다. 먼저 회원가입해 주세요.';
+        case 'auth/email-already-in-use': return '이미 사용 중인 이메일입니다. 다른 이메일을 사용하거나 로그인하세요.';
+        case 'auth/invalid-email': return '이메일 형식이 올바르지 않습니다.';
+        case 'auth/weak-password': return '비밀번호가 너무 약합니다. 6자 이상으로 설정해주세요.';
+        case 'auth/popup-blocked': return '팝업이 차단되어 로그인이 실패했습니다. 팝업을 허용하거나 다른 방법을 시도하세요.';
+        case 'auth/popup-closed-by-user': return '팝업 창을 닫았습니다. 다시 시도해 주세요.';
+        case 'auth/network-request-failed': return '네트워크 연결이 불안정합니다. 인터넷 연결을 확인하세요.';
+        default: return err.message || '로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      }
+    }
+
+    // ===== UI 헬퍼 =====
+    const authContainer = document.getElementById('auth-container');
+    const authErrorEl = document.getElementById('auth-error');
+    const loginOverlay = document.getElementById('login-overlay');
+
+    function showAuthStatus(msg, isError = true) {
+      authErrorEl.textContent = msg;
+      if (msg) authErrorEl.classList.add('show'); else authErrorEl.classList.remove('show');
+      if (isError) {
+        authErrorEl.style.color = '#ffdede';
+      } else {
+        authErrorEl.style.color = '#dfffe8';
+      }
+    }
+
+    function showLoginOverlay(show, text = '로그인 중…') {
+      const overlay = document.getElementById('login-overlay');
+      const txt = document.getElementById('login-overlay-text');
+      if (!overlay) return;
+      txt.textContent = text;
+      if (show) overlay.classList.add('show'); else overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    // 로그인 상태에서 애니메이션으로 전환 처리 (auth-container는 직접 숨기지 말고 클래스 사용)
     onAuthStateChanged(auth, async user => {
-      document.getElementById('auth-error').innerText = '';
+      showAuthStatus('');
       if (user) {
         uid = user.uid;
         dataRef = ref(db, `users/${uid}/gameData`);
-        document.getElementById('auth-container').style.display = 'none';
-        document.getElementById('logout-btn').style.display = 'block';
-        ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+        // 부드러운 전환: overlay가 보이면 숨기고, 카드 축소 후 숨김
+        showLoginOverlay(false);
+        authContainer.classList.add('hidden');
+        setTimeout(() => {
+          authContainer.style.display = 'none';
+          document.getElementById('logout-btn').style.display = 'block';
+          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+        }, 340);
 
         // 안전하게 초기화 (경합 없도록 transaction 사용)
         await ensureInitialData(dataRef);
@@ -303,68 +353,83 @@
         onValue(dataRef, snap => {
           const server = snap.exists() ? snap.val() : null;
           if (!server) {
-            // 서버에 데이터가 전혀 없는 경우(희귀) — 이미 ensureInitialData로 처리되었을 것
             state = { ...defaultData };
-            updateUI();
-            renderPlanets();
+            updateUI(); renderPlanets();
             return;
           }
           const serverLast = server._lastUpdated || 0;
-          // 서버가 더 최신이면 서버 데이터로 교체
           if (serverLast > localLastWrite) {
-            // 서버 데이터가 최신이므로 그대로 반영 (기본값과 병합)
             state = { ...defaultData, ...server };
-            // localLastWrite는 건드리지 않음 (이미 서버가 최신)
           } else {
-            // 로컬이 더 최근이거나 동기화 중: 서버에서 일부 필드만 온 경우가 있으므로 병합
             state = { ...defaultData, ...server, ...state };
-            // 이 경우에도 _lastUpdated는 이미 localLastWrite가 최신일 수 있음
           }
-          // UI 갱신
-          updateUI();
-          renderPlanets();
+          updateUI(); renderPlanets();
         });
 
       } else {
-        uid = null;
-        dataRef = null;
-        document.getElementById('auth-container').style.display = 'block';
+        uid = null; dataRef = null;
+        authContainer.style.display = 'block';
+        // 애니메이션으로 천천히 나타내기
+        setTimeout(() => authContainer.classList.remove('hidden'), 16);
         document.getElementById('logout-btn').style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
       }
     });
 
-    document.getElementById('login-btn').addEventListener('click', () => {
-      signInWithEmailAndPassword(auth, email.value, password.value)
-        .catch(err => authError.innerText = err.message);
+    // 기존 로그인/회원가입 이벤트에 상태 UI 연결 (팝업/리다이렉트 폴백 포함)
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      showAuthStatus('');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
+      try {
+        showLoginOverlay(true, '로그인 중… 잠시만요');
+        await signInWithEmailAndPassword(auth, email, password);
+        // 성공하면 onAuthStateChanged에서 처리
+      } catch (err) {
+        console.warn(err);
+        showLoginOverlay(false);
+        showAuthStatus(friendlyAuthError(err));
+      }
     });
-    document.getElementById('signup-btn').addEventListener('click', e => {
-      e.preventDefault();
-      createUserWithEmailAndPassword(auth, email.value, password.value)
-        .catch(err => authError.innerText = err.message);
+
+    document.getElementById('signup-btn').addEventListener('click', async (e) => {
+      e.preventDefault(); showAuthStatus('');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
+      try {
+        showLoginOverlay(true, '계정 생성 중…');
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        console.warn(err);
+        showLoginOverlay(false);
+        showAuthStatus(friendlyAuthError(err));
+      }
     });
-    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     // 구글 로그인 처리 (팝업 우선, 팝업 차단 시 리다이렉트로 폴백)
     const googleBtn = document.getElementById('google-btn');
     if (googleBtn) {
       googleBtn.addEventListener('click', async () => {
+        showAuthStatus('');
         const provider = new GoogleAuthProvider();
-        // provider.setCustomParameters({ prompt: 'select_account' }); // 필요 시 활성화
         try {
-          // 팝업 방식 우선
+          showLoginOverlay(true, '구글로 로그인 중…');
           await signInWithPopup(auth, provider);
-          // 성공하면 onAuthStateChanged 처리에서 자동으로 UI 전환됨
         } catch (err) {
           console.warn('signInWithPopup 실패, signInWithRedirect로 폴백:', err);
           try {
             await signInWithRedirect(auth, provider);
           } catch (err2) {
-            document.getElementById('auth-error').innerText = err2.message || '구글 로그인 중 오류가 발생했습니다.';
+            showLoginOverlay(false);
+            showAuthStatus(friendlyAuthError(err2));
           }
         }
       });
     }
+
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     function updateUI() {
       document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
@@ -396,122 +461,32 @@
     }
 
     function renderPlanets() {
-      const planets = [
-        {name:'달',cost:100,requiredShipLevel:1},
-        {name:'수성',cost:500,requiredShipLevel:2},
-        {name:'금성',cost:2000,requiredShipLevel:3},
-        {name:'지구',cost:10000,requiredShipLevel:4},
-        {name:'화성',cost:50000,requiredShipLevel:5},
-        {name:'목성',cost:250000,requiredShipLevel:6},
-        {name:'토성',cost:1000000,requiredShipLevel:7},
-        {name:'천왕성',cost:5000000,requiredShipLevel:8},
-        {name:'해왕성',cost:20000000,requiredShipLevel:9}
-      ];
-      const list = document.getElementById('planet-list');
-      list.innerHTML = '';
+      const planets = [ {name:'달',cost:100,requiredShipLevel:1}, {name:'수성',cost:500,requiredShipLevel:2}, {name:'금성',cost:2000,requiredShipLevel:3}, {name:'지구',cost:10000,requiredShipLevel:4}, {name:'화성',cost:50000,requiredShipLevel:5}, {name:'목성',cost:250000,requiredShipLevel:6}, {name:'토성',cost:1000000,requiredShipLevel:7}, {name:'천왕성',cost:5000000,requiredShipLevel:8}, {name:'해왕성',cost:20000000,requiredShipLevel:9} ];
+      const list = document.getElementById('planet-list'); list.innerHTML = '';
       planets.forEach((p, i) => {
         const div = document.createElement('div');
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
-        const btn = document.createElement('button');
-        btn.className = 'general';
-        btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족');
-        btn.disabled = owned || !canBuy;
-        btn.onclick = () => {
-          if (state.coins >= p.cost) {
-            state.coins -= p.cost;
-            if (!state.ownedPlanets) state.ownedPlanets = [];
-            state.ownedPlanets.push(i);
-            save(); updateUI(); renderPlanets();
-            if (state.ownedPlanets.length === planets.length) {
-              window.location.href = '/ending.html';
-            }
-          }
-        };
-        div.appendChild(btn);
-        list.appendChild(div);
+        const btn = document.createElement('button'); btn.className = 'general'; btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
+        btn.onclick = () => { if (state.coins >= p.cost) { state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i); save(); updateUI(); renderPlanets(); if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html'; } };
+        div.appendChild(btn); list.appendChild(div);
       });
     }
 
-    function spawnParticles(x,y) {
-      for (let i=0; i<15; i++) {
-        const span = document.createElement('span');
-        span.className = 'particle';
-        span.style.setProperty('--dx', (Math.random()-0.5)*100+'px');
-        span.style.setProperty('--dy', (Math.random()-1)*100+'px');
-        span.style.left = x+'px';
-        span.style.top = y+'px';
-        document.getElementById('ore-container').appendChild(span);
-        setTimeout(() => span.remove(), 800);
-      }
-    }
+    function spawnParticles(x,y) { for (let i=0;i<15;i++){ const span = document.createElement('span'); span.className='particle'; span.style.setProperty('--dx',(Math.random()-0.5)*100+'px'); span.style.setProperty('--dy',(Math.random()-1)*100+'px'); span.style.left = x+'px'; span.style.top = y+'px'; document.getElementById('ore-container').appendChild(span); setTimeout(()=>span.remove(),800); } }
 
     window.onload = () => {
-      document.getElementById('ore').addEventListener('click', e => {
-        const rect = e.target.getBoundingClientRect();
-        spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
-        state.resources += state.clickPower;
-        if (state.autoConvertBought) convertResources();
-        save(); updateUI();
-      });
-      document.getElementById('convert-button').addEventListener('click', () => {
-        convertResources(1); save(); updateUI();
-      });
-      document.getElementById('auto-convert-buy').addEventListener('click', () => {
-        if (!state.autoConvertBought && state.coins >= 100) {
-          state.coins -= 100;
-          state.autoConvertBought = true;
-          save(); updateUI();
-        }
-      });
-      document.getElementById('hire-worker').addEventListener('click', () => {
-        const cost = getWorkerCost();
-        if (state.coins >= cost) {
-          state.coins -= cost; state.workerCount++;
-          save(); updateUI();
-        }
-      });
-      document.getElementById('hire-conversion').addEventListener('click', () => {
-        const cost = getConversionCost();
-        if (state.coins >= cost) {
-          state.coins -= cost; state.conversionCount++;
-          save(); updateUI();
-        }
-      });
-      document.getElementById('upgrade-ship').addEventListener('click', () => {
-        if (state.coins >= state.shipUpgradeCost) {
-          state.coins -= state.shipUpgradeCost;
-          state.shipLevel++;
-          state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
-          save(); updateUI(); renderPlanets();
-        }
-      });
-      document.getElementById('click-upgrade').addEventListener('click', () => {
-        if (state.coins >= clickUpgradeCost) {
-          state.coins -= clickUpgradeCost;
-          state.clickPower++;
-          save(); updateUI();
-        }
-      });
-      document.getElementById('reset-button').addEventListener('click', () => {
-        if (confirm('정말 초기화하시겠습니까?')) {
-          state = { ...defaultData };
-          save(); updateUI(); renderPlanets();
-        }
-      });
-      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-      }));
-      setInterval(() => {
-        if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
-        if (state.conversionCount > 0) state.coins += state.conversionCount;
-        if (state.autoConvertBought) convertResources();
-        save(); updateUI();
-      }, 1000);
+      document.getElementById('ore').addEventListener('click', e => { const rect = e.target.getBoundingClientRect(); spawnParticles(e.clientX - rect.left, e.clientY - rect.top); state.resources += state.clickPower; if (state.autoConvertBought) convertResources(); save(); updateUI(); });
+      document.getElementById('convert-button').addEventListener('click', () => { convertResources(1); save(); updateUI(); });
+      document.getElementById('auto-convert-buy').addEventListener('click', () => { if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); } });
+      document.getElementById('hire-worker').addEventListener('click', () => { const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } });
+      document.getElementById('hire-conversion').addEventListener('click', () => { const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
+      document.getElementById('upgrade-ship').addEventListener('click', () => { if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
+      document.getElementById('click-upgrade').addEventListener('click', () => { if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
+      document.getElementById('reset-button').addEventListener('click', () => { if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
+      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(`${tab.dataset.tab}-content`).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
+      setInterval(() => { if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower(); if (state.conversionCount > 0) state.coins += state.conversionCount; if (state.autoConvertBought) convertResources(); save(); updateUI(); }, 1000);
     };
   </script>
 
@@ -521,336 +496,39 @@
       const EXPECTED_POPUP_NAME = 'gameWindow';
       const BLOCKER_ID = 'popup-blocker';
       let blocker = document.getElementById(BLOCKER_ID);
-      // 블로커의 원본 템플릿(복원용)
       let blockerTemplate = blocker ? blocker.cloneNode(true) : null;
-
-      // 새로고침/탭 닫기 제어 플래그
       let allowUnload = false;
-      function allowTemporaryUnload(ms = 1000) {
-        allowUnload = true;
-        setTimeout(() => { allowUnload = false; }, ms);
-      }
-
-      // beforeunload로 새로고침/닫기 방지
-      window.addEventListener('beforeunload', (e) => {
-        if (allowUnload) return;
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      });
-
-      // 팝업 판정 함수 (강화)
+      function allowTemporaryUnload(ms = 1000) { allowUnload = true; setTimeout(() => { allowUnload = false; }, ms); }
+      window.addEventListener('beforeunload', (e) => { if (allowUnload) return; e.preventDefault(); e.returnValue = ''; return ''; });
       function isOpenedAsPopup() {
-        try {
-          // opener 존재 & 닫히지 않음 -> 높은 확률로 팝업
-          if (window.opener && !window.opener.closed) {
-            try {
-              if (window.opener.location && window.opener.location.origin === location.origin) return true;
-            } catch (e) {
-              return true;
-            }
-          }
-        } catch (e) {}
-
-        // 팝업 이름 확인
+        try { if (window.opener && !window.opener.closed) { try { if (window.opener.location && window.opener.location.origin === location.origin) return true; } catch (e) { return true; } } } catch (e) {}
         if (window.name === EXPECTED_POPUP_NAME) return true;
-
-        // 쿼리/해시 플래그
         if (location.search.includes('popup=1') || location.hash.includes('popup=1')) return true;
-
-        // 창 크기 기준 (작은 창이면 팝업으로 간주)
-        try {
-          if (window.outerWidth && window.outerHeight) {
-            const smallWidth = screen.width - 100;
-            const smallHeight = screen.height - 100;
-            if (window.outerWidth <= smallWidth || window.outerHeight <= smallHeight) return true;
-          }
-        } catch (e) {}
-
-        // iframe 내부면 팝업 아님
-        try {
-          if (window.self !== window.top) return false;
-        } catch (e) {}
-
+        try { if (window.outerWidth && window.outerHeight) { const smallWidth = screen.width - 100; const smallHeight = screen.height - 100; if (window.outerWidth <= smallWidth || window.outerHeight <= smallHeight) return true; } } catch (e) {}
+        try { if (window.self !== window.top) return false; } catch (e) {}
         return false;
       }
-
-      // (재)블로커 보여주기 — DOM 변조가 있어도 이걸 호출하면 복구/차단됨
-      function showBlocker() {
-        try {
-          blocker = document.getElementById(BLOCKER_ID);
-          if (!blocker) {
-            // 원본 템플릿이 있으면 복원, 없으면 간단 복구 노드 생성
-            if (blockerTemplate) {
-              document.body.appendChild(blockerTemplate.cloneNode(true));
-            } else {
-              const div = document.createElement('div');
-              div.id = BLOCKER_ID;
-              div.setAttribute('role','alert');
-              div.className = ' active';
-              div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:3000;padding:20px;';
-              div.innerHTML = '<div class="box" style="max-width:560px;background:#0b0b0f;border:1px solid #222;padding:24px;border-radius:10px;color:#ddd;text-align:center;"><h2 style="color:#ffcc00;margin-bottom:10px">잘못된 접근입니다</h2><p style="margin-bottom:16px;color:#bbb">이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p><div><button id="reopen-popup" class="popup-btn primary" style="padding:10px 14px;border-radius:8px;border:0;margin:6px;font-weight:700">팝업으로 열기</button><button id="close-tab" class="popup-btn ghost" style="padding:10px 14px;border-radius:8px;border:1px solid #444;margin:6px;background:transparent;color:#fff">이 탭 닫기</button></div><p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인하세요.</p></div>';
-              document.body.appendChild(div);
-            }
-            blocker = document.getElementById(BLOCKER_ID);
-            // 버튼 이벤트 다시 바인딩
-            bindBlockerButtons();
-          }
-          // 강제로 active 표시 (클래스와 스타일 둘 다 보장)
-          blocker.classList.add('active');
-          blocker.style.display = 'flex';
-          blocker.style.pointerEvents = 'auto';
-          blocker.style.zIndex = '999999'; // 최상단 보장
-        } catch (e) {
-          console.error('showBlocker error', e);
-        }
-      }
-
-      function hideBlocker() {
-        try {
-          blocker = document.getElementById(BLOCKER_ID);
-          if (!blocker) return;
-          blocker.classList.remove('active');
-          blocker.style.display = 'none';
-        } catch (e) {}
-      }
-
-      function tryOpenPopupFromThisTab() {
-        const w = 1024, h = 768;
-        const left = Math.max(0, Math.round((screen.width - w) / 2));
-        const top  = Math.max(0, Math.round((screen.height - h) / 2));
-        const opts = `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no`;
-        const popup = window.open(window.location.href + (location.search ? '&' : '?') + 'popup=1', EXPECTED_POPUP_NAME, opts);
-        if (!popup) {
-          alert('팝업이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인하세요.');
-          return;
-        }
-        try { popup.focus(); } catch(e) {}
-        setTimeout(()=>{   
-          try{   
-            allowTemporaryUnload(1500);
-            window.close();
-          } catch(e){}   
-        }, 300);
-      }
-
-      function bindBlockerButtons() {
-        try {
-          blocker = document.getElementById(BLOCKER_ID);
-          if (!blocker) return;
-          const reopenBtn = blocker.querySelector('#reopen-popup');
-          const closeBtn = blocker.querySelector('#close-tab');
-          if (reopenBtn) {
-            reopenBtn.addEventListener('click', tryOpenPopupFromThisTab);
-          }
-          if (closeBtn) {
-            closeBtn.addEventListener('click', function(){ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} });
-          }
-        } catch (e) {}
-      }
-
-      // DOM 무결성 감지: blocker, auth-container, top-bar, container의 제거/숨김을 감지하고 복구
-      function setupMutationProtection() {
-        // 저장해둔 템플릿 확보
-        blocker = document.getElementById(BLOCKER_ID);
-        if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true);
-
-        const watchTargets = ['auth-container','top-bar','container', BLOCKER_ID];
-        const body = document.body;
-
-        const observer = new MutationObserver((mutations) => {
-          try {
-            let shouldRestoreBlocker = false;
-            for (const m of mutations) {
-              // 자식 추가/삭제로 블로커가 사라지거나 변경되면 복구
-              if (m.type === 'childList') {
-                // 삭제된 노드에 blocker가 있으면 복구
-                for (const n of m.removedNodes) {
-                  if (n && n.id === BLOCKER_ID) shouldRestoreBlocker = true;
-                }
-                // 누군가가 blocker를 숨긴 경우도 체크
-                const b = document.getElementById(BLOCKER_ID);
-                if (!b) shouldRestoreBlocker = true;
-              }
-              // 속성 변경으로 display:none, visibility:hidden, style 변경된 경우
-              if (m.type === 'attributes' && (m.target && (m.target.id === BLOCKER_ID || watchTargets.includes(m.target.id)))) {
-                const t = m.target;
-                const style = window.getComputedStyle(t);
-                // 팝업이 아닌 상태라면 블로커는 항상 보여야 함 -> 숨겨졌다면 복구
-                if (!isOpenedAsPopup() && (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity || '1') < 0.1)) {
-                  shouldRestoreBlocker = true;
-                }
-              }
-            }
-
-            // 추가 안전 검사: 팝업이 아닌 상태인데 블로커가 없거나 숨겨져 있으면 복구
-            if (!isOpenedAsPopup()) {
-              const b = document.getElementById(BLOCKER_ID);
-              if (!b) shouldRestoreBlocker = true;
-              else {
-                const cs = window.getComputedStyle(b);
-                if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) shouldRestoreBlocker = true;
-              }
-            }
-
-            if (shouldRestoreBlocker) {
-              showBlocker();
-              bindBlockerButtons();
-            }
-          } catch (e) {
-            console.error('mutation observer error', e);
-          }
-        });
-
-        observer.observe(body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class'], attributeOldValue:true });
-
-        // 주기적 체크(추가 안전망)
-        setInterval(() => {
-          try {
-            if (!isOpenedAsPopup()) {
-              const b = document.getElementById(BLOCKER_ID);
-              if (!b) { showBlocker(); bindBlockerButtons(); return; }
-              const cs = window.getComputedStyle(b);
-              if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) {
-                showBlocker(); bindBlockerButtons(); return;
-              }
-              // blocker의 z-index가 낮아져서 클릭 가능한 경우에도 최상단으로 올림
-              const z = parseInt((b.style.zIndex || '0').replace(/[^0-9]/g,'')) || 0;
-              if (z < 99999) {
-                b.style.zIndex = '999999';
-              }
-            } else {
-              // 팝업이면 보통 블로커를 숨겨야 함
-              const b = document.getElementById(BLOCKER_ID);
-              if (b) {
-                hideBlocker();
-              }
-            }
-          } catch (e) {}
-        }, 600);
-
-      }
-
-      // 키보드 차단: F1~F12 중 F11은 허용. Ctrl/Alt/Meta 조합은 기본적으로 무시하되, 입력 폼에서 Ctrl+C/V 등 편집키는 허용
-      window.addEventListener('keydown', (e) => {
-        try {
-          const key = e.key || '';
-          const isFunctionKey = /^F\d{1,2}$/i.test(key);
-          const isModifierCombo = e.ctrlKey || e.altKey || e.metaKey;
-
-          const target = e.target || {};
-          const tag = (target.tagName || '').toUpperCase();
-          const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
-
-          // 허용하는 F키: F11은 전체화면 토글 허용 (브라우저 기본 동작)
-          if (isFunctionKey && key.toUpperCase() !== 'F11') {
-            e.preventDefault(); e.stopPropagation(); return;
-          }
-
-          const k = key.toLowerCase();
-          // 리로드/탭 닫기 등 위험한 조합 우선 차단
-          if ((e.ctrlKey && (k === 'r' || k === 'w' || k === 'n' || k === 't' || k === 's')) ||
-              (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) ||
-              (key === 'F5')) {
-            if (isEditable) {
-              const allowedInEdit = ['c','v','x','z','y','a'];
-              if (e.ctrlKey && allowedInEdit.includes(k)) {
-                return; // 편집 관련 단축키는 허용
-              }
-            }
-            e.preventDefault(); e.stopPropagation(); return;
-          }
-
-          if (e.altKey && (k === 'f4')) {
-            e.preventDefault(); e.stopPropagation(); return;
-          }
-
-          // 기타 모디파이어 조합은 입력 필드가 아니면 무시
-          if (isModifierCombo && !isEditable) {
-            e.preventDefault(); e.stopPropagation(); return;
-          }
-        } catch (err) {}
-      }, {capture:true, passive:false});
-
-      // 전체화면 상태 변화 감지: F11 허용하지만, 팝업이 아닌 상태에서 전체화면이면 즉시 종료시키고 블로커 표시
-      document.addEventListener('fullscreenchange', () => {
-        try {
-          if (document.fullscreenElement && !isOpenedAsPopup()) {
-            // 전체화면 진입했지만 팝업이 아니면 즉시 종료
-            if (document.exitFullscreen) {
-              document.exitFullscreen().catch(()=>{});
-            }
-            showBlocker();
-          }
-        } catch (e) {}
-      });
-
-      // 마우스 휠 + Ctrl(줌) 차단 시도
-      window.addEventListener('wheel', (e) => {
-        if (e.ctrlKey) {
-          e.preventDefault(); e.stopPropagation();
-        }
-      }, {passive:false});
-
-      // 초기 실행: DOMContentLoaded 후 검사/설정
-      document.addEventListener('DOMContentLoaded', () => {
-        blocker = document.getElementById(BLOCKER_ID);
-        if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true);
-
-        if (!isOpenedAsPopup()) {
-          showBlocker();
-        } else {
-          hideBlocker();
-          console.log('팝업으로 열림 — 게임 실행 허용 (팝업 검사 통과)');
-        }
-
-        bindBlockerButtons();
-        setupMutationProtection();
-      });
-
+      function showBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) { if (blockerTemplate) { document.body.appendChild(blockerTemplate.cloneNode(true)); } else { const div = document.createElement('div'); div.id = BLOCKER_ID; div.setAttribute('role','alert'); div.className = ' active'; div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:3000;padding:20px;'; div.innerHTML = '<div class="box" style="max-width:560px;background:#0b0b0f;border:1px solid #222;padding:24px;border-radius:10px;color:#ddd;text-align:center;"><h2 style="color:#ffcc00;margin-bottom:10px">잘못된 접근입니다</h2><p style="margin-bottom:16px;color:#bbb">이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p><div><button id="reopen-popup" class="popup-btn primary" style="padding:10px 14px;border-radius:8px;border:0;margin:6px;font-weight:700">팝업으로 열기</button><button id="close-tab" class="popup-btn ghost" style="padding:10px 14px;border-radius:8px;border:1px solid #444;margin:6px;background:transparent;color:#fff">이 탭 닫기</button></div><p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인하세요.</p></div>'; document.body.appendChild(div); } blocker = document.getElementById(BLOCKER_ID); bindBlockerButtons(); } blocker.classList.add('active'); blocker.style.display = 'flex'; blocker.style.pointerEvents = 'auto'; blocker.style.zIndex = '999999'; } catch (e) { console.error('showBlocker error', e); } }
+      function hideBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) return; blocker.classList.remove('active'); blocker.style.display = 'none'; } catch (e) {} }
+      function tryOpenPopupFromThisTab() { const w = 1024, h = 768; const left = Math.max(0, Math.round((screen.width - w) / 2)); const top  = Math.max(0, Math.round((screen.height - h) / 2)); const opts = `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no`; const popup = window.open(window.location.href + (location.search ? '&' : '?') + 'popup=1', EXPECTED_POPUP_NAME, opts); if (!popup) { alert('팝업이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인하세요.'); return; } try { popup.focus(); } catch(e) {} setTimeout(()=>{ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }, 300); }
+      function bindBlockerButtons() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) return; const reopenBtn = blocker.querySelector('#reopen-popup'); const closeBtn = blocker.querySelector('#close-tab'); if (reopenBtn) { reopenBtn.addEventListener('click', tryOpenPopupFromThisTab); } if (closeBtn) { closeBtn.addEventListener('click', function(){ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }); } } catch (e) {} }
+      function setupMutationProtection() { blocker = document.getElementById(BLOCKER_ID); if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true); const watchTargets = ['auth-container','top-bar','container', BLOCKER_ID]; const body = document.body; const observer = new MutationObserver((mutations) => { try { let shouldRestoreBlocker = false; for (const m of mutations) { if (m.type === 'childList') { for (const n of m.removedNodes) { if (n && n.id === BLOCKER_ID) shouldRestoreBlocker = true; } const b = document.getElementById(BLOCKER_ID); if (!b) shouldRestoreBlocker = true; } if (m.type === 'attributes' && (m.target && (m.target.id === BLOCKER_ID || watchTargets.includes(m.target.id)))) { const t = m.target; const style = window.getComputedStyle(t); if (!isOpenedAsPopup() && (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity || '1') < 0.1)) { shouldRestoreBlocker = true; } } } if (!isOpenedAsPopup()) { const b = document.getElementById(BLOCKER_ID); if (!b) shouldRestoreBlocker = true; else { const cs = window.getComputedStyle(b); if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) shouldRestoreBlocker = true; } } if (shouldRestoreBlocker) { showBlocker(); bindBlockerButtons(); } } catch (e) { console.error('mutation observer error', e); } }); observer.observe(body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class'], attributeOldValue:true }); setInterval(() => { try { if (!isOpenedAsPopup()) { const b = document.getElementById(BLOCKER_ID); if (!b) { showBlocker(); bindBlockerButtons(); return; } const cs = window.getComputedStyle(b); if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) { showBlocker(); bindBlockerButtons(); return; } const z = parseInt((b.style.zIndex || '0').replace(/[^0-9]/g,'')) || 0; if (z < 99999) { b.style.zIndex = '999999'; } } else { const b = document.getElementById(BLOCKER_ID); if (b) { hideBlocker(); } } } catch (e) {} }, 600); }
+      document.addEventListener('DOMContentLoaded', () => { blocker = document.getElementById(BLOCKER_ID); if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true); if (!isOpenedAsPopup()) { showBlocker(); } else { hideBlocker(); console.log('팝업으로 열림 — 게임 실행 허용 (팝업 검사 통과)'); } bindBlockerButtons(); setupMutationProtection(); });
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
-    DisableDevtool({
-      disableMenu: true,
-      disableSelect: true,
-      disableCopy: true,
-      disableCut: true,
-      disablePaste: true,
-      clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) { window.close(); next(); },
-      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
-    });
+    DisableDevtool({ disableMenu: true, disableSelect: true, disableCopy: true, disableCut: true, disablePaste: true, clearIntervalWhenDevOpenTrigger: true, ondevtoolopen(type, next) { window.close(); next(); }, ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); } });
     const customMenu = document.getElementById('custom-menu');
-    window.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      customMenu.style.top = `${e.clientY}px`;
-      customMenu.style.left = `${e.clientX}px`;
-      customMenu.style.display = 'block';
-    });
-    customMenu.addEventListener('click', e => {
-      const action = e.target.getAttribute('data-action');
-      if (!action) return;
-      if (action === 'menu') window.location.href = '/index.html';
-      if (action === 'resume') customMenu.style.display = 'none';
-      if (action === 'rank') window.location.href = '/ranking.html';
-    });
-    window.addEventListener('click', e => {
-      if (!customMenu.contains(e.target)) customMenu.style.display = 'none';
-    });
+    window.addEventListener('contextmenu', e => { e.preventDefault(); customMenu.style.top = `${e.clientY}px`; customMenu.style.left = `${e.clientX}px`; customMenu.style.display = 'block'; });
+    customMenu.addEventListener('click', e => { const action = e.target.getAttribute('data-action'); if (!action) return; if (action === 'menu') window.location.href = '/index.html'; if (action === 'resume') customMenu.style.display = 'none'; if (action === 'rank') window.location.href = '/ranking.html'; });
+    window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display = 'none'; });
   </script>
   <script>
     // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
     document.addEventListener('contextmenu', function (e) {
-      // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
-      if (e.target.closest('input, textarea, [contenteditable="true"]')) {
-        return; // 허용
-      }
-
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
       e.preventDefault();
-      // 선택적으로 사용자에게 알림 표시하려면 아래 주석 해제
-      // alert('우클릭이 비활성화되어 있습니다.');
     });
   </script>
 </body>
