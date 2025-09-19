@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>    <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->    <script>
+  <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
+  <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->
+  <script>
     (function(){
       try {
         history.replaceState(null, '', '/게임' + (location.hash || ''));
@@ -11,7 +13,8 @@
         console.warn('주소 표시 변경 실패:', e);
       }
     })();
-  </script>    <style>
+  </script>
+  <style>
     body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
@@ -67,6 +70,28 @@
     .popup-btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 700; margin: 6px; }
     .popup-btn.primary { background: #00aaff; color: #000; }
     .popup-btn.ghost { background: transparent; border: 1px solid #444; color: #fff; }
+
+    /* --- Google 버튼 스타일 (auth-container 안에 추가) --- */
+    .google-btn {
+      width:95%;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px;
+      margin:8px 0 4px;
+      background:linear-gradient(180deg,#fff,#f2f2f2);
+      color:#000;
+      border-radius:6px;
+      border:1px solid rgba(0,0,0,0.08);
+      cursor:pointer;
+      font-weight:700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
+    .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
+    .google-btn small { font-weight:600; color:#666; font-size:11px; margin-left:6px; }
+    .google-btn:hover { transform: translateY(-1px); transition: transform .12s ease; }
   </style>
 </head>
 <body>
@@ -77,6 +102,21 @@
     <input type="password" id="password" placeholder="비밀번호" />
     <button id="login-btn">로그인</button>
     <button id="signup-btn">회원가입</button>
+
+    <!-- ===== Google 로그인 버튼 추가 (권장) ===== -->
+    <button id="google-btn" aria-label="구글로 계속하기 (권장)" class="google-btn">
+      <span class="g-icon" aria-hidden="true">
+        <!-- 인라인 Google SVG 아이콘 (경량) -->
+        <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false">
+          <path fill="#EA4335" d="M24 9.5c3.9 0 6.6 1.7 8.1 3.1l6-5.8C35.7 3.7 30.2 1.5 24 1.5 14.7 1.5 6.9 6.9 3.1 14.8l7.4 5.7C12.2 15 17.6 9.5 24 9.5z"/>
+          <path fill="#34A853" d="M46.5 24c0-1.6-.1-2.9-.4-4.2H24v8.0h12.7c-.5 2.9-2.6 5.5-5.6 7.2l8.6 6.6C43.8 36.3 46.5 30.6 46.5 24z"/>
+          <path fill="#4A90E2" d="M10.5 29.4A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6L3 13.6C1.1 16.8 0 20.3 0 24c0 3.7 1.1 7.3 3 10.4l7.5-5z"/>
+          <path fill="#FBBC05" d="M24 46.5c6.2 0 11.7-2.1 15.9-5.7l-8.6-6.6c-2.4 1.6-5.4 2.6-7.3 2.6-6.3 0-11.7-5.5-12.8-12.2L3.1 33.2C6.9 41.1 14.7 46.5 24 46.5z"/>
+        </svg>
+      </span>
+      <span class="g-text">구글로 계속하기 <small>(권장)</small></span>
+    </button>
+    <!-- ===== 변경 끝 ===== -->
 
     <!-- ===== 아이디 찾기 삭제: 비밀번호 찾기 링크만 남김 ===== -->
     <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
@@ -94,7 +134,9 @@
 
     <p id="auth-error" style="color:#f66;"></p>
   </div>
-  <button id="logout-btn">로그아웃</button>    <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
+  <button id="logout-btn">로그아웃</button>
+
+  <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
   <div id="popup-blocker" role="alert" aria-live="assertive">
     <div class="box">
       <h2>잘못된 접근입니다</h2>
@@ -105,7 +147,10 @@
       </div>
       <p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인한 뒤 다시 시도하세요.</p>
     </div>
-  </div>    <!-- 상단 바 -->    <div id="top-bar">
+  </div>
+
+  <!-- 상단 바 -->
+  <div id="top-bar">
     <div class="bar-group">
       <img src="/images/resource-icon.png" alt="Resource" />
       <span id="score">자원: 0</span>
@@ -117,7 +162,10 @@
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
     </div>
-  </div>    <!-- 메인 컨테이너 -->    <div id="container">
+  </div>
+
+  <!-- 메인 컨테이너 -->
+  <div id="container">
     <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
     <nav>
       <div class="tab active" data-tab="main">메인</div>
@@ -125,43 +173,49 @@
       <div class="tab" data-tab="upgrades">클릭당 업그레이드</div>
       <div class="tab" data-tab="planets">행성 구매</div>
       <div class="tab" data-tab="reset">초기화</div>
-    </nav>  <div id="main-content" class="tab-content active">
-  <div id="ore-container" style="position:relative; display:inline-block;">
-    <img src="/images/ore.png" id="ore" alt="광석" />
+    </nav>
+    <div id="main-content" class="tab-content active">
+      <div id="ore-container" style="position:relative; display:inline-block;">
+        <img src="/images/ore.png" id="ore" alt="광석" />
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
+        <button id="convert-button" class="general">10자원 → 1코인</button>
+        <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
+      </div>
+    </div>
+
+    <div id="workers-content" class="tab-content">
+      <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
+      <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
+      <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
+      <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
+    </div>
+
+    <div id="upgrades-content" class="tab-content">
+      <p>클릭당 자원: <span id="click-power">1</span></p>
+      <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
+    </div>
+
+    <div id="planets-content" class="tab-content">
+      <div id="planet-list"></div>
+    </div>
+
+    <div id="reset-content" class="tab-content">
+      <button id="reset-button" class="general">초기화</button>
+    </div>
+
   </div>
-  <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
-    <button id="convert-button" class="general">10자원 → 1코인</button>
-    <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
-  </div>
-</div>
 
-<div id="workers-content" class="tab-content">
-  <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
-  <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
-  <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
-  <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
-</div>
-
-<div id="upgrades-content" class="tab-content">
-  <p>클릭당 자원: <span id="click-power">1</span></p>
-  <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
-</div>
-
-<div id="planets-content" class="tab-content">
-  <div id="planet-list"></div>
-</div>
-
-<div id="reset-content" class="tab-content">
-  <button id="reset-button" class="general">초기화</button>
-</div>
-
-  </div>    <!-- 커스텀 컨텍스트 메뉴 -->    <div id="custom-menu">
+  <!-- 커스텀 컨텍스트 메뉴 -->
+  <div id="custom-menu">
     <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
     <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
-  </div>    <script type="module">
+  </div>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -290,6 +344,27 @@
         .catch(err => authError.innerText = err.message);
     });
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+    // 구글 로그인 처리 (팝업 우선, 팝업 차단 시 리다이렉트로 폴백)
+    const googleBtn = document.getElementById('google-btn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        // provider.setCustomParameters({ prompt: 'select_account' }); // 필요 시 활성화
+        try {
+          // 팝업 방식 우선
+          await signInWithPopup(auth, provider);
+          // 성공하면 onAuthStateChanged 처리에서 자동으로 UI 전환됨
+        } catch (err) {
+          console.warn('signInWithPopup 실패, signInWithRedirect로 폴백:', err);
+          try {
+            await signInWithRedirect(auth, provider);
+          } catch (err2) {
+            document.getElementById('auth-error').innerText = err2.message || '구글 로그인 중 오류가 발생했습니다.';
+          }
+        }
+      });
+    }
 
     function updateUI() {
       document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
@@ -438,7 +513,10 @@
         save(); updateUI();
       }, 1000);
     };
-  </script>    <!-- === 팝업 검사 / 복구 / 키 차단 (강화된 버전) === -->    <script>
+  </script>
+
+  <!-- === 팝업 검사 / 복구 / 키 차단 (강화된 버전) === -->
+  <script>
     (function() {
       const EXPECTED_POPUP_NAME = 'gameWindow';
       const BLOCKER_ID = 'popup-blocker';
@@ -731,7 +809,9 @@
       });
 
     })();
-  </script>    <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>    <script>
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
     DisableDevtool({
       disableMenu: true,
       disableSelect: true,
@@ -759,18 +839,19 @@
     window.addEventListener('click', e => {
       if (!customMenu.contains(e.target)) customMenu.style.display = 'none';
     });
-  </script>    <script>
-  // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
-  document.addEventListener('contextmenu', function (e) {
-    // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
-    if (e.target.closest('input, textarea, [contenteditable="true"]')) {
-      return; // 허용
-    }
+  </script>
+  <script>
+    // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
+    document.addEventListener('contextmenu', function (e) {
+      // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) {
+        return; // 허용
+      }
 
-    e.preventDefault();
-    // 선택적으로 사용자에게 알림 표시하려면 아래 주석 해제
-    // alert('우클릭이 비활성화되어 있습니다.');
-  });
+      e.preventDefault();
+      // 선택적으로 사용자에게 알림 표시하려면 아래 주석 해제
+      // alert('우클릭이 비활성화되어 있습니다.');
+    });
   </script>
 </body>
 </html>
