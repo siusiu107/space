@@ -15,16 +15,100 @@
     })();
   </script>
   <style>
-    /* (생략: 스타일은 이전과 동일 — 변경 없음) */
+    /* 기본 레이아웃 (변경 없음) */
     body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
-    /* ... 나머지 스타일 생략 (원본 그대로) ... */
-    /* (전체 스타일은 위에 있던 것과 동일합니다) */
+
+    /* === 로그인 카드 디자인 개선 === */
+    #auth-container {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000;
+      width:360px; max-width:92%; padding:22px; border-radius:14px; text-align:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(6,7,12,0.55));
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(6px);
+      transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
+    }
+    #auth-container.hidden { opacity:0; transform: translate(-50%, -46% ) scale(.98); pointer-events:none; visibility:hidden; }
+
+    #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
+    .auth-row { display:flex; gap:8px; align-items:center; justify-content:center; }
+    #auth-container input { width:100%; padding:12px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.25); color:#fff; outline:none; font-size:14px; }
+    #auth-container input:focus { box-shadow:0 8px 20px rgba(0,160,255,0.08); border-color:rgba(0,160,255,0.25); }
+    #auth-container .primary-btn { width:100%; padding:12px; margin-top:8px; border-radius:10px; background:linear-gradient(90deg,#00c0ff,#0077ff); color:#00120b; font-weight:800; border:none; cursor:pointer; box-shadow: 0 6px 18px rgba(0,120,255,0.12); }
+    #auth-container .ghost-btn { width:100%; padding:10px; margin-top:6px; border-radius:10px; background:transparent; color:#e6f5ff; border:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+
+    /* 에러 / 상태 메시지 */
+    .auth-status { margin-top:10px; min-height:22px; font-size:13px; color:#ffdede; opacity:0; transform:translateY(6px); transition:opacity .22s ease, transform .22s ease; }
+    .auth-status.show { opacity:1; transform:translateY(0); }
+
+    /* 로깅 오버레이 */
+    .login-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,12,0.55), rgba(2,6,12,0.75)); border-radius:14px; z-index:1100; opacity:0; pointer-events:none; transition:opacity .24s ease; }
+    .login-overlay.show { opacity:1; pointer-events:auto; }
+    .login-card { text-align:center; color:#e6f7ff; }
+    .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Google 버튼 (기존 стиль 유지하되 정렬 고침) */
+    .google-btn { width:95%; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:10px; margin:8px 0 4px; background:linear-gradient(180deg,#fff,#f2f2f2); color:#000; border-radius:8px; border:1px solid rgba(0,0,0,0.08); cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+    .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
+    .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
+    .google-btn small { font-weight:600; color:#666; font-size:11px; margin-left:6px; }
+
+    /* 작은 화면에서 조금 조정 */
+    @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
+
+    /* =============== 기존 스타일들 (변경 거의 없음) =============== */
+    #logout-btn { display:none; position:fixed; bottom:20px; right:10px; background:#f44; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; z-index:1001; }
+    #top-bar { position: fixed; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: center; background: rgba(30,30,30,0.85); padding:6px 10px; border-radius:8px; font-size:12px; z-index:1000; }
+    .bar-group { display:flex; align-items:center; }
+    .bar-group img { width:16px; height:16px; margin-right:4px; }
+    .bar-group span { margin-right:12px; white-space: nowrap; }
+    #container { margin:50px auto 20px; width:90%; max-width:640px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
+    h1 { font-size:1.6em; margin-bottom:14px; color:#00d4ff; }
+    button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
+    button.general:disabled { opacity:0.5; cursor:not-allowed; }
+    #reset-button { background:rgba(255,92,92,0.9)!important; }
+    nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; gap:6px; }
+    .tab { flex:1 1 45%; min-width:120px; padding:8px; background:rgba(51,51,51,0.85); border-radius:6px; cursor:pointer; text-align:center; }
+    .tab.active { background:#00aaff; }
+    .tab-content { display:none; margin-top:12px; }
+    .tab-content.active { display:block; }
+    .particle { position:absolute; width:6px; height:6px; background:#ffd700; border-radius:50%; opacity:.8; animation:floatUp .8s ease-out forwards; pointer-events:none; }
+    @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
+    #ore { width:200px; cursor:pointer; }
+    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.95); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
+    #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
+
+    /* === 팝업 차단용 오버레이 스타일 (변경 없음) === */
+    #popup-blocker {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.9);
+      z-index: 3000; /* custom-menu(2000)보다 위 */
+      padding: 20px;
+    }
+    #popup-blocker.active { display: flex; }
+    #popup-blocker .box { max-width: 560px; background: #0b0b0f; border: 1px solid #222; padding: 24px; border-radius: 10px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.7); color: #ddd; }
+    #popup-blocker h2 { color: #ffcc00; margin-bottom: 10px; }
+    #popup-blocker p { margin-bottom: 16px; line-height: 1.4; color: #bbb; }
+    .popup-btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 700; margin: 6px; }
+    .popup-btn.primary { background: #00aaff; color: #000; }
+    .popup-btn.ghost { background: transparent; border: 1px solid #444; color: #fff; }
+
+    /* === (추가) 오버레이 내 진행 관련 스타일 === */
+    .login-overlay { transition:opacity .24s ease, visibility .24s ease; }
+    .login-overlay.show { opacity:1; pointer-events:auto; }
+    .login-overlay .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #overlay-steps li[data-active="true"] { color:#e6f7ff; font-weight:700; opacity:1 !important; }
   </style>
 </head>
 <body>
-  <!-- (HTML 구조는 모두 동일 — 생략하지 않았지만 여기선 핵심 스크립트 강조를 위해 본문을 유지합니다) -->
   <!-- 인증 -->
   <div id="auth-container" role="dialog" aria-labelledby="auth-title">
     <h2 id="auth-title">로그인 / 회원가입</h2>
@@ -33,9 +117,10 @@
     <button id="login-btn" class="primary-btn">로그인</button>
     <button id="signup-btn" class="ghost-btn">회원가입</button>
 
+    <!-- ===== Google 로그인 버튼 추가 (권장) ===== -->
     <button id="google-btn" aria-label="구글로 계속하기 (권장)" class="google-btn">
       <span class="g-icon" aria-hidden="true">
-        <!-- 구글 SVG (생략 가능) -->
+        <!-- 인라인 Google SVG 아이콘 (경량) -->
         <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false">
           <path fill="#EA4335" d="M24 9.5c3.9 0 6.6 1.7 8.1 3.1l6-5.8C35.7 3.7 30.2 1.5 24 1.5 14.7 1.5 6.9 6.9 3.1 14.8l7.4 5.7C12.2 15 17.6 9.5 24 9.5z"/>
           <path fill="#34A853" d="M46.5 24c0-1.6-.1-2.9-.4-4.2H24v8.0h12.7c-.5 2.9-2.6 5.5-5.6 7.2l8.6 6.6C43.8 36.3 46.5 30.6 46.5 24z"/>
@@ -45,17 +130,23 @@
       </span>
       <span class="g-text">구글로 계속하기 <small>(권장)</small></span>
     </button>
+    <!-- ===== 변경 끝 ===== -->
 
+    <!-- ===== 아이디 찾기 삭제: 비밀번호 찾기 링크만 남김 ===== -->
     <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
       <a id="find-pw" href="find.html" style="flex:1; max-width:320px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600; box-shadow: 0 2px 6px rgba(0,0,0,0.4);" aria-label="비밀번호 찾기 (find.html으로 이동)" title="비밀번호 찾기">비밀번호 찾기</a>
     </div>
+    <!-- ===== 변경 끝 ===== -->
 
     <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
 
+    <!-- 로그인 상태 오버레이 (교체된 전문 표시) -->
     <div id="login-overlay" class="login-overlay" aria-hidden="true">
       <div class="login-card" role="status" aria-live="polite" aria-atomic="true">
         <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
-          <div id="overlay-provider-icon" aria-hidden="true" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,0.06);"></div>
+          <div id="overlay-provider-icon" aria-hidden="true" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,0.06);">
+            <!-- provider 아이콘(동적 삽입) -->
+          </div>
           <div style="text-align:left;">
             <div id="login-overlay-title" style="font-weight:800; font-size:15px; color:#e6f7ff;">로그인 처리 중</div>
             <div id="login-overlay-sub" style="font-size:12px; color:#bcd8ee; margin-top:2px;">보안 연결 · 인증 중…</div>
@@ -66,10 +157,12 @@
           <div class="spinner" aria-hidden="true"></div>
         </div>
 
+        <!-- 진행바 (시각적 피드백) -->
         <div style="width:220px; margin:0 auto 10px; background:rgba(255,255,255,0.04); border-radius:8px; padding:6px;">
           <div id="overlay-progress" style="height:8px; width:0%; border-radius:6px; background:linear-gradient(90deg,#00c0ff,#0077ff); transition:width .4s ease;"></div>
         </div>
 
+        <!-- 단계 표시 -->
         <ol id="overlay-steps" style="list-style:none; padding:0; margin:0; font-size:13px; color:#dbefff; max-width:260px;">
           <li data-step="1" style="opacity:0.9; margin-bottom:6px;">1. 인증창 열기</li>
           <li data-step="2" style="opacity:0.6; margin-bottom:6px;">2. 권한 요청</li>
@@ -83,7 +176,7 @@
 
   <button id="logout-btn">로그아웃</button>
 
-  <!-- (이하 메인 UI — 생략하지 않음, 원본과 동일) -->
+  <!-- === 팝업 차단 오버레이 추가 (여기만 새로 추가됨) === -->
   <div id="popup-blocker" role="alert" aria-live="assertive">
     <div class="box">
       <h2>잘못된 접근입니다</h2>
@@ -96,6 +189,7 @@
     </div>
   </div>
 
+  <!-- 상단 바 -->
   <div id="top-bar">
     <div class="bar-group">
       <img src="/images/resource-icon.png" alt="Resource" />
@@ -110,6 +204,7 @@
     </div>
   </div>
 
+  <!-- 메인 컨테이너 -->
   <div id="container">
     <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
     <nav>
@@ -151,6 +246,7 @@
 
   </div>
 
+  <!-- 커스텀 컨텍스트 메뉴 -->
   <div id="custom-menu">
     <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
     <div class="menu-item" data-action="download">⬇️ 앱 다운로드</div>
@@ -180,9 +276,8 @@
     let state = {};
     let uid = null;
     let dataRef = null;
-    let dataUnsubscribe = null; // onValue 구독 해제 보관
+    let dataUnsubscribe = null; // **추가: onValue 구독 해제 함수 보관**
     let localLastWrite = 0; // 로컬에서 마지막으로 기록한 타임스탬프 (밀리초)
-    let isInitialSync = false; // **추가: 로그인 직후 초기 동기화 플래그**
     const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[] };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
@@ -202,31 +297,39 @@
       }
     }
 
+    // 안전 초기화: 거래(트랜잭션)로 없을 때만 기본값 넣기 (경합 방지)
     async function ensureInitialData(refPath) {
       try {
         await runTransaction(refPath, current => {
           if (current === null) {
             return { ...defaultData, _lastUpdated: Date.now() };
           }
-          return current;
+          return current; // 이미 있으면 변경하지 않음
         });
       } catch (err) {
         console.error('초기화 트랜잭션 에러:', err);
       }
     }
 
+    // save: update() 사용. 전체를 덮어쓰기보다 병합형 업데이트로 다른 필드 손실 방지.
     function save() {
       if (!uid || !dataRef) return;
+      // 시간 기록
       const now = Date.now();
       state._lastUpdated = now;
+      // **계정별 localLastWrite 저장**
       localLastWrite = now;
       try {
         localStorage.setItem(`lastWrite_${uid}`, String(now));
-      } catch (e) {}
+      } catch (e) { /* localStorage 실패 무시 */ }
+
+      // 복제해서 보낼 객체 생성 (숨겨진 필드도 전송)
       const toSave = { ...state };
+      // update는 병합이라 안전함.
       update(dataRef, toSave).catch(err => console.error('저장 에러:', err));
     }
 
+    // ===== 사용자 친화적 에러 메시지 매핑 =====
     function friendlyAuthError(err) {
       if (!err || !err.code) return '오류가 발생했습니다. 다시 시도해주세요.';
       const code = err.code || '';
@@ -243,6 +346,7 @@
       }
     }
 
+    // ===== UI 헬퍼 =====
     const authContainer = document.getElementById('auth-container');
     const authErrorEl = document.getElementById('auth-error');
     const loginOverlay = document.getElementById('login-overlay');
@@ -257,6 +361,7 @@
       }
     }
 
+    // === (교체된) 전문적인 로그인 오버레이 표시 함수 ===
     function showLoginOverlay(show, text = '로그인 중…', opts = {}) {
       const overlay = document.getElementById('login-overlay');
       const title = document.getElementById('login-overlay-title');
@@ -271,9 +376,15 @@
       sub.textContent = opts.subText || '보안 연결 · 인증 중…';
       detail.textContent = opts.detail || '브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다. 팝업이 차단되면 설정을 확인하세요.';
 
-      provIcon.innerHTML = '';
+      provIcon.innerHTML = ''; // 초기화
       if (opts.provider === 'google') {
-        provIcon.innerHTML = `...`; // 생략
+        provIcon.innerHTML = `
+          <svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.9 0 6.6 1.7 8.1 3.1l6-5.8C35.7 3.7 30.2 1.5 24 1.5 14.7 1.5 6.9 6.9 3.1 14.8l7.4 5.7C12.2 15 17.6 9.5 24 9.5z"/>
+            <path fill="#34A853" d="M46.5 24c0-1.6-.1-2.9-.4-4.2H24v8.0h12.7c-.5 2.9-2.6 5.5-5.6 7.2l8.6 6.6C43.8 36.3 46.5 30.6 46.5 24z"/>
+            <path fill="#4A90E2" d="M10.5 29.4A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6L3 13.6C1.1 16.8 0 20.3 0 24c0 3.7 1.1 7.3 3 10.4l7.5-5z"/>
+            <path fill="#FBBC05" d="M24 46.5c6.2 0 11.7-2.1 15.9-5.7l-8.6-6.6c-2.4 1.6-5.4 2.6-7.3 2.6-6.3 0-11.7-5.5-12.8-12.2L3.1 33.2C6.9 41.1 14.7 46.5 24 46.5z"/>
+          </svg>`;
         if (!text) title.textContent = '구글로 로그인 중…';
         sub.textContent = '구글 인증창을 통해 안전하게 로그인합니다.';
       } else {
@@ -326,11 +437,12 @@
       };
     }
 
-    // onAuthStateChanged: 구독 해제 -> 로그인 처리 -> 초기 동기화 플래그 처리
+    // 로그인 상태에서 애니메이션으로 전환 처리 (auth-container는 직접 숨기지 말고 클래스 사용)
     onAuthStateChanged(auth, async user => {
       showAuthStatus('');
+      // **구독 해제: 새로운 계정으로 전환하기 전에 기존 리스너가 있으면 제거**
       if (dataUnsubscribe) {
-        try { dataUnsubscribe(); } catch (e) {}
+        try { dataUnsubscribe(); } catch (e) { /* 무시 */ }
         dataUnsubscribe = null;
       }
 
@@ -338,15 +450,13 @@
         uid = user.uid;
         dataRef = ref(db, `users/${uid}/gameData`);
 
-        // 로그인 직후 초기 동기화 플래그 활성화
-        isInitialSync = true;
-
-        // 계정별 lastWrite 불러오기
+        // 로그인 시, 계정별로 저장된 localLastWrite 불러오기 (안정성 향상)
         try {
           const saved = localStorage.getItem(`lastWrite_${uid}`);
           localLastWrite = saved ? parseInt(saved, 10) : 0;
         } catch (e) { localLastWrite = 0; }
 
+        // 부드러운 전환: overlay가 보이면 숨기고, 카드 축소 후 숨김
         showLoginOverlay(false);
         authContainer.classList.add('hidden');
         setTimeout(() => {
@@ -355,72 +465,47 @@
           ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
         }, 340);
 
+        // 안전하게 초기화 (경합 없도록 transaction 사용)
         await ensureInitialData(dataRef);
 
-        // 안전한 실시간 리스너: 초기 동기화 시에는 서버 우선(저장 금지), 초기 동기화 끝난 뒤 충돌 처리 허용
+        // 실시간 리스너: 서버의 마지막 갱신 시간(_lastUpdated)을 기준으로 로컬 덮어쓰기 제어
         dataUnsubscribe = onValue(dataRef, snap => {
           const server = snap.exists() ? snap.val() : null;
           if (!server) {
-            // 서버에 데이터가 아예 없을 때: 초기 동기화 중이면 로컬 기본값 유지하되 '덮어쓰기'는 하지 않음
-            if (isInitialSync) {
-              state = { ...defaultData };
-              updateUI(); renderPlanets();
-              isInitialSync = false; // 초기 동기화 끝
-              return;
-            } else {
-              // 이후라면 역시 안전하게 기본값 적용 (필요시 사용자에게 알릴 수 있음)
-              state = { ...defaultData };
-              updateUI(); renderPlanets();
-              return;
-            }
-          }
-
-          const serverLast = server._lastUpdated || 0;
-
-          if (isInitialSync) {
-            // **초기 동기화**: 서버가 존재하면 무조건 서버 우선으로 덮어씀(저장 금지)
-            state = { ...defaultData, ...server };
+            state = { ...defaultData };
             updateUI(); renderPlanets();
-            isInitialSync = false;
             return;
           }
-
-          // 초기 동기화가 끝난 이후의 일반 충돌 처리 로직
+          const serverLast = server._lastUpdated || 0;
+          // 서버가 최신이거나 같으면 서버를 신뢰
           if (serverLast >= (localLastWrite || 0)) {
-            // 서버가 최신 또는 동일 -> 서버를 신뢰
             state = { ...defaultData, ...server };
           } else {
             // 로컬이 최신: 로컬을 서버에 다시 쓴다(충돌해결)
             state = { ...defaultData, ...server, ...state };
-            // 안전성: 실제로 로컬이 서버와 다른 경우에만 저장
-            try {
-              const serverStr = JSON.stringify(server);
-              const localStr = JSON.stringify(state);
-              if (localStr !== serverStr) {
-                save(); // 로컬을 서버에 반영
-              }
-            } catch (e) {
-              // 직렬화 에러 발생 시라도 기본적으로 save 호출
-              save();
-            }
+            save(); // save()가 localLastWrite와 서버 업데이트 처리
           }
           updateUI(); renderPlanets();
         });
 
       } else {
-        // 로그아웃: 안전하게 로컬 상태 초기화
         uid = null; dataRef = null;
+        // **추가: 로그아웃 시 로컬 상태 및 타임스탬프 초기화하여 이전 계정 데이터가 남지 않도록 함**
         state = { ...defaultData };
         localLastWrite = 0;
-        isInitialSync = false;
+        try { /* 선택적으로 계정별 lastWrite 제거하려면 주석 해제:
+          localStorage.removeItem(`lastWrite_${uid}`);
+        */ } catch (e) { /* 무시 */ }
+
         authContainer.style.display = 'block';
+        // 애니메이션으로 천천히 나타내기
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         document.getElementById('logout-btn').style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
       }
     });
 
-    // (이하 기존 이벤트 핸들러/게임 로직 — 구조/UI 건드리지 않음)
+    // 기존 로그인/회원가입 이벤트에 상태 UI 연결 (팝업/리다이렉트 폴백 포함)
     document.getElementById('login-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
@@ -429,6 +514,7 @@
       try {
         showLoginOverlay(true, '로그인 중… 잠시만요');
         await signInWithEmailAndPassword(auth, email, password);
+        // 성공하면 onAuthStateChanged에서 처리
       } catch (err) {
         console.warn(err);
         showLoginOverlay(false);
@@ -451,22 +537,28 @@
       }
     });
 
+    // === (교체된) 구글 로그인 버튼 핸들러: overlay에 provider 정보 전달 ===
     const googleBtn = document.getElementById('google-btn');
     if (googleBtn) {
       googleBtn.addEventListener('click', async () => {
         showAuthStatus('');
         const provider = new GoogleAuthProvider();
         try {
+          // 전문적 표시: provider='google' 전달, 세부문구 설정
           showLoginOverlay(true, '구글 인증 시작', { provider: 'google', subText: '구글 계정으로 안전하게 연결합니다.', detail: '구글 팝업이 열리면 계정을 선택하고 권한을 허용해주세요.' });
           await signInWithPopup(auth, provider);
+          // 성공 시 onAuthStateChanged에서 처리되므로, onAuthStateChanged에서 overlay.success를 호출하도록 하거나,
+          // 여기서 간단히 success 콜을 시도 (onAuthStateChanged가 발생하기 전에)
           const overlay = document.getElementById('login-overlay');
           overlay && overlay.success && overlay.success('로그인 완료 — 환영합니다');
         } catch (err) {
           console.warn('signInWithPopup 실패, signInWithRedirect로 폴백:', err);
           try {
+            // 폴백: 리다이렉트 전 상태 업데이트
             showLoginOverlay(true, '리다이렉트 로그인 중', { provider: 'google', subText: '브라우저 리다이렉트로 로그인합니다.' });
             await signInWithRedirect(auth, provider);
           } catch (err2) {
+            // 오류 처리: 전문적 실패 문구 표시
             showLoginOverlay(false);
             showAuthStatus(friendlyAuthError(err2));
           }
@@ -531,19 +623,11 @@
       document.getElementById('click-upgrade').addEventListener('click', () => { if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
       document.getElementById('reset-button').addEventListener('click', () => { if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
       document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(`${tab.dataset.tab}-content`).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
-
-      setInterval(() => {
-        if (!uid) return;
-        if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
-        if (state.conversionCount > 0) state.coins += state.conversionCount;
-        if (state.autoConvertBought) convertResources();
-        save();
-        updateUI();
-      }, 1000);
+      setInterval(() => { if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower(); if (state.conversionCount > 0) state.coins += state.conversionCount; if (state.autoConvertBought) convertResources(); save(); updateUI(); }, 1000);
     };
   </script>
 
-  <!-- (이하 팝업 검사·커스텀 메뉴 등은 원본 그대로 유지) -->
+  <!-- === 팝업 검사 / 복구 / 키 차단 (강화된 버전) === -->
   <script>
     (function() {
       const EXPECTED_POPUP_NAME = 'gameWindow';
@@ -569,12 +653,14 @@
       document.addEventListener('DOMContentLoaded', () => { blocker = document.getElementById(BLOCKER_ID); if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true); if (!isOpenedAsPopup()) { showBlocker(); } else { hideBlocker(); console.log('팝업으로 열림 — 게임 실행 허용 (팝업 검사 통과)'); } bindBlockerButtons(); setupMutationProtection(); });
     })();
   </script>
-
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({ disableMenu: true, disableSelect: true, disableCopy: true, disableCut: true, disablePaste: true, clearIntervalWhenDevOpenTrigger: true, ondevtoolopen(type, next) { window.close(); next(); }, ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); } });
 
+    // === 수정된 부분: customMenu 클릭 핸들러(다른 건 건들이지 않음) ===
     const customMenu = document.getElementById('custom-menu');
+
+    // 우클릭 시 메뉴 표시
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
       customMenu.style.top = `${e.clientY}px`;
@@ -582,41 +668,48 @@
       customMenu.style.display = 'block';
     });
 
+    // 클릭 핸들러: '게임 메뉴로 돌아가기'에서 창을 닫도록 시도
     customMenu.addEventListener('click', async (e) => {
       const target = e.target;
       const action = target.getAttribute('data-action');
       if (!action) return;
 
       if (action === 'menu') {
+        // 1) 부모창이 있으면 포커스 시도
         try {
           if (window.opener && !window.opener.closed) {
-            try { window.opener.focus(); } catch (err) { }
+            try { window.opener.focus(); } catch (err) { /* 무시 */ }
           }
-        } catch (err) { }
+        } catch (err) { /* 무시 */ }
 
+        // 2) 부모에게 postMessage로 닫아달라고 요청 (가능하면)
         try {
           window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*');
-        } catch (err) { }
+        } catch (err) { /* 무시 */ }
 
-        try { window.close(); } catch (err) { }
+        // 3) 창 닫기 시도
+        try { window.close(); } catch (err) { /* 브라우저가 허용하지 않을 수 있음 */ }
 
+        // 4) 닫히지 않으면 폴백으로 /index.html로 이동
         setTimeout(() => {
           try {
             if (!window.closed) {
               window.location.href = '/index.html';
             }
           } catch (err) {
-            try { window.open('/index.html', '_self'); } catch (e) { }
+            try { window.open('/index.html', '_self'); } catch (e) { /* 무시 */ }
           }
         }, 250);
         return;
       }
 
+      // === 새로 추가: 앱 다운로드 항목 처리 ===
       if (action === 'download') {
         try {
+          // 즉시 이동
           window.location.href = '/app-download.html';
         } catch (err) {
-          try { window.open('/app-download.html', '_self'); } catch (e) { }
+          try { window.open('/app-download.html', '_self'); } catch (e) { /* 무시 */ }
         }
         return;
       }
@@ -632,7 +725,9 @@
     });
 
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display = 'none'; });
-
+  </script>
+  <script>
+    // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
     document.addEventListener('contextmenu', function (e) {
       if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
       e.preventDefault();
