@@ -519,9 +519,63 @@
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({ disableMenu: true, disableSelect: true, disableCopy: true, disableCut: true, disablePaste: true, clearIntervalWhenDevOpenTrigger: true, ondevtoolopen(type, next) { window.close(); next(); }, ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); } });
+
+    // === 수정된 부분: customMenu 클릭 핸들러(다른 건 건들이지 않음) ===
     const customMenu = document.getElementById('custom-menu');
-    window.addEventListener('contextmenu', e => { e.preventDefault(); customMenu.style.top = `${e.clientY}px`; customMenu.style.left = `${e.clientX}px`; customMenu.style.display = 'block'; });
-    customMenu.addEventListener('click', e => { const action = e.target.getAttribute('data-action'); if (!action) return; if (action === 'menu') window.location.href = '/index.html'; if (action === 'resume') customMenu.style.display = 'none'; if (action === 'rank') window.location.href = '/ranking.html'; });
+
+    // 우클릭 시 메뉴 표시
+    window.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      customMenu.style.top = `${e.clientY}px`;
+      customMenu.style.left = `${e.clientX}px`;
+      customMenu.style.display = 'block';
+    });
+
+    // 클릭 핸들러: '게임 메뉴로 돌아가기'에서 창을 닫도록 시도
+    customMenu.addEventListener('click', async (e) => {
+      const target = e.target;
+      const action = target.getAttribute('data-action');
+      if (!action) return;
+
+      if (action === 'menu') {
+        // 1) 부모창이 있으면 포커스 시도
+        try {
+          if (window.opener && !window.opener.closed) {
+            try { window.opener.focus(); } catch (err) { /* 무시 */ }
+          }
+        } catch (err) { /* 무시 */ }
+
+        // 2) 부모에게 postMessage로 닫아달라고 요청 (가능하면)
+        try {
+          window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*');
+        } catch (err) { /* 무시 */ }
+
+        // 3) 창 닫기 시도
+        try { window.close(); } catch (err) { /* 브라우저가 허용하지 않을 수 있음 */ }
+
+        // 4) 닫히지 않으면 폴백으로 /index.html로 이동
+        setTimeout(() => {
+          try {
+            if (!window.closed) {
+              window.location.href = '/index.html';
+            }
+          } catch (err) {
+            try { window.open('/index.html', '_self'); } catch (e) { /* 무시 */ }
+          }
+        }, 250);
+        return;
+      }
+
+      if (action === 'resume') {
+        customMenu.style.display = 'none';
+        return;
+      }
+      if (action === 'rank') {
+        window.location.href = '/ranking.html';
+        return;
+      }
+    });
+
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display = 'none'; });
   </script>
   <script>
