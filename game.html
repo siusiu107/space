@@ -217,6 +217,7 @@
   <!-- 커스텀 컨텍스트 메뉴 -->
   <div id="custom-menu">
     <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
+    <div class="menu-item" data-action="download">⬇️ 앱 다운로드</div>
     <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
@@ -563,6 +564,17 @@
             try { window.open('/index.html', '_self'); } catch (e) { /* 무시 */ }
           }
         }, 250);
+        return;
+      }
+
+      // === 새로 추가: 앱 다운로드 항목 처리 ===
+      if (action === 'download') {
+        try {
+          // 즉시 이동
+          window.location.href = '/app-download.html';
+        } catch (err) {
+          try { window.open('/app-download.html', '_self'); } catch (e) { /* 무시 */ }
+        }
         return;
       }
 
