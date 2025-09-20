@@ -276,8 +276,9 @@
     let state = {};
     let uid = null;
     let dataRef = null;
-    let dataUnsubscribe = null; // **추가: onValue 구독 해제 함수 보관**
+    let dataUnsubscribe = null; // **onValue 구독 해제 함수 보관**
     let localLastWrite = 0; // 로컬에서 마지막으로 기록한 타임스탬프 (밀리초)
+    let isInitialSync = false; // **초기 동기화 플래그**
     const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[] };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
@@ -317,12 +318,9 @@
       // 시간 기록
       const now = Date.now();
       state._lastUpdated = now;
-      // **계정별 localLastWrite 저장**
+      // 계정별 localLastWrite 저장
       localLastWrite = now;
-      try {
-        localStorage.setItem(`lastWrite_${uid}`, String(now));
-      } catch (e) { /* localStorage 실패 무시 */ }
-
+      try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch (e) {}
       // 복제해서 보낼 객체 생성 (숨겨진 필드도 전송)
       const toSave = { ...state };
       // update는 병합이라 안전함.
@@ -450,7 +448,10 @@
         uid = user.uid;
         dataRef = ref(db, `users/${uid}/gameData`);
 
-        // 로그인 시, 계정별로 저장된 localLastWrite 불러오기 (안정성 향상)
+        // 로그인 직후 초기 동기화 플래그 활성화
+        isInitialSync = true;
+
+        // 계정별 lastWrite 불러오기
         try {
           const saved = localStorage.getItem(`lastWrite_${uid}`);
           localLastWrite = saved ? parseInt(saved, 10) : 0;
@@ -468,22 +469,52 @@
         // 안전하게 초기화 (경합 없도록 transaction 사용)
         await ensureInitialData(dataRef);
 
-        // 실시간 리스너: 서버의 마지막 갱신 시간(_lastUpdated)을 기준으로 로컬 덮어쓰기 제어
+        // 실시간 리스너: 초기 동기화 시에는 서버 우선(저장 금지), 초기 동기화 끝난 뒤 충돌 처리 허용
         dataUnsubscribe = onValue(dataRef, snap => {
           const server = snap.exists() ? snap.val() : null;
           if (!server) {
-            state = { ...defaultData };
+            // 서버에 데이터가 아예 없을 때: 초기 동기화 중이면 로컬 기본값 유지하되 '덮어쓰기'는 하지 않음
+            if (isInitialSync) {
+              state = { ...defaultData };
+              updateUI(); renderPlanets();
+              isInitialSync = false; // 초기 동기화 끝
+              return;
+            } else {
+              // 이후라면 역시 안전하게 기본값 적용 (필요시 사용자에게 알릴 수 있음)
+              state = { ...defaultData };
+              updateUI(); renderPlanets();
+              return;
+            }
+          }
+
+          const serverLast = server._lastUpdated || 0;
+
+          if (isInitialSync) {
+            // **초기 동기화**: 서버가 존재하면 무조건 서버 우선으로 덮어씀(저장 금지)
+            state = { ...defaultData, ...server };
             updateUI(); renderPlanets();
+            isInitialSync = false;
             return;
           }
-          const serverLast = server._lastUpdated || 0;
-          // 서버가 최신이거나 같으면 서버를 신뢰
+
+          // 초기 동기화가 끝난 이후의 일반 충돌 처리 로직
           if (serverLast >= (localLastWrite || 0)) {
+            // 서버가 최신 또는 동일 -> 서버를 신뢰
             state = { ...defaultData, ...server };
           } else {
             // 로컬이 최신: 로컬을 서버에 다시 쓴다(충돌해결)
             state = { ...defaultData, ...server, ...state };
-            save(); // save()가 localLastWrite와 서버 업데이트 처리
+            // 안전성: 실제로 로컬이 서버와 다른 경우에만 저장
+            try {
+              const serverStr = JSON.stringify(server);
+              const localStr = JSON.stringify(state);
+              if (localStr !== serverStr) {
+                save(); // 로컬을 서버에 반영
+              }
+            } catch (e) {
+              // 직렬화 에러 발생 시라도 기본적으로 save 호출
+              save();
+            }
           }
           updateUI(); renderPlanets();
         });
@@ -493,10 +524,7 @@
         // **추가: 로그아웃 시 로컬 상태 및 타임스탬프 초기화하여 이전 계정 데이터가 남지 않도록 함**
         state = { ...defaultData };
         localLastWrite = 0;
-        try { /* 선택적으로 계정별 lastWrite 제거하려면 주석 해제:
-          localStorage.removeItem(`lastWrite_${uid}`);
-        */ } catch (e) { /* 무시 */ }
-
+        isInitialSync = false;
         authContainer.style.display = 'block';
         // 애니메이션으로 천천히 나타내기
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
@@ -623,7 +651,15 @@
       document.getElementById('click-upgrade').addEventListener('click', () => { if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
       document.getElementById('reset-button').addEventListener('click', () => { if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
       document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(`${tab.dataset.tab}-content`).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
-      setInterval(() => { if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower(); if (state.conversionCount > 0) state.coins += state.conversionCount; if (state.autoConvertBought) convertResources(); save(); updateUI(); }, 1000);
+
+      setInterval(() => {
+        if (!uid) return; // 로그인된 사용자가 없으면 동작하지 않음 (중요)
+        if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
+        if (state.conversionCount > 0) state.coins += state.conversionCount;
+        if (state.autoConvertBought) convertResources();
+        save();
+        updateUI();
+      }, 1000);
     };
   </script>
 
