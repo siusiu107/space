@@ -1,351 +1,349 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>태양계정복 — 앱 다운로드</title>
-  <meta name="description" content="태양계정복 APK 다운로드 & 업로드 (관리자 전용 업로드)" />
-  <style>
-    :root{--bg:#020617;--card:#071028;--accent:#00aaff;--muted:#98a8b8}
-    html,body{height:100%;margin:0;font-family:Inter, "Noto Sans KR", Arial, sans-serif;background:linear-gradient(180deg,#010214,#071022);color:#e8faff}
-    .wrap{max-width:980px;margin:28px auto;padding:20px}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    h1{font-size:20px;margin:0;color:#dffaff}
-    p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
-    .controls{display:flex;gap:8px;align-items:center}
-    button, .btn {cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:700}
-    .btn.primary{background:var(--accent);color:#001220;box-shadow:0 6px 18px rgba(0,160,255,0.07)}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e8faff}
-    .card{background:linear-gradient(180deg,var(--card), #041127);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
-    .list{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-    .apk-item{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:8px}
-    .apk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .apk-meta{font-size:13px;color:var(--muted)}
-    .apk-name{font-weight:800;color:#fff}
-    .apk-actions{display:flex;gap:8px;align-items:center}
-    .small{font-size:12px;color:var(--muted)}
-    .empty{padding:28px;text-align:center;color:var(--muted)}
-    .upload-panel{display:flex;gap:8px;align-items:center;margin-top:12px}
-    .progress{height:8px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;width:200px}
-    .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00d4ff,#0077ff)}
-    .hint{margin-top:12px;font-size:13px;color:var(--muted)}
-    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
-    @media (max-width:520px){ header{flex-direction:column;align-items:flex-start} .controls{width:100%;justify-content:space-between} }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>태양계정복 — 앱 다운로드</title>
+<meta name="description" content="태양계정복 APK 다운로드 페이지 — 관리자만 링크(메타) 추가 가능" />
+<style>
+  /* 밝은 톤 디자인 (요청) */
+  :root{
+    --bg1: #e9f7ff;
+    --bg2: #f0fbff;
+    --card: #ffffff;
+    --accent: #0ea5ff;
+    --muted: #6b7280;
+    --border: rgba(15,23,42,0.06);
+    --success: #10b981;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, "Noto Sans KR", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: linear-gradient(180deg,var(--bg1),var(--bg2)); color:#0b1220}
+  .wrap{max-width:980px;margin:28px auto;padding:20px}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:20px;margin:0;color:#033c73}
+  p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .controls{display:flex;gap:8px;align-items:center}
+  button, .btn {cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:700;font-size:13px}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 20px rgba(14,165,255,0.12)}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:#033c73}
+  .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 8px 24px rgba(9,30,66,0.04);border:1px solid var(--border)}
+  .list{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+  .apk-item{background:linear-gradient(180deg, #ffffff, #fbfdff);padding:12px;border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;min-height:86px}
+  .apk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .apk-meta{font-size:13px;color:var(--muted)}
+  .apk-name{font-weight:800;color:#033c73}
+  .apk-actions{display:flex;gap:8px;align-items:center}
+  .small{font-size:12px;color:var(--muted)}
+  .empty{padding:28px;text-align:center;color:var(--muted)}
+  .upload-panel{display:flex;gap:8px;align-items:center;margin-top:12px}
+  .progress{height:8px;background:#eef6fb;border-radius:6px;overflow:hidden;width:200px;border:1px solid var(--border)}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7dd3fc,#06b6d4)}
+  .form-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  input[type="text"], input[type="url"], input[type="file"] { padding:10px;border-radius:8px;border:1px solid var(--border);background:#fbfeff;color:#033c73 }
+  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+  /* admin only controls are hidden by default; revealed by script */
+  #adminPanel{display:none}
+  /* responsive */
+  @media (max-width:520px){ header{flex-direction:column;align-items:flex-start} .controls{width:100%;justify-content:space-between} .form-row{flex-direction:column;align-items:stretch} }
+</style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div>
         <h1>태양계정복 — 앱 다운로드</h1>
-        <p class="lead">파일 다운로드는 누구나 가능. 업로드는 관리자(<strong>siu46852579@gmail.com</strong>) 로그인 시에만 사용 가능.</p>
+        <p class="lead">아래에서 최신 APK를 내려받을 수 있습니다.</p>
       </div>
-      <div class="controls">
-        <span id="who" class="small" style="min-width:220px"></span>
-        <button id="refreshBtn" class="btn ghost">새로고침</button>
+
+      <div class="controls" id="controls">
+        <span class="small" id="countText" aria-live="polite">로딩 중…</span>
         <button id="backBtn" class="btn primary">게임으로 돌아가기</button>
-        <button id="signBtn" class="btn ghost">관리자 로그인</button>
+        <!-- signBtn은 기본적으로 DOM에 있으나 화면에 표시되지 않음; JS에서 필요 시만 노출 -->
+        <button id="signBtn" class="btn ghost" style="display:none">관리자 로그인</button>
       </div>
     </header>
 
-    <section id="mainCard" class="card" aria-live="polite">
+    <main class="card" id="mainCard" aria-live="polite">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <strong>사용 가능한 APK</strong>
-        <span class="small" id="countText">로딩 중…</span>
+        <span class="small" id="metaNote" style="visibility:hidden">관리자 모드</span>
       </div>
 
-      <!-- 관리자 업로드 영역 (관리자에 한해 표시) -->
-      <div id="uploadArea" style="display:none" class="upload-panel" aria-hidden="true">
-        <input id="fileInput" type="file" accept=".apk" />
-        <button id="uploadBtn" class="btn primary">업로드</button>
-        <div class="progress" title="업로드 진행">
-          <i id="progBar"></i>
+      <!-- 관리자 전용 패널: 기본적으로 숨김. revealAdmin(해시) 또는 관리자로 로그인하면 표시 -->
+      <section id="adminPanel" class="card" aria-hidden="true" style="margin-top:12px;">
+        <div style="font-size:13px;color:#064e6a;font-weight:700;margin-bottom:6px">관리자: 링크(메타) 추가</div>
+        <div class="form-row">
+          <input id="metaFilename" type="text" placeholder="파일명 (예: 태양계정복-ver0.2.apk)" />
+          <input id="metaUrl" type="url" placeholder="다운로드 URL (https:// ...)" />
+          <button id="addMetaBtn" class="btn primary">추가</button>
         </div>
-        <span id="uploadStatus" class="small" style="margin-left:8px;color:var(--muted)"></span>
-      </div>
+        <div style="margin-top:10px" class="small">※ 권장: APK 파일은 외부 호스팅(예: GitHub Releases, S3 등)에 업로드하고, 여기엔 그 다운로드 URL만 등록하세요.</div>
+        <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)" />
+        <div style="font-size:13px;color:#064e6a;font-weight:700;margin-bottom:6px">관리자: 항목 관리</div>
+        <div class="small">목록에서 항목 옆의 삭제 버튼으로 제거할 수 있습니다.</div>
+      </section>
 
-      <div id="list" class="list" style="min-height:160px">
+      <!-- 파일 리스트 -->
+      <div id="list" class="list" style="min-height:160px;margin-top:12px;">
         <div class="empty">파일을 불러오는 중입니다…</div>
       </div>
-
-      <div class="hint">서버에 직접 업로드한 파일은 자동으로 감지됩니다. (Firebase Storage 사용)</div>
-    </section>
+    </main>
 
     <footer>
-      <small>팝업으로 열린 경우 '게임으로 돌아가기'는 창을 닫습니다. 팝업이 아닌 경우 /index.html로 이동합니다.</small>
+      <small>팝업으로 열렸을 경우 '게임으로 돌아가기' 는 창을 닫습니다. 팝업이 아니면 /index.html 로 이동합니다.</small>
     </footer>
   </div>
 
-  <!-- Firebase (앱/인증/스토리지) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getStorage, ref as storageRef, listAll, getDownloadURL, getMetadata, uploadBytesResumable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
+<script type="module">
+  // ---------- 설정 ----------
+  const ADMIN_EMAIL = 'siu46852579@gmail.com';
+  // revealAdmin: 관리자만 아는 진입점 — URL 끝에 "#admin" 을 붙이면 관리자 로그인 UI가 표시됩니다.
+  const revealAdmin = location.hash === '#admin';
 
-    // ---------- 관리자 이메일 ----------
-    const ADMIN_EMAIL = 'siu46852579@gmail.com';
+  // ---------- Firebase 초기화 ----------
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+  import { getDatabase, ref, push, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // ---------- Firebase 설정 (필요 시 변경) ----------
-    const firebaseConfig = {
-      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-      authDomain: "siu-studio.firebaseapp.com",
-      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "siu-studio",
-      storageBucket: "siu-studio.appspot.com",
-      messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140c31f01",
-      measurementId: "G-1Y090YJDB6"
-    };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const storage = getStorage(app);
+  const firebaseConfig = {
+    apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+    authDomain: "siu-studio.firebaseapp.com",
+    databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "siu-studio",
+    storageBucket: "siu-studio.appspot.com",
+    messagingSenderId: "830887143444",
+    appId: "1:830887143444:web:70b45fc12140c31f01",
+    measurementId: "G-1Y090YJDB6"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
 
-    // UI 엘리먼트
-    const whoEl = document.getElementById('who');
-    const signBtn = document.getElementById('signBtn');
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const progBar = document.getElementById('progBar');
-    const uploadStatus = document.getElementById('uploadStatus');
-    const listEl = document.getElementById('list');
-    const countText = document.getElementById('countText');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const backBtn = document.getElementById('backBtn');
+  // ---------- DOM ----------
+  const listEl = document.getElementById('list');
+  const countText = document.getElementById('countText');
+  const backBtn = document.getElementById('backBtn');
+  const signBtn = document.getElementById('signBtn');
+  const adminPanel = document.getElementById('adminPanel');
+  const metaNote = document.getElementById('metaNote');
+  const addMetaBtn = document.getElementById('addMetaBtn');
+  const metaFilename = document.getElementById('metaFilename');
+  const metaUrl = document.getElementById('metaUrl');
 
-    // helpers
-    function formatBytes(bytes){
-      if (!bytes && bytes !== 0) return '';
-      const thresh = 1024;
-      if (Math.abs(bytes) < thresh) return bytes + ' B';
-      const units = ['KB','MB','GB','TB'];
-      let u = -1;
-      do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1);
-      return bytes.toFixed(1) + ' ' + units[u];
+  // ---------- 유틸 ----------
+  function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escapeAttr(s){ return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+  function extractVersion(filename){
+    const name = (filename||'').replace(/\.apk$/i,'');
+    const m1 = name.match(/ver[-_]?(\d+(?:\.\d+)*)/i); if (m1) return 'v' + m1[1];
+    const m2 = name.match(/\bv(\d+(?:\.\d+)*)\b/i); if (m2) return 'v' + m2[1];
+    const m3 = name.match(/(\d+(?:\.\d+){0,})/); if (m3) return 'v' + m3[1];
+    return name || '';
+  }
+  function compareVersions(a,b){
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+    const pa = a.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
+    const pb = b.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
+    const len = Math.max(pa.length,pb.length);
+    for(let i=0;i<len;i++){ const na = pa[i]||0, nb = pb[i]||0; if (na !== nb) return nb - na; }
+    return 0;
+  }
+
+  // ---------- DB 경로 ----------
+  const APKS_PATH = 'apks';
+
+  // ---------- 표시: admin 진입점이 아니면 signBtn 숨김(비관리자는 모름) ----------
+  if (revealAdmin) {
+    signBtn.style.display = 'inline-block';
+    metaNote.style.visibility = 'visible';
+  } else {
+    signBtn.style.display = 'none'; // 완전히 숨김 — 비관리자는 존재 자체를 모름
+  }
+
+  // ---------- 인증 (관리자만) ----------
+  const provider = new GoogleAuthProvider();
+
+  async function signIn() {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      console.warn('signIn error', e);
+      alert('로그인 실패: 팝업 차단 또는 오류일 수 있습니다.');
     }
+  }
+  async function signOutUser() {
+    try { await signOut(auth); } catch(e){ console.warn(e); }
+  }
 
-    function extractVersion(filename){
-      const name = (filename||'').replace(/\.apk$/i,'');
-      const m1 = name.match(/ver[-_]?(\d+(?:\.\d+)*)/i);
-      if (m1) return 'v' + m1[1];
-      const m2 = name.match(/\bv(\d+(?:\.\d+)*)\b/i);
-      if (m2) return 'v' + m2[1];
-      const m3 = name.match(/(\d+(?:\.\d+){0,})/);
-      if (m3) return 'v' + m3[1];
-      return name || '';
+  signBtn.addEventListener('click', async () => {
+    if (auth.currentUser) {
+      await signOutUser();
+      return;
     }
-    function compareVersions(a,b){
-      if (!a && !b) return 0;
-      if (!a) return 1;
-      if (!b) return -1;
-      const pa = a.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
-      const pb = b.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
-      const len = Math.max(pa.length,pb.length);
-      for(let i=0;i<len;i++){
-        const na = pa[i]||0;
-        const nb = pb[i]||0;
-        if (na !== nb) return nb - na;
-      }
-      return 0;
+    await signIn();
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    // admin UI 노출 판단: 로그인된 사용자가 관리자 이메일이면 노출
+    if (user && (user.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      adminPanel.style.display = 'block';
+      adminPanel.ariaHidden = 'false';
+      signBtn.textContent = '로그아웃';
+      // if revealAdmin was false but admin logged in somehow, still show adminPanel (but we only allow login via popup which only shown when revealAdmin true)
+    } else {
+      // 로그아웃 또는 다른 계정
+      adminPanel.style.display = 'none';
+      adminPanel.ariaHidden = 'true';
+      if (revealAdmin) signBtn.textContent = '관리자 로그인';
+      else signBtn.style.display = 'none';
     }
+    // 항상 목록은 갱신
+    await loadList();
+  });
 
-    // 파일 목록 로드 (Firebase Storage 'apks/' 폴더)
-    async function loadFiles(){
-      listEl.innerHTML = '<div class="empty">로딩 중…</div>';
-      countText.textContent = '로딩…';
-      try {
-        const folderRef = storageRef(storage, 'apks/');
-        const res = await listAll(folderRef);
-        const items = res.items || [];
-        if (!items.length) {
-          listEl.innerHTML = '<div class="empty">No data to display</div>';
-          countText.textContent = '0개';
-          return;
-        }
-
-        // 메타와 URL 병렬로 가져오기 (best-effort)
-        const metas = await Promise.all(items.map(async itemRef => {
-          try {
-            const [meta, url] = await Promise.all([ getMetadata(itemRef).catch(()=>null), getDownloadURL(itemRef).catch(()=>null) ]);
-            return {
-              name: itemRef.name,
-              url: url,
-              size: meta && meta.size ? meta.size : null,
-              updated: meta && meta.updated ? meta.updated : null
-            };
-          } catch (e) {
-            return { name: itemRef.name, url: null, size: null, updated: null };
-          }
-        }));
-
-        // normalize and sort by version desc then date
-        const normalized = metas.map(it => ({
-          filename: it.name,
-          version: extractVersion(it.name),
-          size: it.size,
-          updated: it.updated,
-          url: it.url || ('/apks/' + encodeURIComponent(it.name))
-        })).sort((a,b) => {
-          const cv = compareVersions(a.version,b.version);
-          if (cv !== 0) return cv;
-          const da = a.updated ? new Date(a.updated).getTime() : 0;
-          const db = b.updated ? new Date(b.updated).getTime() : 0;
-          return db - da;
-        });
-
-        countText.textContent = `${normalized.length}개`;
-        listEl.innerHTML = '';
-        normalized.forEach(it => {
-          const div = document.createElement('div');
-          div.className = 'apk-item';
-          const pretty = `태양계정복 ${it.version || ''}`.trim();
-          const info = [];
-          if (it.updated) info.push(new Date(it.updated).toLocaleString());
-          if (it.size != null) info.push(formatBytes(it.size));
-          const infoText = info.join(' · ');
-          div.innerHTML = `
-            <div class="apk-top">
-              <div>
-                <div class="apk-name">${escapeHtml(pretty)}</div>
-                <div class="apk-meta">${escapeHtml(it.filename)}</div>
-              </div>
-              <div style="text-align:right"><div class="small">${escapeHtml(infoText)}</div></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div class="apk-actions">
-                <a class="btn ghost" href="${escapeAttr(it.url)}" download>다운로드</a>
-                <button class="btn ghost" type="button" onclick="window.open('${escapeAttr(it.url)}','_blank')">새 탭으로 열기</button>
-              </div>
-              <div class="small">버전: <strong style="color:#fff;margin-left:6px">${escapeHtml(it.version)}</strong></div>
-            </div>
-          `;
-          listEl.appendChild(div);
-        });
-
-      } catch (err) {
-        console.error('loadFiles error', err);
-        // fallback: no data
+  // ---------- 목록 로드 (Realtime DB) ----------
+  async function loadList(){
+    listEl.innerHTML = '<div class="empty">로딩 중…</div>';
+    countText.textContent = '로딩…';
+    try {
+      const snap = await get(ref(db, APKS_PATH));
+      const data = snap.exists() ? snap.val() : null;
+      if (!data) {
         listEl.innerHTML = '<div class="empty">No data to display</div>';
         countText.textContent = '0개';
+        return;
       }
-    }
+      const items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+      // normalize and sort by version desc then timestamp
+      items.sort((a,b) => {
+        const cv = compareVersions(a.version, b.version);
+        if (cv !== 0) return cv;
+        return (b.timestamp || 0) - (a.timestamp || 0);
+      });
 
-    // 업로드 (관리자만). 업로드 경로: 'apks/<filename>'
-    async function uploadFile(file){
-      if (!file) return;
-      const targetRef = storageRef(storage, 'apks/' + file.name);
-      const uploadTask = uploadBytesResumable(targetRef, file);
+      countText.textContent = `${items.length}개`;
+      listEl.innerHTML = '';
+      items.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'apk-item';
+        const pretty = `태양계정복 ${it.version || ''}`.trim();
+        const info = [];
+        if (it.updated) info.push(new Date(it.updated).toLocaleString());
+        if (it.size) info.push((it.size/1024).toFixed(1) + ' KB');
+        const infoText = info.join(' · ');
+        // download link if url exists
+        const downloadHtml = it.url ? `<a class="btn ghost" href="${escapeAttr(it.url)}" download>다운로드</a>` : `<button class="btn ghost" disabled>URL 없음</button>`;
+        // admin delete control: only show when current user is admin
+        const isAdmin = auth.currentUser && (auth.currentUser.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        const delHtml = isAdmin ? `<button class="btn ghost" data-delete-id="${escapeAttr(it.id)}">삭제</button>` : '';
+        div.innerHTML = `
+          <div class="apk-top">
+            <div>
+              <div class="apk-name">${escapeHtml(pretty)}</div>
+              <div class="apk-meta">${escapeHtml(it.filename || it.url)}</div>
+            </div>
+            <div style="text-align:right"><div class="small">${escapeHtml(infoText)}</div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="apk-actions">
+              ${downloadHtml}
+              ${it.url ? `<button class="btn ghost" onclick="window.open('${escapeAttr(it.url)}','_blank')">새 탭으로 열기</button>` : ''}
+            </div>
+            <div class="small">버전: <strong style="color:#033c73;margin-left:6px">${escapeHtml(it.version||'')}</strong></div>
+          </div>
+          <div style="margin-top:8px">${delHtml}</div>
+        `;
+        listEl.appendChild(div);
+      });
 
-      uploadStatus.textContent = '업로드 시작…';
-      progBar.style.width = '0%';
-
-      return new Promise((resolve, reject) => {
-        uploadTask.on('state_changed', snapshot => {
-          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          progBar.style.width = pct + '%';
-          uploadStatus.textContent = pct + '%';
-        }, error => {
-          uploadStatus.textContent = '업로드 실패';
-          console.error(error);
-          reject(error);
-        }, async () => {
-          const url = await getDownloadURL(targetRef).catch(()=>null);
-          uploadStatus.textContent = '업로드 완료';
-          progBar.style.width = '100%';
-          // 짧게 표시 후 초기화
-          setTimeout(()=>{ uploadStatus.textContent = ''; progBar.style.width = '0%'; }, 900);
-          resolve({ name: file.name, url });
+      // attach delete handlers (if admin)
+      listEl.querySelectorAll('[data-delete-id]').forEach(b => {
+        b.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-delete-id');
+          if (!confirm('정말 이 항목을 삭제하시겠습니까?')) return;
+          try {
+            await remove(ref(db, `${APKS_PATH}/${id}`));
+            await loadList();
+          } catch (err) {
+            console.error(err);
+            alert('삭제 실패: ' + (err && err.message));
+          }
         });
       });
+
+    } catch (err) {
+      console.error('loadList error', err);
+      listEl.innerHTML = '<div class="empty">No data to display</div>';
+      countText.textContent = '0개';
     }
+  }
 
-    // 인증/권한 처리
-    const provider = new GoogleAuthProvider();
-    function updateUIForUser(user) {
-      if (!user) {
-        whoEl.textContent = '비로그인';
-        signBtn.textContent = '관리자 로그인';
-        uploadArea.style.display = 'none';
-        return;
-      }
-      const email = user.email || '';
-      whoEl.textContent = user.displayName ? `${user.displayName} (${email})` : email;
-      signBtn.textContent = '로그아웃';
-      // 관리자 여부
-      if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        uploadArea.style.display = 'flex';
-        uploadArea.ariaHidden = 'false';
-      } else {
-        uploadArea.style.display = 'none';
-        uploadArea.ariaHidden = 'true';
-      }
+  // ---------- 관리자: 메타 추가 ----------
+  addMetaBtn.addEventListener('click', async () => {
+    // only allow if logged in as admin
+    const user = auth.currentUser;
+    if (!user || (user.email||'').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      alert('권한이 없습니다. 관리자 계정으로 로그인하세요.');
+      return;
     }
+    const filename = (metaFilename.value||'').trim();
+    const url = (metaUrl.value||'').trim();
+    if (!filename || !url) { alert('파일명과 URL을 모두 입력하세요.'); return; }
+    // simple validation for URL
+    try {
+      const parsed = new URL(url);
+      if (!['http:','https:'].includes(parsed.protocol)) { alert('유효한 URL을 입력하세요(https/http).'); return; }
+    } catch(e){ alert('유효한 URL을 입력하세요.'); return; }
 
-    // auth state listener
-    onAuthStateChanged(auth, user => {
-      updateUIForUser(user);
-      // always load list for everyone (admin or not)
-      loadFiles();
-    });
+    const item = {
+      filename,
+      url,
+      version: extractVersion(filename),
+      size: null,
+      updated: new Date().toISOString(),
+      uploadedBy: user.email || 'admin',
+      timestamp: Date.now()
+    };
+    try {
+      const newRef = push(ref(db, APKS_PATH));
+      await set(newRef, item);
+      metaFilename.value=''; metaUrl.value='';
+      await loadList();
+      alert('메타가 추가되었습니다.');
+    } catch (e) {
+      console.error(e);
+      alert('추가 실패: ' + (e && e.message));
+    }
+  });
 
-    // 버튼 이벤트
-    signBtn.addEventListener('click', async () => {
-      const user = auth.currentUser;
-      if (user) {
-        // 로그아웃
-        try { await signOut(auth); } catch(e){ console.warn(e); }
-        updateUIForUser(null);
-        return;
+  // ---------- 게임으로 돌아가기 ----------
+  backBtn.addEventListener('click', () => {
+    try {
+      if (window.opener && !window.opener.closed) {
+        try { window.opener.postMessage && window.opener.postMessage({ type:'request-close-popup', from: location.href }, '*'); } catch(e) {}
+        try { window.close(); return; } catch(e){}
       }
-      // 로그인 (popup)
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (err) {
-        console.warn('signInWithPopup 실패:', err);
-        alert('로그인 실패: 팝업 차단 또는 오류가 발생했습니다.');
-      }
-    });
+    } catch(e){}
+    // fallback
+    try { window.location.href = '/index.html'; } catch(e) { try { window.open('/index.html','_self'); } catch(e){} }
+  });
 
-    refreshBtn.addEventListener('click', () => loadFiles());
+  // ---------- 초기 로드 ----------
+  // listen for DB changes live as well (optional): use onValue to auto-update
+  onValue(ref(db, APKS_PATH), snapshot => {
+    // simply call loadList to render from snapshot (we could use snapshot directly, but reuse loadList's logic)
+    loadList();
+  }, err => {
+    console.warn('onValue error', err);
+  });
 
-    uploadBtn.addEventListener('click', async () => {
-      const user = auth.currentUser;
-      if (!user || (user.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        alert('업로드 권한이 없습니다. 관리자 계정으로 로그인하세요.');
-        return;
-      }
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) { alert('업로드할 .apk 파일을 선택하세요.'); return; }
-      // optional: enforce .apk and name pattern
-      if (!/\.apk$/i.test(file.name)) {
-        if (!confirm('선택한 파일이 .apk가 아닙니다. 계속 업로드하시겠습니까?')) return;
-      }
-      try {
-        uploadBtn.disabled = true;
-        await uploadFile(file);
-        fileInput.value = '';
-        await loadFiles();
-      } catch (e) {
-        alert('업로드 실패: ' + (e && e.message || e));
-      } finally {
-        uploadBtn.disabled = false;
-      }
-    });
+  // 初回 로드
+  loadList();
 
-    // 게임으로 돌아가기 (팝업 닫기 우선, 폴백 /index.html)
-    backBtn.addEventListener('click', () => {
-      try { if (window.opener && !window.opener.closed) { try { window.opener.postMessage && window.opener.postMessage({ type:'request-close-popup', from: location.href }, '*'); } catch(e){} window.close(); return; } } catch(e){}
-      // 폴백
-      try { window.location.href = '/index.html'; } catch(e) { try { window.open('/index.html','_self'); } catch(e){} }
-    });
+  // small helper expose for manual test (console)
+  window._appDownload_reload = loadList;
 
-    // 초기 로드
-    loadFiles();
-
-    // 유틸: XSS 대비 escape
-    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    function escapeAttr(s){ return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
-
-  </script>
+</script>
 </body>
 </html>
