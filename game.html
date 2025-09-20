@@ -1,4 +1,3 @@
-나의 말:
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -277,6 +276,7 @@
     let state = {};
     let uid = null;
     let dataRef = null;
+    let dataUnsubscribe = null; // **추가: onValue 구독 해제 함수 보관**
     let localLastWrite = 0; // 로컬에서 마지막으로 기록한 타임스탬프 (밀리초)
     const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[] };
     const initialWorkerCost=10, workerCostGrowth=1.2;
@@ -317,7 +317,12 @@
       // 시간 기록
       const now = Date.now();
       state._lastUpdated = now;
+      // **계정별 localLastWrite 저장**
       localLastWrite = now;
+      try {
+        localStorage.setItem(`lastWrite_${uid}`, String(now));
+      } catch (e) { /* localStorage 실패 무시 */ }
+
       // 복제해서 보낼 객체 생성 (숨겨진 필드도 전송)
       const toSave = { ...state };
       // update는 병합이라 안전함.
@@ -373,13 +378,13 @@
 
       provIcon.innerHTML = ''; // 초기화
       if (opts.provider === 'google') {
-        provIcon.innerHTML = 
+        provIcon.innerHTML = `
           <svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.9 0 6.6 1.7 8.1 3.1l6-5.8C35.7 3.7 30.2 1.5 24 1.5 14.7 1.5 6.9 6.9 3.1 14.8l7.4 5.7C12.2 15 17.6 9.5 24 9.5z"/>
             <path fill="#34A853" d="M46.5 24c0-1.6-.1-2.9-.4-4.2H24v8.0h12.7c-.5 2.9-2.6 5.5-5.6 7.2l8.6 6.6C43.8 36.3 46.5 30.6 46.5 24z"/>
             <path fill="#4A90E2" d="M10.5 29.4A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6L3 13.6C1.1 16.8 0 20.3 0 24c0 3.7 1.1 7.3 3 10.4l7.5-5z"/>
             <path fill="#FBBC05" d="M24 46.5c6.2 0 11.7-2.1 15.9-5.7l-8.6-6.6c-2.4 1.6-5.4 2.6-7.3 2.6-6.3 0-11.7-5.5-12.8-12.2L3.1 33.2C6.9 41.1 14.7 46.5 24 46.5z"/>
-          </svg>;
+          </svg>`;
         if (!text) title.textContent = '구글로 로그인 중…';
         sub.textContent = '구글 인증창을 통해 안전하게 로그인합니다.';
       } else {
@@ -435,9 +440,22 @@
     // 로그인 상태에서 애니메이션으로 전환 처리 (auth-container는 직접 숨기지 말고 클래스 사용)
     onAuthStateChanged(auth, async user => {
       showAuthStatus('');
+      // **구독 해제: 새로운 계정으로 전환하기 전에 기존 리스너가 있으면 제거**
+      if (dataUnsubscribe) {
+        try { dataUnsubscribe(); } catch (e) { /* 무시 */ }
+        dataUnsubscribe = null;
+      }
+
       if (user) {
         uid = user.uid;
-        dataRef = ref(db, users/${uid}/gameData);
+        dataRef = ref(db, `users/${uid}/gameData`);
+
+        // 로그인 시, 계정별로 저장된 localLastWrite 불러오기 (안정성 향상)
+        try {
+          const saved = localStorage.getItem(`lastWrite_${uid}`);
+          localLastWrite = saved ? parseInt(saved, 10) : 0;
+        } catch (e) { localLastWrite = 0; }
+
         // 부드러운 전환: overlay가 보이면 숨기고, 카드 축소 후 숨김
         showLoginOverlay(false);
         authContainer.classList.add('hidden');
@@ -451,7 +469,7 @@
         await ensureInitialData(dataRef);
 
         // 실시간 리스너: 서버의 마지막 갱신 시간(_lastUpdated)을 기준으로 로컬 덮어쓰기 제어
-        onValue(dataRef, snap => {
+        dataUnsubscribe = onValue(dataRef, snap => {
           const server = snap.exists() ? snap.val() : null;
           if (!server) {
             state = { ...defaultData };
@@ -459,16 +477,26 @@
             return;
           }
           const serverLast = server._lastUpdated || 0;
-          if (serverLast > localLastWrite) {
+          // 서버가 최신이거나 같으면 서버를 신뢰
+          if (serverLast >= (localLastWrite || 0)) {
             state = { ...defaultData, ...server };
           } else {
+            // 로컬이 최신: 로컬을 서버에 다시 쓴다(충돌해결)
             state = { ...defaultData, ...server, ...state };
+            save(); // save()가 localLastWrite와 서버 업데이트 처리
           }
           updateUI(); renderPlanets();
         });
 
       } else {
         uid = null; dataRef = null;
+        // **추가: 로그아웃 시 로컬 상태 및 타임스탬프 초기화하여 이전 계정 데이터가 남지 않도록 함**
+        state = { ...defaultData };
+        localLastWrite = 0;
+        try { /* 선택적으로 계정별 lastWrite 제거하려면 주석 해제:
+          localStorage.removeItem(`lastWrite_${uid}`);
+        */ } catch (e) { /* 무시 */ }
+
         authContainer.style.display = 'block';
         // 애니메이션으로 천천히 나타내기
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
@@ -541,14 +569,14 @@
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     function updateUI() {
-      document.getElementById('score').innerText = 자원: ${Math.floor(state.resources)};
-      document.getElementById('coins').innerText = 코인: ${Math.floor(state.coins)};
-      document.getElementById('ship-level').innerText = ${state.shipLevel}렙 (${state.shipUpgradeCost}코인);
-      document.getElementById('ship-img').src = /images/ship-level${state.shipLevel}.png;
+      document.getElementById('score').innerText = `자원: ${Math.floor(state.resources)}`;
+      document.getElementById('coins').innerText = `코인: ${Math.floor(state.coins)}`;
+      document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
+      document.getElementById('ship-img').src = `/images/ship-level${state.shipLevel}.png`;
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
-      clickUp.innerText = 클릭 업그레이드 (${clickUpgradeCost}코인);
+      clickUp.innerText = `클릭 업그레이드 (${clickUpgradeCost}코인)`;
       clickUp.disabled = state.coins < clickUpgradeCost;
       document.getElementById('click-power').innerText = state.clickPower;
 
@@ -559,12 +587,12 @@
       document.getElementById('convert-button').disabled = state.resources < 10;
 
       const hireWork = document.getElementById('hire-worker');
-      hireWork.innerText = 알바 고용 (${getWorkerCost()}코인);
+      hireWork.innerText = `알바 고용 (${getWorkerCost()}코인)`;
       hireWork.disabled = state.coins < getWorkerCost();
       document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower()).toFixed(1);
 
       const hireConv = document.getElementById('hire-conversion');
-      hireConv.innerText = 코인 알바 (${getConversionCost()}코인);
+      hireConv.innerText = `코인 알바 (${getConversionCost()}코인)`;
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = state.conversionCount;
     }
@@ -576,7 +604,7 @@
         const div = document.createElement('div');
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
-        div.innerHTML = <strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel};
+        div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button'); btn.className = 'general'; btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
         btn.onclick = () => { if (state.coins >= p.cost) { state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i); save(); updateUI(); renderPlanets(); if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html'; } };
         div.appendChild(btn); list.appendChild(div);
@@ -594,7 +622,7 @@
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
       document.getElementById('click-upgrade').addEventListener('click', () => { if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
       document.getElementById('reset-button').addEventListener('click', () => { if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
-      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(${tab.dataset.tab}-content).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
+      document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(`${tab.dataset.tab}-content`).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
       setInterval(() => { if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower(); if (state.conversionCount > 0) state.coins += state.conversionCount; if (state.autoConvertBought) convertResources(); save(); updateUI(); }, 1000);
     };
   </script>
@@ -619,7 +647,7 @@
       }
       function showBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) { if (blockerTemplate) { document.body.appendChild(blockerTemplate.cloneNode(true)); } else { const div = document.createElement('div'); div.id = BLOCKER_ID; div.setAttribute('role','alert'); div.className = ' active'; div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:3000;padding:20px;'; div.innerHTML = '<div class="box" style="max-width:560px;background:#0b0b0f;border:1px solid #222;padding:24px;border-radius:10px;color:#ddd;text-align:center;"><h2 style="color:#ffcc00;margin-bottom:10px">잘못된 접근입니다</h2><p style="margin-bottom:16px;color:#bbb">이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p><div><button id="reopen-popup" class="popup-btn primary" style="padding:10px 14px;border-radius:8px;border:0;margin:6px;font-weight:700">팝업으로 열기</button><button id="close-tab" class="popup-btn ghost" style="padding:10px 14px;border-radius:8px;border:1px solid #444;margin:6px;background:transparent;color:#fff">이 탭 닫기</button></div><p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인하세요.</p></div>'; document.body.appendChild(div); } blocker = document.getElementById(BLOCKER_ID); bindBlockerButtons(); } blocker.classList.add('active'); blocker.style.display = 'flex'; blocker.style.pointerEvents = 'auto'; blocker.style.zIndex = '999999'; } catch (e) { console.error('showBlocker error', e); } }
       function hideBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) return; blocker.classList.remove('active'); blocker.style.display = 'none'; } catch (e) {} }
-      function tryOpenPopupFromThisTab() { const w = 1024, h = 768; const left = Math.max(0, Math.round((screen.width - w) / 2)); const top  = Math.max(0, Math.round((screen.height - h) / 2)); const opts = width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no; const popup = window.open(window.location.href + (location.search ? '&' : '?') + 'popup=1', EXPECTED_POPUP_NAME, opts); if (!popup) { alert('팝업이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인하세요.'); return; } try { popup.focus(); } catch(e) {} setTimeout(()=>{ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }, 300); }
+      function tryOpenPopupFromThisTab() { const w = 1024, h = 768; const left = Math.max(0, Math.round((screen.width - w) / 2)); const top  = Math.max(0, Math.round((screen.height - h) / 2)); const opts = `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no`; const popup = window.open(window.location.href + (location.search ? '&' : '?') + 'popup=1', EXPECTED_POPUP_NAME, opts); if (!popup) { alert('팝업이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인하세요.'); return; } try { popup.focus(); } catch(e) {} setTimeout(()=>{ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }, 300); }
       function bindBlockerButtons() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) return; const reopenBtn = blocker.querySelector('#reopen-popup'); const closeBtn = blocker.querySelector('#close-tab'); if (reopenBtn) { reopenBtn.addEventListener('click', tryOpenPopupFromThisTab); } if (closeBtn) { closeBtn.addEventListener('click', function(){ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }); } } catch (e) {} }
       function setupMutationProtection() { blocker = document.getElementById(BLOCKER_ID); if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true); const watchTargets = ['auth-container','top-bar','container', BLOCKER_ID]; const body = document.body; const observer = new MutationObserver((mutations) => { try { let shouldRestoreBlocker = false; for (const m of mutations) { if (m.type === 'childList') { for (const n of m.removedNodes) { if (n && n.id === BLOCKER_ID) shouldRestoreBlocker = true; } const b = document.getElementById(BLOCKER_ID); if (!b) shouldRestoreBlocker = true; } if (m.type === 'attributes' && (m.target && (m.target.id === BLOCKER_ID || watchTargets.includes(m.target.id)))) { const t = m.target; const style = window.getComputedStyle(t); if (!isOpenedAsPopup() && (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity || '1') < 0.1)) { shouldRestoreBlocker = true; } } } if (!isOpenedAsPopup()) { const b = document.getElementById(BLOCKER_ID); if (!b) shouldRestoreBlocker = true; else { const cs = window.getComputedStyle(b); if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) shouldRestoreBlocker = true; } } if (shouldRestoreBlocker) { showBlocker(); bindBlockerButtons(); } } catch (e) { console.error('mutation observer error', e); } }); observer.observe(body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class'], attributeOldValue:true }); setInterval(() => { try { if (!isOpenedAsPopup()) { const b = document.getElementById(BLOCKER_ID); if (!b) { showBlocker(); bindBlockerButtons(); return; } const cs = window.getComputedStyle(b); if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') < 0.1) { showBlocker(); bindBlockerButtons(); return; } const z = parseInt((b.style.zIndex || '0').replace(/[^0-9]/g,'')) || 0; if (z < 99999) { b.style.zIndex = '999999'; } } else { const b = document.getElementById(BLOCKER_ID); if (b) { hideBlocker(); } } } catch (e) {} }, 600); }
       document.addEventListener('DOMContentLoaded', () => { blocker = document.getElementById(BLOCKER_ID); if (blocker && !blockerTemplate) blockerTemplate = blocker.cloneNode(true); if (!isOpenedAsPopup()) { showBlocker(); } else { hideBlocker(); console.log('팝업으로 열림 — 게임 실행 허용 (팝업 검사 통과)'); } bindBlockerButtons(); setupMutationProtection(); });
@@ -635,8 +663,8 @@
     // 우클릭 시 메뉴 표시
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
-      customMenu.style.top = ${e.clientY}px;
-      customMenu.style.left = ${e.clientX}px;
+      customMenu.style.top = `${e.clientY}px`;
+      customMenu.style.left = `${e.clientX}px`;
       customMenu.style.display = 'block';
     });
 
