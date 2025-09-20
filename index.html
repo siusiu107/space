@@ -292,5 +292,39 @@
     // alert('우클릭이 비활성화되어 있습니다.');
   });
   </script>
+
+  <!-- === 새로 추가된 부분: "팝업으로 열렸을 때 자동 종료" 스크립트 === -->
+  <script>
+    (function() {
+      // 이 문서가 window.open()으로 열린 팝업인지 판단해서 자동으로 닫는다.
+      // 안전성: cross-origin 접근을 시도하지 않고 try/catch로 감싼다.
+      try {
+        const openedByScript = !!window.opener; // opener가 있으면 popup으로 열렸을 가능성 높음
+        if (openedByScript) {
+          // 짧은 지연(렌더 후 바로 닫힘 방지용) 후 자동 닫기 시도
+          const CLOSE_DELAY_MS = 500; // 0.5초 (원하면 값 변경 가능)
+          setTimeout(() => {
+            // 부모 창에 알림을 보낼 수 있으면 보낸다 (선택적)
+            try {
+              window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*');
+            } catch (e) { /* 무시 */ }
+
+            // 기본 닫기 시도
+            try { window.close(); } catch (e) { /* 무시 */ }
+
+            // 일부 환경에서 닫기 차단될 때 대비: about:blank로 이동 후 재시도
+            setTimeout(() => {
+              try { window.location.href = 'about:blank'; } catch (e) { /* 무시 */ }
+              try { window.close(); } catch (e) { /* 무시 */ }
+            }, 50);
+          }, CLOSE_DELAY_MS);
+        }
+      } catch (e) {
+        // 안전하게 실패 처리
+        console.warn('팝업 자동 종료 검사 중 오류:', e);
+      }
+    })();
+  </script>
+  <!-- === 추가 끝 === -->
 </body>
 </html>
