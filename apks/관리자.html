@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>태양계정복 — 앱 다운로드 (로그인 필요)</title>
+<meta name="description" content="/apks 폴더에 업로드된 APK들을 표시합니다. 구글 계정 siu46852579@gmail.com으로 로그인해야 접근 가능합니다." />
+<style>
+  :root{--bg:#05060a;--card:#0b1220;--accent:#00aaff;--muted:#99a6b8;--glass: rgba(255,255,255,0.03);}
+  html,body{height:100%;margin:0;font-family:Inter, "Noto Sans KR", Arial, sans-serif;background:linear-gradient(180deg,#02030a 0%, #071026 100%);color:#e9f6ff}
+  .wrap{max-width:980px;margin:28px auto;padding:20px;}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:20px;margin:0;color:#dffaff}
+  p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .controls{display:flex;gap:8px;align-items:center}
+  button, .btn {cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:700}
+  .btn.primary{background:var(--accent);color:#001220;box-shadow:0 6px 18px rgba(0,160,255,0.07)}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e8faff}
+  .card{background:linear-gradient(180deg,var(--card), #071022);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,20,0.6)}
+  .list{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+  .apk-item{background:var(--glass);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:8px}
+  .apk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .apk-meta{font-size:13px;color:var(--muted)}
+  .apk-name{font-weight:800;color:#fff}
+  .apk-actions{display:flex;gap:8px;align-items:center}
+  .small{font-size:12px;color:var(--muted)}
+  .empty{padding:28px;text-align:center;color:var(--muted)}
+  .hint{margin-top:12px;font-size:13px;color:var(--muted);}
+  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* 관리자 모드 */
+  .admin-panel{display:none; margin-top:12px; gap:8px; align-items:center}
+  .admin-panel.show{display:flex}
+  .admin-input{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff;min-width:180px}
+  .admin-note{font-size:12px;color:var(--muted)}
+
+  /* 인증 레이어 */
+  #authLayer{display:flex;align-items:center;justify-content:center;height:60vh}
+  .auth-card{background:linear-gradient(180deg,#061228,#041022);padding:28px;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);text-align:center;max-width:520px}
+  .auth-card p{color:var(--muted)}
+  .user-info{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:8px}
+  .avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#fff;border:2px solid rgba(255,255,255,0.06)}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+
+  @media (max-width:520px){ .controls{flex-direction:column;align-items:flex-end} header{align-items:flex-start;gap:8px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>태양계정복 — 앱 다운로드</h1>
+        <p class="lead">구글 계정 <strong>siu46852579@gmail.com</strong>으로 로그인해야 접근할 수 있습니다.</p>
+      </div>
+      <div class="controls" id="topControls" style="visibility:hidden">
+        <span id="who" class="small"></span>
+        <button id="signOutBtn" class="btn ghost">로그아웃</button>
+        <button id="refreshBtn" class="btn ghost">새로고침</button>
+        <button id="backBtn" class="btn primary">게임으로 돌아가기</button>
+        <button id="adminToggle" class="btn ghost" title="관리자 모드">관리자</button>
+      </div>
+    </header>
+
+    <!-- 인증 레이어: 로그인 전 / 권한 없음일 때 보여줌 -->
+    <div id="authLayer" aria-live="polite">
+      <div class="auth-card" id="authCard">
+        <h2>로그인이 필요합니다</h2>
+        <p>지정된 구글 계정 (<strong>siu46852579@gmail.com</strong>)으로 로그인해야 이 페이지에 접근할 수 있습니다.</p>
+        <div style="margin-top:12px">
+          <button id="signInBtn" class="btn primary">구글 계정으로 로그인</button>
+        </div>
+        <p style="margin-top:14px" class="small">팝업이 차단되면 브라우저 팝업 허용 후 다시 시도하세요.</p>
+      </div>
+    </div>
+
+    <!-- 접근 거부 레이어: 다른 계정으로 로그인한 경우 -->
+    <div id="deniedLayer" style="display:none; text-align:center; padding:18px" aria-live="polite">
+      <div class="card">
+        <h3>접근이 거부되었습니다</h3>
+        <p class="lead">현재 로그인한 계정은 허용된 계정이 아닙니다.</p>
+        <div class="user-info" id="deniedUserInfo"></div>
+        <div style="margin-top:12px">
+          <button id="switchAccountBtn" class="btn primary">다른 계정으로 로그인</button>
+          <button id="signOutBtn2" class="btn ghost">로그아웃</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 실제 다운로드 UI (로그인 및 이메일 검증 완료 시 표시) -->
+    <section id="mainSection" class="card" style="display:none" aria-live="polite">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <strong>사용 가능한 APK</strong>
+        <span class="small" id="countText">로딩 중…</span>
+      </div>
+
+      <!-- 관리자 입력 영역 -->
+      <div id="adminPanel" class="admin-panel" role="region" aria-label="관리자 패널">
+        <input id="adminFilename" class="admin-input" placeholder="파일명(예: 태양계정복-ver0.3.apk)" />
+        <input id="adminUrl" class="admin-input" placeholder="다운로드 URL (전체 경로)" />
+        <button id="adminAdd" class="btn primary">추가</button>
+        <button id="adminClear" class="btn ghost">모두 삭제</button>
+      </div>
+      <div class="hint">관리자 추가는 브라우저 로컬(localStorage)에 저장됩니다. 다른 사용자는 보지 못합니다.</div>
+
+      <div id="list" class="list" style="min-height:120px">
+        <div class="empty">파일을 불러오는 중입니다…</div>
+      </div>
+    </section>
+
+    <footer style="margin-top:18px">
+      <small style="color:var(--muted)">서버에 업로드하지 않을 경우 관리자 모드로 외부 URL을 추가해 사용할 수 있습니다. (/apks/ 폴더에 업로드하면 자동으로 탐지됩니다.)</small>
+    </footer>
+  </div>
+
+  <!-- Firebase + 앱 로직 -->
+  <script type="module">
+    // ---------- 설정: 허용할 이메일 ----------
+    const ALLOWED_EMAIL = 'siu46852579@gmail.com';
+
+    // ---------- Firebase 초기화 (기존 값 재사용) ----------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // UI 엘리먼트
+    const authLayer = document.getElementById('authLayer');
+    const authCard = document.getElementById('authCard');
+    const signInBtn = document.getElementById('signInBtn');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const signOutBtn2 = document.getElementById('signOutBtn2');
+    const switchAccountBtn = document.getElementById('switchAccountBtn');
+    const deniedLayer = document.getElementById('deniedLayer');
+    const deniedUserInfo = document.getElementById('deniedUserInfo');
+    const mainSection = document.getElementById('mainSection');
+    const topControls = document.getElementById('topControls');
+    const whoSpan = document.getElementById('who');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const backBtn = document.getElementById('backBtn');
+    const adminToggle = document.getElementById('adminToggle');
+    const adminPanel = document.getElementById('adminPanel');
+    const adminAdd = document.getElementById('adminAdd');
+    const adminClear = document.getElementById('adminClear');
+    const adminFilename = document.getElementById('adminFilename');
+    const adminUrl = document.getElementById('adminUrl');
+
+    // 기존 다운로드 UI 로직은 아래에서 loadList()로 사용
+    // (재사용 가능한 함수들을 포함)
+    // --- helper: human readable size ---
+    function formatBytes(bytes){
+      if (!bytes && bytes !== 0) return '';
+      const thresh = 1024;
+      if (Math.abs(bytes) < thresh) return bytes + ' B';
+      const units = ['KB','MB','GB','TB'];
+      let u = -1;
+      do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1);
+      return bytes.toFixed(1) + ' ' + units[u];
+    }
+    function extractVersion(filename){
+      const name = (filename||'').replace(/\.apk$/i,'');
+      const m1 = name.match(/ver[-_]?(\d+(?:\.\d+)*)/i);
+      if (m1) return 'v' + m1[1];
+      const m2 = name.match(/\bv(\d+(?:\.\d+)*)\b/i);
+      if (m2) return 'v' + m2[1];
+      const m3 = name.match(/(\d+(?:\.\d+){0,})/);
+      if (m3) return 'v' + m3[1];
+      return name || '';
+    }
+    function compareVersions(a,b){
+      if (!a && !b) return 0;
+      if (!a) return 1;
+      if (!b) return -1;
+      const pa = a.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
+      const pb = b.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
+      const len = Math.max(pa.length,pb.length);
+      for(let i=0;i<len;i++){
+        const na = pa[i]||0;
+        const nb = pb[i]||0;
+        if (na !== nb) return nb - na;
+      }
+      return 0;
+    }
+    async function headInfo(path){
+      try{
+        const resp = await fetch(path, { method:'HEAD' });
+        if (!resp.ok) return null;
+        const size = resp.headers.get('content-length');
+        const lm = resp.headers.get('last-modified');
+        return { size: size ? parseInt(size,10) : null, updated: lm ? new Date(lm).toISOString() : null };
+      }catch(e){ return null; }
+    }
+    function parseDirectoryListing(html){
+      const hrefs = [];
+      try{
+        const doc = new DOMParser().parseFromString(html,'text/html');
+        const anchors = doc.querySelectorAll('a[href]');
+        anchors.forEach(a => {
+          const href = a.getAttribute('href');
+          if (!href) return;
+          if (/\.apk($|\?)/i.test(href)){
+            let fn = href.split('?')[0].split('#')[0];
+            fn = fn.replace(/^.*\/([^\/]+)$/, '$1');
+            if (fn && /\.apk$/i.test(fn)) hrefs.push(fn);
+          }
+        });
+        return [...new Set(hrefs)];
+      }catch(e){ return []; }
+    }
+
+    // localStorage manual items
+    const LS_KEY = 'app_download_manual_apks_v1';
+    function loadManual(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; } }
+    function saveManual(list){ localStorage.setItem(LS_KEY, JSON.stringify(list || [])); }
+
+    // 렌더/로드 로직 (mainSection이 보여질 때만 호출)
+    const listEl = document.getElementById('list');
+    const countText = document.getElementById('countText');
+
+    async function loadList(forceIndex=false){
+      listEl.innerHTML = '<div class="empty">파일을 불러오는 중입니다…</div>';
+      countText.textContent = '로딩…';
+
+      // 1) index.json 시도
+      let items = [];
+      if (!forceIndex) {
+        try {
+          const idxResp = await fetch('/apks/index.json', {cache:'no-store'});
+          if (idxResp.ok){
+            const j = await idxResp.json();
+            if (Array.isArray(j) && j.length>0){
+              items = j.map(it => ({
+                filename: String(it.filename || it.name || '').trim(),
+                size: it.size ? Number(it.size) : (it.size === 0 ? 0 : null),
+                updated: it.updated || it.lastModified || null,
+                url: it.url || ('/apks/' + encodeURIComponent(it.filename || ''))
+              })).filter(i=>i.filename && /\.apk$/i.test(i.filename));
+            }
+          }
+        } catch(e){ /* ignore */ }
+      }
+
+      // 2) fallback: /apks/ listing
+      if (items.length === 0) {
+        try{
+          const resp = await fetch('/apks/', {cache:'no-store'});
+          if (resp.ok){
+            const html = await resp.text();
+            const filenames = parseDirectoryListing(html);
+            if (filenames.length>0){
+              const metas = await Promise.all(filenames.map(async fn => {
+                const meta = await headInfo('/apks/' + encodeURIComponent(fn));
+                return { filename: fn, size: meta && meta.size ? meta.size : null, updated: meta && meta.updated ? meta.updated : null, url: '/apks/' + encodeURIComponent(fn) };
+              }));
+              items = metas;
+            }
+          }
+        }catch(e){ /* ignore */ }
+      }
+
+      // 3) manual items (localStorage)
+      const manual = loadManual() || [];
+      const manualNormalized = manual.filter(m => m && (m.filename || m.url)).map(m => ({
+        filename: m.filename || (m.url||'').split('/').pop(),
+        url: m.url,
+        size: m.size || null,
+        updated: m.updated || new Date().toISOString(),
+        manual: true
+      }));
+
+      // combine unique by filename or url (manual overrides)
+      const map = new Map();
+      items.forEach(it => map.set(it.filename || it.url, it));
+      manualNormalized.forEach(it => map.set(it.filename || it.url, it));
+
+      const combined = Array.from(map.values());
+      if (combined.length === 0){
+        listEl.innerHTML = '<div class="empty">표시할 APK가 없습니다.<br>서버에 업로드하거나 관리자 모드로 외부 URL을 추가하세요.</div>';
+        countText.textContent = '0개';
+        return;
+      }
+
+      const normalized = combined.map(it => {
+        const ver = extractVersion(it.filename || (it.url || '').split('/').pop());
+        return { filename: it.filename, url: it.url || ('/apks/' + encodeURIComponent(it.filename)), size: it.size || null, updated: it.updated || null, version: ver, manual: !!it.manual };
+      });
+
+      normalized.sort((a,b) => {
+        const cv = compareVersions(a.version,b.version);
+        if (cv !== 0) return cv;
+        const da = a.updated ? new Date(a.updated).getTime() : 0;
+        const db = b.updated ? new Date(b.updated).getTime() : 0;
+        return db - da;
+      });
+
+      countText.textContent = `${normalized.length}개`;
+      listEl.innerHTML = '';
+      normalized.forEach(it => {
+        const item = document.createElement('div');
+        item.className = 'apk-item';
+        const prettyName = `태양계정복 ${it.version || ''}`.trim();
+        const info = [];
+        if (it.updated) info.push(new Date(it.updated).toLocaleString());
+        if (it.size != null) info.push(formatBytes(it.size));
+        const infoText = info.join(' · ');
+        item.innerHTML = `
+          <div class="apk-top">
+            <div>
+              <div class="apk-name">${escapeHtml(prettyName)}${it.manual ? ' (수동)' : ''}</div>
+              <div class="apk-meta">${escapeHtml(it.filename || it.url)}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="small">${escapeHtml(infoText)}</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="apk-actions">
+              <a class="btn ghost" role="link" href="${escapeAttr(it.url)}" download>다운로드</a>
+              <button class="btn ghost" type="button" onclick="window.open('${escapeAttr(it.url)}','_blank')">새 탭으로 열기</button>
+            </div>
+            <div class="small">버전: <strong style="color:#fff;margin-left:6px">${escapeHtml(it.version)}</strong></div>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+
+    } // end loadList
+
+    // 관리자 동작
+    adminAdd.addEventListener('click', () => {
+      const fn = (adminFilename.value || '').trim();
+      const url = (adminUrl.value || '').trim();
+      if (!fn || !url) { alert('파일명과 URL 둘 다 입력해줘.'); return; }
+      const cur = loadManual();
+      if (cur.some(i=>i.url===url || i.filename===fn)) { alert('이미 같은 항목이 있습니다.'); return; }
+      cur.push({ filename: fn, url: url, updated: new Date().toISOString(), size: null, manual: true });
+      saveManual(cur);
+      adminFilename.value=''; adminUrl.value='';
+      loadList(true);
+    });
+    adminClear.addEventListener('click', () => {
+      if (!confirm('관리자로 추가한 모든 항목을 삭제할까요?')) return;
+      saveManual([]);
+      loadList(true);
+    });
+
+    refreshBtn.addEventListener('click', ()=> loadList(true));
+    adminToggle.addEventListener('click', ()=> adminPanel.classList.toggle('show'));
+
+    // 닫기 / 게임으로 돌아가기 로직 (팝업 친화)
+    function closeToGame(){
+      try {
+        if (window.opener && !window.opener.closed) {
+          try { window.opener.focus(); } catch(e){}
+          try { window.opener.postMessage && window.opener.postMessage({ type:'request-close-popup', from: location.href }, '*'); } catch(e){}
+        }
+      } catch(e){}
+      try { window.close(); } catch(e){}
+      setTimeout(() => {
+        try { if (!window.closed) window.location.href = '/index.html'; } catch (e) { try { window.open('/index.html','_self'); } catch(e){} }
+      }, 220);
+    }
+    backBtn.addEventListener('click', closeToGame);
+
+    // auth: 로그인 처리
+    const provider = new GoogleAuthProvider();
+    signInBtn.addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        console.warn('signInWithPopup 실패, signInWithRedirect로 폴백:', err);
+        try { await signInWithRedirect(auth, provider); } catch(e){ alert('로그인 실패: ' + (e && e.message || e)); }
+      }
+    });
+
+    // 계정 전환 / 로그아웃
+    switchAccountBtn && switchAccountBtn.addEventListener('click', async () => {
+      try { await signOut(auth); } catch(e) {}
+      try { await signInWithPopup(auth, provider); } catch(e){ try { await signInWithRedirect(auth, provider); } catch(e){} }
+    });
+    signOutBtn && signOutBtn.addEventListener('click', async ()=> { try { await signOut(auth); } catch(e){} });
+    signOutBtn2 && signOutBtn2.addEventListener('click', async ()=> { try { await signOut(auth); } catch(e){} });
+
+    // onAuthStateChanged: 접근 제어
+    onAuthStateChanged(auth, async (user) => {
+      // hide everything first
+      authLayer.style.display = 'none';
+      deniedLayer.style.display = 'none';
+      mainSection.style.display = 'none';
+      topControls.style.visibility = 'hidden';
+      whoSpan.textContent = '';
+
+      if (!user) {
+        // not signed in
+        authLayer.style.display = 'flex';
+        return;
+      }
+
+      // user signed in -> check email
+      const email = user.email || '';
+      const displayName = user.displayName || '';
+      const photoURL = user.photoURL || '';
+
+      // show who signed in on top bar
+      topControls.style.visibility = 'visible';
+      whoSpan.innerHTML = `${escapeHtml(displayName||email)} <span style="opacity:0.7;margin-left:6px">(${escapeHtml(email)})</span>`;
+
+      // if allowed
+      if (email.toLowerCase() === ALLOWED_EMAIL.toLowerCase()) {
+        // show main UI
+        mainSection.style.display = 'block';
+        // hide admin panel by default
+        adminPanel.classList.remove('show');
+        // load list
+        await loadList();
+        return;
+      }
+
+      // else: not allowed
+      deniedLayer.style.display = 'block';
+      // show brief user info
+      deniedUserInfo.innerHTML = '';
+      const avatar = document.createElement('div'); avatar.className='avatar';
+      if (photoURL) avatar.innerHTML = `<img src="${escapeAttr(photoURL)}" alt="avatar" />`;
+      const info = document.createElement('div');
+      info.innerHTML = `<div style="font-weight:700">${escapeHtml(displayName||email)}</div><div class="small">${escapeHtml(email)}</div>`;
+      deniedUserInfo.appendChild(avatar); deniedUserInfo.appendChild(info);
+    });
+
+    // 유틸: escape
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escapeAttr(s){ return String(s||'').replace(/'/g, "\\'").replace(/"/g,'&quot;'); }
+
+  </script>
+</body>
+</html>
