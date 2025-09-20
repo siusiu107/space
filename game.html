@@ -49,7 +49,7 @@
     .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
-    /* Google 버튼 (기존 스타일 유지하되 정렬 고침) */
+    /* Google 버튼 (기존 стиль 유지하되 정렬 고침) */
     .google-btn { width:95%; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:10px; margin:8px 0 4px; background:linear-gradient(180deg,#fff,#f2f2f2); color:#000; border-radius:8px; border:1px solid rgba(0,0,0,0.08); cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
     .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
     .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
@@ -99,6 +99,13 @@
     .popup-btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 700; margin: 6px; }
     .popup-btn.primary { background: #00aaff; color: #000; }
     .popup-btn.ghost { background: transparent; border: 1px solid #444; color: #fff; }
+
+    /* === (추가) 오버레이 내 진행 관련 스타일 === */
+    .login-overlay { transition:opacity .24s ease, visibility .24s ease; }
+    .login-overlay.show { opacity:1; pointer-events:auto; }
+    .login-overlay .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #overlay-steps li[data-active="true"] { color:#e6f7ff; font-weight:700; opacity:1 !important; }
   </style>
 </head>
 <body>
@@ -133,11 +140,36 @@
 
     <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
 
-    <!-- 로그인 상태 오버레이 -->
+    <!-- 로그인 상태 오버레이 (교체된 전문 표시) -->
     <div id="login-overlay" class="login-overlay" aria-hidden="true">
-      <div class="login-card">
-        <div class="spinner" aria-hidden="true"></div>
-        <div id="login-overlay-text">로그인 중…</div>
+      <div class="login-card" role="status" aria-live="polite" aria-atomic="true">
+        <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
+          <div id="overlay-provider-icon" aria-hidden="true" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,0.06);">
+            <!-- provider 아이콘(동적 삽입) -->
+          </div>
+          <div style="text-align:left;">
+            <div id="login-overlay-title" style="font-weight:800; font-size:15px; color:#e6f7ff;">로그인 처리 중</div>
+            <div id="login-overlay-sub" style="font-size:12px; color:#bcd8ee; margin-top:2px;">보안 연결 · 인증 중…</div>
+          </div>
+        </div>
+
+        <div id="overlay-spinner" style="margin:0 auto 12px;">
+          <div class="spinner" aria-hidden="true"></div>
+        </div>
+
+        <!-- 진행바 (시각적 피드백) -->
+        <div style="width:220px; margin:0 auto 10px; background:rgba(255,255,255,0.04); border-radius:8px; padding:6px;">
+          <div id="overlay-progress" style="height:8px; width:0%; border-radius:6px; background:linear-gradient(90deg,#00c0ff,#0077ff); transition:width .4s ease;"></div>
+        </div>
+
+        <!-- 단계 표시 -->
+        <ol id="overlay-steps" style="list-style:none; padding:0; margin:0; font-size:13px; color:#dbefff; max-width:260px;">
+          <li data-step="1" style="opacity:0.9; margin-bottom:6px;">1. 인증창 열기</li>
+          <li data-step="2" style="opacity:0.6; margin-bottom:6px;">2. 권한 요청</li>
+          <li data-step="3" style="opacity:0.4;">3. 로그인 완료</li>
+        </ol>
+
+        <div id="login-overlay-detail" style="font-size:12px; color:#9fbfda; margin-top:10px; min-height:20px;">브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다.</div>
       </div>
     </div>
   </div>
@@ -323,13 +355,80 @@
       }
     }
 
-    function showLoginOverlay(show, text = '로그인 중…') {
+    // === (교체된) 전문적인 로그인 오버레이 표시 함수 ===
+    function showLoginOverlay(show, text = '로그인 중…', opts = {}) {
       const overlay = document.getElementById('login-overlay');
-      const txt = document.getElementById('login-overlay-text');
+      const title = document.getElementById('login-overlay-title');
+      const sub = document.getElementById('login-overlay-sub');
+      const detail = document.getElementById('login-overlay-detail');
+      const progress = document.getElementById('overlay-progress');
+      const provIcon = document.getElementById('overlay-provider-icon');
+      const steps = Array.from(document.querySelectorAll('#overlay-steps li'));
+
       if (!overlay) return;
-      txt.textContent = text;
-      if (show) overlay.classList.add('show'); else overlay.classList.remove('show');
-      overlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+      if (text) title.textContent = text;
+      sub.textContent = opts.subText || '보안 연결 · 인증 중…';
+      detail.textContent = opts.detail || '브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다. 팝업이 차단되면 설정을 확인하세요.';
+
+      provIcon.innerHTML = ''; // 초기화
+      if (opts.provider === 'google') {
+        provIcon.innerHTML = `
+          <svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.9 0 6.6 1.7 8.1 3.1l6-5.8C35.7 3.7 30.2 1.5 24 1.5 14.7 1.5 6.9 6.9 3.1 14.8l7.4 5.7C12.2 15 17.6 9.5 24 9.5z"/>
+            <path fill="#34A853" d="M46.5 24c0-1.6-.1-2.9-.4-4.2H24v8.0h12.7c-.5 2.9-2.6 5.5-5.6 7.2l8.6 6.6C43.8 36.3 46.5 30.6 46.5 24z"/>
+            <path fill="#4A90E2" d="M10.5 29.4A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6L3 13.6C1.1 16.8 0 20.3 0 24c0 3.7 1.1 7.3 3 10.4l7.5-5z"/>
+            <path fill="#FBBC05" d="M24 46.5c6.2 0 11.7-2.1 15.9-5.7l-8.6-6.6c-2.4 1.6-5.4 2.6-7.3 2.6-6.3 0-11.7-5.5-12.8-12.2L3.1 33.2C6.9 41.1 14.7 46.5 24 46.5z"/>
+          </svg>`;
+        if (!text) title.textContent = '구글로 로그인 중…';
+        sub.textContent = '구글 인증창을 통해 안전하게 로그인합니다.';
+      } else {
+        provIcon.textContent = '🔒';
+        if (!text) title.textContent = '로그인 처리 중…';
+        sub.textContent = opts.subText || '보안 연결 · 인증 중…';
+      }
+
+      steps.forEach((li) => { li.removeAttribute('data-active'); li.style.opacity = 0.6; });
+      const activateStep = (n) => {
+        steps.forEach((li, idx) => {
+          if (idx < n) { li.setAttribute('data-active','true'); li.style.opacity = 1; }
+          else { li.removeAttribute('data-active'); li.style.opacity = 0.6; }
+        });
+      };
+
+      if (show) {
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden','false');
+        activateStep(1); progress.style.width = '24%';
+        overlay._progressTimer && clearTimeout(overlay._progressTimer);
+        overlay._progressTimer = setTimeout(() => {
+          activateStep(2); progress.style.width = '64%';
+        }, 800);
+        overlay._progressTimer2 && clearTimeout(overlay._progressTimer2);
+        overlay._progressTimer2 = setTimeout(() => {
+          progress.style.width = '84%';
+        }, 1700);
+      } else {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden','true');
+        progress.style.width = '0%';
+        steps.forEach(li => { li.removeAttribute('data-active'); li.style.opacity = 0.6; });
+        overlay._progressTimer && clearTimeout(overlay._progressTimer);
+        overlay._progressTimer2 && clearTimeout(overlay._progressTimer2);
+      }
+
+      overlay.success = (msg) => {
+        title.textContent = msg || '로그인 완료';
+        detail.textContent = '안전하게 인증되었습니다. 잠시만 기다려주세요.';
+        activateStep(3); progress.style.width = '100%';
+        setTimeout(() => { showLoginOverlay(false); }, 900);
+      };
+      overlay.fail = (msg) => {
+        title.textContent = msg || '로그인 실패';
+        detail.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+        progress.style.width = '6%';
+        overlay.style.boxShadow = '0 6px 20px rgba(255,0,0,0.12)';
+        setTimeout(() => { overlay.style.boxShadow = ''; showLoginOverlay(false); }, 1400);
+      };
     }
 
     // 로그인 상태에서 애니메이션으로 전환 처리 (auth-container는 직접 숨기지 말고 클래스 사용)
@@ -409,20 +508,28 @@
       }
     });
 
-    // 구글 로그인 처리 (팝업 우선, 팝업 차단 시 리다이렉트로 폴백)
+    // === (교체된) 구글 로그인 버튼 핸들러: overlay에 provider 정보 전달 ===
     const googleBtn = document.getElementById('google-btn');
     if (googleBtn) {
       googleBtn.addEventListener('click', async () => {
         showAuthStatus('');
         const provider = new GoogleAuthProvider();
         try {
-          showLoginOverlay(true, '구글로 로그인 중…');
+          // 전문적 표시: provider='google' 전달, 세부문구 설정
+          showLoginOverlay(true, '구글 인증 시작', { provider: 'google', subText: '구글 계정으로 안전하게 연결합니다.', detail: '구글 팝업이 열리면 계정을 선택하고 권한을 허용해주세요.' });
           await signInWithPopup(auth, provider);
+          // 성공 시 onAuthStateChanged에서 처리되므로, onAuthStateChanged에서 overlay.success를 호출하도록 하거나,
+          // 여기서 간단히 success 콜을 시도 (onAuthStateChanged가 발생하기 전에)
+          const overlay = document.getElementById('login-overlay');
+          overlay && overlay.success && overlay.success('로그인 완료 — 환영합니다');
         } catch (err) {
           console.warn('signInWithPopup 실패, signInWithRedirect로 폴백:', err);
           try {
+            // 폴백: 리다이렉트 전 상태 업데이트
+            showLoginOverlay(true, '리다이렉트 로그인 중', { provider: 'google', subText: '브라우저 리다이렉트로 로그인합니다.' });
             await signInWithRedirect(auth, provider);
           } catch (err2) {
+            // 오류 처리: 전문적 실패 문구 표시
             showLoginOverlay(false);
             showAuthStatus(friendlyAuthError(err2));
           }
