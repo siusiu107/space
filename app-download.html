@@ -1,294 +1,351 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>태양계정복 — 앱 다운로드</title>
-<meta name="description" content="태양계정복 APK 다운로드 페이지 — /apks 폴더에 업로드된 APK들을 자동으로 표시합니다." />
-<style>
-  :root{--bg:#05060a;--card:#0b1220;--accent:#00aaff;--muted:#99a6b8;--glass: rgba(255,255,255,0.03);}
-  html,body{height:100%;margin:0;font-family:Inter, "Noto Sans KR", Arial, sans-serif;background:linear-gradient(180deg,#02030a 0%, #071026 100%);color:#e9f6ff}
-  .wrap{max-width:980px;margin:28px auto;padding:20px;}
-  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-  h1{font-size:20px;margin:0;color:#dffaff}
-  p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
-  .controls{display:flex;gap:8px;align-items:center}
-  button, .btn {cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:700}
-  .btn.primary{background:var(--accent);color:#001220;box-shadow:0 6px 18px rgba(0,160,255,0.07)}
-  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e8faff}
-  .card{background:linear-gradient(180deg,var(--card), #071022);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,20,0.6)}
-  .list{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-  .apk-item{background:var(--glass);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:8px}
-  .apk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .apk-meta{font-size:13px;color:var(--muted)}
-  .apk-name{font-weight:800;color:#fff}
-  .apk-actions{display:flex;gap:8px;align-items:center}
-  .small{font-size:12px;color:var(--muted)}
-  .empty{padding:28px;text-align:center;color:var(--muted)}
-  .hint{margin-top:12px;font-size:13px;color:var(--muted);}
-  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
-  /* responsive */
-  @media (max-width:520px){ .controls{flex-direction:column;align-items:flex-end} header{align-items:flex-start;gap:8px} }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>태양계정복 — 앱 다운로드</title>
+  <meta name="description" content="태양계정복 APK 다운로드 & 업로드 (관리자 전용 업로드)" />
+  <style>
+    :root{--bg:#020617;--card:#071028;--accent:#00aaff;--muted:#98a8b8}
+    html,body{height:100%;margin:0;font-family:Inter, "Noto Sans KR", Arial, sans-serif;background:linear-gradient(180deg,#010214,#071022);color:#e8faff}
+    .wrap{max-width:980px;margin:28px auto;padding:20px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:20px;margin:0;color:#dffaff}
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;align-items:center}
+    button, .btn {cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:700}
+    .btn.primary{background:var(--accent);color:#001220;box-shadow:0 6px 18px rgba(0,160,255,0.07)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e8faff}
+    .card{background:linear-gradient(180deg,var(--card), #041127);padding:14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+    .list{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    .apk-item{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:8px}
+    .apk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .apk-meta{font-size:13px;color:var(--muted)}
+    .apk-name{font-weight:800;color:#fff}
+    .apk-actions{display:flex;gap:8px;align-items:center}
+    .small{font-size:12px;color:var(--muted)}
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+    .upload-panel{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .progress{height:8px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;width:200px}
+    .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00d4ff,#0077ff)}
+    .hint{margin-top:12px;font-size:13px;color:var(--muted)}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+    @media (max-width:520px){ header{flex-direction:column;align-items:flex-start} .controls{width:100%;justify-content:space-between} }
+  </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div>
         <h1>태양계정복 — 앱 다운로드</h1>
-        <p class="lead">/apks 폴더에 업로드한 APK들을 자동으로 표시합니다. 파일명 규칙: <code>태양계정복-ver0.1.apk</code> (예)</p>
+        <p class="lead">파일 다운로드는 누구나 가능. 업로드는 관리자(<strong>siu46852579@gmail.com</strong>) 로그인 시에만 사용 가능.</p>
       </div>
       <div class="controls">
+        <span id="who" class="small" style="min-width:220px"></span>
         <button id="refreshBtn" class="btn ghost">새로고침</button>
         <button id="backBtn" class="btn primary">게임으로 돌아가기</button>
+        <button id="signBtn" class="btn ghost">관리자 로그인</button>
       </div>
     </header>
 
-    <section class="card" aria-live="polite">
+    <section id="mainCard" class="card" aria-live="polite">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <strong>사용 가능한 APK</strong>
         <span class="small" id="countText">로딩 중…</span>
       </div>
 
-      <div id="list" class="list" style="min-height:120px">
+      <!-- 관리자 업로드 영역 (관리자에 한해 표시) -->
+      <div id="uploadArea" style="display:none" class="upload-panel" aria-hidden="true">
+        <input id="fileInput" type="file" accept=".apk" />
+        <button id="uploadBtn" class="btn primary">업로드</button>
+        <div class="progress" title="업로드 진행">
+          <i id="progBar"></i>
+        </div>
+        <span id="uploadStatus" class="small" style="margin-left:8px;color:var(--muted)"></span>
+      </div>
+
+      <div id="list" class="list" style="min-height:160px">
         <div class="empty">파일을 불러오는 중입니다…</div>
       </div>
 
-      <div class="hint">
-        서버에서 디렉터리 목록을 제공하지 않으면 자동 탐지가 실패할 수 있습니다. (이 경우 `apks/index.json`을 업로드하거나 서버 설정에서 디렉터리 리스팅을 활성화하세요.)<br>
-        <strong>index.json 예시</strong> (apks/index.json):
-        <pre style="background:#021124;padding:8px;border-radius:6px;color:#bfefff">[
-  {"filename":"태양계정복-ver0.1.apk","updated":"2025-09-20T12:34:56Z","size":23456789},
-  {"filename":"태양계정복-ver0.2.apk","updated":"2025-10-01T08:00:00Z","size":24567890}
-]</pre>
-      </div>
+      <div class="hint">서버에 직접 업로드한 파일은 자동으로 감지됩니다. (Firebase Storage 사용)</div>
     </section>
 
     <footer>
-      업로드할 APK는 <code>/apks/</code> 폴더에 넣어주세요. 파일명 규칙(예): <code>태양계정복-ver0.1.apk</code>
+      <small>팝업으로 열린 경우 '게임으로 돌아가기'는 창을 닫습니다. 팝업이 아닌 경우 /index.html로 이동합니다.</small>
     </footer>
   </div>
 
-<script>
-(async function(){
-  const listEl = document.getElementById('list');
-  const countText = document.getElementById('countText');
-  const refreshBtn = document.getElementById('refreshBtn');
-  const backBtn = document.getElementById('backBtn');
+  <!-- Firebase (앱/인증/스토리지) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getStorage, ref as storageRef, listAll, getDownloadURL, getMetadata, uploadBytesResumable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
 
-  refreshBtn.addEventListener('click', ()=> loadList(true));
-  backBtn.addEventListener('click', closeToGame);
+    // ---------- 관리자 이메일 ----------
+    const ADMIN_EMAIL = 'siu46852579@gmail.com';
 
-  // helper: human readable size
-  function formatBytes(bytes){
-    if (!bytes && bytes !== 0) return '';
-    const thresh = 1024;
-    if (Math.abs(bytes) < thresh) return bytes + ' B';
-    const units = ['KB','MB','GB','TB'];
-    let u = -1;
-    do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1);
-    return bytes.toFixed(1) + ' ' + units[u];
-  }
+    // ---------- Firebase 설정 (필요 시 변경) ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
 
-  // extract version from filename, fallback to cleaned name
-  function extractVersion(filename){
-    // common patterns: ver0.1, ver-0.1, v0.1, _0.1
-    const name = filename.replace(/\.apk$/i,'');
-    const m1 = name.match(/ver[-_]?(\d+(?:\.\d+)*)/i);
-    if (m1) return 'v' + m1[1];
-    const m2 = name.match(/\bv(\d+(?:\.\d+)*)\b/i);
-    if (m2) return 'v' + m2[1];
-    const m3 = name.match(/(\d+(?:\.\d+){0,})/);
-    if (m3) return 'v' + m3[1];
-    // otherwise friendly name by removing prefix
-    return name;
-  }
+    // UI 엘리먼트
+    const whoEl = document.getElementById('who');
+    const signBtn = document.getElementById('signBtn');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const progBar = document.getElementById('progBar');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const listEl = document.getElementById('list');
+    const countText = document.getElementById('countText');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const backBtn = document.getElementById('backBtn');
 
-  // compare semantic-ish versions (v1.2.3)
-  function compareVersions(a,b){
-    if (!a && !b) return 0;
-    if (!a) return 1;
-    if (!b) return -1;
-    const pa = a.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
-    const pb = b.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
-    const len = Math.max(pa.length,pb.length);
-    for(let i=0;i<len;i++){
-      const na = pa[i]||0;
-      const nb = pb[i]||0;
-      if (na !== nb) return nb - na; // descending
+    // helpers
+    function formatBytes(bytes){
+      if (!bytes && bytes !== 0) return '';
+      const thresh = 1024;
+      if (Math.abs(bytes) < thresh) return bytes + ' B';
+      const units = ['KB','MB','GB','TB'];
+      let u = -1;
+      do { bytes /= thresh; ++u; } while(Math.abs(bytes) >= thresh && u < units.length-1);
+      return bytes.toFixed(1) + ' ' + units[u];
     }
-    return 0;
-  }
 
-  // attempt to fetch HEAD for metadata (size/last-modified)
-  async function headInfo(path){
-    try{
-      const resp = await fetch(path, { method:'HEAD' });
-      if (!resp.ok) return null;
-      const size = resp.headers.get('content-length');
-      const lm = resp.headers.get('last-modified');
-      return { size: size ? parseInt(size,10) : null, updated: lm ? new Date(lm).toISOString() : null };
-    }catch(e){
-      return null;
+    function extractVersion(filename){
+      const name = (filename||'').replace(/\.apk$/i,'');
+      const m1 = name.match(/ver[-_]?(\d+(?:\.\d+)*)/i);
+      if (m1) return 'v' + m1[1];
+      const m2 = name.match(/\bv(\d+(?:\.\d+)*)\b/i);
+      if (m2) return 'v' + m2[1];
+      const m3 = name.match(/(\d+(?:\.\d+){0,})/);
+      if (m3) return 'v' + m3[1];
+      return name || '';
     }
-  }
-
-  // parse directory listing HTML to extract .apk hrefs
-  function parseDirectoryListing(html, base='/apks/'){
-    const hrefs = [];
-    try{
-      const doc = new DOMParser().parseFromString(html,'text/html');
-      const anchors = doc.querySelectorAll('a[href]');
-      anchors.forEach(a => {
-        const href = a.getAttribute('href');
-        if (!href) return;
-        // allow relative and absolute that point to .apk
-        if (/\.apk($|\?)/i.test(href)){
-          // normalize to just filename if in same folder
-          let fn = href.split('?')[0].split('#')[0];
-          // strip leading path
-          fn = fn.replace(/^.*\/([^\/]+)$/, '$1');
-          if (fn && /\.apk$/i.test(fn)) hrefs.push(fn);
-        }
-      });
-      // dedupe
-      return [...new Set(hrefs)];
-    }catch(e){
-      return [];
+    function compareVersions(a,b){
+      if (!a && !b) return 0;
+      if (!a) return 1;
+      if (!b) return -1;
+      const pa = a.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
+      const pb = b.replace(/^v/i,'').split('.').map(n=>parseInt(n)||0);
+      const len = Math.max(pa.length,pb.length);
+      for(let i=0;i<len;i++){
+        const na = pa[i]||0;
+        const nb = pb[i]||0;
+        if (na !== nb) return nb - na;
+      }
+      return 0;
     }
-  }
 
-  async function loadList(forceIndex=false){
-    listEl.innerHTML = '<div class="empty">파일을 불러오는 중입니다…</div>';
-    countText.textContent = '로딩…';
-
-    // 1) 우선 apks/index.json 시도
-    if (!forceIndex) {
+    // 파일 목록 로드 (Firebase Storage 'apks/' 폴더)
+    async function loadFiles(){
+      listEl.innerHTML = '<div class="empty">로딩 중…</div>';
+      countText.textContent = '로딩…';
       try {
-        const idxResp = await fetch('/apks/index.json', {cache:'no-store'});
-        if (idxResp.ok){
-          const j = await idxResp.json();
-          if (Array.isArray(j) && j.length>0){
-            // normalize items
-            const items = j.map(it => ({
-              filename: String(it.filename || it.name || '').trim(),
-              size: it.size ? Number(it.size) : (it.size === 0 ? 0 : null),
-              updated: it.updated || it.lastModified || null
-            })).filter(i=>i.filename && /\.apk$/i.test(i.filename));
-            if (items.length) {
-              return renderItems(items);
-            }
+        const folderRef = storageRef(storage, 'apks/');
+        const res = await listAll(folderRef);
+        const items = res.items || [];
+        if (!items.length) {
+          listEl.innerHTML = '<div class="empty">No data to display</div>';
+          countText.textContent = '0개';
+          return;
+        }
+
+        // 메타와 URL 병렬로 가져오기 (best-effort)
+        const metas = await Promise.all(items.map(async itemRef => {
+          try {
+            const [meta, url] = await Promise.all([ getMetadata(itemRef).catch(()=>null), getDownloadURL(itemRef).catch(()=>null) ]);
+            return {
+              name: itemRef.name,
+              url: url,
+              size: meta && meta.size ? meta.size : null,
+              updated: meta && meta.updated ? meta.updated : null
+            };
+          } catch (e) {
+            return { name: itemRef.name, url: null, size: null, updated: null };
           }
-        }
-      } catch(e){
-        // ignore and fallthrough to listing parse
+        }));
+
+        // normalize and sort by version desc then date
+        const normalized = metas.map(it => ({
+          filename: it.name,
+          version: extractVersion(it.name),
+          size: it.size,
+          updated: it.updated,
+          url: it.url || ('/apks/' + encodeURIComponent(it.name))
+        })).sort((a,b) => {
+          const cv = compareVersions(a.version,b.version);
+          if (cv !== 0) return cv;
+          const da = a.updated ? new Date(a.updated).getTime() : 0;
+          const db = b.updated ? new Date(b.updated).getTime() : 0;
+          return db - da;
+        });
+
+        countText.textContent = `${normalized.length}개`;
+        listEl.innerHTML = '';
+        normalized.forEach(it => {
+          const div = document.createElement('div');
+          div.className = 'apk-item';
+          const pretty = `태양계정복 ${it.version || ''}`.trim();
+          const info = [];
+          if (it.updated) info.push(new Date(it.updated).toLocaleString());
+          if (it.size != null) info.push(formatBytes(it.size));
+          const infoText = info.join(' · ');
+          div.innerHTML = `
+            <div class="apk-top">
+              <div>
+                <div class="apk-name">${escapeHtml(pretty)}</div>
+                <div class="apk-meta">${escapeHtml(it.filename)}</div>
+              </div>
+              <div style="text-align:right"><div class="small">${escapeHtml(infoText)}</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="apk-actions">
+                <a class="btn ghost" href="${escapeAttr(it.url)}" download>다운로드</a>
+                <button class="btn ghost" type="button" onclick="window.open('${escapeAttr(it.url)}','_blank')">새 탭으로 열기</button>
+              </div>
+              <div class="small">버전: <strong style="color:#fff;margin-left:6px">${escapeHtml(it.version)}</strong></div>
+            </div>
+          `;
+          listEl.appendChild(div);
+        });
+
+      } catch (err) {
+        console.error('loadFiles error', err);
+        // fallback: no data
+        listEl.innerHTML = '<div class="empty">No data to display</div>';
+        countText.textContent = '0개';
       }
     }
 
-    // 2) fallback: fetch /apks/ HTML and parse <a href>
-    try{
-      const resp = await fetch('/apks/', {cache:'no-store'});
-      if (!resp.ok) throw new Error('no dir listing');
-      const html = await resp.text();
-      const filenames = parseDirectoryListing(html, '/apks/');
-      if (filenames.length === 0) throw new Error('no links found');
-      // try to gather HEAD info for each file (best-effort)
-      const itemPromises = filenames.map(async fn => {
-        const meta = await headInfo('/apks/' + encodeURIComponent(fn));
-        return { filename: fn, size: meta && meta.size ? meta.size : null, updated: meta && meta.updated ? meta.updated : null };
+    // 업로드 (관리자만). 업로드 경로: 'apks/<filename>'
+    async function uploadFile(file){
+      if (!file) return;
+      const targetRef = storageRef(storage, 'apks/' + file.name);
+      const uploadTask = uploadBytesResumable(targetRef, file);
+
+      uploadStatus.textContent = '업로드 시작…';
+      progBar.style.width = '0%';
+
+      return new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', snapshot => {
+          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          progBar.style.width = pct + '%';
+          uploadStatus.textContent = pct + '%';
+        }, error => {
+          uploadStatus.textContent = '업로드 실패';
+          console.error(error);
+          reject(error);
+        }, async () => {
+          const url = await getDownloadURL(targetRef).catch(()=>null);
+          uploadStatus.textContent = '업로드 완료';
+          progBar.style.width = '100%';
+          // 짧게 표시 후 초기화
+          setTimeout(()=>{ uploadStatus.textContent = ''; progBar.style.width = '0%'; }, 900);
+          resolve({ name: file.name, url });
+        });
       });
-      const items = await Promise.all(itemPromises);
-      return renderItems(items);
-    }catch(err){
-      // 3) 최종 실패 — 안내 표시
-      listEl.innerHTML = `<div class="empty">APK 목록을 불러오지 못했습니다.<br><br>서버에서 디렉터리 리스팅이 비활성화되어 있거나 <code>/apks/index.json</code>이 없습니다.<br>관리자(당신)가 <code>/apks/index.json</code>을 업로드하거나 서버 설정에서 디렉터리 목록을 허용해 주세요.</div>`;
-      countText.textContent = '목록 없음';
-      return;
     }
-  }
 
-  function renderItems(items){
-    // normalize (ensure filename)
-    const normalized = items
-      .filter(it => it && it.filename)
-      .map(it => {
-        const fn = it.filename;
-        const ver = extractVersion(fn);
-        return { filename: fn, version: ver, size: it.size || null, updated: it.updated || null };
-      });
-
-    // sort: version desc, then updated desc
-    normalized.sort((a,b) => {
-      const cv = compareVersions(a.version,b.version);
-      if (cv !== 0) return cv;
-      const da = a.updated ? new Date(a.updated).getTime() : 0;
-      const db = b.updated ? new Date(b.updated).getTime() : 0;
-      return db - da;
-    });
-
-    // render
-    if (!normalized.length){
-      listEl.innerHTML = '<div class="empty">표시할 APK가 없습니다.</div>';
-      countText.textContent = '0개';
-      return;
-    }
-    countText.textContent = `${normalized.length}개`;
-    listEl.innerHTML = '';
-    normalized.forEach(it => {
-      const item = document.createElement('div');
-      item.className = 'apk-item';
-      const prettyName = `태양계정복 ${it.version || ''}`.trim();
-      const info = [];
-      if (it.updated) info.push(new Date(it.updated).toLocaleString());
-      if (it.size != null) info.push(formatBytes(it.size));
-      const infoText = info.join(' · ');
-      item.innerHTML = `
-        <div class="apk-top">
-          <div>
-            <div class="apk-name">${prettyName}</div>
-            <div class="apk-meta">${it.filename}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="small">${infoText}</div>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="apk-actions">
-            <a class="btn ghost" role="link" href="/apks/${encodeURIComponent(it.filename)}" download>다운로드</a>
-            <button class="btn ghost" type="button" data-fn="${it.filename}" onclick="window.open('/apks/${encodeURIComponent(it.filename)}','_blank')">새 탭으로 열기</button>
-          </div>
-          <div class="small">버전: <strong style="color:#fff;margin-left:6px">${it.version}</strong></div>
-        </div>
-      `;
-      listEl.appendChild(item);
-    });
-  }
-
-  // initial load
-  await loadList();
-
-  // expose loadList to global for refresh via console if needed
-  window.reloadApkList = () => loadList(true);
-
-  // close/popup logic similar to main page
-  function closeToGame(){
-    try {
-      if (window.opener && !window.opener.closed) {
-        try { window.opener.focus(); } catch(e){}
-        try { window.opener.postMessage && window.opener.postMessage({ type:'request-close-popup', from: location.href }, '*'); } catch(e){}
+    // 인증/권한 처리
+    const provider = new GoogleAuthProvider();
+    function updateUIForUser(user) {
+      if (!user) {
+        whoEl.textContent = '비로그인';
+        signBtn.textContent = '관리자 로그인';
+        uploadArea.style.display = 'none';
+        return;
       }
-    } catch(e){}
-    try { window.close(); } catch(e){}
-    setTimeout(() => {
+      const email = user.email || '';
+      whoEl.textContent = user.displayName ? `${user.displayName} (${email})` : email;
+      signBtn.textContent = '로그아웃';
+      // 관리자 여부
+      if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        uploadArea.style.display = 'flex';
+        uploadArea.ariaHidden = 'false';
+      } else {
+        uploadArea.style.display = 'none';
+        uploadArea.ariaHidden = 'true';
+      }
+    }
+
+    // auth state listener
+    onAuthStateChanged(auth, user => {
+      updateUIForUser(user);
+      // always load list for everyone (admin or not)
+      loadFiles();
+    });
+
+    // 버튼 이벤트
+    signBtn.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (user) {
+        // 로그아웃
+        try { await signOut(auth); } catch(e){ console.warn(e); }
+        updateUIForUser(null);
+        return;
+      }
+      // 로그인 (popup)
       try {
-        if (!window.closed) window.location.href = '/index.html';
-      } catch (e) {
-        try { window.open('/index.html','_self'); } catch(e) {}
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        console.warn('signInWithPopup 실패:', err);
+        alert('로그인 실패: 팝업 차단 또는 오류가 발생했습니다.');
       }
-    }, 220);
-  }
+    });
 
-})();
-</script>
+    refreshBtn.addEventListener('click', () => loadFiles());
+
+    uploadBtn.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (!user || (user.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        alert('업로드 권한이 없습니다. 관리자 계정으로 로그인하세요.');
+        return;
+      }
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) { alert('업로드할 .apk 파일을 선택하세요.'); return; }
+      // optional: enforce .apk and name pattern
+      if (!/\.apk$/i.test(file.name)) {
+        if (!confirm('선택한 파일이 .apk가 아닙니다. 계속 업로드하시겠습니까?')) return;
+      }
+      try {
+        uploadBtn.disabled = true;
+        await uploadFile(file);
+        fileInput.value = '';
+        await loadFiles();
+      } catch (e) {
+        alert('업로드 실패: ' + (e && e.message || e));
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    });
+
+    // 게임으로 돌아가기 (팝업 닫기 우선, 폴백 /index.html)
+    backBtn.addEventListener('click', () => {
+      try { if (window.opener && !window.opener.closed) { try { window.opener.postMessage && window.opener.postMessage({ type:'request-close-popup', from: location.href }, '*'); } catch(e){} window.close(); return; } } catch(e){}
+      // 폴백
+      try { window.location.href = '/index.html'; } catch(e) { try { window.open('/index.html','_self'); } catch(e){} }
+    });
+
+    // 초기 로드
+    loadFiles();
+
+    // 유틸: XSS 대비 escape
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escapeAttr(s){ return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+  </script>
 </body>
 </html>
