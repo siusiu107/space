@@ -38,10 +38,15 @@
   .progress{height:8px;background:#eef6fb;border-radius:6px;overflow:hidden;width:200px;border:1px solid var(--border)}
   .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7dd3fc,#06b6d4)}
   .form-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-  input[type="text"], input[type="url"], input[type="file"] { padding:10px;border-radius:8px;border:1px solid var(--border);background:#fbfeff;color:#033c73 }
+  input[type="text"], input[type="url"], input[type="file"], textarea { padding:10px;border-radius:8px;border:1px solid var(--border);background:#fbfeff;color:#033c73 }
   footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
   /* admin only controls are hidden by default; revealed by script */
   #adminPanel{display:none}
+  /* patch list */
+  .patch-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .patch-item{background:linear-gradient(180deg,#fff,#fcfeff);padding:12px;border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+  .patch-title{font-weight:800;color:#064e6a}
+  .patch-meta{font-size:12px;color:var(--muted)}
   /* responsive */
   @media (max-width:520px){ header{flex-direction:column;align-items:flex-start} .controls{width:100%;justify-content:space-between} .form-row{flex-direction:column;align-items:stretch} }
 </style>
@@ -80,6 +85,30 @@
         <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)" />
         <div style="font-size:13px;color:#064e6a;font-weight:700;margin-bottom:6px">관리자: 항목 관리</div>
         <div class="small">목록에서 항목 옆의 삭제 버튼으로 제거할 수 있습니다.</div>
+
+        <!-- 패치 추가 영역 -->
+        <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)" />
+        <div style="font-size:13px;color:#064e6a;font-weight:700;margin-bottom:6px">관리자: 패치 노트 추가</div>
+        <div class="form-row">
+          <input id="patchTitle" type="text" placeholder="패치 제목 (예: v0.2 - 밸런스 조정)" style="flex:1" />
+        </div>
+        <div class="form-row">
+          <textarea id="patchBody" rows="3" placeholder="패치 내용(간단히 요약)" style="flex:1"></textarea>
+        </div>
+        <div class="form-row">
+          <button id="addPatchBtn" class="btn primary">패치 추가</button>
+        </div>
+      </section>
+
+      <!-- 패치 노트 영역 (항상 표시) -->
+      <section id="patchSection" style="margin-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <strong>패치 노트</strong>
+          <span class="small" id="patchCount">로딩 중…</span>
+        </div>
+        <div id="patchList" class="patch-list" style="margin-top:8px;">
+          <div class="empty">패치 노트를 불러오는 중입니다…</div>
+        </div>
       </section>
 
       <!-- 파일 리스트 -->
@@ -96,8 +125,19 @@
 <script type="module">
   // ---------- 설정 ----------
   const ADMIN_EMAIL = 'siu46852579@gmail.com';
-  // revealAdmin: 관리자만 아는 진입점 — URL 끝에 "#admin" 을 붙이면 관리자 로그인 UI가 표시됩니다.
-  const revealAdmin = location.hash === '#admin';
+  // revealAdmin: 관리자만 아는 진입점 — URL 끝에 "#admin?id=siu46852579" 를 붙이면 관리자 로그인 UI가 표시됩니다.
+  function isRevealAdminFromHash() {
+    if (!location.hash) return false;
+    // location.hash 예: "#admin?id=siu46852579"
+    const raw = location.hash.slice(1); // "admin?id=siu46852579"
+    if (!raw.startsWith('admin')) return false;
+    const qIndex = raw.indexOf('?');
+    if (qIndex === -1) return false;
+    const qs = raw.slice(qIndex + 1); // "id=siu46852579"
+    const params = new URLSearchParams(qs);
+    return params.get('id') === 'siu46852579';
+  }
+  const revealAdmin = isRevealAdminFromHash();
 
   // ---------- Firebase 초기화 ----------
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -129,6 +169,13 @@
   const metaFilename = document.getElementById('metaFilename');
   const metaUrl = document.getElementById('metaUrl');
 
+  // patch DOM
+  const patchListEl = document.getElementById('patchList');
+  const patchCount = document.getElementById('patchCount');
+  const patchTitle = document.getElementById('patchTitle');
+  const patchBody = document.getElementById('patchBody');
+  const addPatchBtn = document.getElementById('addPatchBtn');
+
   // ---------- 유틸 ----------
   function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function escapeAttr(s){ return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
@@ -152,6 +199,7 @@
 
   // ---------- DB 경로 ----------
   const APKS_PATH = 'apks';
+  const PATCHES_PATH = 'patches';
 
   // ---------- 표시: admin 진입점이 아니면 signBtn 숨김(비관리자는 모름) ----------
   if (revealAdmin) {
@@ -190,9 +238,7 @@
       adminPanel.style.display = 'block';
       adminPanel.ariaHidden = 'false';
       signBtn.textContent = '로그아웃';
-      // if revealAdmin was false but admin logged in somehow, still show adminPanel (but we only allow login via popup which only shown when revealAdmin true)
     } else {
-      // 로그아웃 또는 다른 계정
       adminPanel.style.display = 'none';
       adminPanel.ariaHidden = 'true';
       if (revealAdmin) signBtn.textContent = '관리자 로그인';
@@ -200,6 +246,7 @@
     }
     // 항상 목록은 갱신
     await loadList();
+    await loadPatches();
   });
 
   // ---------- 목록 로드 (Realtime DB) ----------
@@ -279,6 +326,64 @@
     }
   }
 
+  // ---------- 패치 로드 및 렌더 ----------
+  async function loadPatches(){
+    patchListEl.innerHTML = '<div class="empty">로딩 중…</div>';
+    patchCount.textContent = '로딩…';
+    try {
+      const snap = await get(ref(db, PATCHES_PATH));
+      const data = snap.exists() ? snap.val() : null;
+      if (!data) {
+        patchListEl.innerHTML = '<div class="empty">패치 내역이 없습니다.</div>';
+        patchCount.textContent = '0개';
+        return;
+      }
+      const items = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+      items.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+      patchCount.textContent = `${items.length}개`;
+      patchListEl.innerHTML = '';
+      items.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'patch-item';
+        const dateText = it.timestamp ? new Date(it.timestamp).toLocaleString() : '';
+        const delHtml = (auth.currentUser && (auth.currentUser.email||'').toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? `<button class="btn ghost" data-patch-delete-id="${escapeAttr(it.id)}">삭제</button>` : '';
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div>
+              <div class="patch-title">${escapeHtml(it.title || '(무제)')}</div>
+              <div class="patch-meta">${escapeHtml(it.body || '')}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="patch-meta">${escapeHtml(dateText)}</div>
+              <div style="margin-top:6px">${delHtml}</div>
+            </div>
+          </div>
+        `;
+        patchListEl.appendChild(div);
+      });
+
+      // attach delete handlers for patches
+      patchListEl.querySelectorAll('[data-patch-delete-id]').forEach(b => {
+        b.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-patch-delete-id');
+          if (!confirm('정말 이 패치 항목을 삭제하시겠습니까?')) return;
+          try {
+            await remove(ref(db, `${PATCHES_PATH}/${id}`));
+            await loadPatches();
+          } catch (err) {
+            console.error(err);
+            alert('삭제 실패: ' + (err && err.message));
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('loadPatches error', err);
+      patchListEl.innerHTML = '<div class="empty">패치 정보를 불러오지 못했습니다.</div>';
+      patchCount.textContent = '0개';
+    }
+  }
+
   // ---------- 관리자: 메타 추가 ----------
   addMetaBtn.addEventListener('click', async () => {
     // only allow if logged in as admin
@@ -317,6 +422,34 @@
     }
   });
 
+  // ---------- 관리자: 패치 추가 ----------
+  addPatchBtn.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if (!user || (user.email||'').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      alert('권한이 없습니다. 관리자 계정으로 로그인하세요.');
+      return;
+    }
+    const title = (patchTitle.value||'').trim();
+    const body = (patchBody.value||'').trim();
+    if (!title) { alert('패치 제목을 입력하세요.'); return; }
+    const item = {
+      title,
+      body,
+      createdBy: user.email || 'admin',
+      timestamp: Date.now()
+    };
+    try {
+      const newRef = push(ref(db, PATCHES_PATH));
+      await set(newRef, item);
+      patchTitle.value = ''; patchBody.value = '';
+      await loadPatches();
+      alert('패치가 추가되었습니다.');
+    } catch (err) {
+      console.error(err);
+      alert('패치 추가 실패: ' + (err && err.message));
+    }
+  });
+
   // ---------- 게임으로 돌아가기 ----------
   backBtn.addEventListener('click', () => {
     try {
@@ -338,11 +471,19 @@
     console.warn('onValue error', err);
   });
 
+  onValue(ref(db, PATCHES_PATH), snapshot => {
+    loadPatches();
+  }, err => {
+    console.warn('patches onValue error', err);
+  });
+
   // 初回 로드
   loadList();
+  loadPatches();
 
   // small helper expose for manual test (console)
   window._appDownload_reload = loadList;
+  window._appPatches_reload = loadPatches;
 
 </script>
 </body>
