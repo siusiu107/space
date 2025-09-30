@@ -315,6 +315,11 @@
     // save: update() 사용. 전체를 덮어쓰기보다 병합형 업데이트로 다른 필드 손실 방지.
     function save() {
       if (!uid || !dataRef) return;
+      // **중요: 초기 동기화 중에는 저장 금지** (클라이언트가 서버를 덮어쓰는 문제 방지)
+      if (isInitialSync) {
+        console.log('save skipped during initial sync');
+        return;
+      }
       // 시간 기록
       const now = Date.now();
       state._lastUpdated = now;
@@ -357,6 +362,18 @@
       } else {
         authErrorEl.style.color = '#dfffe8';
       }
+    }
+
+    function showGameUI() {
+      // 게임 UI는 초기 동기화가 끝난 뒤에만 노출
+      try {
+        authContainer.classList.add('hidden');
+        setTimeout(() => {
+          authContainer.style.display = 'none';
+          document.getElementById('logout-btn').style.display = 'block';
+          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+        }, 340);
+      } catch (e) { console.error('showGameUI error', e); }
     }
 
     // === (교체된) 전문적인 로그인 오버레이 표시 함수 ===
@@ -435,7 +452,7 @@
       };
     }
 
-    // 로그인 상태에서 애니메이션으로 전환 처리 (auth-container는 직접 숨기지 말고 클래스 사용)
+    // 로그인 상태에서 애니메이션으로 전환 처리
     onAuthStateChanged(auth, async user => {
       showAuthStatus('');
       // **구독 해제: 새로운 계정으로 전환하기 전에 기존 리스너가 있으면 제거**
@@ -457,15 +474,7 @@
           localLastWrite = saved ? parseInt(saved, 10) : 0;
         } catch (e) { localLastWrite = 0; }
 
-        // 부드러운 전환: overlay가 보이면 숨기고, 카드 축소 후 숨김
-        showLoginOverlay(false);
-        authContainer.classList.add('hidden');
-        setTimeout(() => {
-          authContainer.style.display = 'none';
-          document.getElementById('logout-btn').style.display = 'block';
-          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
-        }, 340);
-
+        // showLoginOverlay(true, ...)는 로그인 버튼 핸들러에서 이미 호출되므로 여기서는 UI 노출을 미루고
         // 안전하게 초기화 (경합 없도록 transaction 사용)
         await ensureInitialData(dataRef);
 
@@ -473,14 +482,14 @@
         dataUnsubscribe = onValue(dataRef, snap => {
           const server = snap.exists() ? snap.val() : null;
           if (!server) {
-            // 서버에 데이터가 아예 없을 때: 초기 동기화 중이면 로컬 기본값 유지하되 '덮어쓰기'는 하지 않음
+            // 서버에 데이터가 아예 없을 때
             if (isInitialSync) {
               state = { ...defaultData };
               updateUI(); renderPlanets();
               isInitialSync = false; // 초기 동기화 끝
+              showGameUI();
               return;
             } else {
-              // 이후라면 역시 안전하게 기본값 적용 (필요시 사용자에게 알릴 수 있음)
               state = { ...defaultData };
               updateUI(); renderPlanets();
               return;
@@ -494,6 +503,8 @@
             state = { ...defaultData, ...server };
             updateUI(); renderPlanets();
             isInitialSync = false;
+            // 초기 동기화가 끝났으니 UI 노출
+            showGameUI();
             return;
           }
 
@@ -575,8 +586,7 @@
           // 전문적 표시: provider='google' 전달, 세부문구 설정
           showLoginOverlay(true, '구글 인증 시작', { provider: 'google', subText: '구글 계정으로 안전하게 연결합니다.', detail: '구글 팝업이 열리면 계정을 선택하고 권한을 허용해주세요.' });
           await signInWithPopup(auth, provider);
-          // 성공 시 onAuthStateChanged에서 처리되므로, onAuthStateChanged에서 overlay.success를 호출하도록 하거나,
-          // 여기서 간단히 success 콜을 시도 (onAuthStateChanged가 발생하기 전에)
+          // 간단히 success 호출해도 onAuthStateChanged에서 최종 처리됨
           const overlay = document.getElementById('login-overlay');
           overlay && overlay.success && overlay.success('로그인 완료 — 환영합니다');
         } catch (err) {
@@ -634,26 +644,62 @@
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button'); btn.className = 'general'; btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
-        btn.onclick = () => { if (state.coins >= p.cost) { state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i); save(); updateUI(); renderPlanets(); if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html'; } };
+        btn.onclick = () => { 
+          if (!ensureReady()) return;
+          if (state.coins >= p.cost) { state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i); save(); updateUI(); renderPlanets(); if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html'; } 
+        };
         div.appendChild(btn); list.appendChild(div);
       });
     }
 
     function spawnParticles(x,y) { for (let i=0;i<15;i++){ const span = document.createElement('span'); span.className='particle'; span.style.setProperty('--dx',(Math.random()-0.5)*100+'px'); span.style.setProperty('--dy',(Math.random()-1)*100+'px'); span.style.left = x+'px'; span.style.top = y+'px'; document.getElementById('ore-container').appendChild(span); setTimeout(()=>span.remove(),800); } }
 
+    function ensureReady() {
+      if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
+      if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
+      showAuthStatus('');
+      return true;
+    }
+
     window.onload = () => {
-      document.getElementById('ore').addEventListener('click', e => { const rect = e.target.getBoundingClientRect(); spawnParticles(e.clientX - rect.left, e.clientY - rect.top); state.resources += state.clickPower; if (state.autoConvertBought) convertResources(); save(); updateUI(); });
-      document.getElementById('convert-button').addEventListener('click', () => { convertResources(1); save(); updateUI(); });
-      document.getElementById('auto-convert-buy').addEventListener('click', () => { if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); } });
-      document.getElementById('hire-worker').addEventListener('click', () => { const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } });
-      document.getElementById('hire-conversion').addEventListener('click', () => { const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
-      document.getElementById('upgrade-ship').addEventListener('click', () => { if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
-      document.getElementById('click-upgrade').addEventListener('click', () => { if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
-      document.getElementById('reset-button').addEventListener('click', () => { if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
+      document.getElementById('ore').addEventListener('click', e => { 
+        if (!ensureReady()) return;
+        const rect = e.target.getBoundingClientRect(); spawnParticles(e.clientX - rect.left, e.clientY - rect.top); state.resources += state.clickPower; if (state.autoConvertBought) convertResources(); save(); updateUI(); 
+      });
+
+      document.getElementById('convert-button').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        convertResources(1); save(); updateUI(); 
+      });
+      document.getElementById('auto-convert-buy').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); } 
+      });
+      document.getElementById('hire-worker').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } 
+      });
+      document.getElementById('hire-conversion').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } 
+      });
+      document.getElementById('upgrade-ship').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } 
+      });
+      document.getElementById('click-upgrade').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } 
+      });
+      document.getElementById('reset-button').addEventListener('click', () => { 
+        if (!ensureReady()) return;
+        if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } 
+      });
       document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById(`${tab.dataset.tab}-content`).classList.add('active'); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }));
 
       setInterval(() => {
-        if (!uid) return; // 로그인된 사용자가 없으면 동작하지 않음 (중요)
+        // 초기 동기화가 끝나지 않았거나 로그인되지 않았다면 동작하지 않음
+        if (!uid || isInitialSync) return;
         if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
         if (state.conversionCount > 0) state.coins += state.conversionCount;
         if (state.autoConvertBought) convertResources();
