@@ -474,6 +474,8 @@
     onAuthStateChanged(auth, async user => {
       // 이메일 인증이 되지 않은 사용자는 안내 후 자동 로그아웃
       if (user && !user.emailVerified) {
+        // 로그인 오버레이가 남아있을 수 있으니 먼저 숨김
+        try { showLoginOverlay(false); } catch(e){}
         try { await sendEmailVerification(user); } catch (e) { /* 발송 실패 무시 */ }
         showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
         try { await signOut(auth); } catch (e) { /* 무시 */ }
@@ -556,6 +558,8 @@
         });
 
       } else {
+        // 로그아웃/비인증 상태 진입 시 로그인 오버레이가 남아있으면 숨김
+        try { showLoginOverlay(false); } catch(e){}
         uid = null; dataRef = null;
         // **추가: 로그아웃 시 로컬 상태 및 타임스탬프 초기화하여 이전 계정 데이터가 남지 않도록 함**
         state = { ...defaultData };
