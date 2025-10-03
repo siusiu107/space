@@ -115,11 +115,22 @@
 <body>
   <!-- 인증 -->
   <div id="auth-container" role="dialog" aria-labelledby="auth-title">
+    <!-- 탭: 로그인 / 회원가입 -->
+    <div style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
+      <button id="auth-tab-login" class="ghost-btn" style="flex:1; max-width:160px;">로그인</button>
+      <button id="auth-tab-signup" class="ghost-btn" style="flex:1; max-width:160px;">회원가입</button>
+    </div>
+
     <h2 id="auth-title">로그인 / 회원가입</h2>
+
     <input type="email" id="email" placeholder="이메일" autocomplete="username" />
     <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" />
+    <div id="signup-extra" style="display:none; margin-top:6px;">
+      <input type="password" id="password-confirm" placeholder="비밀번호 확인" autocomplete="new-password" />
+    </div>
+
     <button id="login-btn" class="primary-btn">로그인</button>
-    <button id="signup-btn" class="ghost-btn">회원가입</button>
+    <button id="signup-btn" class="ghost-btn" style="display:none">회원가입</button>
 
     <!-- ===== Google 로그인 버튼 추가 (권장) ===== -->
     <button id="google-btn" aria-label="구글로 계속하기 (권장)" class="google-btn">
@@ -143,6 +154,7 @@
     <!-- ===== 변경 끝 ===== -->
 
     <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
+    <p id="verify-info" class="auth-status" role="status" aria-live="polite" style="color:#dfffe8"></p>
 
     <!-- 로그인 상태 오버레이 (교체된 전문 표시) -->
     <div id="login-overlay" class="login-overlay" aria-hidden="true">
@@ -260,7 +272,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -460,6 +472,13 @@
 
     // 로그인 상태에서 애니메이션으로 전환 처리
     onAuthStateChanged(auth, async user => {
+      // 이메일 인증이 되지 않은 사용자는 안내 후 자동 로그아웃
+      if (user && !user.emailVerified) {
+        try { await sendEmailVerification(user); } catch (e) { /* 발송 실패 무시 */ }
+        showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
+        try { await signOut(auth); } catch (e) { /* 무시 */ }
+        return;
+      }
       showAuthStatus('');
       // **구독 해제: 새로운 계정으로 전환하기 전에 기존 리스너가 있으면 제거**
       if (dataUnsubscribe) {
@@ -553,6 +572,32 @@
     });
 
     // 기존 로그인/회원가입 이벤트에 상태 UI 연결 (팝업/리다이렉트 폴백 포함)
+    // --- 추가: 로그인/회원가입 탭 제어 ---
+    try {
+      const tabLogin = document.getElementById('auth-tab-login');
+      const tabSignup = document.getElementById('auth-tab-signup');
+      const signupExtra = document.getElementById('signup-extra');
+      const loginBtn = document.getElementById('login-btn');
+      const signupBtn = document.getElementById('signup-btn');
+      function setAuthMode(mode) {
+        if (mode === 'signup') {
+          tabLogin.classList.remove('active'); tabSignup.classList.add('active');
+          signupExtra.style.display = 'block';
+          loginBtn.style.display = 'none'; signupBtn.style.display = 'block';
+          try { setDisplayedPath('/signup'); } catch(e){}
+        } else {
+          tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+          signupExtra.style.display = 'none';
+          loginBtn.style.display = 'block'; signupBtn.style.display = 'none';
+          try { setDisplayedPath('/login'); } catch(e){}
+        }
+        document.getElementById('auth-error').textContent = '';
+        document.getElementById('verify-info').textContent = '';
+      }
+      tabLogin && tabLogin.addEventListener('click', () => setAuthMode('login'));
+      tabSignup && tabSignup.addEventListener('click', () => setAuthMode('signup'));
+      setAuthMode('login');
+    } catch(e) { /* DOM이 아직 준비되지 않았을 수 있음 */ }
     document.getElementById('login-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
@@ -560,8 +605,16 @@
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
       try {
         showLoginOverlay(true, '로그인 중… 잠시만요');
-        await signInWithEmailAndPassword(auth, email, password);
-        // 성공하면 onAuthStateChanged에서 처리
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const user = cred.user;
+        if (user && !user.emailVerified) {
+          try { await sendEmailVerification(user); } catch (e) { /* 무시 */ }
+          showLoginOverlay(false);
+          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
+          await signOut(auth);
+          return;
+        }
+        // 로그인 성공: onAuthStateChanged에서 처리
       } catch (err) {
         console.warn(err);
         showLoginOverlay(false);
@@ -573,10 +626,18 @@
       e.preventDefault(); showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
+      const passwordConfirm = document.getElementById('password-confirm').value;
+      if (!email || !password || !passwordConfirm) { showAuthStatus('모든 필드를 입력하세요.'); return; }
+      if (password !== passwordConfirm) { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
       try {
         showLoginOverlay(true, '계정 생성 중…');
-        await createUserWithEmailAndPassword(auth, email, password);
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const user = cred.user;
+        try { await sendEmailVerification(user); } catch (e) { console.warn('인증 메일 발송 실패', e); }
+        showLoginOverlay(false);
+        showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
+        try { setDisplayedPath('/signup'); } catch(e){}
+        try { await signOut(auth); } catch (e) {}
       } catch (err) {
         console.warn(err);
         showLoginOverlay(false);
