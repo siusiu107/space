@@ -4,15 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
-  <!-- 표시 경로 고정: /게임 (호스트는 변경 불가) -->
+  <!-- 표시 경로 고정 로직: 로그인 화면은 /login, 게임 화면은 /게임으로 바꿈 -->
   <script>
-    (function(){
+    // 안전하게 history.replaceState로 주소 표시만 변경하는 함수
+    function setDisplayedPath(path) {
       try {
-        history.replaceState(null, '', '/게임' + (location.hash || ''));
+        const suffix = (location.search || '') + (location.hash || '');
+        history.replaceState(null, '', path + suffix);
       } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
       }
-    })();
+    }
+    // 초기 로드 시 기본적으로 로그인 화면으로 주소 표시(인증 상태에 따라 변경됨)
+    try { setDisplayedPath('/login'); } catch (e) {}
   </script>
   <style>
     /* 기본 레이아웃 (변경 없음) */
@@ -49,7 +53,7 @@
     .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
-    /* Google 버튼 (기존 стиль 유지하되 정렬 고침) */
+    /* Google 버튼 (기존 스타일 유지하되 정렬 고침) */
     .google-btn { width:95%; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:10px; margin:8px 0 4px; background:linear-gradient(180deg,#fff,#f2f2f2); color:#000; border-radius:8px; border:1px solid rgba(0,0,0,0.08); cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
     .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
     .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
@@ -367,6 +371,8 @@
     function showGameUI() {
       // 게임 UI는 초기 동기화가 끝난 뒤에만 노출
       try {
+        // 주소를 게임 페이지로 변경
+        try { setDisplayedPath('/게임'); } catch(e){}
         authContainer.classList.add('hidden');
         setTimeout(() => {
           authContainer.style.display = 'none';
@@ -536,6 +542,8 @@
         state = { ...defaultData };
         localLastWrite = 0;
         isInitialSync = false;
+        // 주소를 로그인 화면으로 변경
+        try { setDisplayedPath('/login'); } catch(e){}
         authContainer.style.display = 'block';
         // 애니메이션으로 천천히 나타내기
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
@@ -727,7 +735,7 @@
         try { if (window.self !== window.top) return false; } catch (e) {}
         return false;
       }
-      function showBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) { if (blockerTemplate) { document.body.appendChild(blockerTemplate.cloneNode(true)); } else { const div = document.createElement('div'); div.id = BLOCKER_ID; div.setAttribute('role','alert'); div.className = ' active'; div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:3000;padding:20px;'; div.innerHTML = '<div class="box" style="max-width:560px;background:#0b0b0f;border:1px solid #222;padding:24px;border-radius:10px;color:#ddd;text-align:center;"><h2 style="color:#ffcc00;margin-bottom:10px">잘못된 접근입니다</h2><p style="margin-bottom:16px;color:#bbb">이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p><div><button id="reopen-popup" class="popup-btn primary" style="padding:10px 14px;border-radius:8px;border:0;margin:6px;font-weight:700">팝업으로 열기</button><button id="close-tab" class="popup-btn ghost" style="padding:10px 14px;border-radius:8px;border:1px solid #444;margin:6px;background:transparent;color:#fff">이 탭 닫기</button></div><p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인하세요.</p></div>'; document.body.appendChild(div); } blocker = document.getElementById(BLOCKER_ID); bindBlockerButtons(); } blocker.classList.add('active'); blocker.style.display = 'flex'; blocker.style.pointerEvents = 'auto'; blocker.style.zIndex = '999999'; } catch (e) { console.error('showBlocker error', e); } }
+      function showBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) { if (blockerTemplate) { document.body.appendChild(blockerTemplate.cloneNode(true)); } else { const div = document.createElement('div'); div.id = BLOCKER_ID; div.setAttribute('role','alert'); div.className = ' active'; div.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:3000;padding:20px;'; div.innerHTML = '<div class="box" style="max-width:560px;background:#0b0b0f;border:1px solid #222;padding:24px;border-radius:10px;color:#ddd;text-align:center;'><h2 style="color:#ffcc00;margin-bottom:10px">잘못된 접근입니다</h2><p style="margin-bottom:16px;color:#bbb">이 페이지는 팝업 창으로 열려야 합니다.<br>현재는 팝업이 아닌 방식으로 접근되었기 때문에 게임을 실행할 수 없습니다.</p><div><button id="reopen-popup" class="popup-btn primary" style="padding:10px 14px;border-radius:8px;border:0;margin:6px;font-weight:700">팝업으로 열기</button><button id="close-tab" class="popup-btn ghost" style="padding:10px 14px;border-radius:8px;border:1px solid #444;margin:6px;background:transparent;color:#fff">이 탭 닫기</button></div><p style="margin-top:12px;color:#9aa6c4;font-size:13px">팝업이 차단될 경우 브라우저의 팝업 허용 설정을 확인하세요.</p></div>'; document.body.appendChild(div); } blocker = document.getElementById(BLOCKER_ID); bindBlockerButtons(); } blocker.classList.add('active'); blocker.style.display = 'flex'; blocker.style.pointerEvents = 'auto'; blocker.style.zIndex = '999999'; } catch (e) { console.error('showBlocker error', e); } }
       function hideBlocker() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) return; blocker.classList.remove('active'); blocker.style.display = 'none'; } catch (e) {} }
       function tryOpenPopupFromThisTab() { const w = 1024, h = 768; const left = Math.max(0, Math.round((screen.width - w) / 2)); const top  = Math.max(0, Math.round((screen.height - h) / 2)); const opts = `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no`; const popup = window.open(window.location.href + (location.search ? '&' : '?') + 'popup=1', EXPECTED_POPUP_NAME, opts); if (!popup) { alert('팝업이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인하세요.'); return; } try { popup.focus(); } catch(e) {} setTimeout(()=>{ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }, 300); }
       function bindBlockerButtons() { try { blocker = document.getElementById(BLOCKER_ID); if (!blocker) return; const reopenBtn = blocker.querySelector('#reopen-popup'); const closeBtn = blocker.querySelector('#close-tab'); if (reopenBtn) { reopenBtn.addEventListener('click', tryOpenPopupFromThisTab); } if (closeBtn) { closeBtn.addEventListener('click', function(){ try{ allowTemporaryUnload(1500); window.close(); } catch(e){} }); } } catch (e) {} }
@@ -811,7 +819,7 @@
   <script>
     // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
     document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      if (e.target.closest('input, textarea, [contenteditable="true"])) return;
       e.preventDefault();
     });
   </script>
