@@ -7,12 +7,15 @@
   <!-- 표시 경로 고정 로직: 로그인 화면은 /login, 게임 화면은 /게임으로 바꿈 -->
   <script>
     // 안전하게 history.replaceState로 주소 표시만 변경하는 함수
-    function setDisplayedPath(path) {
+    function setDisplayedPath(path, opts = { preserveQuery: true, preserveHash: true, replace: true }) {
       try {
-        // 처음 로드된 쿼리(redirect 등)를 우선으로 유지
-        const suffix = (__initialSearch__ || location.search || '') + (location.hash || '');
-        history.replaceState(null, '', path + suffix);
-      } catch (e) {
+        const search = (opts.preserveQuery ? (__initialSearch__ || location.search || '') : '');
+        const hash = (opts.preserveHash ? (location.hash || '') : '');
+        const newUrl = path + search + hash;
+        if (opts.replace) history.replaceState(null, '', newUrl);
+        else history.pushState(null, '', newUrl);
+      } catch (e) { console.warn('setDisplayedPath error', e); }
+    } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
       }
     } catch (e) {
@@ -28,6 +31,33 @@
         if (!raw) return null;
         return decodeURIComponent(raw);
       } catch (e) { return null; }
+    }
+
+    // redirect가 허용되면 수행하고 true를 반환. 그렇지 않으면 false.
+    function performRedirectIfAllowed() {
+      try {
+        const redirect = getRedirectFromQuery();
+        if (!redirect) return false;
+        if (!isAllowedRedirect(redirect)) {
+          showAuthStatus('로그인 요청 url이 올바르지 않습니다.');
+          return false;
+        }
+        // 안전하게 리다이렉트
+        window.location.href = redirect;
+        return true;
+      } catch (e) {
+        console.error('performRedirectIfAllowed error', e);
+        showAuthStatus('리다이렉트 중 오류가 발생했습니다.');
+        return false;
+      }
+    }
+
+    // 주소창에서 redirect 쿼리만 제거하여 깔끔하게 정리
+    function clearRedirectQueryFromUrl() {
+      try {
+        history.replaceState(null, '', location.pathname + (location.hash || ''));
+      } catch (e) { /* 무시 */ }
+    } catch (e) { return null; }
     } catch (e) { return null; }
     }
 
@@ -48,7 +78,11 @@
     }
 
     // 초기 로드 시 기본으로 로그인 화면으로 주소 표시(인증 상태에 따라 변경됨)
-    try { setDisplayedPath('/login'); } catch (e) {}
+    try { if (!__shouldAvoidInitialReplace__ && location.pathname !== '/login') {
+      try { setDisplayedPath('/login'); } catch (e) {}
+    } else {
+      console.log('초기 경로 변경 건너뜀 (redirect/popup 보존)');
+    } } catch (e) {}
   </script>
   <style>
     /* 기본 레이아웃 (변경 없음) */
@@ -304,7 +338,15 @@
 
   <script type="module">
     // 초기 로드 시 쿼리(redirect 등)를 잃지 않도록 원본 쿼리 저장
+    // 저장해둔 초기 쿼리(redirect 등)
     const __initialSearch__ = (location.search || '');
+    // 초기 로드에서 /login으로 강제 변경하면 redirect 쿼리가 덮어씌워지거나
+    // 일부 브라우저/로직에서 의도치 않은 리프레시/네비게이션이 발생할 수 있으므로
+    // 다음 조건일 때만 표시 경로를 바꿉니다.
+    const __shouldAvoidInitialReplace__ = (__initialSearch__ && (__initialSearch__.includes('redirect=') || __initialSearch__.includes('popup=1')));
+    // 만약 redirect나 popup 파라미터가 있으면 초기 로드에서는 pathname을 건드리지 않음
+    // (탭 전환이나 명시적 호출로만 변경)
+    // 아래의 안전한 초기 setDisplayedPath 호출은 이후 코드에서 필요할 때만 수행됩니다.
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
@@ -415,25 +457,26 @@
     }
 
     function showGameUI() {
-      // 게임 UI는 초기 동기화가 끝난 뒤에만 노출
       try {
-        // 주소를 게임 페이지로 변경
-        try { setDisplayedPath('/게임'); } catch(e){}
+        // UI 전환: 게임 화면을 보여주되, 쿼리는 보존하여 redirect 처리에 사용
         authContainer.classList.add('hidden');
         setTimeout(() => {
           authContainer.style.display = 'none';
           document.getElementById('logout-btn').style.display = 'block';
           ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
 
-          // 로그인 후 리다이렉트 파라미터가 있으면 검증 후 리다이렉트
-          const redirect = getRedirectFromQuery();
-          if (redirect) {
-            if (isAllowedRedirect(redirect)) {
-              try {
-                // 안전하게 리다이렉트
-                window.location.href = redirect;
-                return;
-              } catch (e) {
+          // 게임 경로로 표시하되 쿼리는 보존한다
+          try { setDisplayedPath('/게임', { preserveQuery: true, preserveHash: true, replace: true }); } catch (e) {}
+
+          // 로그인 후 리다이렉트가 있으면 검증 후 이동
+          const didRedirect = performRedirectIfAllowed();
+          if (!didRedirect) {
+            // 리다이렉트가 없거나 허용되지 않으면 쿼리를 제거하여 주소를 정리
+            clearRedirectQueryFromUrl();
+          }
+        }, 340);
+      } catch (e) { console.error('showGameUI error', e); }
+    } catch (e) {
                 console.error('리다이렉트 실패', e);
                 showAuthStatus('리다이렉트 중 오류가 발생했습니다.');
               }
