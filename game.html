@@ -9,9 +9,13 @@
     // 안전하게 history.replaceState로 주소 표시만 변경하는 함수
     function setDisplayedPath(path) {
       try {
-        const suffix = (location.search || '') + (location.hash || '');
+        // 처음 로드된 쿼리(redirect 등)를 우선으로 유지
+        const suffix = (__initialSearch__ || location.search || '') + (location.hash || '');
         history.replaceState(null, '', path + suffix);
       } catch (e) {
+        console.warn('주소 표시 변경 실패:', e);
+      }
+    } catch (e) {
         console.warn('주소 표시 변경 실패:', e);
       }
     }
@@ -19,12 +23,12 @@
     // --- 리다이렉트 관련 헬퍼 ---
     function getRedirectFromQuery() {
       try {
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(__initialSearch__ || location.search);
         const raw = params.get('redirect');
         if (!raw) return null;
-        // 이미 인코딩되어 올 수 있으니 decode
         return decodeURIComponent(raw);
       } catch (e) { return null; }
+    } catch (e) { return null; }
     }
 
     function isAllowedRedirect(urlStr) {
@@ -32,11 +36,15 @@
         const u = new URL(urlStr);
         // 반드시 https 프로토콜
         if (u.protocol !== 'https:') return false;
-        // 허용 호스트 (정확히 일치해야 함)
+        // 허용 호스트: punycode와 일반 도메인 모두, 하위 도메인 허용
         const allowedHost = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
-        if (u.hostname === allowedHost) return true;
+        const allowedAlt = 'siustudio.kro.kr';
+        const h = u.hostname;
+        if (h === allowedHost || h === allowedAlt) return true;
+        if (h.endsWith('.' + allowedHost) || h.endsWith('.' + allowedAlt)) return true;
         return false;
       } catch (e) { return false; }
+    } catch (e) { return false; }
     }
 
     // 초기 로드 시 기본으로 로그인 화면으로 주소 표시(인증 상태에 따라 변경됨)
@@ -295,6 +303,8 @@
   </div>
 
   <script type="module">
+    // 초기 로드 시 쿼리(redirect 등)를 잃지 않도록 원본 쿼리 저장
+    const __initialSearch__ = (location.search || '');
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
