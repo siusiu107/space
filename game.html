@@ -15,7 +15,31 @@
         console.warn('주소 표시 변경 실패:', e);
       }
     }
-    // 초기 로드 시 기본적으로 로그인 화면으로 주소 표시(인증 상태에 따라 변경됨)
+
+    // --- 리다이렉트 관련 헬퍼 ---
+    function getRedirectFromQuery() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const raw = params.get('redirect');
+        if (!raw) return null;
+        // 이미 인코딩되어 올 수 있으니 decode
+        return decodeURIComponent(raw);
+      } catch (e) { return null; }
+    }
+
+    function isAllowedRedirect(urlStr) {
+      try {
+        const u = new URL(urlStr);
+        // 반드시 https 프로토콜
+        if (u.protocol !== 'https:') return false;
+        // 허용 호스트 (정확히 일치해야 함)
+        const allowedHost = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
+        if (u.hostname === allowedHost) return true;
+        return false;
+      } catch (e) { return false; }
+    }
+
+    // 초기 로드 시 기본으로 로그인 화면으로 주소 표시(인증 상태에 따라 변경됨)
     try { setDisplayedPath('/login'); } catch (e) {}
   </script>
   <style>
@@ -277,7 +301,7 @@
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-      authDomain: "auth.xn--989a202a4ogwtc69p.siustudio.kro.kr/",
+      authDomain: "siu-studio.firebaseapp.com",
       databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "siu-studio",
       storageBucket: "siu-studio.appspot.com",
@@ -390,6 +414,25 @@
           authContainer.style.display = 'none';
           document.getElementById('logout-btn').style.display = 'block';
           ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+
+          // 로그인 후 리다이렉트 파라미터가 있으면 검증 후 리다이렉트
+          const redirect = getRedirectFromQuery();
+          if (redirect) {
+            if (isAllowedRedirect(redirect)) {
+              try {
+                // 안전하게 리다이렉트
+                window.location.href = redirect;
+                return;
+              } catch (e) {
+                console.error('리다이렉트 실패', e);
+                showAuthStatus('리다이렉트 중 오류가 발생했습니다.');
+              }
+            } else {
+              // 허용되지 않는 도메인인 경우 경고 표시
+              showAuthStatus('로그인 요청 url이 올바르지 않습니다.');
+            }
+          }
+
         }, 340);
       } catch (e) { console.error('showGameUI error', e); }
     }
@@ -862,7 +905,7 @@
       if (action === 'download') {
         try {
           // 즉시 이동
-          window.location.href = '/app-download';
+          window.location.href = '/app-download.html';
         } catch (err) {
           try { window.open('/app-download.html', '_self'); } catch (e) { /* 무시 */ }
         }
@@ -890,10 +933,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
