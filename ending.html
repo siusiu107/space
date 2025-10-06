@@ -137,21 +137,30 @@
 
     btn.addEventListener('click', () => { window.location.href = 'game.html'; });
 
+    // 배너를 보여주고 약간의 시간 뒤 안전하게 리다이렉트
+    function showBannerAndRedirect(url, text = '로그인후 이용해주세요!') {
+      const banner = document.createElement('div');
+      banner.textContent = text;
+      banner.style.cssText =
+        'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;' +
+        'background:rgba(0,0,0,.85);color:#fff;font-size:20px;z-index:99999;';
+      document.body.appendChild(banner);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => { window.location.replace(url); }, 500);
+        });
+      });
+    }
+
     onAuthStateChanged(auth, async (user) => {
-      // ✅ 로그인 안 되어 있으면: 안내 문구 표시 → game.html로 이동
+      // 로그인 안 되어 있으면: 배너 → 복귀주소 저장 → game.html 이동
       if (!user) {
         titleEl.textContent = '로그인후 이용해주세요!';
         msgEl.textContent = '로그인 페이지로 이동합니다…';
         btn.classList.add('hidden');
-
-        try {
-          // 로그인 성공 후 되돌아올 주소 저장 (game.html이 읽어 자동 복귀)
-          sessionStorage.setItem('pending_redirect', window.location.href);
-        } catch {}
-
-        // 현재 탭을 game.html로 "이동" (뒤로가기로 이 페이지가 남지 않게 replace 사용)
+        try { sessionStorage.setItem('pending_redirect', window.location.href); } catch {}
         const dest = `${location.origin}/game.html`;
-        window.location.replace(dest);
+        showBannerAndRedirect(dest, '로그인후 이용해주세요!');
         return;
       }
 
@@ -196,7 +205,7 @@
   <script>
     // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
     document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('input, textarea, [contenteditable="true"])) return;
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
       e.preventDefault();
     });
   </script>
