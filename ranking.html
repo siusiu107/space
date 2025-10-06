@@ -79,57 +79,28 @@
     const toggleNoNick = document.getElementById('toggle-no-nickname');
     let rankingList = [];
 
-    // 🔐 로그인 안 되어 있으면 game.html을 팝업으로 띄워 postMessage 로그인 진행
-    function openLoginPopupAndWire() {
-      const LOGIN_ORIGIN = location.origin;   // 같은 오리진 기준
-      const RETURN_URL   = location.href;     // 로그인 성공 후 다시 이 페이지로
-
-      const w = 1024, h = 768;
-      const left = Math.max(0, (screen.width - w) / 2 | 0);
-      const top  = Math.max(0, (screen.height - h) / 2 | 0);
-      const popup = window.open(
-        `${LOGIN_ORIGIN}/game.html`,
-        'gameWindow',
-        `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
-      const state = (crypto?.randomUUID && crypto.randomUUID()) || String(Math.random());
-
-      function isAllowedRedirect(urlStr){
-        try{
-          const u = new URL(urlStr);
-          if(u.protocol !== 'https:') return false;
-          const host = u.hostname;
-          const base1 = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
-          const base2 = 'siustudio.kro.kr';
-          return (host === base1 || host === base2 || host.endsWith('.'+base1) || host.endsWith('.'+base2));
-        }catch{return false;}
-      }
-
-      function sendInit(){
-        if(!popup || popup.closed) return;
-        popup.postMessage({ type:'init-login', redirect: RETURN_URL, state }, LOGIN_ORIGIN);
-      }
-
-      window.addEventListener('message', (e) => {
-        if(e.origin !== LOGIN_ORIGIN) return;
-        const { type, ok, receivedState, redirect, message } = e.data || {};
-        if(type === 'login-ready'){ sendInit(); return; }
-        if(type === 'auth-success' && ok && receivedState === state){
-          try{ popup.close(); }catch{}
-          const target = isAllowedRedirect(redirect||RETURN_URL) ? (redirect||RETURN_URL) : RETURN_URL;
-          window.location.href = target; // ranking.html 재진입 → onAuthStateChanged에서 user 감지
-          return;
-        }
-        if(type === 'auth-error'){
-          try{ popup.close(); }catch{}
-          alert(message || '로그인에 실패했습니다.');
-        }
-      });
-    }
-
+    // 🔐 로그인 상태 감시
     onAuthStateChanged(auth, async (user) => {
-      if (!user) { openLoginPopupAndWire(); return; }
+      // ✅ 비로그인: 안내 문구 표시 → 복귀 주소 저장 → game.html로 이동
+      if (!user) {
+        // 화면에 즉시 안내 문구 표시 (짧은 시간 노출 뒤 이동)
+        const banner = document.createElement('div');
+        banner.textContent = '로그인후 이용해주세요!';
+        banner.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);color:#fff;font-size:20px;z-index:99999;';
+        document.body.appendChild(banner);
 
+        try {
+          // 로그인 후 돌아올 주소 저장( game.html 에서 사용 )
+          sessionStorage.setItem('pending_redirect', window.location.href);
+        } catch {}
+
+        // 히스토리 흔적을 남기지 않도록 replace 사용
+        const dest = `${location.origin}/game.html`;
+        window.location.replace(dest);
+        return;
+      }
+
+      // 로그인 상태면 닉네임 확인/설정 후 랭킹 로딩
       const profileRef = ref(db, `users/${user.uid}/profile/nickname`);
       const snap = await get(profileRef);
       if (!snap.exists()) {
