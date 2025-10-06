@@ -4,11 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌟 축하합니다! 태양계 정복 완료 🌟</title>
-    <script>
-  try { history.replaceState(null, '', '/엔딩' + (location.hash || '')); }
-  catch(e){ console.warn('주소 표시 변경 실패:', e); }
-</script>
-
+  <script>
+    try { history.replaceState(null, '', '/엔딩' + (location.hash || '')); }
+    catch(e){ console.warn('주소 표시 변경 실패:', e); }
+  </script>
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
@@ -125,7 +124,7 @@
       projectId: "siu-studio",
       storageBucket: "siu-studio.appspot.com",
       messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      appId: "1:830887143444:web:70b45fc12140c31f01",
       measurementId: "G-1Y090YJDB6"
     };
     const app = initializeApp(firebaseConfig);
@@ -138,29 +137,76 @@
 
     btn.addEventListener('click', () => { window.location.href = 'game.html'; });
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async (user) => {
+      // 로그인 안함 → game.html을 로그인 팝업으로 열어 postMessage 시도
       if (!user) {
         titleEl.textContent = '로그인이 필요합니다.';
-        msgEl.textContent = '게임 정보에 접근하려면 로그인해주세요.';
+        msgEl.textContent = '진행상태 확인을 위해 먼저 로그인해주세요.';
         btn.classList.remove('hidden');
+
+        // 부모(현재 페이지)에서 game.html을 로그인 팝업으로 호출
+        const LOGIN_ORIGIN = location.origin; // 같은 오리진 배포 기준
+        const RETURN_URL   = location.href;   // 로그인 성공 시 되돌아올 주소(ending.html)
+        const w = 1024, h = 768;
+        const left = Math.max(0, (screen.width - w) / 2 | 0);
+        const top  = Math.max(0, (screen.height - h) / 2 | 0);
+        const popup = window.open(
+          `${LOGIN_ORIGIN}/game.html`,
+          'gameWindow',
+          `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        );
+        const state = (crypto?.randomUUID && crypto.randomUUID()) || String(Math.random());
+
+        function isAllowedRedirect(urlStr){
+          try{
+            const u = new URL(urlStr);
+            if(u.protocol !== 'https:') return false;
+            const host = u.hostname;
+            const base1 = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
+            const base2 = 'siustudio.kro.kr';
+            return (host === base1 || host === base2 || host.endsWith('.'+base1) || host.endsWith('.'+base2));
+          }catch{return false;}
+        }
+
+        function sendInit(){
+          if(!popup || popup.closed) return;
+          popup.postMessage({ type:'init-login', redirect: RETURN_URL, state }, LOGIN_ORIGIN);
+        }
+        window.addEventListener('message', (e) => {
+          if(e.origin !== LOGIN_ORIGIN) return;
+          const { type, ok, receivedState, redirect, message } = e.data || {};
+          if(type === 'login-ready'){ sendInit(); return; }
+          if(type === 'auth-success' && ok && receivedState === state){
+            try{ popup.close(); }catch{}
+            const target = isAllowedRedirect(redirect||RETURN_URL) ? (redirect||RETURN_URL) : RETURN_URL;
+            window.location.href = target; // ending.html 재로딩 → 이후 onAuthStateChanged가 user로 진입
+            return;
+          }
+          if(type === 'auth-error'){
+            try{ popup.close(); }catch{}
+            alert(message || '로그인에 실패했습니다.');
+          }
+        });
         return;
       }
+
+      // 로그인 되어있음 → 실제 데이터 확인
       const dataRef = ref(db, `users/${user.uid}/gameData/ownedPlanets`);
-      get(dataRef).then(snapshot => {
+      try{
+        const snapshot = await get(dataRef);
         const owned = snapshot.val() || [];
-        if (owned.length === 9) {
+        if ((owned || []).length === 9) {
           titleEl.textContent = '태양계 정복 완료!';
           msgEl.textContent = '모든 행성을 정복하셨습니다. 진정한 우주 지배자이십니다!';
         } else {
           titleEl.textContent = '접근 불가';
           msgEl.textContent = '행성을 모두 구매하지 않아 정보를 확인할 수 없습니다.';
         }
-        btn.classList.remove('hidden');
-      }).catch(() => {
+      }catch(e){
         titleEl.textContent = '오류 발생';
         msgEl.textContent = '데이터를 불러오는 중 오류가 발생했습니다.';
-        btn.classList.remove('hidden');
-      });
+      }
+      btn.classList.remove('hidden');
     });
   </script>
 
@@ -183,17 +229,11 @@
     });
   </script>
   <script>
-  // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
-  document.addEventListener('contextmenu', function (e) {
-    // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
-    if (e.target.closest('input, textarea, [contenteditable="true"]')) {
-      return; // 허용
-    }
-
-    e.preventDefault();
-    // 선택적으로 사용자에게 알림 표시하려면 아래 주석 해제
-    // alert('우클릭이 비활성화되어 있습니다.');
-  });
+    // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"])) return;
+      e.preventDefault();
+    });
   </script>
 </body>
 </html>
