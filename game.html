@@ -44,6 +44,24 @@
     let pendingRedirect  = sessionStorage.getItem('pending_redirect')  || null;
     let pendingState     = sessionStorage.getItem('pending_state')     || null;
 
+    // ✅ pending_redirect를 "한 번만" 쓰도록 소비하는 헬퍼
+    function consumePendingRedirect() {
+      let target = null;
+      try {
+        const fromStorage = sessionStorage.getItem('pending_redirect');
+        if (fromStorage) {
+          sessionStorage.removeItem('pending_redirect'); // 한 번 쓰고 즉시 삭제
+          target = fromStorage;
+        }
+      } catch {}
+      if (!target && pendingRedirect) {
+        // 메모리에 남은 값이 있으면 이것도 한 번 쓰고 비움
+        target = pendingRedirect;
+      }
+      pendingRedirect = null; // 메모리 값도 비움
+      return (target && isAllowedRedirect(target)) ? target : null;
+    }
+
     // 팝업 준비 완료 알림 (부모 여러 후보 오리진으로 브로드캐스트)
     function notifyReadyToParent() {
       try {
@@ -74,7 +92,7 @@
       pendingState    = state;
 
       sessionStorage.setItem('parent_origin', parentOrigin);
-      sessionStorage.setItem('pending_redirect', pendingRedirect);
+      sessionStorage.setItem('pending_redirect', pendingRedirect); // 이후 consumePendingRedirect가 소비
       sessionStorage.setItem('pending_state', pendingState);
 
       // 선택: ACK
@@ -83,15 +101,16 @@
 
     // 로그인 성공 + 데이터 초기 동기화 완료 시 호출 → 부모에게 성공 통지 (있으면), 없으면 자체 이동
     function notifyAuthSuccessAndExit() {
-      const redirectOk = pendingRedirect && isAllowedRedirect(pendingRedirect);
+      const target = consumePendingRedirect(); // 🔑 여기서 한 번만 소비
+      const hasParent = window.opener && !window.opener.closed && parentOrigin;
 
       // 부모가 있으면 부모에게 성공 통지하고 팝업 닫기
-      if (window.opener && !window.opener.closed && parentOrigin) {
+      if (hasParent) {
         try {
           window.opener.postMessage({
             type: 'auth-success',
             ok: true,
-            redirect: redirectOk ? pendingRedirect : undefined,
+            redirect: target || undefined,
             receivedState: pendingState
           }, parentOrigin);
         } catch {}
@@ -99,9 +118,9 @@
         return;
       }
 
-      // 부모 없으면: 리다이렉트가 유효하면 이 창에서 이동
-      if (redirectOk) {
-        window.location.href = pendingRedirect;
+      // 부모 없으면: 유효한 타겟이 있으면 이 창에서 이동
+      if (target) {
+        window.location.href = target;
       }
     }
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
@@ -139,7 +158,7 @@
     .google-btn { width:95%; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:10px; margin:8px 0 4px; background:linear-gradient(180deg,#fff,#f2f2f2); color:#000; border-radius:8px; border:1px solid rgba(0,0,0,0.08); cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
     .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
     .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
-    .google-btn small { font-weight:600; color:#666; font-size:11px; margin-left:6px; }
+    .google-btn small { font-weight:600; color:#666; font-size:11px; }
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
@@ -700,8 +719,6 @@
       document.getElementById('hire-conversion').addEventListener('click', () => { if (!ensureReady()) return; const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
       document.getElementById('click-upgrade').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
-
-      document.getElementById('reset-button').addEventListener('click', () => { if (!ensureReady()) return; if (confirm('정말 초기화하시겠습니까?')) { state = { ...defaultData }; save(); updateUI(); renderPlanets(); } });
 
       document.querySelectorAll('.tab').forEach(tab => addEvent(tab, 'click', () => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
