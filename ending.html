@@ -138,55 +138,20 @@
     btn.addEventListener('click', () => { window.location.href = 'game.html'; });
 
     onAuthStateChanged(auth, async (user) => {
-      // 로그인 안함 → game.html을 로그인 팝업으로 열어 postMessage 시도
+      // ✅ 로그인 안 되어 있으면: 안내 문구 표시 → game.html로 이동
       if (!user) {
-        titleEl.textContent = '로그인이 필요합니다.';
-        msgEl.textContent = '진행상태 확인을 위해 먼저 로그인해주세요.';
-        btn.classList.remove('hidden');
+        titleEl.textContent = '로그인후 이용해주세요!';
+        msgEl.textContent = '로그인 페이지로 이동합니다…';
+        btn.classList.add('hidden');
 
-        // 부모(현재 페이지)에서 game.html을 로그인 팝업으로 호출
-        const LOGIN_ORIGIN = location.origin; // 같은 오리진 배포 기준
-        const RETURN_URL   = location.href;   // 로그인 성공 시 되돌아올 주소(ending.html)
-        const w = 1024, h = 768;
-        const left = Math.max(0, (screen.width - w) / 2 | 0);
-        const top  = Math.max(0, (screen.height - h) / 2 | 0);
-        const popup = window.open(
-          `${LOGIN_ORIGIN}/game.html`,
-          'gameWindow',
-          `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
-        );
-        const state = (crypto?.randomUUID && crypto.randomUUID()) || String(Math.random());
+        try {
+          // 로그인 성공 후 되돌아올 주소 저장 (game.html이 읽어 자동 복귀)
+          sessionStorage.setItem('pending_redirect', window.location.href);
+        } catch {}
 
-        function isAllowedRedirect(urlStr){
-          try{
-            const u = new URL(urlStr);
-            if(u.protocol !== 'https:') return false;
-            const host = u.hostname;
-            const base1 = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
-            const base2 = 'siustudio.kro.kr';
-            return (host === base1 || host === base2 || host.endsWith('.'+base1) || host.endsWith('.'+base2));
-          }catch{return false;}
-        }
-
-        function sendInit(){
-          if(!popup || popup.closed) return;
-          popup.postMessage({ type:'init-login', redirect: RETURN_URL, state }, LOGIN_ORIGIN);
-        }
-        window.addEventListener('message', (e) => {
-          if(e.origin !== LOGIN_ORIGIN) return;
-          const { type, ok, receivedState, redirect, message } = e.data || {};
-          if(type === 'login-ready'){ sendInit(); return; }
-          if(type === 'auth-success' && ok && receivedState === state){
-            try{ popup.close(); }catch{}
-            const target = isAllowedRedirect(redirect||RETURN_URL) ? (redirect||RETURN_URL) : RETURN_URL;
-            window.location.href = target; // ending.html 재로딩 → 이후 onAuthStateChanged가 user로 진입
-            return;
-          }
-          if(type === 'auth-error'){
-            try{ popup.close(); }catch{}
-            alert(message || '로그인에 실패했습니다.');
-          }
-        });
+        // 현재 탭을 game.html로 "이동" (뒤로가기로 이 페이지가 남지 않게 replace 사용)
+        const dest = `${location.origin}/game.html`;
+        window.location.replace(dest);
         return;
       }
 
