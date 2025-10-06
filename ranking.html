@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌌 태양계 정복: 돈 랭킹 🌌</title>
   <script>
-  try { history.replaceState(null, '', '/랭킹' + (location.hash || '')); }
-  catch(e){ console.warn('주소 표시 변경 실패:', e); }
-</script>
+    try { history.replaceState(null, '', '/랭킹' + (location.hash || '')); }
+    catch(e){ console.warn('주소 표시 변경 실패:', e); }
+  </script>
 
   <style>
     body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
@@ -46,9 +46,7 @@
       <thead>
         <tr><th>순위</th><th>닉네임</th><th>코인</th></tr>
       </thead>
-      <tbody id="ranking-body">
-        <!-- 순위 항목이 여기에 삽입됩니다 -->
-      </tbody>
+      <tbody id="ranking-body"></tbody>
     </table>
     <button id="logout-btn" class="btn">로그아웃</button>
     <a href="game.html" class="btn">게임으로</a>
@@ -59,7 +57,6 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -67,14 +64,13 @@
       projectId: "siu-studio",
       storageBucket: "siu-studio.appspot.com",
       messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      appId: "1:830887143444:web:70b45fc12140c31f01",
       measurementId: "G-1Y090YJDB6"
     };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // DOM 요소
     const rankingContainer = document.getElementById('ranking-container');
     const rankingBody = document.getElementById('ranking-body');
     const nicknamePrompt = document.getElementById('nickname-prompt');
@@ -83,17 +79,60 @@
     const toggleNoNick = document.getElementById('toggle-no-nickname');
     let rankingList = [];
 
-    // 인증 상태 확인
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        alert('로그인 후 이용해주세요');
-        window.location.href = 'game.html';
-        return;
+    // 🔐 로그인 안 되어 있으면 game.html을 팝업으로 띄워 postMessage 로그인 진행
+    function openLoginPopupAndWire() {
+      const LOGIN_ORIGIN = location.origin;   // 같은 오리진 기준
+      const RETURN_URL   = location.href;     // 로그인 성공 후 다시 이 페이지로
+
+      const w = 1024, h = 768;
+      const left = Math.max(0, (screen.width - w) / 2 | 0);
+      const top  = Math.max(0, (screen.height - h) / 2 | 0);
+      const popup = window.open(
+        `${LOGIN_ORIGIN}/game.html`,
+        'gameWindow',
+        `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+      const state = (crypto?.randomUUID && crypto.randomUUID()) || String(Math.random());
+
+      function isAllowedRedirect(urlStr){
+        try{
+          const u = new URL(urlStr);
+          if(u.protocol !== 'https:') return false;
+          const host = u.hostname;
+          const base1 = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
+          const base2 = 'siustudio.kro.kr';
+          return (host === base1 || host === base2 || host.endsWith('.'+base1) || host.endsWith('.'+base2));
+        }catch{return false;}
       }
+
+      function sendInit(){
+        if(!popup || popup.closed) return;
+        popup.postMessage({ type:'init-login', redirect: RETURN_URL, state }, LOGIN_ORIGIN);
+      }
+
+      window.addEventListener('message', (e) => {
+        if(e.origin !== LOGIN_ORIGIN) return;
+        const { type, ok, receivedState, redirect, message } = e.data || {};
+        if(type === 'login-ready'){ sendInit(); return; }
+        if(type === 'auth-success' && ok && receivedState === state){
+          try{ popup.close(); }catch{}
+          const target = isAllowedRedirect(redirect||RETURN_URL) ? (redirect||RETURN_URL) : RETURN_URL;
+          window.location.href = target; // ranking.html 재진입 → onAuthStateChanged에서 user 감지
+          return;
+        }
+        if(type === 'auth-error'){
+          try{ popup.close(); }catch{}
+          alert(message || '로그인에 실패했습니다.');
+        }
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { openLoginPopupAndWire(); return; }
+
       const profileRef = ref(db, `users/${user.uid}/profile/nickname`);
       const snap = await get(profileRef);
       if (!snap.exists()) {
-        // 닉네임 설정 모달 표시
         nicknamePrompt.style.display = 'block';
         submitBtn.onclick = async () => {
           const nick = nicknameInput.value.trim();
@@ -107,7 +146,6 @@
       }
     });
 
-    // 랭킹 초기화
     function initRanking() {
       nicknamePrompt.style.display = 'none';
       rankingContainer.style.display = 'block';
@@ -115,7 +153,6 @@
       toggleNoNick.addEventListener('change', renderRanking);
     }
 
-    // 로그아웃 처리
     document.getElementById('logout-btn').addEventListener('click', () => {
       signOut(auth).then(() => {
         alert('로그아웃 되었습니다');
@@ -123,7 +160,6 @@
       });
     });
 
-    // 랭킹 데이터 불러오기
     async function loadRanking() {
       const usersRef = ref(db, 'users');
       const snapshot = await get(usersRef);
@@ -139,7 +175,6 @@
       renderRanking();
     }
 
-    // 랭킹 렌더링
     function renderRanking() {
       const showNoNick = toggleNoNick.checked;
       rankingBody.innerHTML = '';
@@ -159,7 +194,6 @@
     }
   </script>
 
-  <!-- 개발자 도구 차단 스크립트 -->
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
@@ -179,17 +213,11 @@
     });
   </script>
   <script>
-  // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
-  document.addEventListener('contextmenu', function (e) {
-    // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
-    if (e.target.closest('input, textarea, [contenteditable="true"]')) {
-      return; // 허용
-    }
-
-    e.preventDefault();
-    // 선택적으로 사용자에게 알림 표시하려면 아래 주석 해제
-    // alert('우클릭이 비활성화되어 있습니다.');
-  });
+    // 우클릭 전체 차단(입력 요소는 예외)
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"])) return;
+      e.preventDefault();
+    });
   </script>
 </body>
 </html>
