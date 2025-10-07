@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 주소창엔 /login 으로 표시 (초기 1회) -->
   <script>
     try {
       if (!sessionStorage.getItem('pmode_init')) {
@@ -15,16 +14,12 @@
     } catch (e) {}
   </script>
 
-  <!-- ===== postMessage 기반 로그인 연동 ===== -->
   <script>
-    // 부모가 로그인 팝업을 띄울 수 있는 오리진 화이트리스트
     const allowedParentOrigins = [
       location.origin,
       'https://xn--989a202a4ogwtc69p.siustudio.kro.kr',
       'https://siustudio.kro.kr'
     ];
-
-    // 리다이렉트 허용 도메인 (https + 지정 도메인 및 하위 도메인)
     function isAllowedRedirect(urlStr) {
       try {
         const u = new URL(urlStr);
@@ -38,31 +33,24 @@
         );
       } catch { return false; }
     }
-
-    // 부모로부터 받은 정보(오리진/리다이렉트/state)를 세션에 저장(새로고침 대비)
     let parentOrigin     = sessionStorage.getItem('parent_origin')     || null;
     let pendingRedirect  = sessionStorage.getItem('pending_redirect')  || null;
     let pendingState     = sessionStorage.getItem('pending_state')     || null;
 
-    // ✅ pending_redirect를 "한 번만" 쓰도록 소비하는 헬퍼
     function consumePendingRedirect() {
       let target = null;
       try {
         const fromStorage = sessionStorage.getItem('pending_redirect');
         if (fromStorage) {
-          sessionStorage.removeItem('pending_redirect'); // 한 번 쓰고 즉시 삭제
+          sessionStorage.removeItem('pending_redirect');
           target = fromStorage;
         }
       } catch {}
-      if (!target && pendingRedirect) {
-        // 메모리에 남은 값이 있으면 이것도 한 번 쓰고 비움
-        target = pendingRedirect;
-      }
-      pendingRedirect = null; // 메모리 값도 비움
+      if (!target && pendingRedirect) target = pendingRedirect;
+      pendingRedirect = null;
       return (target && isAllowedRedirect(target)) ? target : null;
     }
 
-    // 팝업 준비 완료 알림 (부모 여러 후보 오리진으로 브로드캐스트)
     function notifyReadyToParent() {
       try {
         if (window.opener && !window.opener.closed) {
@@ -74,7 +62,6 @@
     }
     notifyReadyToParent();
 
-    // 부모로부터 init 수신
     window.addEventListener('message', (e) => {
       if (!allowedParentOrigins.includes(e.origin)) return;
       const { type, redirect, state } = e.data || {};
@@ -92,36 +79,25 @@
       pendingState    = state;
 
       sessionStorage.setItem('parent_origin', parentOrigin);
-      sessionStorage.setItem('pending_redirect', pendingRedirect); // 이후 consumePendingRedirect가 소비
+      sessionStorage.setItem('pending_redirect', pendingRedirect);
       sessionStorage.setItem('pending_state', pendingState);
 
-      // 선택: ACK
       e.source && e.source.postMessage({ type: 'init-ack' }, e.origin);
     }, false);
 
-    // 로그인 성공 + 데이터 초기 동기화 완료 시 호출 → 부모에게 성공 통지 (있으면), 없으면 자체 이동
     function notifyAuthSuccessAndExit() {
-      const target = consumePendingRedirect(); // 🔑 여기서 한 번만 소비
+      const target = consumePendingRedirect();
       const hasParent = window.opener && !window.opener.closed && parentOrigin;
-
-      // 부모가 있으면 부모에게 성공 통지하고 팝업 닫기
       if (hasParent) {
         try {
           window.opener.postMessage({
-            type: 'auth-success',
-            ok: true,
-            redirect: target || undefined,
-            receivedState: pendingState
+            type: 'auth-success', ok: true, redirect: target || undefined, receivedState: pendingState
           }, parentOrigin);
         } catch {}
         try { window.close(); } catch {}
         return;
       }
-
-      // 부모 없으면: 유효한 타겟이 있으면 이 창에서 이동
-      if (target) {
-        window.location.href = target;
-      }
+      if (target) window.location.href = target;
     }
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
   </script>
@@ -162,35 +138,45 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
-    #logout-btn { display:none; position:fixed; bottom:20px; right:10px; background:#f44; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; z-index:1001; }
-    #top-bar { position: fixed; top: 5px; left: 5px; right: 5px; display: flex; justify-content: space-between; align-items: center; background: rgba(30,30,30,0.85); padding:6px 10px; border-radius:8px; font-size:12px; z-index:1000; }
-    .bar-group { display:flex; align-items:center; }
-    .bar-group img { width:16px; height:16px; margin-right:4px; }
-    .bar-group span { margin-right:12px; white-space: nowrap; }
-    #container { margin:50px auto 20px; width:90%; max-width:640px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
+    /* 상단바: 모바일 줄바꿈 허용 */
+    #top-bar {
+      position: fixed; top: 5px; left: 5px; right: 5px;
+      display: flex; flex-wrap: wrap; gap:6px 8px;
+      justify-content: space-between; align-items: center;
+      background: rgba(30,30,30,0.85); padding:6px 10px; border-radius:8px;
+      font-size:12px; z-index:1000;
+    }
+    .bar-group { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; }
+    .bar-group img { width:16px; height:16px; }
+    .bar-group span { white-space: nowrap; }
+    #ship-img{ width:16px; height:16px; }
 
-    /* 설정 버튼 */
+    /* 로그아웃: 상단에 고정, 바텀 내비보다 위 */
+    #logout-btn {
+      display:none;
+      position:fixed; top:56px; right:8px;
+      background:#f44; color:#fff; border:none;
+      padding:8px 12px; border-radius:8px; cursor:pointer;
+      z-index:1400;
+      box-shadow:0 6px 16px rgba(0,0,0,.35);
+    }
+    #logout-btn:active{ transform: translateY(1px); }
+
+    /* 설정 버튼(항상 가로 표기) */
     #settings-btn {
-      margin-left: 8px;
-      padding: 6px 10px;
-      border-radius: 8px;
+      margin-left: 8px; padding: 6px 10px; border-radius: 8px;
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
-      border: 1px solid rgba(255,255,255,0.12);
-      color: #e6f5ff;
-      cursor: pointer;
-      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.12); color: #e6f5ff;
+      cursor: pointer; font-weight: 700; writing-mode: horizontal-tb;
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
-    h1 { font-size:1.6em; margin-bottom:14px; color:#00d4ff; }
+    /* 메인 컨테이너 */
+    #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
+    h1 { font-size:1.4em; margin:6px 0 14px; color:#00d4ff; }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
-    #reset-button { background:rgba(255,92,92,0.9)!important; } /* (초기화 UI는 제거했지만 스타일은 남겨도 무방) */
 
-    /* (구) 상단 탭 기본값 — 현재는 사용하지 않지만 유지 */
-    nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; gap:6px; }
-    .tab { flex:1 1 45%; min-width:120px; padding:8px; background:rgba(51,51,51,0.85); border-radius:6px; cursor:pointer; text-align:center; }
-    .tab.active { background:#00aaff; }
     .tab-content { display:none; margin-top:12px; }
     .tab-content.active { display:block; }
 
@@ -198,6 +184,7 @@
     @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
     #ore { width:200px; cursor:pointer; }
 
+    /* 커스텀 메뉴 */
     #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.95); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
@@ -205,22 +192,20 @@
     /* === Bottom Nav (glass floating) === */
     #bottom-nav{
       position: fixed;
-      left: 50%;
-      bottom: max(12px, env(safe-area-inset-bottom, 12px));
+      left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
-      display: flex; gap: 8px;
-      padding: 8px;
+      display: flex; gap: 8px; padding: 8px;
       background: rgba(10,12,20,0.65);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px;
       box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
       z-index: 1200;
+      max-width: 96vw;
     }
     #bottom-nav .tab{
       display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; min-width: 74px;
+      gap: 6px; min-width: 70px;
       padding: 10px 12px;
       font-size: 13px; line-height: 1;
       color: #d7e8ff; cursor: pointer; user-select: none;
@@ -231,42 +216,31 @@
       outline: none;
     }
     #bottom-nav .tab:hover{ transform: translateY(-1px); }
-    #bottom-nav .tab:active{ transform: translateY(0); }
     #bottom-nav .tab.active{
-      color: #001218;
-      background: linear-gradient(180deg,#00c0ff,#00a2ff);
-      border-color: rgba(0,0,0,0.0);
-      box-shadow: 0 6px 18px rgba(0,160,255,0.28);
+      color: #001218; background: linear-gradient(180deg,#00c0ff,#00a2ff);
+      border-color: rgba(0,0,0,0.0); box-shadow: 0 6px 18px rgba(0,160,255,0.28);
     }
     #bottom-nav .t-icon{ font-size: 16px; display:inline-block; transform: translateY(-1px); }
     #bottom-nav .t-label{ font-weight: 800; letter-spacing: .2px; }
 
-    /* 컨테이너/탭이 바텀바에 가려지지 않도록 하단 여백 넉넉히 확보 */
-    #container{
-      padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-    }
-    /* 특히 '행성 구매'는 리스트가 길 수 있어 더 여유 */
-    #planets-content{
-      padding-bottom: calc(200px + env(safe-area-inset-bottom, 0px));
-    }
+    /* 컨텐츠가 바텀바에 가리지 않도록 여백 */
+    #container{ padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
+    #planets-content{ padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px)); }
 
-    /* 작은 화면 최적화 */
+    /* 모바일 최적화 */
     @media (max-width: 420px){
-      #bottom-nav{ left: 8px; right: 8px; transform: none; border-radius: 14px; }
-      #bottom-nav .tab{ flex:1 1 auto; min-width: 0; padding: 10px 8px; }
-      #bottom-nav .t-label{ font-size: 12px; }
-    }
-
-    /* 키보드 접근성(포커스 링) */
-    #bottom-nav .tab:focus-visible{
-      box-shadow: 0 0 0 2px rgba(0,200,255,0.75);
+      #top-bar{ font-size:11px; padding:6px 8px; }
+      #settings-btn{ padding:5px 8px; font-size:12px; }
+      #logout-btn{ top:52px; right:6px; padding:6px 10px; font-size:12px; }
+      #bottom-nav{ left:8px; right:8px; transform:none; border-radius:14px; gap:6px; }
+      #bottom-nav .tab{ padding:10px 8px; min-width:0; }
+      h1{ font-size:1.2em; }
     }
   </style>
 </head>
 <body>
   <!-- 인증 -->
   <div id="auth-container" role="dialog" aria-labelledby="auth-title">
-    <!-- 탭 -->
     <div style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
       <button id="auth-tab-login" class="ghost-btn" style="flex:1; max-width:160px;">로그인</button>
       <button id="auth-tab-signup" class="ghost-btn" style="flex:1; max-width:160px;">회원가입</button>
@@ -296,7 +270,6 @@
     <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
     <p id="verify-info" class="auth-status" role="status" aria-live="polite" style="color:#dfffe8"></p>
 
-    <!-- 로그인 처리 오버레이 -->
     <div id="login-overlay" class="login-overlay" aria-hidden="true">
       <div class="login-card" role="status" aria-live="polite" aria-atomic="true" style="text-align:center;color:#e6f7ff;">
         <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
@@ -320,6 +293,7 @@
     </div>
   </div>
 
+  <!-- 로그아웃 버튼(상단에 고정) -->
   <button id="logout-btn">로그아웃</button>
 
   <!-- 상단 바 & 메인 게임 -->
@@ -340,8 +314,6 @@
 
   <div id="container">
     <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
-
-    <!-- (구) 상단 탭은 제거됨 -->
 
     <div id="main-content" class="tab-content active">
       <div id="ore-container" style="position:relative; display:inline-block;">
@@ -369,9 +341,7 @@
       <div id="planet-list"></div>
     </div>
 
-    <!-- 초기화 탭/콘텐츠 제거됨 -->
-
-    <!-- 하단 바텀 내비게이션 (초기화 항목 제거) -->
+    <!-- 바텀 내비게이션 -->
     <nav id="bottom-nav" aria-label="게임 탭 내비게이션">
       <div class="tab active" data-tab="main"     role="button" tabindex="0">
         <span class="t-icon" aria-hidden="true">🪨</span><span class="t-label">메인</span>
@@ -430,7 +400,6 @@
     const initialConversionCost=50, conversionCostGrowth=1.3;
     const clickUpgradeCost=15;
 
-    // NEW: 현재 인증 탭 상태 추적 (주소 표시용)
     let currentAuthMode = 'login';
 
     function getWorkerCost()   { return Math.floor(initialWorkerCost   * Math.pow(workerCostGrowth, state.workerCount)); }
@@ -462,7 +431,6 @@
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
     }
 
-    // ===== UI 헬퍼 =====
     const authContainer = document.getElementById('auth-container');
     const authErrorEl   = document.getElementById('auth-error');
 
@@ -502,7 +470,6 @@
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
-        // NEW: 게임 UI 뜨는 순간 주소창을 /게임 으로
         try { history.replaceState(null, '', '/게임' + (location.hash || '')); } catch {}
         setTimeout(() => {
           authContainer.style.display = 'none';
@@ -512,13 +479,11 @@
       } catch (e) { console.error('showGameUI error', e); }
     }
 
-    // ===== 인증 상태 =====
     onAuthStateChanged(auth, async user => {
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        // 이메일 미인증 차단
         if (!user.emailVerified) {
           try { showLoginOverlay(false); } catch {}
           try { await sendEmailVerification(user); } catch {}
@@ -545,7 +510,6 @@
               updateUI(); renderPlanets();
               isInitialSync = false;
               showGameUI();
-              // 로그인 성공+초기 동기화 완료 → 부모 통지
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
             } else {
               state = { ...defaultData };
@@ -560,7 +524,6 @@
             updateUI(); renderPlanets();
             isInitialSync = false;
             showGameUI();
-            // 부모 통지
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
             return;
           }
@@ -576,24 +539,20 @@
         });
 
       } else {
-        // 로그아웃 상태: 로그인 카드 표시
         try { showLoginOverlay(false); } catch {}
         uid = null; dataRef = null;
         state = { ...defaultData };
-        localLastWrite = 0;
-        isInitialSync = false;
+        localLastWrite = 0; isInitialSync = false;
 
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         document.getElementById('logout-btn').style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
 
-        // NEW: 현재 탭 상태대로 주소 표시(/login 또는 /signup)
         setAuthMode(currentAuthMode);
       }
     });
 
-    // 탭/버튼
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
     const signupExtra = document.getElementById('signup-extra');
@@ -602,38 +561,24 @@
 
     function setAuthMode(mode) {
       currentAuthMode = (mode === 'signup') ? 'signup' : 'login';
-
       if (mode === 'signup') {
-        tabLogin.classList.remove('active');
-        tabSignup.classList.add('active');
-        signupExtra.style.display = 'block';
-        loginBtn.style.display='none';
-        signupBtn.style.display='block';
+        tabLogin.classList.remove('active'); tabSignup.classList.add('active');
+        signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtn.style.display='block';
       } else {
-        tabLogin.classList.add('active');
-        tabSignup.classList.remove('active');
-        signupExtra.style.display = 'none';
-        loginBtn.style.display='block';
-        signupBtn.style.display='none';
+        tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+        signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtn.style.display='none';
       }
-
-      showAuthStatus('');
-      document.getElementById('verify-info').textContent = '';
-
-      // NEW: 탭 전환 시 주소 표시 갱신
-      try {
-        const path = (currentAuthMode === 'signup') ? '/signup' : '/login';
-        history.replaceState(null, '', path + (location.hash || ''));
-      } catch {}
+      showAuthStatus(''); document.getElementById('verify-info').textContent = '';
+      try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
     }
     tabLogin.addEventListener('click',  () => setAuthMode('login'));
     tabSignup.addEventListener('click', () => setAuthMode('signup'));
     setAuthMode('login');
 
-    // 설정 버튼 → setting으로 이동
+    // 설정 이동
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
-      location.href = '/setting';
+      location.href = '/setting.html';
     });
 
     // 로그인
@@ -715,7 +660,7 @@
       }
     });
 
-    // 로그아웃
+    // 로그아웃(상단 버튼)
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     // ===== 게임 UI =====
@@ -759,6 +704,7 @@
         const div = document.createElement('div');
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
+        div.style.margin='10px 0';
         div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button'); btn.className='general';
         btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
@@ -810,10 +756,10 @@
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
 
       // 바텀 내비 탭 전환
-      document.querySelectorAll('.tab').forEach(tab => addEvent(tab, 'click', () => {
+      document.querySelectorAll('#bottom-nav .tab').forEach(tab => addEvent(tab, 'click', () => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('#bottom-nav .tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
       }));
       function addEvent(el, ev, fn){ el.addEventListener(ev, fn); }
@@ -828,7 +774,6 @@
     };
   </script>
 
-  <!-- 커스텀 메뉴 동작 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
@@ -852,18 +797,15 @@
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
 
-    // 입력창 제외 우클릭 방지(커스텀 메뉴용으로 컨텍스트메뉴는 별도 처리)
     document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('input, textarea, [contenteditable="true"]')) return; // 입력 요소는 허용
-      // 위 window.contextmenu에서 이미 처리됨
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
     });
   </script>
 
-  <!-- 개발자 도구 차단 스크립트 -->
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
-      disableMenu: false, // 커스텀 메뉴를 쓰므로 기본 우클릭 전체 차단은 끔
+      disableMenu: false,
       disableSelect: true,
       disableCopy: true,
       disableCut: true,
@@ -873,9 +815,7 @@
         try { window.close(); } catch {}
         next();
       },
-      ondevtoolclose() {
-        console.warn('DevTools 닫힘 감지됨');
-      }
+      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
   </script>
 </body>
