@@ -633,7 +633,7 @@
     // 설정 버튼 → setting으로 이동
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
-      location.href = '/setting.html';
+      location.href = '/setting';
     });
 
     // 로그인
