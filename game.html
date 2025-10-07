@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
+  <!-- 주소 표시: /login (초기 1회) -->
   <script>
     try {
       if (!sessionStorage.getItem('pmode_init')) {
@@ -14,6 +15,7 @@
     } catch (e) {}
   </script>
 
+  <!-- 로그인 팝업 postMessage 보안 -->
   <script>
     const allowedParentOrigins = [
       location.origin,
@@ -138,7 +140,7 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
-    /* 상단바: 모바일 줄바꿈 허용 */
+    /* 상단바 */
     #top-bar {
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
@@ -151,7 +153,7 @@
     .bar-group span { white-space: nowrap; }
     #ship-img{ width:16px; height:16px; }
 
-    /* 로그아웃: 상단에 고정, 바텀 내비보다 위 */
+    /* 로그아웃 버튼 */
     #logout-btn {
       display:none;
       position:fixed; top:56px; right:8px;
@@ -162,7 +164,7 @@
     }
     #logout-btn:active{ transform: translateY(1px); }
 
-    /* 설정 버튼(항상 가로 표기) */
+    /* 설정 버튼 */
     #settings-btn {
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
@@ -189,7 +191,7 @@
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-    /* === Bottom Nav (glass floating) === */
+    /* Bottom Nav */
     #bottom-nav{
       position: fixed;
       left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
@@ -223,21 +225,10 @@
     #bottom-nav .t-icon{ font-size: 16px; display:inline-block; transform: translateY(-1px); }
     #bottom-nav .t-label{ font-weight: 800; letter-spacing: .2px; }
 
-    /* 컨텐츠가 바텀바에 가리지 않도록 여백 */
     #container{ padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
     #planets-content{ padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px)); }
 
-    /* 모바일 최적화 */
-    @media (max-width: 420px){
-      #top-bar{ font-size:11px; padding:6px 8px; }
-      #settings-btn{ padding:5px 8px; font-size:12px; }
-      #logout-btn{ top:52px; right:6px; padding:6px 10px; font-size:12px; }
-      #bottom-nav{ left:8px; right:8px; transform:none; border-radius:14px; gap:6px; }
-      #bottom-nav .tab{ padding:10px 8px; min-width:0; }
-      h1{ font-size:1.2em; }
-    }
-
-    /* ===== 사이드 메뉴 (추가) ===== */
+    /* 사이드 메뉴 */
     #side-menu-toggle{
       position: fixed;
       left: 8px;
@@ -306,9 +297,9 @@
 
     <h2 id="auth-title">로그인 / 회원가입</h2>
     <input type="email" id="email" placeholder="이메일" autocomplete="username" />
-    <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" />
+    <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" data-sensitive="true" />
     <div id="signup-extra" style="display:none; margin-top:6px;">
-      <input type="password" id="password-confirm" placeholder="비밀번호 확인" autocomplete="new-password" />
+      <input type="password" id="password-confirm" placeholder="비밀번호 확인" autocomplete="new-password" data-sensitive="true" />
     </div>
 
     <button id="login-btn" class="primary-btn">로그인</button>
@@ -351,7 +342,7 @@
     </div>
   </div>
 
-  <!-- 로그아웃 버튼(상단에 고정) -->
+  <!-- 로그아웃 버튼 -->
   <button id="logout-btn">로그아웃</button>
 
   <!-- 상단 바 & 메인 게임 -->
@@ -424,7 +415,7 @@
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
 
-  <!-- ===== 사이드 메뉴 (추가) ===== -->
+  <!-- 사이드 메뉴 -->
   <button id="side-menu-toggle" aria-label="사이드 메뉴 열기" title="메뉴">☰</button>
   <div id="side-backdrop" aria-hidden="true"></div>
   <aside id="side-menu" aria-label="사이드 메뉴" aria-hidden="true">
@@ -445,7 +436,7 @@
     </nav>
   </aside>
 
-  <!-- Firebase + 게임 로직 -->
+  <!-- Firebase + 게임 로직 (원본 기능 유지) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -531,9 +522,7 @@
       sub.textContent    = opts.subText || '보안 연결 · 인증 중…';
       detail.textContent = opts.detail  || '브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다.';
       steps.forEach(li => { li.removeAttribute('data-active'); li.style.opacity = 0.6; });
-
       function activateStep(n){ steps.forEach((li,i)=>{ if(i<n){ li.setAttribute('data-active','true'); li.style.opacity=1; } }); }
-
       if (show) {
         overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
         activateStep(1); progress.style.width='24%';
@@ -739,7 +728,7 @@
       }
     });
 
-    // 로그아웃(상단 버튼)
+    // 로그아웃
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     // ===== 게임 UI =====
@@ -853,6 +842,7 @@
     };
   </script>
 
+  <!-- 우클릭 메뉴 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
@@ -881,7 +871,7 @@
     });
   </script>
 
-  <!-- ===== 사이드 메뉴 스크립트 (추가) ===== -->
+  <!-- 사이드 메뉴 -->
   <script>
     (function(){
       const sideToggle = document.getElementById('side-menu-toggle');
@@ -905,7 +895,6 @@
       backdrop.addEventListener('click', closeSide);
       window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSide(); });
 
-      // 사이드 메뉴 액션 (우클릭 커스텀 메뉴와 동일 동작)
       sideMenu.addEventListener('click', (e)=>{
         const btn = e.target.closest('.side-item');
         if(!btn) return;
@@ -918,7 +907,7 @@
         }
         if (action === 'download') { location.href='/app-download.html'; }
         if (action === 'rank')     { location.href='/ranking.html'; }
-        if (action === 'resume')   { /* 단순히 닫기 */ }
+        if (action === 'resume')   { /* 닫기 */ }
         closeSide();
       });
     })();
@@ -938,6 +927,89 @@
         next();
       },
       ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
+    });
+  </script>
+
+  <!-- 🔗 전역 원격 제어 리스너 (민감정보 비공개 통지 포함) -->
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, onChildAdded, push, set } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app2 = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const auth2 = getAuth(app2);
+    const db2 = getDatabase(app2);
+
+    function rippleAt(x, y){
+      const d = document.createElement('div');
+      d.style.cssText = `
+        position:fixed; left:${x-10}px; top:${y-10}px; width:20px; height:20px;
+        border-radius:50%; border:2px solid #00d4ff; background:rgba(0,212,255,.15);
+        pointer-events:none; z-index:3000; transform:scale(.6); opacity:.95;
+        transition: transform .3s ease, opacity .35s ease;`;
+      document.body.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transform='scale(1.4)'; d.style.opacity='.15'; });
+      setTimeout(()=> d.remove(), 450);
+    }
+    function rippleOnElement(el){ if (!el) return; const r = el.getBoundingClientRect(); rippleAt(r.left + r.width/2, r.top + r.height/2); }
+    function isSensitive(el){ return !!el.closest('input[type="password"], [data-sensitive="true"]'); }
+    function safeClick(el){ try{ el.focus({preventScroll:true}); }catch{} try{ el.click(); }catch{} }
+
+    onAuthStateChanged(auth2, (user)=>{
+      if (!user || !user.emailVerified) return;
+
+      const sid = user.uid;
+      const sref = ref(db2, `helpSessions/${sid}`);
+      let helperUid = null;
+      let allowNav = false;
+      let allowAdv = false;
+
+      onValue(sref, (snap)=>{
+        const s = snap.val() || {};
+        helperUid = s.helperUid || null;
+        allowNav  = !!s.controlGranted;
+        allowAdv  = !!s.controlAdvanced;
+      });
+
+      const sysNotify = async (msg) => {
+        const mref = push(ref(db2, `helpSessions/${sid}/chat`));
+        await set(mref, { from:'system', role:'system', text: msg, ts: Date.now() });
+      };
+
+      const cref = ref(db2, `helpSessions/${sid}/control`);
+      onChildAdded(cref, async (cs)=>{
+        const c = cs.val() || {};
+        if (!helperUid || c.fromUid !== helperUid) return;
+
+        if (c.type === 'navigate' && allowNav && typeof c.path === 'string'){ location.href = c.path; return; }
+        if (c.type === 'alert' && typeof c.message === 'string'){ alert('[관리자] ' + c.message); return; }
+        if (c.type === 'ping'){ console.log('[PING]', Date.now()); return; }
+
+        if (!allowAdv) return;
+
+        const el = c.selector ? document.querySelector(c.selector) : null;
+
+        if (c.type === 'highlight'){
+          if (el){ rippleOnElement(el); }
+        } else if (c.type === 'click'){
+          if (el){
+            if (isSensitive(el)){ await sysNotify('민감한 정보이므로 비공개 처리했습니다.'); return; }
+            safeClick(el); rippleOnElement(el);
+          }
+        } else if (c.type === 'scrollTo'){
+          if (el){ el.scrollIntoView({behavior: c.behavior || 'smooth', block:'center'}); rippleOnElement(el); }
+        }
+      });
     });
   </script>
 </body>
