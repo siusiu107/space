@@ -1,0 +1,269 @@
+<!-- /require-login.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🔒 로그인 필요 - 태양계 정복</title>
+  <script>
+    try { history.replaceState(null, '', '/로그인필요' + (location.hash || '')); }
+    catch(e){ console.warn('주소 표시 변경 실패:', e); }
+  </script>
+
+  <!-- Google Fonts (참고 HTML과 동일 무드) -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      position: relative;
+      font-family: 'Montserrat', sans-serif;
+      background: #000;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color:#fff;
+    }
+    /* 은하수 배경 효과 */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%; right: -50%; bottom: -50%;
+      background: url('images/galaxy-bg.jpg') center/cover no-repeat;
+      filter: brightness(0.4) blur(8px);
+      animation: rotateBg 60s linear infinite;
+      z-index: 0;
+    }
+    @keyframes rotateBg {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .card {
+      position: relative;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 42px 28px;
+      max-width: 520px;
+      width: 92vw;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      z-index: 1;
+      animation: fadeIn 0.9s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.96);} to { opacity:1; transform: scale(1);} }
+
+    .planet-image {
+      width: 110px;
+      margin: 0 auto 18px;
+      animation: float 4s ease-in-out infinite;
+      user-select:none;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-16px) rotate(8deg); }
+    }
+
+    h1 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleGlow 2s ease-in-out infinite alternate;
+    }
+    @keyframes titleGlow {
+      from { text-shadow: 0 0 10px rgba(0,210,255,0.7); }
+      to   { text-shadow: 0 0 22px rgba(58,123,213,0.9); }
+    }
+
+    p {
+      font-size: 1rem;
+      margin-bottom: 26px;
+      line-height: 1.6;
+      opacity: 0.9;
+    }
+
+    .btn-row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+    button {
+      background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+      border: none;
+      padding: 14px 22px;
+      font-size: 0.95rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.25s, box-shadow 0.25s, opacity .2s;
+      color: #001218;
+      font-weight: 800;
+      box-shadow: 0 6px 24px rgba(0,150,255,0.35);
+    }
+    button:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 30px rgba(0,170,255,0.5); }
+    button.secondary{
+      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+      color:#e6f7ff; border:1px solid rgba(255,255,255,0.18); box-shadow:none;
+    }
+    .hidden { display: none !important; }
+
+    /* 풀스크린 배너 */
+    #banner{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.85); color:#fff; font-size:20px; z-index:99999;
+    }
+    #banner.show{ display:flex; }
+  </style>
+</head>
+<body>
+  <div class="card" id="content">
+    <img src="images/planet-icon.png" alt="Planet Icon" class="planet-image" />
+    <h1 id="title">🔒 로그인이 필요합니다!</h1>
+    <p id="message">보안을 위해 먼저 로그인해주세요.</p>
+    <div class="btn-row">
+      <button id="go-login">로그인하러 가기</button>
+      <button id="back-btn" class="secondary">◀️ 돌아가기</button>
+      <button id="go-game" class="hidden">게임으로 가기</button>
+    </div>
+  </div>
+
+  <div id="banner" aria-live="polite">로그인 화면으로 이동합니다…</div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+
+    // (메인/설정과 동일 설정)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const titleEl = document.getElementById('title');
+    const msgEl   = document.getElementById('message');
+    const goLogin = document.getElementById('go-login');
+    const goGame  = document.getElementById('go-game');
+    const backBtn = document.getElementById('back-btn');
+    const banner  = document.getElementById('banner');
+
+    function getParam(name){
+      const m = new URLSearchParams(location.search).get(name);
+      return m ? decodeURIComponent(m) : null;
+    }
+
+    // next 우선순위: ?next -> document.referrer -> 홈
+    function computeNext(){
+      const qNext = getParam('next');
+      if (qNext) return qNext;
+      try{
+        if (document.referrer && new URL(document.referrer).origin === location.origin){
+          return document.referrer;
+        }
+      }catch{}
+      return location.origin + '/';
+    }
+
+    function rememberNext(nextUrl){
+      try { sessionStorage.setItem('pending_redirect', nextUrl); } catch {}
+    }
+
+    function showBannerAndGo(url, text){
+      if (text) banner.textContent = text;
+      banner.classList.add('show');
+      setTimeout(()=>{ window.location.href = url; }, 900);
+    }
+
+    // 버튼: 돌아가기
+    backBtn.addEventListener('click', () => {
+      try{
+        if (history.length > 1) { history.back(); return; }
+      }catch{}
+      window.location.href = '/';
+    });
+
+    // 버튼: 로그인하러 가기 (메인 게임 페이지의 로그인 UI로)
+    goLogin.addEventListener('click', () => {
+      const next = computeNext();
+      rememberNext(next);
+      // 메인 게임 파일 경로: 프로젝트에 맞게 수정 가능 (예: '/', '/game.html')
+      const dest = '/game.html';
+      showBannerAndGo(dest, '로그인 화면으로 이동합니다…');
+    });
+
+    // 버튼: 게임으로 가기 (이미 로그인된 경우 노출)
+    goGame.addEventListener('click', () => {
+      const next = computeNext();
+      // next가 현재 페이지면 홈으로 대체
+      const go = (next && next !== location.href) ? next : '/game.html';
+      window.location.href = go;
+    });
+
+    // 인증 상태에 따라 UI 분기
+    onAuthStateChanged(auth, user => {
+      const next = computeNext();
+
+      if (!user){
+        // 비로그인: 안내문 + next 저장 + 자동 이동 유도
+        titleEl.textContent = '로그인이 필요합니다!';
+        msgEl.textContent   = '잠시 후 로그인 화면으로 이동합니다…';
+        rememberNext(next);
+        // 자동 이동(2.2초 뒤) — 사용자가 직접 버튼 누르지 않아도 진행
+        setTimeout(() => {
+          // 사용자가 이미 이동했으면 중복 이동 방지
+          if (document.hidden) return;
+          showBannerAndGo('/game.html', '로그인 화면으로 이동합니다…');
+        }, 2200);
+        return;
+      }
+
+      // 로그인된 상태
+      titleEl.textContent = '이미 로그인되어 있어요 ✨';
+      msgEl.textContent   = '바로 게임으로 이동하거나, 돌아갈 수 있어요.';
+      goGame.classList.remove('hidden');
+
+      // 살짝 대기 후 자동 이동 (선호에 따라 주석 처리 가능)
+      setTimeout(() => {
+        if (document.hidden) return;
+        const go = (next && next !== location.href) ? next : '/game.html';
+        showBannerAndGo(go, '게임으로 이동합니다…');
+      }, 1600);
+    });
+  </script>
+
+  <!-- 개발자 도구 차단 (참고 HTML과 동일 톤) -->
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        try{ window.close(); }catch{}
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+
+    // 우클릭 전체 차단 (입력 요소는 예외)
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>
