@@ -6,11 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>⚙️ 설정 - 태양계 정복</title>
 
-  <script>
-    // 주소 표시: /설정
-    try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
-  </script>
-
   <style>
     :root{
       --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(6,7,12,0.55));
@@ -81,7 +76,6 @@
     /* 버튼 */
     .btn{
       padding:10px 12px; border:1px solid var(--stroke);
-      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
       color:#001218; font-weight:800; border-radius:10px; cursor:pointer;
       background-image: linear-gradient(180deg, var(--accent), var(--accent-2));
     }
@@ -95,18 +89,6 @@
       border-color: rgba(255,80,80,0.4);
     }
     .btn:disabled{ opacity:.6; cursor:not-allowed; }
-
-    /* 스위치 */
-    .switch{
-      position:relative; width:44px; height:26px; border-radius:16px;
-      background:#3a4156; border:1px solid rgba(255,255,255,0.1); cursor:pointer;
-    }
-    .switch::after{
-      content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%;
-      background:#fff; transition: transform .2s ease;
-    }
-    .switch.on{ background:#00b4ff; }
-    .switch.on::after{ transform: translateX(18px); }
 
     /* 구분선 */
     .hr{ height:1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
@@ -146,13 +128,13 @@
   <!-- 상단바 -->
   <div id="topbar">
     <button id="back-btn" aria-label="돌아가기">⬅️ 돌아가기</button>
-    <div id="addr">/설정</div>
+    <div id="addr">설정</div>
   </div>
 
   <div id="container">
     <div class="card">
       <h1>⚙️ 설정</h1>
-      <p class="sub">게임 환경을 관리하고, 데이터 초기화를 수행할 수 있어요.</p>
+      <p class="sub">실제로 제공되는 설정만 표시합니다.</p>
 
       <!-- 계정 -->
       <div class="item">
@@ -170,65 +152,7 @@
 
       <div class="hr"></div>
 
-      <!-- 환경 설정 -->
-      <div class="item">
-        <div class="left">
-          <div>🔊</div>
-          <div>
-            <div class="title">효과음(SFX)</div>
-            <div class="desc">게임 내 클릭/획득 사운드</div>
-          </div>
-        </div>
-        <div class="right">
-          <div id="sfx-switch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
-        </div>
-      </div>
-
-      <div class="item">
-        <div class="left">
-          <div>🎵</div>
-          <div>
-            <div class="title">배경음(BGM)</div>
-            <div class="desc">게임 배경 음악</div>
-          </div>
-        </div>
-        <div class="right">
-          <div id="bgm-switch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
-        </div>
-      </div>
-
-      <div class="hr"></div>
-
-      <!-- 언어 -->
-      <div class="item" id="lang-ko">
-        <div class="left">
-          <div>🇰🇷</div>
-          <div>
-            <div class="title">언어(Language): 한국어</div>
-            <div class="desc">클릭 시 안내 표시</div>
-          </div>
-        </div>
-        <div class="right">
-          <button class="btn secondary">선택</button>
-        </div>
-      </div>
-
-      <div class="item" id="lang-en">
-        <div class="left">
-          <div>🇺🇸</div>
-          <div>
-            <div class="title">언어(Language): English</div>
-            <div class="desc">Click to see notice</div>
-          </div>
-        </div>
-        <div class="right">
-          <button class="btn secondary">Select</button>
-        </div>
-      </div>
-
-      <div class="hr"></div>
-
-      <!-- 데이터 -->
+      <!-- 데이터(실제 동작) -->
       <div class="item">
         <div class="left">
           <div>♻️</div>
@@ -262,9 +186,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, update, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // ===== Firebase 설정 (게임과 동일) =====
+    // ===== Firebase 설정 (메인과 동일) =====
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -293,8 +217,6 @@
     const signoutBtn  = document.getElementById('signout-btn');
     const resetBtn    = document.getElementById('reset-btn');
     const backBtn     = document.getElementById('back-btn');
-    const sfxSwitch   = document.getElementById('sfx-switch');
-    const bgmSwitch   = document.getElementById('bgm-switch');
     const toast       = document.getElementById('toast');
     const overlay     = document.getElementById('overlay');
 
@@ -303,16 +225,6 @@
       toast.textContent = msg;
       toast.classList.add('show');
       clearTimeout(showToast._t); showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
-    }
-    function setSwitch(el, on){
-      el.classList.toggle('on', !!on);
-      el.setAttribute('aria-checked', on ? 'true':'false');
-    }
-    function toggleSwitch(el, key){
-      const on = !el.classList.contains('on');
-      setSwitch(el, on);
-      try { localStorage.setItem(key, on ? '1':'0'); } catch {}
-      showToast((key==='setting_sfx'?'효과음':'배경음') + (on?' 켜짐':' 꺼짐'));
     }
     function showOverlay(show){
       overlay.style.display = show ? 'flex' : 'none';
@@ -325,23 +237,9 @@
         const ref = document.referrer;
         if (ref && new URL(ref).origin === location.origin) { history.back(); return; }
       }catch{}
-      // 같은 오리진에서 온 히스토리가 없으면 홈으로
+      // 같은 오리진 히스토리가 없으면 홈으로
       location.href = '/';
     });
-
-    // ===== 스위치 바인딩 =====
-    ;['setting_sfx','setting_bgm'].forEach((k, i) => {
-      const el = i===0 ? sfxSwitch : bgmSwitch;
-      let on = false;
-      try { on = (localStorage.getItem(k) || '1') === '1'; } catch {}
-      setSwitch(el, on);
-      el.addEventListener('click', () => toggleSwitch(el, k));
-      el.addEventListener('keydown', (e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSwitch(el, k); }});
-    });
-
-    // ===== 언어(업데이트 예정) =====
-    document.getElementById('lang-ko').addEventListener('click', ()=> showToast('언어 설정은 업데이트 예정입니다!'));
-    document.getElementById('lang-en').addEventListener('click', ()=> showToast('Language settings coming soon!'));
 
     // ===== 인증 상태 =====
     let uid = null;
@@ -367,14 +265,13 @@
       try { await signOut(auth); showToast('로그아웃 되었어요'); } catch (e) { showToast('로그아웃 실패'); }
     });
 
-    // ===== 초기화 =====
+    // ===== 초기화(실제 동작) =====
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
       const ok = confirm('정말 초기화할까요?\n자원/코인/업그레이드/행성 구매 내역이 모두 기본값으로 되돌아갑니다.');
       if (!ok) return;
       showOverlay(true);
       try{
-        // _lastUpdated 갱신
         const data = { ...defaultData, _lastUpdated: Date.now() };
         await runTransaction(ref(db, `users/${uid}/gameData`), () => data);
         try { localStorage.removeItem(`lastWrite_${uid}`); } catch {}
