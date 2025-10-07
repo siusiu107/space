@@ -34,6 +34,7 @@
   #bottom-nav .tab.active{color:#06222b;background:linear-gradient(180deg,var(--accent),var(--accent2));box-shadow:0 6px 18px rgba(0,160,255,.28)}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   #logout-btn{display:none;position:fixed;top:52px;right:8px;background:#f44;color:#fff;border:none;padding:8px 12px;border-radius:8px;z-index:1400}
+
   /* ===== 원격지원 패널 ===== */
   #rs-toggle{position:fixed;right:8px;bottom:calc(72px + env(safe-area-inset-bottom,0));z-index:1500;
              width:48px;height:48px;border-radius:14px;border:1px solid var(--stroke);background:linear-gradient(180deg,var(--accent),var(--accent2));color:#00131a;font-weight:900;cursor:pointer}
@@ -43,7 +44,7 @@
   #rs-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08)}
   .badge{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);font-size:.85em}
   .ok{color:#3bd18e}.wait{color:#60a5fa}.end{color:#f87171}
-  #rs-body{display:grid;grid-template-rows:auto auto 1fr auto;gap:8px;padding:10px}
+  #rs-body{display:grid;grid-template-rows:auto auto 1fr auto auto;gap:8px;padding:10px}
   .rs-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .rs-chat{min-height:150px;max-height:240px;overflow:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px}
   .bubble{max-width:85%;padding:8px 10px;margin:6px 0;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)}
@@ -55,10 +56,21 @@
   .btn.secondary{background:transparent;color:var(--fg)}
   .btn.danger{background:linear-gradient(180deg,#ff6b6b,#d74);color:#fff}
   .note{font-size:.85em;color:#9ed0ff}
+
+  /* ===== 사용자 측 미니 미러(관리자 조작 미리보기) ===== */
+  #rs-mini-wrap{display:none}
+  #rs-mini-toggle{margin-left:auto}
+  #rs-mini{position:fixed;right:10px;bottom:calc(190px + env(safe-area-inset-bottom,0));width:220px;height:124px;z-index:1499;
+           border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#000;box-shadow:0 12px 28px rgba(0,0,0,.45)}
+  /* 클릭 리플 */
+  .rip{position:fixed;width:10px;height:10px;border:2px solid #00d4ff;border-radius:999px;pointer-events:none;opacity:.9;transform:translate(-50%,-50%);animation:rip .6s ease-out forwards}
+  @keyframes rip{to{opacity:0;transform:translate(-50%,-50%) scale(6)}}
+
   @media (max-width:420px){
     #container{width:94%;padding:14px}
     #bottom-nav .tab{min-width:0;padding:10px 8px}
     h1{font-size:1.15rem}
+    #rs-mini{width:180px;height:102px;right:8px;bottom:calc(200px + env(safe-area-inset-bottom,0))}
   }
 </style>
 </head>
@@ -131,9 +143,14 @@
       </div>
     </div>
     <div id="rs-body">
-      <div class="rs-row">
-        <label class="rs-row"><input type="checkbox" id="rs-allow-nav" style="transform:scale(1.1)"/> 네비게이션 허용</label>
-        <label class="rs-row"><input type="checkbox" id="rs-allow-adv" style="transform:scale(1.1)"/> 고급제어(클릭/스크롤) 허용</label>
+      <div class="rs-row" style="justify-content:space-between">
+        <div class="rs-row">
+          <label class="rs-row"><input type="checkbox" id="rs-allow-nav" style="transform:scale(1.1)"/> 네비게이션 허용</label>
+          <label class="rs-row"><input type="checkbox" id="rs-allow-adv" style="transform:scale(1.1)"/> 고급제어(클릭/스크롤) 허용</label>
+        </div>
+        <div class="rs-row" id="rs-mini-wrap">
+          <button id="rs-mini-toggle" class="btn secondary" title="관리자 조작 미리보기 토글">미니 미러</button>
+        </div>
       </div>
       <div class="rs-row">
         <button id="rs-request" class="btn">원격지원 요청</button>
@@ -149,10 +166,13 @@
     </div>
   </section>
 
+  <!-- 사용자 측 미니 미러 iframe -->
+  <iframe id="rs-mini" title="관리자 조작 미리보기" aria-hidden="true" style="display:none"></iframe>
+
 <script type="module">
 /* ================= Firebase / 공통 설정 ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 import { getDatabase, ref, onValue, runTransaction, update, set, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -309,7 +329,7 @@ document.getElementById('logout-btn').onclick = ()=> signOut(auth);
 
 setInterval(()=>{ if(!uid || isInitialSync) return; if(state.workerCount>0) state.resources += state.workerCount * getWorkerPower(); if(state.conversionCount>0) state.coins += state.conversionCount; if(state.autoConvertBought) convertResources(); save(); updateUI(); }, 1000);
 
-/* ================= 원격지원(사용자측) ================= */
+/* ================= 원격지원(사용자측) + 미니 미러 ================= */
 const rsToggle = document.getElementById('rs-toggle');
 const rsPanel  = document.getElementById('rs-panel');
 const rsClose  = document.getElementById('rs-close');
@@ -321,6 +341,9 @@ const rsEnd      = document.getElementById('rs-end');
 const rsChatBox  = document.getElementById('rs-chat');
 const rsInput    = document.getElementById('rs-input');
 const rsSend     = document.getElementById('rs-send');
+const rsMiniWrap = document.getElementById('rs-mini-wrap');
+const rsMiniToggle = document.getElementById('rs-mini-toggle');
+const rsMini = document.getElementById('rs-mini');
 
 const banned = [/시[ㅣi]발/i,/병?신/i,/좆/i,/fuck/i,/shit/i,/nigg/i,/rape/i,/\b010[-\s]?\d{4}[-\s]?\d{4}\b/i,/(https?:\/\/|t\.me\/|discord\.gg|kakao\.me)/i];
 const clean = (t)=> !banned.some(r=>r.test(t||''));
@@ -351,25 +374,50 @@ function bindSessionPaths(){
   controlRef        = ref(db, `assist/${uid}/control`);
 }
 
-function sendChat(role, text){
-  if(!text) return;
-  if(!clean(text)){ addMsg('부적절한 메시지는 전송할 수 없어요.', false, true); return; }
-  const m=push(chatRef); set(m, { role, text, ts: Date.now() });
+/* === 미니 미러 프레임 === */
+let miniDoc=null, miniCursor=null, miniLabel=null, miniShown=false;
+function initMini(){
+  const doc = rsMini.contentDocument || rsMini.contentWindow?.document;
+  if(!doc) return;
+  doc.open();
+  doc.write(`<!doctype html><meta charset="utf-8"><style>
+    html,body{margin:0;height:100%;background:#000;color:#fff;font:12px system-ui,Arial;overflow:hidden}
+    .cursor{position:absolute;left:0;top:0;width:14px;height:14px;border:2px solid #00d4ff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 12px rgba(0,212,255,.8)}
+    .label{position:absolute;left:8px;top:6px;background:rgba(0,0,0,.4);padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.14)}
+  </style><div class="label">관리자 커서</div><div class="cursor" id="c"></div>`);
+  doc.close();
+  miniDoc=doc; miniCursor=doc.getElementById('c'); miniLabel=doc.querySelector('.label');
 }
-function openPanel(){ if(!uid){ addMsg('로그인 후 이용하세요.', false, true); } rsPanel.style.display='flex'; }
-function closePanel(){ rsPanel.style.display='none'; }
+function showMini(on){
+  miniShown=!!on; rsMini.style.display = miniShown ? 'block' : 'none';
+  if(miniShown && !miniDoc) initMini();
+}
+function moveMini(nx, ny, msg){
+  if(!miniShown) return;
+  if(!miniDoc) initMini();
+  const w = rsMini.clientWidth, h = rsMini.clientHeight;
+  const x = Math.min(Math.max(nx,0),1)*w, y = Math.min(Math.max(ny,0),1)*h;
+  miniCursor.style.left = x+'px'; miniCursor.style.top = y+'px';
+  if(msg && miniLabel) miniLabel.textContent = msg;
+}
+function clickRipple(x,y){
+  const d=document.createElement('div'); d.className='rip'; d.style.left=x+'px'; d.style.top=y+'px'; document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 650);
+}
 
-rsToggle.onclick = openPanel; rsClose.onclick = closePanel;
-rsSend.onclick = ()=>{ const t=rsInput.value.trim(); if(!t) return; rsInput.value=''; sendChat('user', t); };
+rsMiniToggle.onclick = ()=> showMini(!miniShown);
+
+const rsToggleBtn = document.getElementById('rs-toggle');
+rsToggleBtn.onclick = ()=>{ rsPanel.style.display='flex'; if(uid) rsMiniWrap.style.display='flex'; };
+rsClose.onclick = ()=> rsPanel.style.display='none';
+rsSend.onclick = ()=>{ const t=rsInput.value.trim(); if(!t) return; rsInput.value=''; if(!clean(t)){ addMsg('부적절한 메시지는 전송할 수 없어요.', false, true); return; } const m=push(chatRef); set(m,{role:'user',text:t,ts:Date.now()}); };
 
 onAuthStateChanged(auth, (user)=>{
   if(!user) return;
   bindSessionPaths();
-  // 기본 상태
   update(sessionRef, { uid, status:'idle', allowNav:false, allowAdvanced:false, updatedAt:serverTimestamp() });
-  // 채팅 수신
   onChildAdded(chatRef, s=>{ const m=s.val(); if(!m) return; addMsg(m.text||'', m.role==='user', m.role==='system'); });
-  // 관리자 수락 → 화면공유 시작
+
   onValue(ref(db, `assist/${uid}/accept`), async snap=>{
     const v=snap.val(); if(v===true){
       try{
@@ -382,50 +430,53 @@ onAuthStateChanged(auth, (user)=>{
         update(sessionRef, { status:'connecting', updatedAt:serverTimestamp() });
         const sync = ()=> update(sessionRef, { allowNav: !!rsAllowNav.checked, allowAdvanced: !!rsAllowAdv.checked, updatedAt:serverTimestamp() });
         rsAllowNav.onchange = sync; rsAllowAdv.onchange = sync; sync();
+        rsMiniWrap.style.display='flex'; // 패널에 미니 미러 토글 노출
       }catch{ addMsg('화면공유가 취소/실패했습니다. 다시 시도해주세요.', false, true); update(sessionRef, { status:'idle', updatedAt:serverTimestamp() }); setBadge('end','취소됨'); }
     }
   });
-  // answer/ICE
   onValue(signalAnswerRef, async s=>{ const v=s.val(); if(!v) return; await ensurePC().setRemoteDescription(v); });
-  onChildAdded(signalAdminIceRef, async s=>{ const c=s.val(); if(!c) return; try{ await ensurePC().addIceCandidate(new RTCIceCandidate(c)); }catch{} });
+  onChildAdded(ref(db, `assist/${uid}/signal/adminIce`), async s=>{ const c=s.val(); if(!c) return; try{ await ensurePC().addIceCandidate(new RTCIceCandidate(c)); }catch{} });
 
-  // 제어 명령
-  onChildAdded(controlRef, s=>{
+  // 제어 명령 → 실제 동작 + 미니 미러 & 리플
+  onChildAdded(ref(db, `assist/${uid}/control`), s=>{
     const c=s.val()||{}; const navOK=!!rsAllowNav.checked; const advOK=!!rsAllowAdv.checked;
     if(c.type==='navigate'&&navOK){ location.href = c.path || location.href; return; }
     if(!advOK) return;
     if(c.type==='click'){
-      const x = Math.round(window.innerWidth * c.nx); const y = Math.round(window.innerHeight * c.ny);
+      const x = Math.round(window.innerWidth * c.nx), y = Math.round(window.innerHeight * c.ny);
       const el = document.elementFromPoint(x,y); if(!el) return;
       // 민감영역 차단
-      if (el.closest('input[type="password"], [data-sensitive="true"]')){
-        sendChat('system','민감한 정보이므로 비공개 처리했습니다.');
-        return;
-      }
+      if (el.closest('input[type="password"], [data-sensitive="true"]')){ const m=push(chatRef); set(m,{role:'system',text:'민감한 정보이므로 비공개 처리했습니다.',ts:Date.now()}); moveMini(c.nx,c.ny,'민감영역 차단'); return; }
       try{ el.focus({preventScroll:true}); }catch{}
       el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:x,clientY:y}));
+      clickRipple(x,y);
+      moveMini(c.nx,c.ny,'클릭');
     }
-    if(c.type==='scroll'){ window.scrollBy({ top: c.dy||0, behavior:'smooth' }); }
+    if(c.type==='scroll'){
+      window.scrollBy({ top: c.dy||0, behavior:'smooth' });
+      moveMini(0.06,0.08, c.dy>0?'스크롤↓':'스크롤↑');
+    }
   });
 });
 
 // 요청/종료
 rsRequest.onclick = async ()=>{
   if(!uid){ addMsg('로그인 후 이용하세요.', false, true); return; }
-  sendChat('user','원격지원 요청합니다 🙏');
-  await update(ref(db, `assist/${uid}`), { status:'waiting', updatedAt:serverTimestamp() });
+  const m=push(chatRef); set(m,{role:'user',text:'원격지원 요청합니다 🙏',ts:Date.now()});
+  await update(sessionRef, { status:'waiting', updatedAt:serverTimestamp() });
   setBadge('wait','대기');
 };
 rsEnd.onclick = async ()=>{
   if(pc){ try{ pc.getSenders().forEach(s=>s.track&&s.track.stop()); pc.close(); }catch{} }
   pc=null;
-  await update(ref(db, `assist/${uid}`), { status:'ended', allowNav:false, allowAdvanced:false, updatedAt:serverTimestamp() });
+  await update(sessionRef, { status:'ended', allowNav:false, allowAdvanced:false, updatedAt:serverTimestamp() });
   await set(ref(db, `assist/${uid}/signal`), null);
   await set(ref(db, `assist/${uid}/accept`), null);
   await set(ref(db, `assist/${uid}/control`), null);
   await set(ref(db, `assist/${uid}/chat`), null);
   rsEnd.style.display='none'; rsRequest.style.display=''; setBadge('end','종료');
   addMsg('세션을 종료했습니다. 채팅/제어 기록은 삭제됩니다.', false, true);
+  showMini(false);
 };
 </script>
 </body>
