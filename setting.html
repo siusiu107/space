@@ -1,3 +1,4 @@
+<!-- setting.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -30,7 +31,6 @@
       --fs-base: 16px;
       --lh: 1.65;
     }
-
     *{ box-sizing: border-box; }
     html{ font-size: var(--fs-base); }
     body{
@@ -157,7 +157,7 @@
       h2{ font-size: 1.05rem; }
     }
 
-    /* === in-frame overlay 표시 === */
+    /* in-frame overlay 표시 */
     #helper-overlay{ position:fixed; inset:0; pointer-events:none; z-index:3000; display:none; }
     #helper-overlay.show{ display:block; }
     #helper-cursor{ position:fixed; width:18px; height:18px; border-radius:50%; border:2px solid rgba(0,212,255,.95); background:rgba(0,212,255,.12); transform:translate(-50%,-50%); opacity:0; transition:opacity .2s ease, transform .12s ease; box-shadow:0 0 24px rgba(0,212,255,.5); pointer-events:none; }
@@ -312,7 +312,7 @@
     <footer>태양계 정복: 우주 생존 클릭커 · v0.1.0</footer>
   </div>
 
-  <!-- 토스트 / 오버레이 -->
+  <!-- 토스트 / 로딩 -->
   <div id="toast" role="status" aria-live="polite">알림</div>
   <div id="overlay" aria-hidden="true"><div class="box"><div>처리 중…</div><div class="spinner" aria-hidden="true"></div><div style="font-size:12px;color:#cfe7ff;">잠시만 기다려주세요</div></div></div>
 
@@ -340,7 +340,7 @@
     </div>
   </div>
 
-  <!-- 이용약관 모달 -->
+  <!-- 이용약관 모달 (민감정보 비공개/관리자 표기 포함) -->
   <div id="tos-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tos-title">
     <div class="panel">
       <div id="tos-title" class="title">원격 도움 이용약관</div>
@@ -360,7 +360,7 @@
 연결·채팅·제어 이벤트는 세션 동안만 임시 저장되며, 세션 종료 시 서버에서 즉시 삭제됩니다. (네트워크 지연 등 기술적 사유로 수 분 내 삭제될 수 있음)
 
 [개인정보 보호]
-비밀번호/ID 등 개인정보는 관리자 화면에서 비공개(마스킹)로 표시됩니다. 관리자가 민감 영역을 클릭/포커스/입력 시도하면 “민감한 정보이므로 비공개 처리했습니다.”가 관리자 채팅에 표시되며 실제 조작은 차단됩니다. 관리자 화면에는 "민감한 정보이므로 비공개 처리했습니다."라고 표시됩니다.
+비밀번호/ID 등 개인정보는 관리자 화면에서 비공개(마스킹)로 표시됩니다. 관리자가 민감 영역을 클릭/포커스/입력 시도하면 “민감한 정보이므로 비공개 처리했습니다.”가 관리자 채팅에 표시되며 실제 조작은 차단됩니다. 또한 관리자 화면에는 "민감한 정보이므로 비공개 처리했습니다."라고 표시됩니다.
 
 [이용자 의무]
 1) 허위 사실 유포, 모욕·혐오·음란·폭력적 표현, 스팸·광고, 연락처/외부 링크 공유 등은 금지됩니다.
@@ -453,7 +453,7 @@
     function showOverlay(show){ overlay.style.display = show ? 'flex' : 'none'; overlay.setAttribute('aria-hidden', show ? 'false':'true'); }
     function dot(color, text){ return `<span class="dot ${color}"></span>${text}`; }
     function scrollToBottom(el){ el.scrollTop = el.scrollHeight; }
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
     function showHelperOverlay(on){ helperOverlay.classList.toggle('show', !!on); helperOverlay.setAttribute('aria-hidden', on ? 'false':'true'); }
     function initHelperIframe(){
@@ -462,60 +462,33 @@
       if(!doc) return;
       doc.open();
       doc.write(`<!doctype html><html><head><meta charset="utf-8"/><style>
-        body{margin:0;font:13px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#eaf2ff;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(6,7,12,.6))}
-        header{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.12);font-weight:800;color:#fff;display:flex;justify-content:space-between;align-items:center}
-        #log{padding:8px 10px;height:calc(100% - 40px);overflow:auto}.row{margin:6px 0;opacity:.95}
-        .time{color:#b9d8ff;font-size:11px;margin-left:6px}.ok{color:#36d399}.warn{color:#ffd166}.act{color:#00d1ff}.mask{color:#ffbaba}
+      body{margin:0;font:13px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#eaf2ff;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(6,7,12,.6))}
+      header{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.12);font-weight:800;color:#fff;display:flex;justify-content:space-between;align-items:center}
+      #log{padding:8px 10px;height:calc(100% - 40px);overflow:auto}
+      .row{margin:6px 0;opacity:.95}.time{color:#b9d8ff;font-size:11px;margin-left:6px}
+      .ok{color:#36d399}.warn{color:#ffd166}.act{color:#00d1ff}.mask{color:#ffbaba}
       </style></head><body><header>원격 도움 <span style="font-weight:600;font-size:12px;opacity:.9;">(표시 전용)</span></header><div id="log" role="log" aria-live="polite"></div></body></html>`);
       doc.close();
     }
     function logToIframe(text, cls=''){
       const doc = helperIframe.contentDocument || helperIframe.contentWindow?.document;
-      const log = doc?.getElementById('log');
-      if(!log) return;
-      const row = doc.createElement('div');
-      row.className = 'row ' + (cls||'');
-      const t = new Date().toLocaleTimeString();
-      row.innerHTML = `${text} <span class="time">${t}</span>`;
-      log.appendChild(row);
-      log.scrollTop = log.scrollHeight;
+      const log = doc?.getElementById('log'); if(!log) return;
+      const row = doc.createElement('div'); row.className = 'row ' + (cls||'');
+      const t = new Date().toLocaleTimeString(); row.innerHTML = `${text} <span class="time">${t}</span>`;
+      log.appendChild(row); log.scrollTop = log.scrollHeight;
     }
-    function pulseAtElement(el){
-      try{
-        const r = el.getBoundingClientRect();
-        const cx = r.left + r.width/2, cy = r.top + r.height/2;
-        helperCursor.style.left = `${cx}px`;
-        helperCursor.style.top  = `${cy}px`;
-        helperCursor.style.opacity = '1';
-        helperCursor.style.transform = 'translate(-50%,-50%) scale(1.0)';
-        setTimeout(()=> helperCursor.style.opacity = '0', 320);
-      }catch{}
-    }
-    function outlineElement(el){
-      try{
-        const r = el.getBoundingClientRect();
-        helperHL.style.left = `${r.left - 6}px`;
-        helperHL.style.top  = `${r.top - 6}px`;
-        helperHL.style.width  = `${r.width + 12}px`;
-        helperHL.style.height = `${r.height + 12}px`;
-        helperHL.style.opacity = '1';
-        setTimeout(()=> helperHL.style.opacity = '0', 800);
-      }catch{}
-    }
+    function pulseAtElement(el){ try{ const r = el.getBoundingClientRect(); const cx = r.left + r.width/2, cy = r.top + r.height/2; helperCursor.style.left = `${cx}px`; helperCursor.style.top  = `${cy}px`; helperCursor.style.opacity = '1'; helperCursor.style.transform = 'translate(-50%,-50%) scale(1.0)'; setTimeout(()=> helperCursor.style.opacity = '0', 320);}catch{} }
+    function outlineElement(el){ try{ const r = el.getBoundingClientRect(); helperHL.style.left = `${r.left - 6}px`; helperHL.style.top  = `${r.top - 6}px`; helperHL.style.width  = `${r.width + 12}px`; helperHL.style.height = `${r.height + 12}px`; helperHL.style.opacity = '1'; setTimeout(()=> helperHL.style.opacity = '0', 800);}catch{} }
     function isSensitive(el){ return !!el.closest('input[type="password"], [data-sensitive="true"]'); }
     function onHelperConnected(helperEmail){ showHelperOverlay(true); initHelperIframe(); logToIframe(`<span class="ok">관리자 연결됨</span> — ${helperEmail||''}`); }
     function onHelperDisconnected(){ logToIframe(`<span class="warn">관리자 연결 종료</span>`); showHelperOverlay(false); }
 
     backBtn.addEventListener('click', () => {
-      try{
-        const ref = document.referrer;
-        if (ref && new URL(ref).origin === location.origin) { history.back(); return; }
-      }catch{}
+      try{ const ref = document.referrer; if (ref && new URL(ref).origin === location.origin) { history.back(); return; } }catch{}
       location.href = '/game.html';
     });
 
-    let uid = null; let meEmail = null; let isAdmin = false; let mySessionId = null;
-    let chatUnsub = null; let chatUnsubAdmin = null; let controlUnsub = null; let activeAdminSession = null;
+    let uid = null; let meEmail = null; let isAdmin = false; let mySessionId = null; let chatUnsub = null; let chatUnsubAdmin = null; let controlUnsub = null; let activeAdminSession = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (user && user.emailVerified){
@@ -533,9 +506,7 @@
       }
     });
 
-    signoutBtn.addEventListener('click', async () => {
-      try { await signOut(auth); showToast('로그아웃 되었어요'); } catch (e) { showToast('로그아웃 실패'); }
-    });
+    signoutBtn.addEventListener('click', async () => { try { await signOut(auth); showToast('로그아웃 되었어요'); } catch (e) { showToast('로그아웃 실패'); } });
 
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
@@ -547,19 +518,15 @@
         try { localStorage.removeItem(`lastWrite_${uid}`); } catch {}
         showToast('초기화 완료!');
       }catch(e){
-        console.error(e);
-        showToast('초기화 실패. 네트워크를 확인하세요.');
+        console.error(e); showToast('초기화 실패. 네트워크를 확인하세요.');
       }finally{
         showOverlay(false);
       }
     });
 
-    /* ===== 동의 & 약관 ===== */
+    // 동의/약관
     function refreshConsentBtn(){ consentOK.disabled = !(chkConsent.checked && chkAcceptTos.checked); }
-    document.getElementById('btn-open-consent').addEventListener('click', ()=>{
-      chkConsent.checked=false; chkAcceptTos.checked=false; refreshConsentBtn();
-      document.getElementById('consent-modal').classList.add('show');
-    });
+    btnOpenConsent.addEventListener('click', ()=>{ chkConsent.checked=false; chkAcceptTos.checked=false; refreshConsentBtn(); document.getElementById('consent-modal').classList.add('show'); });
     consentCancel.addEventListener('click', ()=> document.getElementById('consent-modal').classList.remove('show'));
     chkConsent.addEventListener('change', refreshConsentBtn);
     chkAcceptTos.addEventListener('change', refreshConsentBtn);
@@ -567,6 +534,7 @@
     openTosInline?.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('tos-modal').classList.add('show'); });
     tosClose?.addEventListener('click', ()=> document.getElementById('tos-modal').classList.remove('show'));
 
+    // 도움 요청 생성
     consentOK.addEventListener('click', async () => {
       if (!uid) return; document.getElementById('consent-modal').classList.remove('show');
       const sref = ref(db, `helpSessions/${uid}`); const now = Date.now();
@@ -576,19 +544,23 @@
       showToast('원격 도움 요청을 보냈어요');
     });
 
-    /* ===== 채팅(금칙어 포함) ===== */
-    const banned = [
-      /시[ㅣi]발/i, /병?신/i, /좆/i, /fuck/i, /shit/i, /nigg/i, /rape/i,
-      /\b010[-\s]?\d{4}[-\s]?\d{4}\b/i, /(https?:\/\/|t\.me\/|discord\.gg|kakao\.me|openkakao)/i
-    ];
+    // 채팅 필터 & 전송
+    const banned = [ /시[ㅣi]발/i, /병?신/i, /좆/i, /fuck/i, /shit/i, /nigg/i, /rape/i, /\b010[-\s]?\d{4}[-\s]?\d{4}\b/i, /(https?:\/\/|t\.me\/|discord\.gg|kakao\.me|openkakao)/i ];
     function isClean(text){ return !banned.some(re=>re.test(text||'')); }
     function sendUserMsg(){
-      const text = (msgInput.value || '').trim();
-      if (!text) return;
+      const text = (msgInput.value || '').trim(); if (!text) return;
       if (!isClean(text)) { showToast('부적절한 메시지는 전송할 수 없어요'); return; }
       const mref = push(ref(db, `helpSessions/${mySessionId}/chat`));
       set(mref, { from: meEmail || 'user', role:'user', text, ts: Date.now() });
       msgInput.value = '';
+    }
+    function sendAdminMsg(){
+      if (!activeAdminSession) return;
+      const text = (msgInputAdmin.value||'').trim(); if (!text) return;
+      if (!isClean(text)) { showToast('부적절한 메시지는 차단됩니다'); return; }
+      const mref = push(ref(db, `helpSessions/${activeAdminSession}/chat`));
+      set(mref, { from: meEmail || 'admin', role:'admin', text, ts: Date.now() });
+      msgInputAdmin.value = '';
     }
 
     function attachChatForUser(status){
@@ -602,15 +574,14 @@
         b.className = 'bubble ' + (m.role==='admin' || m.role==='system' ? '' : 'me') + (m.role==='system' ? ' sys' : '');
         b.innerHTML = `${escapeHtml(m.text || '')}<div class="meta">${m.from || ''}</div>`;
         msgs.appendChild(b);
-        scrollToBottom(msgs);
+        msgs.scrollTop = msgs.scrollHeight;
       });
       chatUnsub = ()=> off();
     }
 
-    /* ===== 제어 수신 (사용자 화면 시각화 + 보안) ===== */
+    // 화면 이펙트
     function pulseElement(el){
-      const r = el.getBoundingClientRect();
-      const x = r.left + r.width/2, y = r.top + r.height/2;
+      const r = el.getBoundingClientRect(); const x = r.left + r.width/2, y = r.top + r.height/2;
       const dot = document.createElement('div');
       dot.style.cssText = `position:fixed; left:${x-10}px; top:${y-10}px; width:20px; height:20px; border-radius:50%; border:2px solid #00d4ff; background:rgba(0,212,255,.15); pointer-events:none; z-index:3002; transform:scale(.6); opacity:.95; transition: transform .3s ease, opacity .35s ease;`;
       document.body.appendChild(dot);
@@ -618,7 +589,8 @@
       setTimeout(()=>dot.remove(), 450);
     }
 
-    function attachControlListenerForUser(status, helperUid){
+    // 제어 수신 (사용자)
+    function attachControlListenerForUser(status, controlGranted, helperUid){
       if (controlUnsub){ controlUnsub(); controlUnsub = null; }
       if (status !== 'connected') { onHelperDisconnected(); return; }
       const ctrlRef = ref(db, `helpSessions/${mySessionId}/control`);
@@ -626,7 +598,6 @@
         const c = snap.val() || {};
         if (!helperUid || c.fromUid !== helperUid) return;
 
-        // navigate
         if (c.type === 'navigate' && typeof c.path === 'string'){
           if (!chkGrantControl.checked) return;
           logToIframe(`<span class="act">경로 이동</span> → <b>${escapeHtml(c.path)}</b>`);
@@ -634,37 +605,32 @@
           location.href = c.path;
           return;
         }
-
-        // alert
         if (c.type === 'alert' && typeof c.message === 'string'){
           logToIframe(`<span class="act">알림</span> — ${escapeHtml(c.message)}`);
           alert('[관리자] ' + c.message);
           return;
         }
-
-        // ping
         if (c.type === 'ping'){
           logToIframe(`<span class="act">핑</span> 수신`);
           console.log('[PING from helper]', new Date().toISOString());
           return;
         }
 
-        // 고급 제어 필요
         if (!chkGrantAdvanced.checked) return;
-
         const sel = c.selector;
         const el = sel ? document.querySelector(sel) : null;
+
         const sysNotify = async (msg) => {
           const mref = push(ref(db, `helpSessions/${mySessionId}/chat`));
           await set(mref, { from:'system', role:'system', text: msg, ts: Date.now() });
         };
 
         if (c.type === 'highlight'){
-          if (el){ outlineElement(el); pulseAtElement(el); logToIframe(`<span class="act">하이라이트</span> — ${escapeHtml(sel)}`); }
-          return;
-        }
-
-        if (c.type === 'click'){
+          if (el){
+            outlineElement(el); pulseAtElement(el);
+            logToIframe(`<span class="act">하이라이트</span> — ${escapeHtml(sel)}`);
+          }
+        } else if (c.type === 'click'){
           if (el){
             if (isSensitive(el)){
               logToIframe(`<span class="mask">민감영역 보호: 클릭 차단</span> — ${escapeHtml(sel)}`);
@@ -676,23 +642,19 @@
             pulseElement(el); outlineElement(el);
             logToIframe(`<span class="act">클릭</span> — ${escapeHtml(sel)}`);
           }
-          return;
-        }
-
-        if (c.type === 'scrollTo'){
+        } else if (c.type === 'scrollTo'){
           if (el){
             el.scrollIntoView({ behavior: c.behavior || 'smooth', block:'center' });
             outlineElement(el); pulseAtElement(el);
             logToIframe(`<span class="act">스크롤</span> — ${escapeHtml(sel)}`);
           }
-          return;
         }
       });
       controlUnsub = ()=> off();
       onHelperConnected(sessionHelper?.textContent?.replace(' · 도우미: ','') || '관리자');
     }
 
-    /* ===== 세션 구독 ===== */
+    // 내 세션 구독
     function subscribeUserSession(){
       if (!mySessionId) return;
       const sref = ref(db, `helpSessions/${mySessionId}`);
@@ -710,6 +672,7 @@
         }
         const status = s.status || 'idle';
         const helper = s.helperEmail || '';
+        const control = !!s.controlGranted;
         let label='대기 중', color='gray';
         if (status==='waiting'){ label='도우미 대기 중'; color='blue'; }
         if (status==='connected'){ label='연결됨'; color='green'; }
@@ -722,12 +685,11 @@
 
         chkGrantControl.disabled = (status !== 'connected');
         chkGrantAdvanced.disabled = (status !== 'connected');
-
         chkGrantControl.checked = !!s.controlGranted;
         chkGrantAdvanced.checked = !!s.controlAdvanced;
 
         attachChatForUser(status);
-        attachControlListenerForUser(status, s.helperUid);
+        attachControlListenerForUser(status, control, s.helperUid);
       });
 
       btnEndSession.onclick = async () => {
@@ -744,22 +706,19 @@
       };
 
       chkGrantControl.addEventListener('change', async (e)=>{
-        try{
-          await update(ref(db, `helpSessions/${mySessionId}`), { controlGranted: !!e.target.checked, updatedAt: Date.now() });
-          showToast(e.target.checked ? '제어 권한 부여됨' : '제어 권한 해제됨');
-        }catch(err){ console.error(err); showToast('변경 실패'); e.target.checked = !e.target.checked; }
+        try{ await update(ref(db, `helpSessions/${mySessionId}`), { controlGranted: !!e.target.checked, updatedAt: Date.now() }); showToast(e.target.checked ? '제어 권한 부여됨' : '제어 권한 해제됨'); }
+        catch(err){ console.error(err); showToast('변경 실패'); e.target.checked = !e.target.checked; }
       });
       chkGrantAdvanced.addEventListener('change', async (e)=>{
-        try{
-          await update(ref(db, `helpSessions/${mySessionId}`), { controlAdvanced: !!e.target.checked, updatedAt: Date.now() });
-          showToast(e.target.checked ? '고급 제어 ON' : '고급 제어 OFF');
-        }catch(err){ console.error(err); showToast('변경 실패'); e.target.checked = !e.target.checked; }
+        try{ await update(ref(db, `helpSessions/${mySessionId}`), { controlAdvanced: !!e.target.checked, updatedAt: Date.now() }); showToast(e.target.checked ? '고급 제어 ON' : '고급 제어 OFF'); }
+        catch(err){ console.error(err); showToast('변경 실패'); e.target.checked = !e.target.checked; }
       });
+
       msgSend.addEventListener('click', sendUserMsg);
       msgInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendUserMsg(); });
     }
 
-    /* ===== 관리자 콘솔(관리자만) ===== */
+    // 관리자 콘솔
     function initAdminConsole(){
       adminConsole.style.display='';
       onValue(ref(db, 'helpSessions'), (snap) => {
@@ -767,7 +726,6 @@
         const waiting = Object.entries(data)
           .filter(([,s]) => s && s.status==='waiting' && s.consentGranted===true)
           .map(([id,s]) => ({ id, email: s.ownerEmail||id, at: s.updatedAt||s.createdAt||0 }));
-
         if (waiting.length === 0){ waitingListEl.textContent = '없음'; }
         else {
           waitingListEl.innerHTML = '';
@@ -778,79 +736,39 @@
             row.innerHTML = `<span>사용자: <b>${escapeHtml(w.email)}</b> · <span class="muted">${when}</span></span>`;
             const btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = '도움 시작';
             btn.onclick = () => connectAsHelper(w.id);
-            row.appendChild(btn);
-            waitingListEl.appendChild(row);
+            row.appendChild(btn); waitingListEl.appendChild(row);
           });
         }
         if (chkHelperWait.checked && !activeAdminSession && waiting.length > 0) connectAsHelper(waiting[0].id);
       });
-
       chkHelperWait.addEventListener('change', ()=> showToast(chkHelperWait.checked ? '도움 대기 모드 ON' : '도움 대기 모드 OFF'));
-      document.querySelectorAll('button[data-nav]').forEach(b=>{ b.addEventListener('click', ()=> { navPath.value = b.getAttribute('data-nav'); }); });
-      btnSendNav.addEventListener('click', () => {
-        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
-        sendControl(activeAdminSession, { type:'navigate', path: (navPath.value||'/game.html') });
-      });
-      document.getElementById('btn-ping').addEventListener('click', () => {
-        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
-        sendControl(activeAdminSession, { type:'ping' });
-      });
-      document.getElementById('btn-alert').addEventListener('click', () => {
-        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
-        const msg = prompt('사용자에게 표시할 알림 메시지:','원격 지원 테스트');
-        if (msg) sendControl(activeAdminSession, { type:'alert', message: msg.slice(0,300) });
-      });
-      const throttle = (()=>{ let t=0; return (ms=120)=>{ const n=Date.now(); if(n-t<ms) return true; t=n; return false; };})();
-      document.getElementById('btn-highlight').addEventListener('click', ()=>{
-        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
-        const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return;
-        sendControl(activeAdminSession, { type:'highlight', selector: sel });
-      });
-      document.getElementById('btn-click').addEventListener('click', ()=>{
-        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
-        const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return;
-        sendControl(activeAdminSession, { type:'click', selector: sel });
-      });
-      document.getElementById('btn-scroll').addEventListener('click', ()=>{
-        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
-        const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return;
-        sendControl(activeAdminSession, { type:'scrollTo', selector: sel, behavior:'smooth' });
-      });
 
-      msgSendAdmin.addEventListener('click', ()=>{
-        if (!activeAdminSession) return;
-        const text = (msgInputAdmin.value||'').trim();
-        if (!text) return;
-        if (!isClean(text)) { showToast('부적절한 메시지는 차단됩니다'); return; }
-        const mref = push(ref(db, `helpSessions/${activeAdminSession}/chat`));
-        set(mref, { from: meEmail || 'admin', role:'admin', text, ts: Date.now() });
-        msgInputAdmin.value = '';
-      });
-      msgInputAdmin.addEventListener('keydown', (e)=>{ if(e.key==='Enter') msgSendAdmin.click(); });
-      document.getElementById('btn-leave-session').addEventListener('click', endAdminSession);
+      document.querySelectorAll('button[data-nav]').forEach(b=>{ b.addEventListener('click', ()=> { navPath.value = b.getAttribute('data-nav'); }); });
+      btnSendNav.addEventListener('click', () => { if (!activeAdminSession) return showToast('연결된 세션이 없어요'); sendControl(activeAdminSession, { type:'navigate', path: (navPath.value||'/game.html') }); });
+      document.getElementById('btn-ping').addEventListener('click', () => { if (!activeAdminSession) return showToast('연결된 세션이 없어요'); sendControl(activeAdminSession, { type:'ping' }); });
+      document.getElementById('btn-alert').addEventListener('click', () => { if (!activeAdminSession) return showToast('연결된 세션이 없어요'); const msg = prompt('사용자에게 표시할 알림 메시지:','원격 지원 테스트'); if (msg) sendControl(activeAdminSession, { type:'alert', message: msg.slice(0,300) }); });
+
+      const throttle = (()=>{ let t=0; return (ms=120)=>{ const n=Date.now(); if(n-t<ms) return true; t=n; return false; };})();
+      document.getElementById('btn-highlight').addEventListener('click', ()=>{ if (!activeAdminSession) return showToast('연결된 세션이 없어요'); const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return; sendControl(activeAdminSession, { type:'highlight', selector: sel }); });
+      document.getElementById('btn-click').addEventListener('click', ()=>{ if (!activeAdminSession) return showToast('연결된 세션이 없어요'); const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return; sendControl(activeAdminSession, { type:'click', selector: sel }); });
+      document.getElementById('btn-scroll').addEventListener('click', ()=>{ if (!activeAdminSession) return showToast('연결된 세션이 없어요'); const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return; sendControl(activeAdminSession, { type:'scrollTo', selector: sel, behavior:'smooth' }); });
+
+      msgSendAdmin.addEventListener('click', sendAdminMsg);
+      msgInputAdmin.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendAdminMsg(); });
+      btnLeaveSession.addEventListener('click', endAdminSession);
     }
 
     async function connectAsHelper(sessionId){
       const user = auth.currentUser; if (!user) return showToast('로그인 필요');
-      const sref = ref(db, `helpSessions/${sessionId}`);
-      let ok = false;
+      const sref = ref(db, `helpSessions/${sessionId}`); let ok = false;
       await runTransaction(sref, (s) => {
         if (!s || s.status!=='waiting' || s.helperUid) return s;
-        s.status = 'connected';
-        s.helperUid = user.uid;
-        s.helperEmail = user.email || ADMIN_EMAIL;
-        s.connectedAt = Date.now();
-        s.updatedAt = Date.now();
-        ok = true;
-        return s;
+        s.status = 'connected'; s.helperUid = user.uid; s.helperEmail = user.email || ADMIN_EMAIL; s.connectedAt = Date.now(); s.updatedAt = Date.now();
+        ok = true; return s;
       });
       if (!ok) return showToast('이미 다른 곳에서 처리되었어요');
-      activeAdminSession = sessionId;
-      adminSessionLabel.textContent = '세션: ' + sessionId;
-      adminTools.style.display = '';
-      btnLeaveSession.style.display = '';
-      attachChatForAdmin(sessionId);
-      showToast('사용자와 연결됨');
+      activeAdminSession = sessionId; adminSessionLabel.textContent = '세션: ' + sessionId; adminTools.style.display = ''; btnLeaveSession.style.display = '';
+      attachChatForAdmin(sessionId); showToast('사용자와 연결됨');
       try{ onDisconnect(sref).update({ status:'waiting', helperUid:null, helperEmail:null, updatedAt: serverTimestamp() }); }catch{}
     }
 
@@ -862,17 +780,12 @@
         await remove(ref(db, `helpSessions/${sid}/chat`));
         await remove(ref(db, `helpSessions/${sid}/control`));
       }catch(e){ console.error(e); }
-      cleanupAdminSessionUI();
-      showToast('세션 종료됨');
+      cleanupAdminSessionUI(); showToast('세션 종료됨');
     }
 
     function cleanupAdminSessionUI(){
-      activeAdminSession = null;
-      adminTools.style.display = 'none';
-      adminSessionLabel.textContent = '';
-      btnLeaveSession.style.display = 'none';
-      if (chatUnsubAdmin){ chatUnsubAdmin(); chatUnsubAdmin = null; }
-      msgsAdmin.innerHTML = '';
+      activeAdminSession = null; adminTools.style.display = 'none'; adminSessionLabel.textContent = ''; btnLeaveSession.style.display = 'none';
+      if (chatUnsubAdmin){ chatUnsubAdmin(); chatUnsubAdmin = null; } msgsAdmin.innerHTML = '';
     }
 
     function attachChatForAdmin(sessionId){
@@ -880,20 +793,17 @@
       msgsAdmin.innerHTML = '';
       const cref = ref(db, `helpSessions/${sessionId}/chat`);
       const off = onChildAdded(cref, (snap) => {
-        const m = snap.val();
-        const b = document.createElement('div');
-        const mine = (m.role==='admin');
-        b.className = 'bubble ' + (mine ? 'me':'' ) + (m.role==='system' ? ' sys':'' );
+        const m = snap.val(); const b = document.createElement('div');
+        const mine = (m.role==='admin'); b.className = 'bubble ' + (mine ? 'me':'' ) + (m.role==='system' ? ' sys':'' );
         b.innerHTML = `${escapeHtml(m.text || '')}<div class="meta">${m.from || ''}</div>`;
-        msgsAdmin.appendChild(b);
-        scrollToBottom(msgsAdmin);
+        msgsAdmin.appendChild(b); msgsAdmin.scrollTop = msgsAdmin.scrollHeight;
       });
       chatUnsubAdmin = ()=> off();
     }
 
     function sendControl(sessionId, payload){
       const pref = push(ref(db, `helpSessions/${sessionId}/control`));
-      set(pref, { ...payload, fromUid: uid, ts: Date.now() });
+      set(pref, { ...payload, fromUid: (auth.currentUser && auth.currentUser.uid) || 'admin', ts: Date.now() });
     }
   </script>
 </body>
