@@ -25,8 +25,7 @@
 
     /* 상단바 */
     #topbar{
-      position:fixed;
-      top:8px; left:8px; right:8px;
+      position:fixed; top:8px; left:8px; right:8px;
       z-index: 1000;
       display:flex; align-items:center; justify-content:space-between;
       padding:8px 10px;
@@ -127,7 +126,7 @@
   <!-- 상단바 -->
   <div id="topbar">
     <button id="back-btn" aria-label="돌아가기">⬅️ 돌아가기</button>
-    <div id="addr">설정</div>
+    <div id="addr">/setting</div>
   </div>
 
   <div id="container">
@@ -187,7 +186,12 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // ===== Firebase 설정 (메인과 동일) =====
+    /* ===== 주소 표시를 /setting 으로 고정 ===== */
+    try {
+      history.replaceState(null, '', '/setting' + (location.hash || ''));
+    } catch (e) { console.warn('주소 표시 변경 실패:', e); }
+
+    /* ===== Firebase 설정 (메인과 동일) ===== */
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -203,7 +207,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ===== 기본 데이터 =====
+    /* ===== 기본 데이터 ===== */
     const defaultData = {
       resources:0,
       coins:0,
@@ -217,7 +221,7 @@
       _lastUpdated: Date.now()
     };
 
-    // ===== UI refs =====
+    /* ===== UI refs ===== */
     const accountDesc = document.getElementById('account-desc');
     const signoutBtn  = document.getElementById('signout-btn');
     const resetBtn    = document.getElementById('reset-btn');
@@ -225,38 +229,29 @@
     const toast       = document.getElementById('toast');
     const overlay     = document.getElementById('overlay');
 
-    // ===== 공통 함수 =====
+    /* ===== 공통 함수 ===== */
     function showToast(msg){
       toast.textContent = msg;
       toast.classList.add('show');
       clearTimeout(showToast._t);
       showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
     }
-
     function showOverlay(show){
       overlay.style.display = show ? 'flex' : 'none';
-      overlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+      overlay.setAttribute('aria-hidden', show ? 'false':'true');
     }
 
-    // ===== 뒤로가기 =====
+    /* ===== 뒤로가기: 무조건 game.html ===== */
     backBtn.addEventListener('click', () => {
-      try{
-        const ref = document.referrer;
-        if (ref && new URL(ref).origin === location.origin) {
-          history.back();
-          return;
-        }
-      }catch{}
-      // 같은 오리진 히스토리가 없으면 홈으로
       location.href = '/game.html';
     });
 
-    // ===== 인증 상태 =====
+    /* ===== 인증 상태 ===== */
     let uid = null;
     onAuthStateChanged(auth, async (user) => {
       if (user && user.emailVerified){
         uid = user.uid;
-        accountDesc.textContent = ${user.email} (로그인됨);
+        accountDesc.textContent = `${user.email} (로그인됨)`;
         signoutBtn.disabled = false;
         resetBtn.disabled = false;
       } else if (user && !user.emailVerified){
@@ -270,17 +265,18 @@
       }
     });
 
-    // ===== 로그아웃 =====
+    /* ===== 로그아웃 ===== */
     signoutBtn.addEventListener('click', async () => {
       try {
         await signOut(auth);
         showToast('로그아웃 되었어요');
       } catch (e) {
+        console.error(e);
         showToast('로그아웃 실패');
       }
     });
 
-    // ===== 초기화(실제 동작) =====
+    /* ===== 초기화(실제 동작) ===== */
     resetBtn.addEventListener('click', async () => {
       if (!uid){
         showToast('로그인 후 이용하세요');
@@ -292,10 +288,9 @@
       showOverlay(true);
       try{
         const data = { ...defaultData, _lastUpdated: Date.now() };
-        await runTransaction(ref(db, users/${uid}/gameData), () => data);
+        await runTransaction(ref(db, `users/${uid}/gameData`), () => data);
 
-        try { localStorage.removeItem(lastWrite_${uid}); } catch {}
-
+        try { localStorage.removeItem(`lastWrite_${uid}`); } catch {}
         showToast('초기화 완료!');
       }catch(e){
         console.error(e);
