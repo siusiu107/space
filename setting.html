@@ -1,141 +1,270 @@
-<!-- /require-login.html -->
+<!-- /setting.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🔒 로그인 필요 - 태양계 정복</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>⚙️ 설정 - 태양계 정복</title>
+
   <script>
-    try { history.replaceState(null, '', '/로그인필요' + (location.hash || '')); }
-    catch(e){ console.warn('주소 표시 변경 실패:', e); }
+    // 주소 표시: /설정
+    try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
   </script>
 
-  <!-- Google Fonts (참고 HTML과 동일 무드) -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      position: relative;
-      font-family: 'Montserrat', sans-serif;
-      background: #000;
-      overflow: hidden;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color:#fff;
+    :root{
+      --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(6,7,12,0.55));
+      --stroke: rgba(255,255,255,0.12);
+      --muted: #bcd8ee;
+      --accent: #00c0ff;
+      --accent-2:#00a2ff;
+      --danger:#ff6b6b;
     }
-    /* 은하수 배경 효과 */
-    body::before {
-      content: '';
-      position: absolute;
-      top: -50%; left: -50%; right: -50%; bottom: -50%;
-      background: url('images/galaxy-bg.jpg') center/cover no-repeat;
-      filter: brightness(0.4) blur(8px);
-      animation: rotateBg 60s linear infinite;
-      z-index: 0;
+    *{ box-sizing: border-box; }
+    body{
+      margin:0; padding:0; font-family: Inter, Arial, sans-serif;
+      background:url('/images/space-bg.jpg') center/cover no-repeat fixed;
+      color:#e6f7ff;
     }
-    @keyframes rotateBg {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .card {
-      position: relative;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(12px);
-      border-radius: 20px;
-      padding: 42px 28px;
-      max-width: 520px;
-      width: 92vw;
-      text-align: center;
-      color: #fff;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-      z-index: 1;
-      animation: fadeIn 0.9s ease-out;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.96);} to { opacity:1; transform: scale(1);} }
+    a{ color:inherit; text-decoration:none; }
 
-    .planet-image {
-      width: 110px;
-      margin: 0 auto 18px;
-      animation: float 4s ease-in-out infinite;
+    /* 상단바 */
+    #topbar{
+      position:fixed; top:8px; left:8px; right:8px; z-index: 1000;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 10px; border-radius:12px;
+      background: rgba(20,24,34,0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border:1px solid var(--stroke);
+    }
+    #back-btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:10px; cursor:pointer;
+      background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border:1px solid var(--stroke); font-weight:800;
+    }
+    #back-btn:hover{ filter:brightness(1.05); }
+    #addr{
+      font-size:12px; color: var(--muted);
       user-select:none;
     }
-    @keyframes float {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-16px) rotate(8deg); }
-    }
 
-    h1 {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 2.2rem;
-      margin-bottom: 12px;
-      letter-spacing: 2px;
-      background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: titleGlow 2s ease-in-out infinite alternate;
+    /* 컨테이너 */
+    #container{
+      width: min(800px, 92vw);
+      margin: 70px auto 28px;
     }
-    @keyframes titleGlow {
-      from { text-shadow: 0 0 10px rgba(0,210,255,0.7); }
-      to   { text-shadow: 0 0 22px rgba(58,123,213,0.9); }
+    .card{
+      background: var(--glass-bg);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+      padding:16px;
+      margin: 14px 0;
     }
+    h1{ margin:0 0 8px; font-size:22px; color:#dff7ff; }
+    .sub{ margin:0 0 18px; font-size:13px; color:var(--muted); }
 
-    p {
-      font-size: 1rem;
-      margin-bottom: 26px;
-      line-height: 1.6;
-      opacity: 0.9;
+    /* 설정 아이템 */
+    .item{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      margin:10px 0;
     }
+    .item .left{ display:flex; align-items:center; gap:10px; }
+    .item .title{ font-weight:800; }
+    .item .desc{ font-size:12px; color:var(--muted); }
+    .item .right{ display:flex; align-items:center; gap:8px; }
 
-    .btn-row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    /* 버튼 */
+    .btn{
+      padding:10px 12px; border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+      color:#001218; font-weight:800; border-radius:10px; cursor:pointer;
+      background-image: linear-gradient(180deg, var(--accent), var(--accent-2));
+    }
+    .btn.secondary{
+      color:#e6f7ff;
+      background-image:none; background:linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
+    }
+    .btn.danger{
+      background-image:none; color:#ffecec;
+      background: linear-gradient(180deg, rgba(255,50,50,0.9), rgba(200,0,0,0.88));
+      border-color: rgba(255,80,80,0.4);
+    }
+    .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-    button {
-      background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-      border: none;
-      padding: 14px 22px;
-      font-size: 0.95rem;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: transform 0.25s, box-shadow 0.25s, opacity .2s;
-      color: #001218;
-      font-weight: 800;
-      box-shadow: 0 6px 24px rgba(0,150,255,0.35);
+    /* 스위치 */
+    .switch{
+      position:relative; width:44px; height:26px; border-radius:16px;
+      background:#3a4156; border:1px solid rgba(255,255,255,0.1); cursor:pointer;
     }
-    button:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 30px rgba(0,170,255,0.5); }
-    button.secondary{
-      background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-      color:#e6f7ff; border:1px solid rgba(255,255,255,0.18); box-shadow:none;
+    .switch::after{
+      content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%;
+      background:#fff; transition: transform .2s ease;
     }
-    .hidden { display: none !important; }
+    .switch.on{ background:#00b4ff; }
+    .switch.on::after{ transform: translateX(18px); }
 
-    /* 풀스크린 배너 */
-    #banner{
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.85); color:#fff; font-size:20px; z-index:99999;
+    /* 구분선 */
+    .hr{ height:1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+
+    /* 토스트 */
+    #toast{
+      position:fixed; left:50%; bottom: max(18px, env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.75); color:#fff; padding:10px 14px; border-radius:10px;
+      opacity:0; pointer-events:none; transition:all .25s ease; z-index:2000;
+      border:1px solid rgba(255,255,255,0.12);
     }
-    #banner.show{ display:flex; }
+    #toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+    /* 로딩 오버레이 */
+    #overlay{
+      position: fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.45); z-index: 1800;
+    }
+    #overlay .box{
+      width:300px; border-radius:14px; padding:16px; text-align:center;
+      background: var(--glass-bg); border:1px solid var(--stroke);
+      color:#dff7ff;
+    }
+    .spinner{
+      width:42px; height:42px; border-radius:50%;
+      border:4px solid rgba(255,255,255,0.18); border-top-color: var(--accent);
+      margin: 10px auto; animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    /* 푸터 */
+    footer{ margin:12px 0 24px; text-align:center; color:var(--muted); font-size:12px; }
   </style>
 </head>
 <body>
-  <div class="card" id="content">
-    <img src="images/planet-icon.png" alt="Planet Icon" class="planet-image" />
-    <h1 id="title">🔒 로그인이 필요합니다!</h1>
-    <p id="message">보안을 위해 먼저 로그인해주세요.</p>
-    <div class="btn-row">
-      <button id="go-login">로그인하러 가기</button>
-      <button id="back-btn" class="secondary">◀️ 돌아가기</button>
-      <button id="go-game" class="hidden">게임으로 가기</button>
+  <!-- 상단바 -->
+  <div id="topbar">
+    <button id="back-btn" aria-label="돌아가기">⬅️ 돌아가기</button>
+    <div id="addr">/설정</div>
+  </div>
+
+  <div id="container">
+    <div class="card">
+      <h1>⚙️ 설정</h1>
+      <p class="sub">게임 환경을 관리하고, 데이터 초기화를 수행할 수 있어요.</p>
+
+      <!-- 계정 -->
+      <div class="item">
+        <div class="left">
+          <div>👤</div>
+          <div>
+            <div class="title">계정</div>
+            <div class="desc" id="account-desc">로그인 상태 확인 중…</div>
+          </div>
+        </div>
+        <div class="right">
+          <button id="signout-btn" class="btn secondary" disabled>로그아웃</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- 환경 설정 -->
+      <div class="item">
+        <div class="left">
+          <div>🔊</div>
+          <div>
+            <div class="title">효과음(SFX)</div>
+            <div class="desc">게임 내 클릭/획득 사운드</div>
+          </div>
+        </div>
+        <div class="right">
+          <div id="sfx-switch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="left">
+          <div>🎵</div>
+          <div>
+            <div class="title">배경음(BGM)</div>
+            <div class="desc">게임 배경 음악</div>
+          </div>
+        </div>
+        <div class="right">
+          <div id="bgm-switch" class="switch" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- 언어 -->
+      <div class="item" id="lang-ko">
+        <div class="left">
+          <div>🇰🇷</div>
+          <div>
+            <div class="title">언어(Language): 한국어</div>
+            <div class="desc">클릭 시 안내 표시</div>
+          </div>
+        </div>
+        <div class="right">
+          <button class="btn secondary">선택</button>
+        </div>
+      </div>
+
+      <div class="item" id="lang-en">
+        <div class="left">
+          <div>🇺🇸</div>
+          <div>
+            <div class="title">언어(Language): English</div>
+            <div class="desc">Click to see notice</div>
+          </div>
+        </div>
+        <div class="right">
+          <button class="btn secondary">Select</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- 데이터 -->
+      <div class="item">
+        <div class="left">
+          <div>♻️</div>
+          <div>
+            <div class="title">게임 데이터 초기화</div>
+            <div class="desc">자원·코인·업그레이드·행성 구매 내역을 기본값으로 되돌립니다.</div>
+          </div>
+        </div>
+        <div class="right">
+          <button id="reset-btn" class="btn danger" disabled>초기화</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>태양계 정복: 우주 생존 클릭커 · v0.1.0</footer>
+  </div>
+
+  <!-- 토스트 -->
+  <div id="toast" role="status" aria-live="polite">알림</div>
+
+  <!-- 로딩 오버레이 -->
+  <div id="overlay" aria-hidden="true">
+    <div class="box">
+      <div>처리 중…</div>
+      <div class="spinner" aria-hidden="true"></div>
+      <div style="font-size:12px;color:#cfe7ff;">잠시만 기다려주세요</div>
     </div>
   </div>
 
-  <div id="banner" aria-live="polite">로그인 화면으로 이동합니다…</div>
-
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, update, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // (메인/설정과 동일 설정)
+    // ===== Firebase 설정 (게임과 동일) =====
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -148,121 +277,114 @@
     };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getDatabase(app);
 
-    const titleEl = document.getElementById('title');
-    const msgEl   = document.getElementById('message');
-    const goLogin = document.getElementById('go-login');
-    const goGame  = document.getElementById('go-game');
-    const backBtn = document.getElementById('back-btn');
-    const banner  = document.getElementById('banner');
+    // ===== 기본 데이터 =====
+    const defaultData = {
+      resources:0, coins:0, clickPower:1,
+      shipLevel:1, shipUpgradeCost:20,
+      workerCount:0, conversionCount:0,
+      autoConvertBought:false, ownedPlanets:[],
+      _lastUpdated: Date.now()
+    };
 
-    function getParam(name){
-      const m = new URLSearchParams(location.search).get(name);
-      return m ? decodeURIComponent(m) : null;
+    // ===== UI refs =====
+    const accountDesc = document.getElementById('account-desc');
+    const signoutBtn  = document.getElementById('signout-btn');
+    const resetBtn    = document.getElementById('reset-btn');
+    const backBtn     = document.getElementById('back-btn');
+    const sfxSwitch   = document.getElementById('sfx-switch');
+    const bgmSwitch   = document.getElementById('bgm-switch');
+    const toast       = document.getElementById('toast');
+    const overlay     = document.getElementById('overlay');
+
+    // ===== 공통 함수 =====
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t); showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
+    }
+    function setSwitch(el, on){
+      el.classList.toggle('on', !!on);
+      el.setAttribute('aria-checked', on ? 'true':'false');
+    }
+    function toggleSwitch(el, key){
+      const on = !el.classList.contains('on');
+      setSwitch(el, on);
+      try { localStorage.setItem(key, on ? '1':'0'); } catch {}
+      showToast((key==='setting_sfx'?'효과음':'배경음') + (on?' 켜짐':' 꺼짐'));
+    }
+    function showOverlay(show){
+      overlay.style.display = show ? 'flex' : 'none';
+      overlay.setAttribute('aria-hidden', show ? 'false':'true');
     }
 
-    // next 우선순위: ?next -> document.referrer -> 홈
-    function computeNext(){
-      const qNext = getParam('next');
-      if (qNext) return qNext;
-      try{
-        if (document.referrer && new URL(document.referrer).origin === location.origin){
-          return document.referrer;
-        }
-      }catch{}
-      return location.origin + '/';
-    }
-
-    function rememberNext(nextUrl){
-      try { sessionStorage.setItem('pending_redirect', nextUrl); } catch {}
-    }
-
-    function showBannerAndGo(url, text){
-      if (text) banner.textContent = text;
-      banner.classList.add('show');
-      setTimeout(()=>{ window.location.href = url; }, 900);
-    }
-
-    // 버튼: 돌아가기
+    // ===== 뒤로가기 =====
     backBtn.addEventListener('click', () => {
       try{
-        if (history.length > 1) { history.back(); return; }
+        const ref = document.referrer;
+        if (ref && new URL(ref).origin === location.origin) { history.back(); return; }
       }catch{}
-      window.location.href = '/';
+      // 같은 오리진에서 온 히스토리가 없으면 홈으로
+      location.href = '/';
     });
 
-    // 버튼: 로그인하러 가기 (메인 게임 페이지의 로그인 UI로)
-    goLogin.addEventListener('click', () => {
-      const next = computeNext();
-      rememberNext(next);
-      // 메인 게임 파일 경로: 프로젝트에 맞게 수정 가능 (예: '/', '/game.html')
-      const dest = '/game.html';
-      showBannerAndGo(dest, '로그인 화면으로 이동합니다…');
+    // ===== 스위치 바인딩 =====
+    ;['setting_sfx','setting_bgm'].forEach((k, i) => {
+      const el = i===0 ? sfxSwitch : bgmSwitch;
+      let on = false;
+      try { on = (localStorage.getItem(k) || '1') === '1'; } catch {}
+      setSwitch(el, on);
+      el.addEventListener('click', () => toggleSwitch(el, k));
+      el.addEventListener('keydown', (e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSwitch(el, k); }});
     });
 
-    // 버튼: 게임으로 가기 (이미 로그인된 경우 노출)
-    goGame.addEventListener('click', () => {
-      const next = computeNext();
-      // next가 현재 페이지면 홈으로 대체
-      const go = (next && next !== location.href) ? next : '/game.html';
-      window.location.href = go;
-    });
+    // ===== 언어(업데이트 예정) =====
+    document.getElementById('lang-ko').addEventListener('click', ()=> showToast('언어 설정은 업데이트 예정입니다!'));
+    document.getElementById('lang-en').addEventListener('click', ()=> showToast('Language settings coming soon!'));
 
-    // 인증 상태에 따라 UI 분기
-    onAuthStateChanged(auth, user => {
-      const next = computeNext();
-
-      if (!user){
-        // 비로그인: 안내문 + next 저장 + 자동 이동 유도
-        titleEl.textContent = '로그인이 필요합니다!';
-        msgEl.textContent   = '잠시 후 로그인 화면으로 이동합니다…';
-        rememberNext(next);
-        // 자동 이동(2.2초 뒤) — 사용자가 직접 버튼 누르지 않아도 진행
-        setTimeout(() => {
-          // 사용자가 이미 이동했으면 중복 이동 방지
-          if (document.hidden) return;
-          showBannerAndGo('/game.html', '로그인 화면으로 이동합니다…');
-        }, 2200);
-        return;
-      }
-
-      // 로그인된 상태
-      titleEl.textContent = '이미 로그인되어 있어요 ✨';
-      msgEl.textContent   = '바로 게임으로 이동하거나, 돌아갈 수 있어요.';
-      goGame.classList.remove('hidden');
-
-      // 살짝 대기 후 자동 이동 (선호에 따라 주석 처리 가능)
-      setTimeout(() => {
-        if (document.hidden) return;
-        const go = (next && next !== location.href) ? next : '/game.html';
-        showBannerAndGo(go, '게임으로 이동합니다…');
-      }, 1600);
-    });
-  </script>
-
-  <!-- 개발자 도구 차단 (참고 HTML과 동일 톤) -->
-  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
-  <script>
-    DisableDevtool({
-      disableMenu: true,
-      disableSelect: true,
-      disableCopy: true,
-      disableCut: true,
-      disablePaste: true,
-      clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        try{ window.close(); }catch{}
-        next();
-      },
-      ondevtoolclose() {
-        console.warn('DevTools 닫힘 감지됨');
+    // ===== 인증 상태 =====
+    let uid = null;
+    onAuthStateChanged(auth, async (user) => {
+      if (user && user.emailVerified){
+        uid = user.uid;
+        accountDesc.textContent = `${user.email} (로그인됨)`;
+        signoutBtn.disabled = false;
+        resetBtn.disabled = false;
+      } else if (user && !user.emailVerified){
+        accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
+        signoutBtn.disabled = false;
+        resetBtn.disabled = true;
+      } else {
+        accountDesc.textContent = '로그인이 필요합니다.';
+        signoutBtn.disabled = true;
+        resetBtn.disabled = true;
       }
     });
 
-    // 우클릭 전체 차단 (입력 요소는 예외)
-    document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
-      e.preventDefault();
+    // ===== 로그아웃 =====
+    signoutBtn.addEventListener('click', async () => {
+      try { await signOut(auth); showToast('로그아웃 되었어요'); } catch (e) { showToast('로그아웃 실패'); }
+    });
+
+    // ===== 초기화 =====
+    resetBtn.addEventListener('click', async () => {
+      if (!uid){ showToast('로그인 후 이용하세요'); return; }
+      const ok = confirm('정말 초기화할까요?\n자원/코인/업그레이드/행성 구매 내역이 모두 기본값으로 되돌아갑니다.');
+      if (!ok) return;
+      showOverlay(true);
+      try{
+        // _lastUpdated 갱신
+        const data = { ...defaultData, _lastUpdated: Date.now() };
+        await runTransaction(ref(db, `users/${uid}/gameData`), () => data);
+        try { localStorage.removeItem(`lastWrite_${uid}`); } catch {}
+        showToast('초기화 완료!');
+      }catch(e){
+        console.error(e);
+        showToast('초기화 실패. 네트워크를 확인하세요.');
+      }finally{
+        showOverlay(false);
+      }
     });
   </script>
 </body>
