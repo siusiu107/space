@@ -169,10 +169,23 @@
     .bar-group span { margin-right:12px; white-space: nowrap; }
     #container { margin:50px auto 20px; width:90%; max-width:640px; padding:20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
 
+    /* 설정 버튼 */
+    #settings-btn {
+      margin-left: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #e6f5ff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    #settings-btn:hover { filter: brightness(1.08); }
+
     h1 { font-size:1.6em; margin-bottom:14px; color:#00d4ff; }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
-    #reset-button { background:rgba(255,92,92,0.9)!important; }
+    #reset-button { background:rgba(255,92,92,0.9)!important; } /* (초기화 UI는 제거했지만 스타일은 남겨도 무방) */
 
     /* (구) 상단 탭 기본값 — 현재는 사용하지 않지만 유지 */
     nav { display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:14px; gap:6px; }
@@ -228,9 +241,13 @@
     #bottom-nav .t-icon{ font-size: 16px; display:inline-block; transform: translateY(-1px); }
     #bottom-nav .t-label{ font-weight: 800; letter-spacing: .2px; }
 
-    /* 컨테이너가 바텀바에 가리지 않도록 하단 여백 확보 */
+    /* 컨테이너/탭이 바텀바에 가려지지 않도록 하단 여백 넉넉히 확보 */
     #container{
-      padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    }
+    /* 특히 '행성 구매'는 리스트가 길 수 있어 더 여유 */
+    #planets-content{
+      padding-bottom: calc(200px + env(safe-area-inset-bottom, 0px));
     }
 
     /* 작은 화면 최적화 */
@@ -317,6 +334,7 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
+      <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
   </div>
 
@@ -351,11 +369,9 @@
       <div id="planet-list"></div>
     </div>
 
-    <div id="reset-content" class="tab-content">
-      <button id="reset-button" class="general">초기화</button>
-    </div>
+    <!-- 초기화 탭/콘텐츠 제거됨 -->
 
-    <!-- 하단 바텀 내비게이션 -->
+    <!-- 하단 바텀 내비게이션 (초기화 항목 제거) -->
     <nav id="bottom-nav" aria-label="게임 탭 내비게이션">
       <div class="tab active" data-tab="main"     role="button" tabindex="0">
         <span class="t-icon" aria-hidden="true">🪨</span><span class="t-label">메인</span>
@@ -368,9 +384,6 @@
       </div>
       <div class="tab"        data-tab="planets"  role="button" tabindex="0">
         <span class="t-icon" aria-hidden="true">🪐</span><span class="t-label">행성</span>
-      </div>
-      <div class="tab"        data-tab="reset"    role="button" tabindex="0">
-        <span class="t-icon" aria-hidden="true">♻️</span><span class="t-label">초기화</span>
       </div>
     </nav>
   </div>
@@ -617,6 +630,12 @@
     tabSignup.addEventListener('click', () => setAuthMode('signup'));
     setAuthMode('login');
 
+    // 설정 버튼 → setting으로 이동
+    document.getElementById('settings-btn').addEventListener('click', () => {
+      try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
+      location.href = '/setting.html';
+    });
+
     // 로그인
     loginBtn.addEventListener('click', async () => {
       showAuthStatus('');
@@ -789,8 +808,8 @@
       document.getElementById('hire-worker').addEventListener('click', () => { if (!ensureReady()) return; const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } });
       document.getElementById('hire-conversion').addEventListener('click', () => { if (!ensureReady()) return; const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
-      document.getElementById('click-upgrade').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= clickUpgradeCost) { state.coins -= clickUpgradeCost; state.clickPower++; save(); updateUI(); } });
 
+      // 바텀 내비 탭 전환
       document.querySelectorAll('.tab').forEach(tab => addEvent(tab, 'click', () => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
@@ -844,7 +863,7 @@
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
-      disableMenu: ture, // 커스텀 메뉴를 쓰므로 기본 우클릭 전체 차단은 끔
+      disableMenu: false, // 커스텀 메뉴를 쓰므로 기본 우클릭 전체 차단은 끔
       disableSelect: true,
       disableCopy: true,
       disableCut: true,
