@@ -1,72 +1,127 @@
-<!-- ====================== setting.html ====================== -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>⚙️ 설정 - 태양계 정복</title>
-<style>
-  :root{
-    --glass: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(6,7,12,0.6));
-    --stroke: rgba(255,255,255,0.14);
-    --fg:#eaf6ff; --muted:#bcd8ee; --accent:#00c0ff; --accent2:#0099ff; --danger:#ff6b6b;
-    --bg:#08111f;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:url('/images/space-bg.jpg') center/cover no-repeat fixed, var(--bg);color:var(--fg);font:15px/1.7 Inter,system-ui,Arial}
-  a{color:inherit;text-decoration:none}
-  #topbar{position:fixed;top:8px;left:8px;right:8px;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;background:rgba(20,24,34,.78);backdrop-filter:blur(10px);border:1px solid var(--stroke)}
-  #back-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;cursor:pointer;background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04));border:1px solid var(--stroke);font-weight:800}
-  #addr{font-size:12px;color:var(--muted);user-select:none}
-  #container{width:min(900px,94vw);margin:74px auto 28px}
-  .card{background:var(--glass);border:1px solid var(--stroke);border-radius:16px;box-shadow:0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);padding:16px;margin:14px 0}
-  h1{margin:0 0 8px;font-size:22px;color:#dff7ff}
-  .sub{margin:0 0 18px;font-size:13px;color:var(--muted)}
-  .item{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);
-        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));margin:10px 0;gap:12px}
-  .left{display:flex;align-items:center;gap:12px}
-  .title{font-weight:800}
-  .desc{font-size:13px;color:var(--muted)}
-  .right{display:flex;align-items:center;gap:8px}
-  .btn{padding:10px 12px;border:1px solid var(--stroke);color:#001218;font-weight:800;border-radius:10px;cursor:pointer;background-image: linear-gradient(180deg, var(--accent), var(--accent2))}
-  .btn.secondary{color:#e6f7ff;background:none;background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03))}
-  .btn.danger{background:none;color:#ffecec;background:linear-gradient(180deg, rgba(255,50,50,.9), rgba(200,0,0,.88));border-color: rgba(255,80,80,.4)}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .hr{height:1px;background:rgba(255,255,255,.12);margin:12px 0}
-  footer{margin:12px 0 24px;text-align:center;color:var(--muted);font-size:12px}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>⚙️ 설정 - 태양계 정복</title>
+  <style>
+    :root{
+      --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(6,7,12,0.55));
+      --stroke: rgba(255,255,255,0.12);
+      --muted: #bcd8ee;
+      --accent: #00c0ff;
+      --accent-2:#00a2ff;
+      --danger:#ff6b6b;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      padding:0;
+      font-family: Inter, Arial, sans-serif;
+      background:url('/images/space-bg.jpg') center/cover no-repeat fixed;
+      color:#e6f7ff;
+    }
+    a{ color:inherit; text-decoration:none; }
 
-  /* ===== 탭 (설정/원격지원/관리자) ===== */
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .tab-btn{padding:8px 12px;border:1px solid var(--stroke);border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));cursor:pointer}
-  .tab-btn.active{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#06222b;font-weight:900}
-  .tab-panel{display:none}.tab-panel.active{display:block}
-  .badge{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);font-size:.86em}
-  .ok{color:#3bd18e}.wait{color:#60a5fa}.end{color:#f87171}
-  .chat{display:grid;grid-template-rows:1fr auto;gap:8px;height:260px;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px}
-  .msgs{overflow:auto}
-  .bubble{max-width:85%;padding:8px 10px;margin:6px 0;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)}
-  .me{margin-left:auto;background:rgba(0,208,255,.16);border-color:rgba(0,208,255,.45)}
-  .sys{font-size:.9em;opacity:.95}
-  .chat input{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff}
+    /* 상단바 */
+    #topbar{
+      position:fixed;
+      top:8px; left:8px; right:8px;
+      z-index: 1000;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 10px;
+      border-radius:12px;
+      background: rgba(20,24,34,0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border:1px solid var(--stroke);
+    }
+    #back-btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:10px; cursor:pointer;
+      background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border:1px solid var(--stroke); font-weight:800;
+    }
+    #back-btn:hover{ filter:brightness(1.05); }
+    #addr{ font-size:12px; color: var(--muted); user-select:none; }
 
-  /* ===== 관리자 뷰어 ===== */
-  iframe#view{width:100%;height:520px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#000}
-  .list .item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);margin:8px 0}
-  .muted{color:var(--muted)}
+    /* 컨테이너 */
+    #container{ width: min(800px, 92vw); margin: 70px auto 28px; }
+    .card{
+      background: var(--glass-bg);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+      padding:16px; margin: 14px 0;
+    }
+    h1{ margin:0 0 8px; font-size:22px; color:#dff7ff; }
+    .sub{ margin:0 0 18px; font-size:13px; color:var(--muted); }
 
-  /* ===== 사용자 탭: 미니 미러 ===== */
-  #u-mini-row{display:flex;gap:8px;align-items:center;justify-content:space-between}
-  #u-mini-toggle{margin-left:auto}
-  #u-mini{width:260px;height:140px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#000;display:none}
+    /* 설정 아이템 */
+    .item{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      margin:10px 0;
+    }
+    .item .left{ display:flex; align-items:center; gap:10px; }
+    .item .title{ font-weight:800; }
+    .item .desc{ font-size:12px; color:var(--muted); }
+    .item .right{ display:flex; align-items:center; gap:8px; }
 
-  @media (max-width:420px){
-    body{font-size:15.5px}
-    .desc{font-size:13.5px}
-    .tab-btn{padding:10px 12px}
-    iframe#view{height:420px}
-    #u-mini{width:220px;height:120px}
-  }
-</style>
+    /* 버튼 */
+    .btn{
+      padding:10px 12px; border:1px solid var(--stroke);
+      color:#001218; font-weight:800; border-radius:10px; cursor:pointer;
+      background-image: linear-gradient(180deg, var(--accent), var(--accent-2));
+    }
+    .btn.secondary{
+      color:#e6f7ff; background-image:none;
+      background:linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
+    }
+    .btn.danger{
+      background-image:none; color:#ffecec;
+      background: linear-gradient(180deg, rgba(255,50,50,0.9), rgba(200,0,0,0.88));
+      border-color: rgba(255,80,80,0.4);
+    }
+    .btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+    /* 구분선 */
+    .hr{ height:1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+
+    /* 토스트 */
+    #toast{
+      position:fixed; left:50%; bottom: max(18px, env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.75); color:#fff;
+      padding:10px 14px; border-radius:10px; opacity:0; pointer-events:none;
+      transition:all .25s ease; z-index:2000;
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    #toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+    /* 로딩 오버레이 */
+    #overlay{
+      position: fixed; inset:0; display:none;
+      align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.45); z-index: 1800;
+    }
+    #overlay .box{
+      width:300px; border-radius:14px; padding:16px; text-align:center;
+      background: var(--glass-bg); border:1px solid var(--stroke); color:#dff7ff;
+    }
+    .spinner{
+      width:42px; height:42px; border-radius:50%;
+      border:4px solid rgba(255,255,255,0.18);
+      border-top-color: var(--accent);
+      margin: 10px auto; animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    /* 푸터 */
+    footer{ margin:12px 0 24px; text-align:center; color:var(--muted); font-size:12px; }
+  </style>
 </head>
 <body>
   <!-- 상단바 -->
@@ -78,400 +133,177 @@
   <div id="container">
     <div class="card">
       <h1>⚙️ 설정</h1>
-      <p class="sub">실제로 제공되는 설정만 표시합니다. 모바일 가독성을 높였어요.</p>
+      <p class="sub">실제로 제공되는 설정만 표시합니다.</p>
 
-      <!-- 탭 -->
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="account">일반</button>
-        <button class="tab-btn" data-tab="assist">원격지원</button>
-        <button class="tab-btn" data-tab="admin">관리자</button>
+      <!-- 계정 -->
+      <div class="item">
+        <div class="left">
+          <div>👤</div>
+          <div>
+            <div class="title">계정</div>
+            <div class="desc" id="account-desc">로그인 상태 확인 중…</div>
+          </div>
+        </div>
+        <div class="right">
+          <button id="signout-btn" class="btn secondary" disabled>로그아웃</button>
+        </div>
       </div>
 
-      <!-- 일반 탭 -->
-      <section id="panel-account" class="tab-panel active">
-        <!-- 계정 -->
-        <div class="item">
-          <div class="left">
-            <div>👤</div>
-            <div>
-              <div class="title">계정</div>
-              <div class="desc" id="account-desc">로그인 상태 확인 중…</div>
-            </div>
-          </div>
-          <div class="right">
-            <button id="signout-btn" class="btn secondary" disabled>로그아웃</button>
-          </div>
-        </div>
-        <div class="hr"></div>
-        <!-- 데이터 초기화 -->
-        <div class="item">
-          <div class="left">
-            <div>♻️</div>
-            <div>
-              <div class="title">게임 데이터 초기화</div>
-              <div class="desc">자원·코인·업그레이드·행성 구매 내역을 기본값으로 되돌립니다.</div>
-            </div>
-          </div>
-          <div class="right">
-            <button id="reset-btn" class="btn danger" disabled>초기화</button>
-          </div>
-        </div>
+      <div class="hr"></div>
 
-        <div class="hr"></div>
-        <!-- 이용약관(원격) -->
-        <div class="item" style="align-items:flex-start">
-          <div class="left">
-            <div>📄</div>
-            <div>
-              <div class="title">원격지원 이용약관 (요약)</div>
-              <div class="desc" style="white-space:pre-wrap">
-• 화면 공유는 <b>동의</b> 후 시작됩니다. 언제든 종료할 수 있습니다.
-• <b>비밀번호/ID 등 개인정보</b>는 관리자 화면에서 <b>비공개(마스킹)</b> 처리되며 클릭·입력·포커스가 차단됩니다.
-• 채팅/제어 로그는 세션 종료 시 즉시 <b>삭제</b>됩니다.
-• 부적절한 채팅(모욕/혐오/스팸/연락처 공유 등) 금지.
-• 관리자는 <b>민감한 정보이므로 비공개 처리했습니다.</b>라는 메시지만 확인합니다.
-              </div>
-            </div>
+      <!-- 데이터(실제 동작) -->
+      <div class="item">
+        <div class="left">
+          <div>♻️</div>
+          <div>
+            <div class="title">게임 데이터 초기화</div>
+            <div class="desc">자원·코인·업그레이드·행성 구매 내역을 기본값으로 되돌립니다.</div>
           </div>
         </div>
-      </section>
-
-      <!-- 원격지원(사용자) 탭 -->
-      <section id="panel-assist" class="tab-panel">
-        <div class="item" style="flex-direction:column;align-items:stretch">
-          <div class="left" style="justify-content:space-between;width:100%">
-            <div class="title">내 세션</div>
-            <div><span id="u-badge" class="badge wait">상태: 대기</span></div>
-          </div>
-          <div class="desc" id="helperLabel" style="margin-top:4px"></div>
-          <div class="hr" style="width:100%"></div>
-
-          <div class="row" style="justify-content:space-between;width:100%" id="u-mini-row">
-            <div class="row">
-              <label class="row"><input type="checkbox" id="u-allow-nav" style="transform:scale(1.1)"/> 네비게이션 허용</label>
-              <label class="row"><input type="checkbox" id="u-allow-adv" style="transform:scale(1.1)"/> 고급제어(클릭/스크롤) 허용</label>
-            </div>
-            <button id="u-mini-toggle" class="btn secondary">미니 미러</button>
-          </div>
-          <iframe id="u-mini" title="관리자 조작 미리보기"></iframe>
-
-          <div class="row" style="margin-top:8px">
-            <button id="u-request" class="btn">원격지원 요청</button>
-            <button id="u-end" class="btn danger" style="display:none">종료</button>
-            <span class="desc">요청 후 관리자가 수락하면 내 화면 공유 동의창이 뜹니다.</span>
-          </div>
-          <div class="chat" style="margin-top:10px">
-            <div id="u-msgs" class="msgs"></div>
-            <div class="row">
-              <input id="u-input" placeholder="메시지를 입력…"/>
-              <button id="u-send" class="btn secondary">전송</button>
-            </div>
-          </div>
+        <div class="right">
+          <button id="reset-btn" class="btn danger" disabled>초기화</button>
         </div>
-      </section>
-
-      <!-- 관리자 탭 -->
-      <section id="panel-admin" class="tab-panel">
-        <div class="item">
-          <div class="left"><div>🛡️</div><div><div class="title">관리자 전용</div><div class="desc">관리자만 요청을 수락하고 원격 제어할 수 있습니다.</div></div></div>
-          <div class="right"><span id="admin-email" class="desc"></span></div>
-        </div>
-        <div class="item">
-          <div style="width:100%">
-            <div class="title" style="margin-bottom:6px">대기 중 요청</div>
-            <div id="a-waiting" class="list"></div>
-          </div>
-        </div>
-        <div class="item" id="a-session" style="display:none;flex-direction:column;align-items:stretch">
-          <div class="row" style="justify-content:space-between">
-            <div class="row"><span id="a-badge" class="badge wait">세션: 연결 준비</span></div>
-            <button id="a-end" class="btn danger">세션 종료</button>
-          </div>
-          <div id="a-toggles" class="muted" style="margin:6px 0 10px"></div>
-          <iframe id="view" title="사용자 화면" allow="autoplay"></iframe>
-          <div class="desc" style="margin-top:8px">화면을 클릭/휠하면 사용자 페이지에 그대로 전달됩니다. (민감영역은 사용자 측에서 차단/마스킹)</div>
-        </div>
-      </section>
+      </div>
     </div>
 
     <footer>태양계 정복: 우주 생존 클릭커 · v0.1.0</footer>
   </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-import { getDatabase, ref, runTransaction, update, set, onValue, onChildAdded, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+  <!-- 토스트 -->
+  <div id="toast" role="status" aria-live="polite">알림</div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-  authDomain: "siu-studio.firebaseapp.com",
-  databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "siu-studio",
-  storageBucket: "siu-studio.appspot.com",
-  messagingSenderId: "830887143444",
-  appId: "1:830887143444:web:70b45fc12140e893c31f01",
-  measurementId: "G-1Y090YJDB6"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getDatabase(app);
+  <!-- 로딩 오버레이 -->
+  <div id="overlay" aria-hidden="true">
+    <div class="box">
+      <div>처리 중…</div>
+      <div class="spinner" aria-hidden="true"></div>
+      <div style="font-size:12px;color:#cfe7ff;">잠시만 기다려주세요</div>
+    </div>
+  </div>
 
-const backBtn=document.getElementById('back-btn');
-backBtn.onclick=()=>{
-  try{ const referrer=document.referrer; if(referrer && new URL(referrer).origin===location.origin){ history.back(); return; } }catch{}
-  location.href='/game.html';
-};
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-/* ===== 탭 ===== */
-const tabBtns=[...document.querySelectorAll('.tab-btn')];
-const panels={account:document.getElementById('panel-account'),assist:document.getElementById('panel-assist'),admin:document.getElementById('panel-admin')};
-tabBtns.forEach(b=>b.onclick=()=>{
-  tabBtns.forEach(x=>x.classList.remove('active')); b.classList.add('active');
-  Object.values(panels).forEach(p=>p.classList.remove('active'));
-  panels[b.dataset.tab].classList.add('active');
-});
+    // ===== Firebase 설정 (메인과 동일) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
 
-/* ===== 일반 설정: 계정/초기화 ===== */
-const accountDesc=document.getElementById('account-desc');
-const signoutBtn=document.getElementById('signout-btn');
-const resetBtn=document.getElementById('reset-btn');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
 
-const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[], _lastUpdated: Date.now() };
+    // ===== 기본 데이터 =====
+    const defaultData = {
+      resources:0,
+      coins:0,
+      clickPower:1,
+      shipLevel:1,
+      shipUpgradeCost:20,
+      workerCount:0,
+      conversionCount:0,
+      autoConvertBought:false,
+      ownedPlanets:[],
+      _lastUpdated: Date.now()
+    };
 
-let uid=null; let email=null;
-onAuthStateChanged(auth, user=>{
-  if(user && user.emailVerified){
-    uid=user.uid; email=user.email;
-    accountDesc.textContent = `${email} (로그인됨)`;
-    signoutBtn.disabled=false; resetBtn.disabled=false;
-  }else if(user && !user.emailVerified){
-    accountDesc.textContent='이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
-    signoutBtn.disabled=false; resetBtn.disabled=true;
-  }else{
-    accountDesc.textContent='로그인이 필요합니다.'; signoutBtn.disabled=true; resetBtn.disabled=true;
-  }
-  document.getElementById('admin-email').textContent = `현재 로그인: ${email || '게스트'}`;
-});
-signoutBtn.onclick=()=>signOut(auth);
-resetBtn.onclick=async()=>{
-  if(!uid){ alert('로그인 후 이용하세요'); return; }
-  if(!confirm('정말 초기화할까요?\n자원/코인/업그레이드/행성 구매 내역이 모두 기본값으로 되돌아갑니다.')) return;
-  const path = ref(db, `users/${uid}/gameData`);
-  try{
-    await runTransaction(path, ()=> ({...defaultData, _lastUpdated: Date.now()}));
-    try{ localStorage.removeItem(`lastWrite_${uid}`);}catch{}
-    alert('초기화 완료!');
-  }catch{ alert('초기화 실패. 네트워크를 확인하세요.'); }
-};
+    // ===== UI refs =====
+    const accountDesc = document.getElementById('account-desc');
+    const signoutBtn  = document.getElementById('signout-btn');
+    const resetBtn    = document.getElementById('reset-btn');
+    const backBtn     = document.getElementById('back-btn');
+    const toast       = document.getElementById('toast');
+    const overlay     = document.getElementById('overlay');
 
-/* ===== 원격지원: 사용자 탭 (미니 미러 포함) ===== */
-const uBadge=document.getElementById('u-badge');
-const uAllowNav=document.getElementById('u-allow-nav');
-const uAllowAdv=document.getElementById('u-allow-adv');
-const uReq=document.getElementById('u-request');
-const uEnd=document.getElementById('u-end');
-const uMsgs=document.getElementById('u-msgs');
-const uInput=document.getElementById('u-input');
-const uSend=document.getElementById('u-send');
-const helperLabel=document.getElementById('helperLabel');
-const uMini=document.getElementById('u-mini');
-const uMiniToggle=document.getElementById('u-mini-toggle');
+    // ===== 공통 함수 =====
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
+    }
 
-const banned=[/시[ㅣi]발/i,/병?신/i,/좆/i,/fuck/i,/shit/i,/nigg/i,/rape/i,/\b010[-\s]?\d{4}[-\s]?\d{4}\b/i,/(https?:\/\/|t\.me\/|discord\.gg|kakao\.me)/i];
-const clean = (t)=> !banned.some(r=>r.test(t||''));
-const addMsg=(el, txt, me=false, sys=false)=>{ const b=document.createElement('div'); b.className='bubble'+(me?' me':'')+(sys?' sys':''); b.textContent=txt; el.appendChild(b); el.scrollTop=el.scrollHeight; };
-const setBadge=(el,cls,text)=>{ el.className='badge '+cls; el.textContent='상태: '+text; };
+    function showOverlay(show){
+      overlay.style.display = show ? 'flex' : 'none';
+      overlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
 
-let pcU=null, miniDoc=null, miniCursor=null, miniLabel=null, miniOn=false;
-function ensurePCU(){
-  if(pcU) return pcU;
-  pcU = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
-  pcU.onicecandidate = (e)=>{ if(e.candidate){ const c = push(ref(db, `assist/${uid}/signal/userIce`)); set(c, e.candidate.toJSON()); } };
-  pcU.onconnectionstatechange=()=>{ if(pcU.connectionState==='connected') setBadge(uBadge,'ok','연결됨'); if(pcU.connectionState==='disconnected'||pcU.connectionState==='failed') setBadge(uBadge,'end','해제됨'); };
-  return pcU;
-}
-function initMini(){
-  const doc = uMini.contentDocument || uMini.contentWindow?.document;
-  if(!doc) return;
-  doc.open();
-  doc.write(`<!doctype html><meta charset="utf-8"><style>
-    html,body{margin:0;height:100%;background:#000;color:#fff;font:12px system-ui,Arial;overflow:hidden}
-    .cursor{position:absolute;left:0;top:0;width:14px;height:14px;border:2px solid #00d4ff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 12px rgba(0,212,255,.8)}
-    .label{position:absolute;left:8px;top:6px;background:rgba(0,0,0,.4);padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.14)}
-  </style><div class="label">관리자 커서</div><div class="cursor" id="c"></div>`);
-  doc.close();
-  miniDoc=doc; miniCursor=doc.getElementById('c'); miniLabel=doc.querySelector('.label');
-}
-function showMini(on){ miniOn=!!on; uMini.style.display = miniOn ? 'block' : 'none'; if(miniOn && !miniDoc) initMini(); }
-function moveMini(nx, ny, msg){
-  if(!miniOn) return; if(!miniDoc) initMini();
-  const w = uMini.clientWidth, h = uMini.clientHeight;
-  const x = Math.min(Math.max(nx,0),1)*w, y = Math.min(Math.max(ny,0),1)*h;
-  miniCursor.style.left=x+'px'; miniCursor.style.top=y+'px'; if(msg&&miniLabel) miniLabel.textContent=msg;
-}
-uMiniToggle.onclick=()=>showMini(!miniOn);
-
-// 경로
-let sessionRef, chatRef, signalOfferRef, signalAnswerRef, signalAdminIceRef, controlRef;
-function bindUPaths(){
-  sessionRef        = ref(db, `assist/${uid}`);
-  chatRef           = ref(db, `assist/${uid}/chat`);
-  signalOfferRef    = ref(db, `assist/${uid}/signal/offer`);
-  signalAnswerRef   = ref(db, `assist/${uid}/signal/answer`);
-  signalAdminIceRef = ref(db, `assist/${uid}/signal/adminIce`);
-  controlRef        = ref(db, `assist/${uid}/control`);
-}
-
-onAuthStateChanged(auth, user=>{
-  if(!user) return;
-  uid=user.uid; bindUPaths();
-  update(sessionRef, { uid, status:'idle', allowNav:false, allowAdvanced:false, updatedAt:serverTimestamp() });
-  onChildAdded(chatRef, s=>{ const m=s.val(); if(!m) return; addMsg(uMsgs, m.text||'', m.role==='user', m.role==='system'); });
-  onValue(ref(db, `assist/${uid}/helper`), s=>{ const v=s.val(); helperLabel.textContent = v?`도우미: ${v}`:''; });
-
-  onValue(ref(db, `assist/${uid}/accept`), async s=>{
-    const ok=s.val(); if(ok===true){
+    // ===== 뒤로가기 =====
+    backBtn.addEventListener('click', () => {
       try{
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:false });
-        const pc=ensurePCU(); stream.getTracks().forEach(t=>pc.addTrack(t,stream));
-        const offer = await pc.createOffer(); await pc.setLocalDescription(offer); await set(signalOfferRef, offer);
-        uEnd.style.display=''; uReq.style.display='none';
-        addMsg(uMsgs,'관리자가 연결을 수락했습니다. 화면 공유를 시작합니다.', false, true);
-        update(sessionRef, { status:'connecting', updatedAt:serverTimestamp() });
-        const sync = ()=> update(sessionRef, { allowNav: !!uAllowNav.checked, allowAdvanced: !!uAllowAdv.checked, updatedAt:serverTimestamp() });
-        uAllowNav.onchange=sync; uAllowAdv.onchange=sync; sync();
-      }catch{ addMsg(uMsgs,'화면공유가 취소/실패했습니다. 다시 시도해주세요.', false, true); update(sessionRef, { status:'idle', updatedAt:serverTimestamp() }); setBadge(uBadge,'end','취소됨'); }
-    }
-  });
-  onValue(signalAnswerRef, async s=>{ const v=s.val(); if(!v) return; await ensurePCU().setRemoteDescription(v); });
-  onChildAdded(signalAdminIceRef, async s=>{ const c=s.val(); if(!c) return; try{ await ensurePCU().addIceCandidate(new RTCIceCandidate(c)); }catch{} });
-  onChildAdded(controlRef, s=>{
-    const c=s.val()||{}; const navOK=!!uAllowNav.checked; const advOK=!!uAllowAdv.checked;
-    if(c.type==='navigate'&&navOK){ location.href=c.path||location.href; return; }
-    if(!advOK) return;
-    if(c.type==='click'){
-      const x = Math.round(window.innerWidth * c.nx), y = Math.round(window.innerHeight * c.ny);
-      const el = document.elementFromPoint(x,y); if(!el) return;
-      if(el.closest('input[type="password"], [data-sensitive="true"]')){ const m=push(chatRef); set(m,{role:'system',text:'민감한 정보이므로 비공개 처리했습니다.',ts:Date.now()}); moveMini(c.nx,c.ny,'민감영역 차단'); return; }
-      try{ el.focus({preventScroll:true}); }catch{}
-      el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:x,clientY:y}));
-      moveMini(c.nx,c.ny,'클릭');
-    }
-    if(c.type==='scroll'){ window.scrollBy({ top:c.dy||0, behavior:'smooth' }); moveMini(0.06,0.08, c.dy>0?'스크롤↓':'스크롤↑'); }
-  });
-});
-
-// 채팅/요청/종료
-uSend.onclick=()=>{ const t=uInput.value.trim(); if(!t) return; uInput.value=''; if(!clean(t)){ addMsg(uMsgs,'부적절한 메시지는 전송할 수 없어요.', false, true); return; } const m=push(chatRef); set(m,{role:'user',text:t,ts:Date.now()}); };
-uReq.onclick=async()=>{ if(!uid){ alert('로그인 후 이용하세요'); return; } const m=push(chatRef); set(m,{role:'user',text:'원격지원 요청합니다 🙏',ts:Date.now()}); await update(sessionRef,{status:'waiting',updatedAt:serverTimestamp()}); setBadge(uBadge,'wait','대기'); };
-uEnd.onclick=async()=>{
-  try{ if(pcU){ pcU.getSenders().forEach(s=>s.track&&s.track.stop()); pcU.close(); } }catch{} pcU=null;
-  await update(sessionRef,{status:'ended',allowNav:false,allowAdvanced:false,updatedAt:serverTimestamp()});
-  await set(ref(db, `assist/${uid}/signal`), null);
-  await set(ref(db, `assist/${uid}/accept`), null);
-  await set(ref(db, `assist/${uid}/control`), null);
-  await set(ref(db, `assist/${uid}/chat`), null);
-  uEnd.style.display='none'; uReq.style.display=''; setBadge(uBadge,'end','종료'); addMsg(uMsgs,'세션을 종료했습니다. 채팅/제어 기록은 삭제됩니다.', false, true);
-  showMini(false);
-};
-
-/* ===== 관리자 탭 ===== */
-const ADMIN_EMAIL = 'siu46852579@gmail.com';
-const aWaiting=document.getElementById('a-waiting');
-const aSession=document.getElementById('a-session');
-const aBadge=document.getElementById('a-badge');
-const aToggles=document.getElementById('a-toggles');
-const aEnd=document.getElementById('a-end');
-const iframe=document.getElementById('view');
-
-function initViewerDoc(){
-  const doc = iframe.contentDocument || iframe.contentWindow?.document;
-  if(!doc) return;
-  doc.open();
-  doc.write(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#000;color:#fff;font:14px system-ui,Arial}video{width:100%;height:100%;object-fit:contain;background:#000}.hint{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.4);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.14);font-size:12px}</style><div class="hint">클릭·휠 조작은 사용자에게 전달됩니다</div><video id="v" autoplay playsinline muted></video>`);
-  doc.close();
-}
-initViewerDoc();
-const vdoc = iframe.contentDocument || iframe.contentWindow?.document;
-const v = vdoc.getElementById('v');
-
-let currentUid=null, pcA=null;
-
-function renderWaiting(){
-  onValue(ref(db,'assist'), snap=>{
-    const data=snap.val()||{};
-    aWaiting.innerHTML='';
-    const entries = Object.values(data).filter(s=>s&&s.status==='waiting');
-    if(entries.length===0){ aWaiting.innerHTML='<div class="muted">대기 중인 요청이 없습니다.</div>'; return; }
-    Object.values(data).forEach(s=>{
-      if(!s || s.status!=='waiting') return;
-      const item=document.createElement('div'); item.className='item';
-      item.innerHTML=`<div><div><b>${s.uid}</b></div><div class="muted">네비허용:${!!s.allowNav} · 고급:${!!s.allowAdvanced}</div></div>`;
-      const btn=document.createElement('button'); btn.className='btn'; btn.textContent='수락';
-      btn.onclick=()=> acceptSession(s.uid);
-      item.appendChild(btn); aWaiting.appendChild(item);
+        const ref = document.referrer;
+        if (ref && new URL(ref).origin === location.origin) {
+          history.back();
+          return;
+        }
+      }catch{}
+      // 같은 오리진 히스토리가 없으면 홈으로
+      location.href = '/game.html';
     });
-  });
-}
 
-async function acceptSession(u){
-  if(email!==ADMIN_EMAIL){ alert('관리자만 수락할 수 있습니다.'); return; }
-  currentUid=u; aSession.style.display='block'; aBadge.className='badge wait'; aBadge.textContent='세션: 연결 중…';
-  await update(ref(db, `assist/${u}`), { helper: email, updatedAt:serverTimestamp() });
-  await set(ref(db, `assist/${u}/accept`), true);
+    // ===== 인증 상태 =====
+    let uid = null;
+    onAuthStateChanged(auth, async (user) => {
+      if (user && user.emailVerified){
+        uid = user.uid;
+        accountDesc.textContent = ${user.email} (로그인됨);
+        signoutBtn.disabled = false;
+        resetBtn.disabled = false;
+      } else if (user && !user.emailVerified){
+        accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
+        signoutBtn.disabled = false;
+        resetBtn.disabled = true;
+      } else {
+        accountDesc.textContent = '로그인이 필요합니다.';
+        signoutBtn.disabled = true;
+        resetBtn.disabled = true;
+      }
+    });
 
-  onValue(ref(db, `assist/${u}/signal/offer`), async snap=>{
-    const offer=snap.val(); if(!offer) return; await setupAdminPC(u, offer);
-  });
-  onValue(ref(db, `assist/${u}`), s=>{
-    const st=s.val()||{}; aToggles.textContent=`네비허용:${!!st.allowNav} · 고급:${!!st.allowAdvanced} · 상태:${st.status||'-'}`;
-    if(st.status==='ended'){ aBadge.className='badge end'; aBadge.textContent='세션: 종료됨'; }
-    if(st.status==='connected'){ aBadge.className='badge ok'; aBadge.textContent='세션: 연결됨'; }
-  });
-}
+    // ===== 로그아웃 =====
+    signoutBtn.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        showToast('로그아웃 되었어요');
+      } catch (e) {
+        showToast('로그아웃 실패');
+      }
+    });
 
-async function setupAdminPC(u, offer){
-  if(pcA) try{ pcA.close(); }catch{}; pcA = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'}] });
-  pcA.onicecandidate = (e)=>{ if(e.candidate){ const c=push(ref(db, `assist/${u}/signal/adminIce`)); set(c, e.candidate.toJSON()); } };
-  pcA.ontrack = (e)=>{ v.srcObject=e.streams[0]; aBadge.className='badge ok'; aBadge.textContent='세션: 연결됨'; };
-  pcA.onconnectionstatechange=()=>{ if(pcA.connectionState==='connected'){ aBadge.className='badge ok'; aBadge.textContent='세션: 연결됨'; } if(pcA.connectionState==='disconnected'||pcA.connectionState==='failed'){ aBadge.className='badge end'; aBadge.textContent='세션: 해제됨'; } };
-  await pcA.setRemoteDescription(offer);
-  const ans = await pcA.createAnswer(); await pcA.setLocalDescription(ans);
-  await set(ref(db, `assist/${u}/signal/answer`), ans);
-  await update(ref(db, `assist/${u}`), { status:'connected', updatedAt:serverTimestamp() });
+    // ===== 초기화(실제 동작) =====
+    resetBtn.addEventListener('click', async () => {
+      if (!uid){
+        showToast('로그인 후 이용하세요');
+        return;
+      }
+      const ok = confirm('정말 초기화할까요?\n자원/코인/업그레이드/행성 구매 내역이 모두 기본값으로 되돌아갑니다.');
+      if (!ok) return;
 
-  onChildAdded(ref(db, `assist/${u}/signal/userIce`), async s=>{ const c=s.val(); if(!c) return; try{ await pcA.addIceCandidate(new RTCIceCandidate(c)); }catch{} });
+      showOverlay(true);
+      try{
+        const data = { ...defaultData, _lastUpdated: Date.now() };
+        await runTransaction(ref(db, users/${uid}/gameData), () => data);
 
-  const sendControl=(p)=>{ const m=push(ref(db, `assist/${u}/control`)); set(m,p); };
-  vdoc.addEventListener('click', e=>{
-    const rect=v.getBoundingClientRect();
-    const x=(e.clientX-rect.left)/rect.width, y=(e.clientY-rect.top)/rect.height;
-    sendControl({ type:'click', nx:Math.min(Math.max(x,0),1), ny:Math.min(Math.max(y,0),1), ts:Date.now() });
-  });
-  vdoc.addEventListener('wheel', e=>{ sendControl({ type:'scroll', dy:e.deltaY, ts:Date.now() }); }, {passive:true});
-}
+        try { localStorage.removeItem(lastWrite_${uid}); } catch {}
 
-const aEnd=document.getElementById('a-end');
-let email=null;
-onAuthStateChanged(auth, user=>{
-  email = user?.email || null;
-  const adminTabBtn = document.querySelector('.tab-btn[data-tab="admin"]');
-  const isAdmin = !!(user && user.email==='siu46852579@gmail.com' && user.emailVerified);
-  if(!isAdmin){ adminTabBtn.title='관리자만 접근 가능'; }
-  renderWaiting();
-});
-
-aEnd.onclick=async()=>{
-  if(!currentUid) return;
-  try{
-    await update(ref(db, `assist/${currentUid}`), { status:'ended', updatedAt:serverTimestamp() });
-    await set(ref(db, `assist/${currentUid}/accept`), null);
-    await set(ref(db, `assist/${currentUid}/control`), null);
-    await set(ref(db, `assist/${currentUid}/signal`), null);
-  }catch{}
-  try{ pcA && pcA.close(); }catch{} pcA=null; currentUid=null; v.srcObject=null;
-  aBadge.className='badge end'; aBadge.textContent='세션: 종료됨';
-};
-</script>
+        showToast('초기화 완료!');
+      }catch(e){
+        console.error(e);
+        showToast('초기화 실패. 네트워크를 확인하세요.');
+      }finally{
+        showOverlay(false);
+      }
+    });
+  </script>
 </body>
 </html>
