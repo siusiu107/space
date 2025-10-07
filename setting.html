@@ -14,6 +14,8 @@
       --accent: #00c0ff;
       --accent-2:#00a2ff;
       --danger:#ff6b6b;
+      --ok:#36d399;
+      --warn:#ffd166;
     }
     *{ box-sizing: border-box; }
     body{
@@ -40,25 +42,19 @@
       border:1px solid var(--stroke); font-weight:800;
     }
     #back-btn:hover{ filter:brightness(1.05); }
-    #addr{
-      font-size:12px; color: var(--muted);
-      user-select:none;
-    }
+    #addr{ font-size:12px; color: var(--muted); user-select:none; }
 
     /* 컨테이너 */
-    #container{
-      width: min(800px, 92vw);
-      margin: 70px auto 28px;
-    }
+    #container{ width: min(920px, 92vw); margin: 70px auto 28px; }
     .card{
       background: var(--glass-bg);
       border: 1px solid var(--stroke);
       border-radius: 16px;
       box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-      padding:16px;
-      margin: 14px 0;
+      padding:16px; margin: 14px 0;
     }
     h1{ margin:0 0 8px; font-size:22px; color:#dff7ff; }
+    h2{ margin:4px 0 8px; font-size:18px; color:#dff7ff; }
     .sub{ margin:0 0 18px; font-size:13px; color:var(--muted); }
 
     /* 설정 아이템 */
@@ -71,7 +67,7 @@
     .item .left{ display:flex; align-items:center; gap:10px; }
     .item .title{ font-weight:800; }
     .item .desc{ font-size:12px; color:var(--muted); }
-    .item .right{ display:flex; align-items:center; gap:8px; }
+    .item .right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
     /* 버튼 */
     .btn{
@@ -87,6 +83,16 @@
       background-image:none; color:#ffecec;
       background: linear-gradient(180deg, rgba(255,50,50,0.9), rgba(200,0,0,0.88));
       border-color: rgba(255,80,80,0.4);
+    }
+    .btn.ok{
+      background-image:none; color:#002a1f;
+      background: linear-gradient(180deg, var(--ok), #1bbf87);
+      border-color: rgba(27,191,135,0.4);
+    }
+    .btn.warn{
+      background-image:none; color:#3b2a00;
+      background: linear-gradient(180deg, var(--warn), #ffb703);
+      border-color: rgba(255,215,102,0.4);
     }
     .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
@@ -120,7 +126,49 @@
     }
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    /* 푸터 */
+    /* 채팅 */
+    .chat{
+      display:grid; grid-template-rows: 1fr auto; gap:8px;
+      height: 260px; border:1px solid rgba(255,255,255,0.08); border-radius:12px;
+      padding:10px; background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(255,255,255,0.02));
+    }
+    .chat-messages{
+      overflow:auto; padding-right:6px;
+      scroll-behavior:smooth;
+    }
+    .bubble{
+      max-width: 78%; padding:8px 10px; margin:6px 0; border-radius:12px;
+      background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+      word-break: break-word; font-size:14px;
+    }
+    .me{ margin-left:auto; background: rgba(0,192,255,0.15); border-color: rgba(0,192,255,0.35); }
+    .sys{ background: rgba(255,255,255,0.04); font-size:12px; opacity:.95; }
+    .meta{ font-size:11px; color:#bcd8ee; margin-top:2px; }
+    .chat-input{ display:flex; gap:6px; }
+    .chat-input input{ flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color:#e6f7ff; }
+    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .muted{ color:#bcd8ee; font-size:12px; }
+
+    /* 상태 점 */
+    .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; }
+    .dot.gray{ background:#6b7280; }
+    .dot.blue{ background:#38bdf8; }
+    .dot.green{ background:#22c55e; }
+    .dot.red{ background:#ef4444; }
+    .dot.yellow{ background:#f59e0b; }
+
+    /* 동의/약관 모달 */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:1900; }
+    .modal.show{ display:flex; }
+    .modal .panel{
+      width:min(560px, 92vw); border-radius:14px; padding:16px;
+      background: var(--glass-bg); border:1px solid var(--stroke); color:#e6f7ff;
+    }
+    .panel .title{ font-weight:800; font-size:18px; margin-bottom:6px; }
+    .panel .desc{ font-size:13px; color:var(--muted); }
+    .panel .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+    label.checkbox{ display:flex; gap:8px; align-items:flex-start; margin-top:10px; font-size:13px; }
+    input[type="checkbox"]{ transform: scale(1.1); }
     footer{ margin:12px 0 24px; text-align:center; color:var(--muted); font-size:12px; }
   </style>
 </head>
@@ -167,6 +215,121 @@
       </div>
     </div>
 
+    <!-- ========== 🛰️ 원격 도움 ========== -->
+    <div class="card" id="remote-card">
+      <h2>🛰️ 원격 도움</h2>
+      <p class="sub">도우미 연결 시 채팅 가능, <b>동의한 경우에만</b> 제어 권한이 활성화됩니다.</p>
+
+      <!-- 사용자 섹션 -->
+      <div class="item" id="user-remote">
+        <div class="left">
+          <div>🙋</div>
+          <div>
+            <div class="title">내 도움 세션</div>
+            <div class="desc">
+              <span id="session-status"><span class="dot gray"></span>대기 중</span>
+              <span class="muted" id="session-helper"></span>
+            </div>
+          </div>
+        </div>
+        <div class="right">
+          <button id="btn-open-consent" class="btn" disabled>원격 도움 요청</button>
+          <button id="btn-end-session" class="btn danger" style="display:none;">종료</button>
+
+          <label class="checkbox" title="도우미가 내 브라우저 경로 이동을 지시할 수 있습니다.">
+            <input id="chk-grant-control" type="checkbox" disabled />
+            <span class="muted">제어 권한(네비게이션)</span>
+          </label>
+
+          <label class="checkbox" title="도우미가 클릭/스크롤 같은 상호작용을 원격으로 수행합니다.">
+            <input id="chk-grant-advanced" type="checkbox" disabled />
+            <span class="muted">고급 제어(클릭·스크롤)</span>
+          </label>
+
+          <button id="btn-view-tos" class="btn secondary" style="margin-left:6px;">이용약관</button>
+        </div>
+      </div>
+
+      <!-- 채팅 -->
+      <div class="item" id="chat-area" style="display:none;">
+        <div class="left" style="flex-direction:column; align-items:stretch; width:100%;">
+          <div class="row" style="justify-content:space-between;">
+            <div class="title">채팅</div>
+            <div class="muted" id="chat-tip">세션 종료 시 메시지는 영구 삭제됩니다.</div>
+          </div>
+          <div class="chat" aria-live="polite">
+            <div id="msgs" class="chat-messages"></div>
+            <div class="chat-input">
+              <input id="msg-input" type="text" placeholder="메시지를 입력..." maxlength="1000" />
+              <button id="msg-send" class="btn secondary">전송</button>
+            </div>
+          </div>
+          <div class="muted" style="margin-top:6px;">※ 부적절·모욕·차별·광고·연락처 공유는 금지됩니다.</div>
+        </div>
+      </div>
+
+      <!-- 관리자 콘솔 -->
+      <div class="item" id="admin-console" style="display:none;">
+        <div class="left" style="flex-direction:column; align-items:flex-start;">
+          <div class="title">관리자 콘솔</div>
+          <div class="desc">대기 중인 사용자를 자동으로 연결하고, 경로 이동·하이라이트·클릭 등 제어가 가능합니다.</div>
+
+          <div class="row" style="margin-top:8px;">
+            <label class="checkbox">
+              <input id="chk-helper-wait" type="checkbox" />
+              <span>도움 대기 모드(자동 연결)</span>
+            </label>
+            <button id="btn-leave-session" class="btn danger" style="display:none;">세션 종료</button>
+          </div>
+
+          <div class="hr" style="width:100%;"></div>
+
+          <div class="title" style="margin-top:2px;">대기 중인 요청</div>
+          <div id="waiting-list" class="muted">없음</div>
+
+          <div class="hr" style="width:100%;"></div>
+
+          <div id="admin-tools" style="display:none; width:100%;">
+            <div class="row" style="justify-content:space-between;">
+              <div class="title">제어 패널</div>
+              <div class="muted" id="admin-session-label"></div>
+            </div>
+
+            <!-- 네비게이션 -->
+            <div class="row" style="margin-top:6px;">
+              <input id="nav-path" type="text" placeholder="/game.html" style="flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color:#e6f7ff;">
+              <button id="btn-send-nav" class="btn">경로 이동</button>
+              <button class="btn secondary" data-nav="/game.html">/game.html</button>
+              <button class="btn secondary" data-nav="/setting.html">/setting.html</button>
+              <button class="btn secondary" data-nav="/ranking.html">/ranking.html</button>
+            </div>
+
+            <!-- 고급 제어 -->
+            <div class="row" style="margin-top:10px; width:100%; flex-wrap:wrap;">
+              <input id="sel-input" type="text" placeholder="CSS 선택자 (예: #upgrade-ship, [data-action='rank'])" style="flex:1; min-width:240px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color:#e6f7ff;">
+              <button id="btn-highlight" class="btn ok" title="사용자 화면에서 해당 요소 하이라이트">하이라이트</button>
+              <button id="btn-click" class="btn" title="사용자 화면에서 해당 요소 클릭">클릭</button>
+              <button id="btn-scroll" class="btn secondary" title="해당 요소로 스크롤">스크롤</button>
+              <button id="btn-alert" class="btn warn">알림</button>
+              <button id="btn-ping" class="btn secondary">핑</button>
+            </div>
+
+            <div class="hr" style="width:100%;"></div>
+
+            <div class="title">채팅(관리자)</div>
+            <div class="chat">
+              <div id="msgs-admin" class="chat-messages"></div>
+              <div class="chat-input">
+                <input id="msg-input-admin" type="text" placeholder="메시지를 입력..." maxlength="1000" />
+                <button id="msg-send-admin" class="btn secondary">전송</button>
+              </div>
+            </div>
+            <div class="muted" style="margin-top:6px;">※ 부적절 내용 전송 시 자동 차단됩니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer>태양계 정복: 우주 생존 클릭커 · v0.1.0</footer>
   </div>
 
@@ -182,13 +345,82 @@
     </div>
   </div>
 
+  <!-- 동의 모달 -->
+  <div id="consent-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+    <div class="panel">
+      <div id="consent-title" class="title">원격 도움 요청 동의</div>
+      <div class="desc" style="line-height:1.6;">
+        • 연결 대상: 관리자(<b>siu46852579@gmail.com</b>)만 가능<br/>
+        • 기본 제어: 채팅 + 페이지 내 네비게이션(경로 이동)<br/>
+        • <b>고급 제어</b>: 클릭/스크롤은 <b>내가 토글을 켤 때만</b> 실행됨. <b>비밀번호/ID 및 개인정보 입력란</b>(type=password, [data-sensitive])은 관리자에게 <b>비공개(마스킹)</b> 처리되어 클릭·포커스·입력이 차단됩니다.<br/>
+        • 모든 채팅·제어 기록은 <b>세션 종료 시 영구 삭제</b><br/>
+        • 언제든지 종료 가능
+      </div>
+
+      <label class="checkbox"><input id="chk-consent" type="checkbox"/>
+        <span>위 내용을 이해했고, 원격 도움 연결에 동의합니다.</span>
+      </label>
+      <label class="checkbox"><input id="chk-accept-tos" type="checkbox"/>
+        <span>부적절 채팅 금지 및 이용약관을 읽고 동의합니다. (<a href="#" id="open-tos-inline">보기</a>)</span>
+      </label>
+
+      <div class="actions">
+        <button id="consent-cancel" class="btn secondary">취소</button>
+        <button id="consent-ok" class="btn" disabled>동의하고 요청</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이용약관 모달 -->
+  <div id="tos-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tos-title">
+    <div class="panel" style="max-height:80vh; overflow:auto;">
+      <div id="tos-title" class="title">원격 도움 이용약관</div>
+      <div class="desc" style="white-space:pre-wrap; line-height:1.65;">
+[목적]
+본 약관은 “태양계 정복: 우주 생존 클릭커”(이하 ‘사이트’)에서 제공하는 원격 도움 기능의 이용 조건을 규정합니다.
+
+[주체]
+도우미는 관리자 계정(이메일: siu46852579@gmail.com)에 한합니다. 일반 이용자는 본인 동의 후에만 연결됩니다.
+
+[제공 범위]
+1) 기본 기능: 채팅, 페이지 내 네비게이션(경로 이동 지시)
+2) 고급 제어(선택): 이용자가 명시적으로 ‘고급 제어(클릭·스크롤)’를 활성화한 경우에 한해 버튼 클릭, 요소 하이라이트, 스크롤 명령을 실행할 수 있습니다.
+3) 제한: 비밀번호/ID 및 개인정보 입력란(type=password, [data-sensitive])은 관리자에게 비공개(마스킹) 처리되며, 클릭·포커스·입력이 차단됩니다. 브라우저 바깥 동작, 클립보드 접근, 파일 업/다운로드, 키보드 입력 전송은 제공하지 않습니다.
+
+[접속 및 기록]
+연결·채팅·제어 이벤트는 세션 동안만 임시 저장되며, 세션 종료 시 서버에서 즉시 삭제됩니다. (네트워크 지연 등 기술적 사유로 수 분 내 삭제될 수 있음)
+
+[이용자 의무]
+1) 허위 사실 유포, 모욕·혐오·음란·폭력적 표현, 스팸·광고, 연락처/외부 홍보 링크 공유 등은 금지됩니다.
+2) 불법 또는 제3자 권리를 침해하는 행위를 해서는 안 됩니다.
+3) 도우미의 조작을 원치 않을 경우 언제든 제어 토글을 끄거나 세션을 종료할 수 있습니다.
+
+[도우미 의무]
+1) 도우미는 이용자 동의 범위 내에서만 제어해야 합니다.
+2) 도우미의 하이라이트/클릭은 이용자 화면에 시각적으로 표시되어야 하며, 민감 정보는 비공개 처리됩니다. 관리자의 화면에는 “민감한 정보이므로 비공개 처리했습니다.”로 표시됩니다.
+
+[면책]
+고급 제어로 발생한 페이지 내 조작 결과는 이용자의 자발적 동의 하에 수행되며, 사이트는 고의 또는 중과실이 없는 한 손해에 대해 책임을 지지 않습니다.
+
+[분쟁]
+분쟁 발생 시 한국법을 준거법으로 하며, 관할은 사이트 운영자의 주소지 관할 법원으로 합니다.
+      </div>
+      <div class="actions">
+        <button id="tos-close" class="btn">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import {
+      getDatabase, ref, runTransaction, onValue, set, update, push, onChildAdded,
+      onDisconnect, serverTimestamp, get, remove
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // ===== Firebase 설정 (메인과 동일) =====
+    // ===== Firebase 설정 =====
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -212,7 +444,8 @@
       _lastUpdated: Date.now()
     };
 
-    // ===== UI refs =====
+    // ===== 상수/참조 =====
+    const ADMIN_EMAIL = 'siu46852579@gmail.com';
     const accountDesc = document.getElementById('account-desc');
     const signoutBtn  = document.getElementById('signout-btn');
     const resetBtn    = document.getElementById('reset-btn');
@@ -220,43 +453,102 @@
     const toast       = document.getElementById('toast');
     const overlay     = document.getElementById('overlay');
 
+    // 원격 도움 UI
+    const btnOpenConsent = document.getElementById('btn-open-consent');
+    const btnEndSession  = document.getElementById('btn-end-session');
+    const chkGrantControl= document.getElementById('chk-grant-control');
+    const chkGrantAdvanced = document.getElementById('chk-grant-advanced');
+    const sessionStatus  = document.getElementById('session-status');
+    const sessionHelper  = document.getElementById('session-helper');
+    const chatArea       = document.getElementById('chat-area');
+    const msgs           = document.getElementById('msgs');
+    const msgInput       = document.getElementById('msg-input');
+    const msgSend        = document.getElementById('msg-send');
+
+    // 관리자 콘솔
+    const adminConsole   = document.getElementById('admin-console');
+    const chkHelperWait  = document.getElementById('chk-helper-wait');
+    const waitingListEl  = document.getElementById('waiting-list');
+    const adminTools     = document.getElementById('admin-tools');
+    const adminSessionLabel = document.getElementById('admin-session-label');
+    const btnLeaveSession   = document.getElementById('btn-leave-session');
+
+    const msgsAdmin      = document.getElementById('msgs-admin');
+    const msgInputAdmin  = document.getElementById('msg-input-admin');
+    const msgSendAdmin   = document.getElementById('msg-send-admin');
+
+    const navPath        = document.getElementById('nav-path');
+    const btnSendNav     = document.getElementById('btn-send-nav');
+    const selectorInput  = document.getElementById('sel-input');
+
+    // 약관 모달
+    const consentModal   = document.getElementById('consent-modal');
+    const chkConsent     = document.getElementById('chk-consent');
+    const chkAcceptTos   = document.getElementById('chk-accept-tos');
+    const consentOK      = document.getElementById('consent-ok');
+    const consentCancel  = document.getElementById('consent-cancel');
+    const tosModal       = document.getElementById('tos-modal');
+    const openTosInline  = document.getElementById('open-tos-inline');
+    const tosClose       = document.getElementById('tos-close');
+    const btnViewTos     = document.getElementById('btn-view-tos');
+
     // ===== 공통 함수 =====
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(showToast._t); showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600);
-    }
-    function showOverlay(show){
-      overlay.style.display = show ? 'flex' : 'none';
-      overlay.setAttribute('aria-hidden', show ? 'false':'true');
-    }
+    function showToast(msg){ toast.textContent = msg; toast.classList.add('show');
+      clearTimeout(showToast._t); showToast._t = setTimeout(()=>toast.classList.remove('show'), 1600); }
+    function showOverlay(show){ overlay.style.display = show ? 'flex' : 'none'; overlay.setAttribute('aria-hidden', show ? 'false':'true'); }
+    function dot(color, text){ return `<span class="dot ${color}"></span>${text}`; }
+    function scrollToBottom(el){ el.scrollTop = el.scrollHeight; }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
     // ===== 뒤로가기 =====
     backBtn.addEventListener('click', () => {
-      try{
-        const ref = document.referrer;
+      try{ const ref = document.referrer;
         if (ref && new URL(ref).origin === location.origin) { history.back(); return; }
       }catch{}
-      // 같은 오리진 히스토리가 없으면 홈으로
       location.href = '/game.html';
     });
 
     // ===== 인증 상태 =====
     let uid = null;
+    let meEmail = null;
+    let isAdmin = false;
+
+    // 세션 상태
+    let mySessionId = null;        // 사용자 세션 ID = uid
+    let activeAdminSession = null; // 관리자가 연결한 대상
+    let chatUnsub = null;
+    let chatUnsubAdmin = null;
+    let controlUnsub = null;
+
     onAuthStateChanged(auth, async (user) => {
       if (user && user.emailVerified){
         uid = user.uid;
-        accountDesc.textContent = `${user.email} (로그인됨)`;
+        meEmail = user.email || '';
+        isAdmin = (meEmail === ADMIN_EMAIL);
+
+        accountDesc.textContent = `${meEmail} (로그인됨)`;
         signoutBtn.disabled = false;
         resetBtn.disabled = false;
+
+        btnOpenConsent.disabled = false;
+        chkGrantControl.disabled = true;
+        chkGrantAdvanced.disabled = true;
+
+        // 사용자용 세션
+        mySessionId = uid;
+        subscribeUserSession();
+
+        // 관리자 콘솔
+        if (isAdmin){ adminConsole.style.display = ''; initAdminConsole(); }
+        else { adminConsole.style.display = 'none'; }
       } else if (user && !user.emailVerified){
         accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
-        signoutBtn.disabled = false;
-        resetBtn.disabled = true;
+        signoutBtn.disabled = false; resetBtn.disabled = true; btnOpenConsent.disabled = true;
+        adminConsole.style.display = 'none';
       } else {
         accountDesc.textContent = '로그인이 필요합니다.';
-        signoutBtn.disabled = true;
-        resetBtn.disabled = true;
+        signoutBtn.disabled = true; resetBtn.disabled = true; btnOpenConsent.disabled = true;
+        adminConsole.style.display = 'none';
       }
     });
 
@@ -283,6 +575,361 @@
         showOverlay(false);
       }
     });
+
+    // ===== 동의/약관 모달 =====
+    function refreshConsentBtn(){
+      consentOK.disabled = !(chkConsent.checked && chkAcceptTos.checked);
+    }
+    btnOpenConsent.addEventListener('click', ()=>{ chkConsent.checked=false; chkAcceptTos.checked=false; refreshConsentBtn(); consentModal.classList.add('show'); });
+    consentCancel.addEventListener('click', ()=> consentModal.classList.remove('show'));
+    chkConsent.addEventListener('change', refreshConsentBtn);
+    chkAcceptTos.addEventListener('change', refreshConsentBtn);
+    btnViewTos?.addEventListener('click', ()=> tosModal.classList.add('show'));
+    openTosInline?.addEventListener('click', (e)=>{ e.preventDefault(); tosModal.classList.add('show'); });
+    tosClose?.addEventListener('click', ()=> tosModal.classList.remove('show'));
+
+    consentOK.addEventListener('click', async () => {
+      if (!uid) return;
+      consentModal.classList.remove('show');
+
+      // 세션 생성/갱신: waiting
+      const sref = ref(db, `helpSessions/${uid}`);
+      const now = Date.now();
+      const base = {
+        ownerUid: uid, ownerEmail: meEmail || '',
+        status: 'waiting',
+        consentGranted: true,
+        controlGranted: false,
+        controlAdvanced: false,
+        helperUid: null, helperEmail: null,
+        createdAt: now, updatedAt: now
+      };
+      await update(sref, base);
+
+      try{ onDisconnect(sref).update({ status:'ended', updatedAt: serverTimestamp() }); }catch{}
+
+      showToast('원격 도움 요청을 보냈어요');
+    });
+
+    // ===== 채팅 필터/전송 =====
+    const banned = [
+      /시[ㅣi]발/i, /병?신/i, /좆/i, /fuck/i, /shit/i, /nigg/i, /rape/i,
+      /\b010[-\s]?\d{4}[-\s]?\d{4}\b/i,
+      /(https?:\/\/|t\.me\/|discord\.gg|kakao\.me|openkakao)/i
+    ];
+    function isClean(text){ return !banned.some(re=>re.test(text||'')); }
+
+    function sendUserMsg(){
+      const text = (msgInput.value || '').trim();
+      if (!text) return;
+      if (!isClean(text)) { showToast('부적절한 메시지는 전송할 수 없어요'); return; }
+      const mref = push(ref(db, `helpSessions/${mySessionId}/chat`));
+      set(mref, { from: meEmail || 'user', role:'user', text, ts: Date.now() });
+      msgInput.value = '';
+    }
+    function sendAdminMsg(){
+      if (!activeAdminSession) return;
+      const text = (msgInputAdmin.value||'').trim();
+      if (!text) return;
+      if (!isClean(text)) { showToast('부적절한 메시지는 차단됩니다'); return; }
+      const mref = push(ref(db, `helpSessions/${activeAdminSession}/chat`));
+      set(mref, { from: meEmail || 'admin', role:'admin', text, ts: Date.now() });
+      msgInputAdmin.value = '';
+    }
+
+    // ===== 사용자 세션/채팅/제어 =====
+    function subscribeUserSession(){
+      if (!mySessionId) return;
+      const sref = ref(db, `helpSessions/${mySessionId}`);
+
+      onValue(sref, (snap) => {
+        const s = snap.val();
+        if (!s){
+          sessionStatus.innerHTML = dot('gray','대기 중');
+          sessionHelper.textContent = '';
+          btnEndSession.style.display = 'none';
+          chkGrantControl.checked = false; chkGrantControl.disabled = true;
+          chkGrantAdvanced.checked = false; chkGrantAdvanced.disabled = true;
+          chatArea.style.display = 'none';
+          return;
+        }
+        const status = s.status || 'idle';
+        const helper = s.helperEmail || '';
+        const control = !!s.controlGranted;
+
+        let label='대기 중', color='gray';
+        if (status==='waiting'){ label='도우미 대기 중'; color='blue'; }
+        if (status==='connected'){ label='연결됨'; color='green'; }
+        if (status==='ended'){ label='종료됨'; color='red'; }
+        sessionStatus.innerHTML = dot(color, label);
+        sessionHelper.textContent = helper ? ` · 도우미: ${helper}` : '';
+
+        if (status==='connected' || status==='waiting'){
+          btnEndSession.style.display = '';
+          chatArea.style.display = '';
+        } else {
+          btnEndSession.style.display = 'none';
+          chatArea.style.display = 'none';
+        }
+
+        chkGrantControl.disabled = (status !== 'connected');
+        chkGrantAdvanced.disabled = (status !== 'connected');
+        chkGrantControl.checked = !!s.controlGranted;
+        chkGrantAdvanced.checked = !!s.controlAdvanced;
+
+        attachChatForUser(status);
+        attachControlListenerForUser(status, control, s.helperUid);
+      });
+
+      // 종료 + 로그 삭제
+      btnEndSession.onclick = async () => {
+        const ok = confirm('세션을 종료할까요? (채팅/제어 로그 삭제)');
+        if (!ok) return;
+        try{
+          const sid = mySessionId;
+          await update(ref(db, `helpSessions/${sid}`), { status:'ended', endedAt: Date.now(), updatedAt: Date.now() });
+          await remove(ref(db, `helpSessions/${sid}/chat`));
+          await remove(ref(db, `helpSessions/${sid}/control`));
+          showToast('세션 종료 및 로그 삭제');
+        }catch(e){ console.error(e); showToast('종료 실패'); }
+      };
+
+      // 권한 토글
+      chkGrantControl.addEventListener('change', async (e)=>{
+        try{
+          await update(ref(db, `helpSessions/${mySessionId}`), { controlGranted: !!e.target.checked, updatedAt: Date.now() });
+          showToast(e.target.checked ? '제어 권한 부여됨' : '제어 권한 해제됨');
+        }catch(err){ console.error(err); showToast('변경 실패'); e.target.checked = !e.target.checked; }
+      });
+      chkGrantAdvanced.addEventListener('change', async (e)=>{
+        try{
+          await update(ref(db, `helpSessions/${mySessionId}`), { controlAdvanced: !!e.target.checked, updatedAt: Date.now() });
+          showToast(e.target.checked ? '고급 제어 ON' : '고급 제어 OFF');
+        }catch(err){ console.error(err); showToast('변경 실패'); e.target.checked = !e.target.checked; }
+      });
+
+      // 채팅 전송 (사용자)
+      msgSend.addEventListener('click', sendUserMsg);
+      msgInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendUserMsg(); });
+    }
+
+    function attachChatForUser(status){
+      if (chatUnsub){ chatUnsub(); chatUnsub = null; }
+      msgs.innerHTML = '';
+      if (status !== 'connected' && status !== 'waiting') return;
+
+      const cref = ref(db, `helpSessions/${mySessionId}/chat`);
+      const off = onChildAdded(cref, (snap) => {
+        const m = snap.val();
+        const b = document.createElement('div');
+        b.className = 'bubble ' + (m.role==='admin' || m.role==='system' ? '' : 'me') + (m.role==='system' ? ' sys' : '');
+        b.innerHTML = `${escapeHtml(m.text || '')}<div class="meta">${m.from || ''}</div>`;
+        msgs.appendChild(b);
+        scrollToBottom(msgs);
+      });
+      chatUnsub = ()=> off();
+    }
+
+    function pulseElement(el){
+      const r = el.getBoundingClientRect();
+      const x = r.left + r.width/2, y = r.top + r.height/2;
+      const dot = document.createElement('div');
+      dot.style.cssText = `
+        position:fixed; left:${x-10}px; top:${y-10}px; width:20px; height:20px;
+        border-radius:50%; border:2px solid #00d4ff; background:rgba(0,212,255,.15);
+        pointer-events:none; z-index:3000; transform:scale(.6); opacity:.95;
+        transition: transform .3s ease, opacity .35s ease;
+      `;
+      document.body.appendChild(dot);
+      requestAnimationFrame(()=>{ dot.style.transform='scale(1.4)'; dot.style.opacity='.15'; });
+      setTimeout(()=>dot.remove(), 450);
+    }
+    function isSensitive(el){ return !!el.closest('input[type="password"], [data-sensitive="true"]'); }
+    function safeClick(el){ try{ el.focus({preventScroll:true}); }catch{} try{ el.click(); }catch{} }
+
+    // 사용자 쪽 제어 리스너
+    function attachControlListenerForUser(status, controlGranted, helperUid){
+      if (controlUnsub){ controlUnsub(); controlUnsub = null; }
+      if (status !== 'connected') return;
+      const ctrlRef = ref(db, `helpSessions/${mySessionId}/control`);
+      const off = onChildAdded(ctrlRef, async (snap) => {
+        const c = snap.val() || {};
+        if (!helperUid || c.fromUid !== helperUid) return;
+
+        // 네비/알림/핑
+        if (c.type === 'navigate' && typeof c.path === 'string'){ if (!controlGranted) return; location.href = c.path; return; }
+        if (c.type === 'alert' && typeof c.message === 'string'){ alert('[관리자] ' + c.message); return; }
+        if (c.type === 'ping'){ console.log('[PING from helper]', new Date().toISOString()); return; }
+
+        // 고급 제어 필요
+        if (!chkGrantAdvanced.checked) return;
+
+        const sel = c.selector;
+        const el = sel ? document.querySelector(sel) : null;
+
+        // 민감 차단 + 관리자에게 시스템 메시지 통지
+        const sysNotify = async (msg) => {
+          const mref = push(ref(db, `helpSessions/${mySessionId}/chat`));
+          await set(mref, { from:'system', role:'system', text: msg, ts: Date.now() });
+        };
+
+        if (c.type === 'highlight'){
+          if (el){ pulseElement(el); }
+        } else if (c.type === 'click'){
+          if (el){
+            if (isSensitive(el)){ await sysNotify('민감한 정보이므로 비공개 처리했습니다.'); return; }
+            safeClick(el); pulseElement(el);
+          }
+        } else if (c.type === 'scrollTo'){
+          if (el){ el.scrollIntoView({ behavior: c.behavior || 'smooth', block:'center' }); pulseElement(el); }
+        }
+      });
+      controlUnsub = ()=> off();
+    }
+
+    // ===== 관리자 콘솔 =====
+    function initAdminConsole(){
+      // 대기 목록
+      onValue(ref(db, 'helpSessions'), (snap) => {
+        const data = snap.val() || {};
+        const waiting = Object.entries(data)
+          .filter(([,s]) => s && s.status==='waiting' && s.consentGranted===true)
+          .map(([id,s]) => ({ id, email: s.ownerEmail||id, at: s.updatedAt||s.createdAt||0 }));
+
+        if (waiting.length === 0){ waitingListEl.textContent = '없음'; }
+        else {
+          waitingListEl.innerHTML = '';
+          waiting.forEach(w => {
+            const row = document.createElement('div');
+            row.className = 'row'; row.style.marginTop = '6px';
+            const when = new Date(w.at).toLocaleString();
+            row.innerHTML = `<span>사용자: <b>${escapeHtml(w.email)}</b> · <span class="muted">${when}</span></span>`;
+            const btn = document.createElement('button');
+            btn.className = 'btn'; btn.textContent = '도움 시작';
+            btn.onclick = () => connectAsHelper(w.id);
+            row.appendChild(btn);
+            waitingListEl.appendChild(row);
+          });
+        }
+        if (chkHelperWait.checked && !activeAdminSession && waiting.length > 0) connectAsHelper(waiting[0].id);
+      });
+
+      chkHelperWait.addEventListener('change', ()=> showToast(chkHelperWait.checked ? '도움 대기 모드 ON' : '도움 대기 모드 OFF'));
+
+      document.querySelectorAll('button[data-nav]').forEach(b=>{
+        b.addEventListener('click', ()=> { navPath.value = b.getAttribute('data-nav'); });
+      });
+
+      btnSendNav.addEventListener('click', () => {
+        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
+        sendControl(activeAdminSession, { type:'navigate', path: (navPath.value||'/game.html') });
+      });
+
+      document.getElementById('btn-ping').addEventListener('click', () => {
+        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
+        sendControl(activeAdminSession, { type:'ping' });
+      });
+      document.getElementById('btn-alert').addEventListener('click', () => {
+        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
+        const msg = prompt('사용자에게 표시할 알림 메시지:','원격 지원 테스트');
+        if (msg) sendControl(activeAdminSession, { type:'alert', message: msg.slice(0,300) });
+      });
+
+      // 고급 제어 전송
+      const throttle = (()=>{ let t=0; return (ms=120)=>{ const n=Date.now(); if(n-t<ms) return true; t=n; return false; };})();
+      document.getElementById('btn-highlight').addEventListener('click', ()=>{
+        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
+        const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return;
+        sendControl(activeAdminSession, { type:'highlight', selector: sel });
+      });
+      document.getElementById('btn-click').addEventListener('click', ()=>{
+        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
+        const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return;
+        sendControl(activeAdminSession, { type:'click', selector: sel });
+      });
+      document.getElementById('btn-scroll').addEventListener('click', ()=>{
+        if (!activeAdminSession) return showToast('연결된 세션이 없어요');
+        const sel = selectorInput.value.trim(); if (!sel) return; if (throttle()) return;
+        sendControl(activeAdminSession, { type:'scrollTo', selector: sel, behavior:'smooth' });
+      });
+
+      msgSendAdmin.addEventListener('click', sendAdminMsg);
+      msgInputAdmin.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendAdminMsg(); });
+
+      btnLeaveSession.addEventListener('click', endAdminSession);
+    }
+
+    async function connectAsHelper(sessionId){
+      if (!isAdmin) return showToast('관리자만 연결할 수 있어요');
+      const user = auth.currentUser;
+      if (!user) return showToast('로그인 필요');
+
+      const sref = ref(db, `helpSessions/${sessionId}`);
+      let ok = false;
+      await runTransaction(sref, (s) => {
+        if (!s || s.status!=='waiting' || s.helperUid) return s;
+        s.status = 'connected';
+        s.helperUid = user.uid;
+        s.helperEmail = user.email || ADMIN_EMAIL;
+        s.connectedAt = Date.now();
+        s.updatedAt = Date.now();
+        ok = true;
+        return s;
+      });
+
+      if (!ok) return showToast('이미 다른 곳에서 처리되었어요');
+
+      activeAdminSession = sessionId;
+      adminSessionLabel.textContent = '세션: ' + sessionId;
+      adminTools.style.display = '';
+      btnLeaveSession.style.display = '';
+      attachChatForAdmin(sessionId);
+      showToast('사용자와 연결됨');
+
+      try{ onDisconnect(sref).update({ status:'waiting', helperUid:null, helperEmail:null, updatedAt: serverTimestamp() }); }catch{}
+    }
+
+    async function endAdminSession(){
+      if (!activeAdminSession) return;
+      try{
+        const sid = activeAdminSession;
+        await update(ref(db, `helpSessions/${sid}`), { status:'ended', endedAt: Date.now(), updatedAt: Date.now() });
+        await remove(ref(db, `helpSessions/${sid}/chat`));
+        await remove(ref(db, `helpSessions/${sid}/control`));
+      }catch(e){ console.error(e); }
+      cleanupAdminSessionUI();
+      showToast('세션 종료됨');
+    }
+
+    function cleanupAdminSessionUI(){
+      activeAdminSession = null;
+      adminTools.style.display = 'none';
+      adminSessionLabel.textContent = '';
+      btnLeaveSession.style.display = 'none';
+      if (chatUnsubAdmin){ chatUnsubAdmin(); chatUnsubAdmin = null; }
+      msgsAdmin.innerHTML = '';
+    }
+
+    function attachChatForAdmin(sessionId){
+      if (chatUnsubAdmin){ chatUnsubAdmin(); chatUnsubAdmin = null; }
+      msgsAdmin.innerHTML = '';
+      const cref = ref(db, `helpSessions/${sessionId}/chat`);
+      const off = onChildAdded(cref, (snap) => {
+        const m = snap.val();
+        const b = document.createElement('div');
+        const mine = (m.role==='admin');
+        b.className = 'bubble ' + (mine ? 'me':'' ) + (m.role==='system' ? ' sys':'' );
+        b.innerHTML = `${escapeHtml(m.text || '')}<div class="meta">${m.from || ''}</div>`;
+        msgsAdmin.appendChild(b);
+        scrollToBottom(msgsAdmin);
+      });
+      chatUnsubAdmin = ()=> off();
+    }
+
+    function sendControl(sessionId, payload){
+      const pref = push(ref(db, `helpSessions/${sessionId}/control`));
+      set(pref, { ...payload, fromUid: uid, ts: Date.now() });
+    }
   </script>
 </body>
 </html>
