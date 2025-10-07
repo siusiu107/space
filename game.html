@@ -184,7 +184,7 @@
     @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
     #ore { width:200px; cursor:pointer; }
 
-    /* 커스텀 메뉴 */
+    /* 커스텀 메뉴 (우클릭) */
     #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.95); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
@@ -235,6 +235,64 @@
       #bottom-nav{ left:8px; right:8px; transform:none; border-radius:14px; gap:6px; }
       #bottom-nav .tab{ padding:10px 8px; min-width:0; }
       h1{ font-size:1.2em; }
+    }
+
+    /* ===== 사이드 메뉴 (추가) ===== */
+    #side-menu-toggle{
+      position: fixed;
+      left: 8px;
+      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      z-index: 1600;
+      width: 44px; height: 44px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(10,12,20,0.65);
+      backdrop-filter: blur(10px);
+      color:#e6f5ff; font-size: 20px; cursor: pointer;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    #side-menu-toggle:active{ transform: translateY(1px); }
+
+    #side-backdrop{
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s ease;
+      z-index: 1550;
+    }
+    #side-backdrop.show{ opacity:1; pointer-events:auto; }
+
+    #side-menu{
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 260px; max-width: 84vw;
+      transform: translateX(-100%);
+      transition: transform .24s cubic-bezier(.2,.9,.3,1);
+      background: rgba(15,18,28,0.9);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      z-index: 1600;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.35);
+    }
+    #side-menu.open{ transform: translateX(0); }
+    .side-header{
+      padding: 14px 14px 10px;
+      font-weight: 800; color:#dbefff; letter-spacing:.3px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .side-items{ padding: 8px; display:flex; flex-direction:column; gap:8px; }
+    .side-item{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px; border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.10);
+      color:#eaf6ff; font-weight:700; cursor:pointer;
+      user-select:none;
+    }
+    .side-item:hover{ filter: brightness(1.08); }
+    .side-item .icon{ width:18px; text-align:center; }
+    @media (max-width: 420px){
+      #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; }
+      #side-menu{ width: 240px; }
     }
   </style>
 </head>
@@ -358,13 +416,34 @@
     </nav>
   </div>
 
-  <!-- 커스텀 메뉴 -->
+  <!-- 커스텀 메뉴 (우클릭) -->
   <div id="custom-menu">
     <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
     <div class="menu-item" data-action="download">⬇️ 앱 다운로드</div>
     <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
+
+  <!-- ===== 사이드 메뉴 (추가) ===== -->
+  <button id="side-menu-toggle" aria-label="사이드 메뉴 열기" title="메뉴">☰</button>
+  <div id="side-backdrop" aria-hidden="true"></div>
+  <aside id="side-menu" aria-label="사이드 메뉴" aria-hidden="true">
+    <div class="side-header">메뉴</div>
+    <nav class="side-items">
+      <button class="side-item" data-action="menu">
+        <span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span>
+      </button>
+      <button class="side-item" data-action="download">
+        <span class="icon">⬇️</span><span>앱 다운로드</span>
+      </button>
+      <button class="side-item" data-action="resume">
+        <span class="icon">▶️</span><span>게임 계속하기</span>
+      </button>
+      <button class="side-item" data-action="rank">
+        <span class="icon">🏆</span><span>랭킹 보기</span>
+      </button>
+    </nav>
+  </aside>
 
   <!-- Firebase + 게임 로직 -->
   <script type="module">
@@ -800,6 +879,49 @@
     document.addEventListener('contextmenu', function (e) {
       if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
     });
+  </script>
+
+  <!-- ===== 사이드 메뉴 스크립트 (추가) ===== -->
+  <script>
+    (function(){
+      const sideToggle = document.getElementById('side-menu-toggle');
+      const sideMenu   = document.getElementById('side-menu');
+      const backdrop   = document.getElementById('side-backdrop');
+
+      function openSide(){
+        sideMenu.classList.add('open');
+        sideMenu.setAttribute('aria-hidden','false');
+        backdrop.classList.add('show');
+        backdrop.setAttribute('aria-hidden','false');
+      }
+      function closeSide(){
+        sideMenu.classList.remove('open');
+        sideMenu.setAttribute('aria-hidden','true');
+        backdrop.classList.remove('show');
+        backdrop.setAttribute('aria-hidden','true');
+      }
+
+      sideToggle.addEventListener('click', openSide);
+      backdrop.addEventListener('click', closeSide);
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSide(); });
+
+      // 사이드 메뉴 액션 (우클릭 커스텀 메뉴와 동일 동작)
+      sideMenu.addEventListener('click', (e)=>{
+        const btn = e.target.closest('.side-item');
+        if(!btn) return;
+        const action = btn.getAttribute('data-action');
+        if (action === 'menu') {
+          try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
+          try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
+          try { window.close(); } catch {}
+          setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
+        }
+        if (action === 'download') { location.href='/app-download.html'; }
+        if (action === 'rank')     { location.href='/ranking.html'; }
+        if (action === 'resume')   { /* 단순히 닫기 */ }
+        closeSide();
+      });
+    })();
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
