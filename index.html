@@ -25,7 +25,7 @@
   <!-- 공유/탭 아이콘: space-bg.jpg 사용 -->
   <link rel="icon" href="space-bg.jpg" type="image/jpeg">
   
-    <!-- Apple 홈스크린 아이콘 (iOS) -->
+  <!-- Apple 홈스크린 아이콘 (iOS) -->
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
   <!-- PNG 파비콘 (모던 브라우저) -->
@@ -44,9 +44,10 @@
   <meta name="theme-color" content="#ffffff">
 
   <script>
-  try { history.replaceState(null, '', '/main' + (location.hash || '')); }
-  catch(e){ console.warn('주소 표시 변경 실패:', e); }
-</script>
+    try { history.replaceState(null, '', '/main' + (location.hash || '')); }
+    catch(e){ console.warn('주소 표시 변경 실패:', e); }
+  </script>
+
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -174,7 +175,7 @@
     <div class="content">
       <div class="overlay">
         <h1>태양계정복</h1>
-        <!-- 변경: href를 제거하고 id="start-btn" 추가하여 팝업으로 열도록 함 -->
+        <!-- 데스크톱이면 팝업, 아니면 같은 탭 -->
         <a href="#" id="start-btn" class="start-btn">게임 시작</a>
       </div>
       <div class="panel" id="license-panel">
@@ -212,31 +213,49 @@
     document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
   </script>
 
-  <!-- 추가된 스크립트: 게임 시작을 팝업으로 여는 동작만 추가 -->
+  <!-- 핵심 변경: "데스크톱이면 팝업, 아니면 같은 탭" -->
   <script>
     (function() {
-      const GAME_POPUP_WIDTH = 1024;   // 팝업 너비(px)
-      const GAME_POPUP_HEIGHT = 768;   // 팝업 높이(px)
-      const POPUP_NAME = 'gameWindow'; // 팝업 창 이름 (재사용 가능)
+      const GAME_POPUP_WIDTH = 1024;
+      const GAME_POPUP_HEIGHT = 768;
+      const POPUP_NAME = 'gameWindow';
+      const SUPPRESS_POPUP_ALERT = true; // 팝업 실패시 경고창 표시 안 함
 
-      // === 추가: WebView 감지 함수 ===
-      function isWebView() {
+      // 데스크톱 판단 로직
+      function isDesktop() {
         const ua = navigator.userAgent || '';
-        const isAndroid = /Android/i.test(ua);
-        const isIOS = /iP(hone|ad|od)/i.test(ua);
-        const androidWV =
-          isAndroid && (/\b; wv\b/.test(ua) ||
-                        (/\bVersion\/[\d.]+/.test(ua) && /\bChrome\/[\d.]+/.test(ua) && !/SamsungBrowser|EdgA|OPR|Whale/i.test(ua)));
-        const iosWV =
-          isIOS && ( !/Safari/i.test(ua) || !!(window.webkit && window.webkit.messageHandlers) );
-        return androidWV || iosWV;
+        // 1) UA-CH: 크로미움 계열에서 제공 (지원 시 가장 신뢰)
+        if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+          if (navigator.userAgentData.mobile === false) return true;
+          if (navigator.userAgentData.mobile === true) return false;
+        }
+        // 2) iPadOS: Mac UA 위장 + 터치포인트로 식별 → 데스크톱 아님
+        const looksLikeIPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+        if (looksLikeIPadOS) return false;
+        // 3) 흔한 모바일/태블릿 UA 키워드 배제
+        if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false;
+        // 4) 입력 능력 휴리스틱: 마우스 호버 + 정밀 포인터면 데스크톱 성격
+        const finePointer = window.matchMedia?.('(pointer: fine)')?.matches;
+        const canHover    = window.matchMedia?.('(hover: hover)')?.matches;
+        if (finePointer && canHover) return true;
+        // 5) 마지막 안전망: 화면 크기
+        return Math.max(screen.width, screen.height) >= 1024;
+      }
+
+      // 팝업 가능 여부를 실제로 시험 (사용자 제스처 안에서 호출)
+      function canOpenPopup() {
+        let w = null;
+        try {
+          w = window.open('about:blank', '_blank', 'width=1,height=1,noopener,noreferrer');
+        } catch (e) {}
+        if (!w) return false;
+        try { w.close(); } catch (e) {}
+        return true;
       }
 
       function openGamePopup(url) {
-        // 중앙 위치 계산
         const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
         const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
-
         const opts = [
           `width=${GAME_POPUP_WIDTH}`,
           `height=${GAME_POPUP_HEIGHT}`,
@@ -248,55 +267,44 @@
           'toolbar=no',
           'menubar=no'
         ].join(',');
-
         const popup = window.open(url, POPUP_NAME, opts);
-
-        // 팝업 차단 여부 체크
         if (!popup || popup.closed === undefined) {
-          // 팝업이 차단됐을 가능성
-          alert('팝업이 차단되었거나 열 수 없습니다. 브라우저의 팝업 차단 설정을 확인하세요.');
+          if (!SUPPRESS_POPUP_ALERT) alert('팝업이 차단되었거나 열 수 없습니다.');
           return null;
         }
-
-        // 포커스 이동
-        try { popup.focus(); } catch (e) { /* 무시 */ }
+        try { popup.focus(); } catch (e) {}
         return popup;
       }
 
-      // === 추가: 실행 진입 함수 (WebView면 그냥 열기, 아니면 팝업) ===
       function launchGame() {
-        if (isWebView()) {
-          // 인앱/웹뷰에서는 같은 탭에서 바로 열기
-          location.href = 'game.html';
+        if (isDesktop()) {
+          // 데스크톱: 팝업 시도 → 차단되면 같은 탭
+          if (!canOpenPopup() || !openGamePopup('game.html')) {
+            location.href = 'game.html';
+          }
         } else {
-          openGamePopup('game.html');
+          // 모바일/웹뷰/인앱 등: 같은 탭
+          location.href = 'game.html';
         }
       }
 
       const startBtn = document.getElementById('start-btn');
-
-      // 일반 클릭
       startBtn.addEventListener('click', function (e) {
         e.preventDefault();
         launchGame();
       });
-
-      // 휠/중간 버튼 클릭(auxclick)
       startBtn.addEventListener('auxclick', function(e) {
         if (e.button === 1) {
           e.preventDefault();
           launchGame();
         }
       });
-
-      // 키보드로 열기(선택)
       startBtn.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           e.preventDefault();
           launchGame();
         }
       });
-
     })();
   </script>
 
@@ -319,52 +327,34 @@
       }
     });
   </script>
-   <script>
-  // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
-  document.addEventListener('contextmenu', function (e) {
-    // 예외: 입력/편집 가능한 요소 위에서는 컨텍스트 메뉴 허용
-    if (e.target.closest('input, textarea, [contenteditable="true"]')) {
-      return; // 허용
-    }
-
-    e.preventDefault();
-    // 선택적으로 사용자에게 알림 표시하려면 아래 해제
-    // alert('우클릭이 비활성화되어 있습니다.');
-  });
+  <script>
+    // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
   </script>
 
-  <!-- === 새로 추가된 부분: "팝업으로 열렸을 때 자동 종료" 스크립트 === -->
+  <!-- 원본 유지: "팝업으로 열렸을 때 자동 종료" -->
   <script>
     (function() {
-      // 이 문서가 window.open()으로 열린 팝업인지 판단해서 자동으로 닫는다.
-      // 안전성: cross-origin 접근을 시도하지 않고 try/catch로 감싼다.
       try {
-        const openedByScript = !!window.opener; // opener가 있으면 popup으로 열렸을 가능성 높음
+        const openedByScript = !!window.opener;
         if (openedByScript) {
-          // 짧은 지연(렌더 후 바로 닫힘 방지용) 후 자동 닫기 시도
-          const CLOSE_DELAY_MS = 500; // 0.5초 (원하면 값 변경 가능)
+          const CLOSE_DELAY_MS = 500;
           setTimeout(() => {
-            // 부모 창에 알림을 보낼 수 있으면 보낸다 (선택적)
-            try {
-              window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*');
-            } catch (e) { /* 무시 */ }
-
-            // 기본 닫기 시도
-            try { window.close(); } catch (e) { /* 무시 */ }
-
-            // 일부 환경에서 닫기 차단될 때 대비: about:blank로 이동 후 재시도
+            try { window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*'); } catch (e) {}
+            try { window.close(); } catch (e) {}
             setTimeout(() => {
-              try { window.location.href = 'about:blank'; } catch (e) { /* 무시 */ }
-              try { window.close(); } catch (e) { /* 무시 */ }
+              try { window.location.href = 'about:blank'; } catch (e) {}
+              try { window.close(); } catch (e) {}
             }, 50);
           }, CLOSE_DELAY_MS);
         }
       } catch (e) {
-        // 안전하게 실패 처리
         console.warn('팝업 자동 종료 검사 중 오류:', e);
       }
     })();
   </script>
-  <!-- === 추가 끝 === -->
 </body>
 </html>
