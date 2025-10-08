@@ -57,108 +57,41 @@
     .sidebar {
       width: 250px;
       background: rgba(10, 10, 30, 0.8);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 40px;
-      gap: 20px;
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 40px; gap: 20px;
       box-shadow: 5px 0 15px rgba(0,0,0,0.5);
     }
     .sidebar button {
-      width: 80%;
-      padding: 12px 0;
-      text-align: center;
-      text-decoration: none;
-      color: #fff;
-      background: rgba(255,255,255,0.1);
-      border: none;
-      border-radius: 30px;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.2s;
+      width: 80%; padding: 12px 0; text-align: center; text-decoration: none;
+      color: #fff; background: rgba(255,255,255,0.1); border: none; border-radius: 30px;
+      cursor: pointer; transition: background 0.3s, transform 0.2s;
     }
-    .sidebar button:hover {
-      background: rgba(244,180,0,0.8);
-      transform: scale(1.05);
-      color: #000;
-    }
-    .content {
-      flex: 1;
-      position: relative;
-      background: url('background.jpg') center/cover no-repeat;
-    }
-    .content::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8));
-    }
-    .overlay {
-      position: absolute;
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      text-align: center;
-      color: #fff;
-      z-index: 1;
-      padding: 0 10px;
-    }
-    .overlay h1 {
-      font-size: 64px;
-      text-shadow: 0 0 10px rgba(244,180,0,0.8);
-      margin-bottom: 20px;
-    }
+    .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
+    .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
+    .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
+    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
+    .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; }
     .overlay a.start-btn {
-      display: inline-block;
-      padding: 16px 32px;
-      font-size: 20px;
-      background: linear-gradient(45deg, #f4b400, #ffea00);
-      color: #000;
-      text-decoration: none;
-      border-radius: 50px;
-      box-shadow: 0 0 15px rgba(244,180,0,0.7);
-      transition: box-shadow 0.3s, transform 0.2s;
+      display: inline-block; padding: 16px 32px; font-size: 20px;
+      background: linear-gradient(45deg, #f4b400, #ffea00); color: #000; text-decoration: none;
+      border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7); transition: box-shadow 0.3s, transform 0.2s;
     }
-    .overlay a.start-btn:hover {
-      box-shadow: 0 0 25px rgba(255,234,0,0.9);
-      transform: translateY(-5px);
-    }
+    .overlay a.start-btn:hover { box-shadow: 0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); }
     .panel {
-      position: absolute;
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(20,20,40,0.9);
-      padding: 30px;
-      border-radius: 10px;
-      width: 90%; max-width: 500px;
-      display: none;
-      z-index: 2;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+      position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
+      background: rgba(20,20,40,0.9); padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; display: none; z-index: 2; box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
     .panel.active { display: block; }
-    .panel h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: #f4b400;
-    }
+    .panel h2 { font-size: 24px; margin-bottom: 10px; color: #f4b400; }
     .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
     .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
     .panel ul li { margin-bottom: 8px; font-size: 14px; }
-    .panel .close-btn {
-      display: block;
-      margin: 0 auto;
-      padding: 10px 20px;
-      background: #f44336;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
+    .panel .close-btn { display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
     .panel .close-btn:hover { background: #e53935; }
     /* Responsive */
     @media (max-width: 768px) {
       .container { flex-direction: column; }
-      .sidebar {
-        width: 100%; flex-direction: row; justify-content: space-around;
-        padding: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      }
+      .sidebar { width: 100%; flex-direction: row; justify-content: space-around; padding: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
       .sidebar button { width: auto; padding: 10px 15px; font-size: 14px; }
       .overlay h1 { font-size: 36px; }
       .overlay a.start-btn { padding: 12px 24px; font-size: 18px; }
@@ -213,7 +146,7 @@
     document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
   </script>
 
-  <!-- 핵심 변경: "데스크톱이면 팝업, 아니면 같은 탭" -->
+  <!-- 핵심 변경: "데스크톱이면 팝업, 아니면 같은 탭" (이벤트 제스처당 window.open 1회만 실행) -->
   <script>
     (function() {
       const GAME_POPUP_WIDTH = 1024;
@@ -221,38 +154,23 @@
       const POPUP_NAME = 'gameWindow';
       const SUPPRESS_POPUP_ALERT = true; // 팝업 실패시 경고창 표시 안 함
 
-      // 데스크톱 판단 로직
+      // 데스크톱 판단 로직 (원본 유지)
       function isDesktop() {
         const ua = navigator.userAgent || '';
-        // 1) UA-CH: 크로미움 계열에서 제공 (지원 시 가장 신뢰)
         if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
           if (navigator.userAgentData.mobile === false) return true;
           if (navigator.userAgentData.mobile === true) return false;
         }
-        // 2) iPadOS: Mac UA 위장 + 터치포인트로 식별 → 데스크톱 아님
         const looksLikeIPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
         if (looksLikeIPadOS) return false;
-        // 3) 흔한 모바일/태블릿 UA 키워드 배제
         if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false;
-        // 4) 입력 능력 휴리스틱: 마우스 호버 + 정밀 포인터면 데스크톱 성격
         const finePointer = window.matchMedia?.('(pointer: fine)')?.matches;
         const canHover    = window.matchMedia?.('(hover: hover)')?.matches;
         if (finePointer && canHover) return true;
-        // 5) 마지막 안전망: 화면 크기
         return Math.max(screen.width, screen.height) >= 1024;
       }
 
-      // 팝업 가능 여부를 실제로 시험 (사용자 제스처 안에서 호출)
-      function canOpenPopup() {
-        let w = null;
-        try {
-          w = window.open('about:blank', '_blank', 'width=1,height=1,noopener,noreferrer');
-        } catch (e) {}
-        if (!w) return false;
-        try { w.close(); } catch (e) {}
-        return true;
-      }
-
+      // 팝업 열기 (이름 고정 + 한 번만 open 호출)
       function openGamePopup(url) {
         const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
         const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
@@ -261,29 +179,35 @@
           `height=${GAME_POPUP_HEIGHT}`,
           `left=${left}`,
           `top=${top}`,
-          'resizable=yes',
-          'scrollbars=yes',
-          'status=no',
-          'toolbar=no',
-          'menubar=no'
+          'resizable=yes', 'scrollbars=yes', 'status=no', 'toolbar=no', 'menubar=no', 'noopener', 'noreferrer'
         ].join(',');
-        const popup = window.open(url, POPUP_NAME, opts);
-        if (!popup || popup.closed === undefined) {
-          if (!SUPPRESS_POPUP_ALERT) alert('팝업이 차단되었거나 열 수 없습니다.');
+
+        // 중요: 사용자 제스처 안에서 window.open을 단 1회만 호출하고, 그 핸들을 재사용
+        let popup = null;
+        try {
+          popup = window.open('', POPUP_NAME, opts);
+        } catch (e) {
+          popup = null;
+        }
+
+        if (!popup || typeof popup.closed === 'undefined') {
+          if (!SUPPRESS_POPUP_ALERT) alert('팝업이 차단되었거나 열 수 없습니다. 같은 탭으로 이동합니다.');
           return null;
         }
-        try { popup.focus(); } catch (e) {}
+
+        try { popup.location.href = url; popup.focus(); } catch (e) { /* fallback은 호출부에서 처리 */ }
         return popup;
       }
 
       function launchGame() {
         if (isDesktop()) {
-          // 데스크톱: 팝업 시도 → 차단되면 같은 탭
-          if (!canOpenPopup() || !openGamePopup('game.html')) {
+          // 데스크톱: 팝업 시도 → 실패 시 같은 탭 이동
+          const p = openGamePopup('game.html');
+          if (!p) {
             location.href = 'game.html';
           }
         } else {
-          // 모바일/웹뷰/인앱 등: 같은 탭
+          // 모바일/웹뷰/인앱 등: 같은 탭 이동
           location.href = 'game.html';
         }
       }
@@ -294,16 +218,10 @@
         launchGame();
       });
       startBtn.addEventListener('auxclick', function(e) {
-        if (e.button === 1) {
-          e.preventDefault();
-          launchGame();
-        }
+        if (e.button === 1) { e.preventDefault(); launchGame(); }
       });
       startBtn.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          e.preventDefault();
-          launchGame();
-        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); launchGame(); }
       });
     })();
   </script>
