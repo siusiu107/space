@@ -219,6 +219,19 @@
       const GAME_POPUP_HEIGHT = 768;   // 팝업 높이(px)
       const POPUP_NAME = 'gameWindow'; // 팝업 창 이름 (재사용 가능)
 
+      // === 추가: WebView 감지 함수 ===
+      function isWebView() {
+        const ua = navigator.userAgent || '';
+        const isAndroid = /Android/i.test(ua);
+        const isIOS = /iP(hone|ad|od)/i.test(ua);
+        const androidWV =
+          isAndroid && (/\b; wv\b/.test(ua) ||
+                        (/\bVersion\/[\d.]+/.test(ua) && /\bChrome\/[\d.]+/.test(ua) && !/SamsungBrowser|EdgA|OPR|Whale/i.test(ua)));
+        const iosWV =
+          isIOS && ( !/Safari/i.test(ua) || !!(window.webkit && window.webkit.messageHandlers) );
+        return androidWV || iosWV;
+      }
+
       function openGamePopup(url) {
         // 중앙 위치 계산
         const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
@@ -250,28 +263,37 @@
         return popup;
       }
 
+      // === 추가: 실행 진입 함수 (WebView면 그냥 열기, 아니면 팝업) ===
+      function launchGame() {
+        if (isWebView()) {
+          // 인앱/웹뷰에서는 같은 탭에서 바로 열기
+          location.href = 'game.html';
+        } else {
+          openGamePopup('game.html');
+        }
+      }
+
       const startBtn = document.getElementById('start-btn');
 
-      // 일반 클릭 (modifier 키 포함)에서도 항상 팝업으로 열리게 함
+      // 일반 클릭
       startBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        openGamePopup('game.html');
+        launchGame();
       });
 
-      // 휠/중간 버튼으로 클릭할 때도 팝업으로 열기 (auxclick)
+      // 휠/중간 버튼 클릭(auxclick)
       startBtn.addEventListener('auxclick', function(e) {
-        // 중간 버튼(1)이나 다른 보조 버튼에 대해 팝업 열기
         if (e.button === 1) {
           e.preventDefault();
-          openGamePopup('game.html');
+          launchGame();
         }
       });
 
-      // 키보드로 포커스된 상태에서 Ctrl+Enter 같은 조합으로 열기(선택적 안전장치)
+      // 키보드로 열기(선택)
       startBtn.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           e.preventDefault();
-          openGamePopup('game.html');
+          launchGame();
         }
       });
 
