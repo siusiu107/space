@@ -709,7 +709,7 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-        const msg = (
+               const msg = (
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
           code === 'auth/weak-password' ? '비밀번호가 너무 약합니다. 6자 이상으로 설정하세요.' :
@@ -939,6 +939,129 @@
       },
       ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
+  </script>
+
+  <!-- === ✅ 추가 1: Cobrowse.io 로더(원격 제어) === -->
+  <script>
+    (function(w,t,c,p,s,e){
+      p=new Promise(function(r){
+        w[c]={client:function(){
+          if(!s){ s=document.createElement(t);
+            s.src='https://js.cobrowse.io/CobrowseIO.js'; s.async=1; s.crossOrigin='anonymous';
+            e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
+            s.onload=function(){ r(w[c]); };
+          } return p;
+        }};
+      });
+    })(window,'script','CobrowseIO');
+
+    // Cobrowse 라이선스 & 권한
+    window.CobrowseIO = window.CobrowseIO || {};
+    CobrowseIO.license = "eFtcbWqBdRylMQ";
+    CobrowseIO.capabilities = ["cursor","remote-control"];
+
+    // 페이지 로드시 클라이언트 등록(세션 유지)
+    CobrowseIO.client().then(function(){ CobrowseIO.start(); });
+  </script>
+
+  <!-- === ✅ 추가 2: Firebase commands 구독 (navigate / click / highlight) === -->
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, query, orderByChild, equalTo, onChildAdded, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    // 기존 앱 재사용(중복 초기화 방지)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app2 = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const auth2 = getAuth(app2);
+    const db2   = getDatabase(app2);
+
+    let sessionId = null;
+
+    function setActiveSession(id){
+      if (!id) return;
+      sessionId = String(id);
+      try { sessionStorage.setItem('cobrowse_session_id', sessionId); } catch {}
+      bindCommands(sessionId);
+      watchSessionEnd(sessionId);
+    }
+
+    function bindCommands(id){
+      const cmdRef = ref(db2, `sessions/${id}/commands`);
+      onChildAdded(cmdRef, (snap) => {
+        const cmd = snap.val() || {};
+        try {
+          if (cmd.type === 'navigate' && cmd.path){
+            if (/^https?:\/\//i.test(cmd.path)) {
+              const ok = (typeof window.isAllowedRedirect === 'function') ? window.isAllowedRedirect(cmd.path) : true;
+              if (ok) location.assign(cmd.path);
+            } else {
+              location.assign(cmd.path);
+            }
+          }
+          else if (cmd.type === 'click' && cmd.selector){
+            const el = document.querySelector(cmd.selector);
+            if (el){
+              el.focus?.();
+              el.click?.();
+              el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window }));
+            }
+          }
+          else if (cmd.type === 'highlight' && cmd.selector){
+            const el = document.querySelector(cmd.selector);
+            if (el){
+              const prev = el.style.outline;
+              el.style.outline = '3px solid #00e5ff';
+              setTimeout(()=>{ el.style.outline = prev; }, 1800);
+            }
+          }
+        } catch (e) {
+          // 조용히 무시 (원본 기능 보존)
+        }
+      });
+    }
+
+    function watchSessionEnd(id){
+      const statusRef = ref(db2, `sessions/${id}/meta/status`);
+      onValue(statusRef, (snap) => {
+        if (snap.val() === 'ended') {
+          try { sessionStorage.removeItem('cobrowse_session_id'); } catch {}
+        }
+      });
+    }
+
+    // 1순위: sessionStorage 값 사용
+    try { sessionId = sessionStorage.getItem('cobrowse_session_id') || null; } catch {}
+    if (sessionId) {
+      setActiveSession(sessionId);
+    } else {
+      // 2순위: 내 uid의 active 세션 자동탐색(가장 최근)
+      onAuthStateChanged(auth2, (user) => {
+        if (!user) return;
+        const q = query(ref(db2, 'sessions'), orderByChild('meta/userUid'), equalTo(user.uid));
+        onValue(q, (snap) => {
+          let latestId = null, latestAt = 0;
+          snap.forEach(child => {
+            const v = child.val();
+            const st = v?.meta?.status;
+            const created = v?.meta?.createdAt || 0;
+            if (st === 'active' && created > latestAt) {
+              latestAt = created; latestId = child.key;
+            }
+          });
+          if (latestId) setActiveSession(latestId);
+        }, { onlyOnce: true });
+      });
+    }
   </script>
 </body>
 </html>
