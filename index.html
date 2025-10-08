@@ -111,6 +111,7 @@
         <!-- 데스크톱이면 팝업, 아니면 같은 탭 -->
         <a href="#" id="start-btn" class="start-btn">게임 시작</a>
       </div>
+      <div id="popup-hint" style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;">팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.</div>
       <div class="panel" id="license-panel">
         <h2>라이센스 정보</h2>
         <p>© 2025 SIU Studio. All rights reserved.</p>
@@ -172,8 +173,18 @@
 
       // 팝업 열기 (이름 고정 + 한 번만 open 호출)
       function openGamePopup(url) {
-        const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
-        const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
+        const left // 안내 토스트
+      function showPopupHint(msg){
+        var el = document.getElementById('popup-hint');
+        if(!el) return;
+        el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 아이콘에서 허용해 주세요.';
+        el.style.display = 'block';
+        clearTimeout(showPopupHint._t);
+        showPopupHint._t = setTimeout(function(){ el.style.display='none'; }, 4000);
+      }
+
+      // 팝업 열기 (이름 고정 + 한 번만 open 호출)
+      function openGamePopup(url) {       const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
         const opts = [
           `width=${GAME_POPUP_WIDTH}`,
           `height=${GAME_POPUP_HEIGHT}`,
@@ -192,23 +203,21 @@
 
         if (!popup || typeof popup.closed === 'undefined') {
           if (!SUPPRESS_POPUP_ALERT) alert('팝업이 차단되었거나 열 수 없습니다. 같은 탭으로 이동합니다.');
-          return null;
-        }
-
-        try { popup.location.href = url; popup.focus(); } catch (e) { /* fallback은 호출부에서 처리 */ }
+          returif (!SUPPRESS_POPUP_ALERT) showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 아이콘에서 허용해 주세요.');(); } catch (e) { /* fallback은 호출부에서 처리 */ }
         return popup;
       }
 
       function launchGame() {
         if (isDesktop()) {
-          // 데스크톱: 팝업 시도 → 실패 시 같은 탭 이동
-          const p = openGamePopup('game.html');
-          if (!p) {
-            location.href = 'game.html';
-          }
+          // 데스크톱: 팝업 시도 → 실패 시 같은 탭function launchGame() {
+        if (isDesktop()) {
+          // 데스크톱: 현재 탭은 그대로, 팝업만 시도 (차단 시 안내만 표시)
+          openGamePopup(ABS_GAME_URL);
         } else {
-          // 모바일/웹뷰/인앱 등: 같은 탭 이동
+          // 모바일/웹뷰/인앱: 같은 탭 이동
           location.href = 'game.html';
+        }
+      }l';
         }
       }
 
