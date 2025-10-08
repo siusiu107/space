@@ -138,7 +138,7 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
-    /* 상단바: 모바일 줄바꿈 허용 */
+    /* 상단바 */
     #top-bar {
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
@@ -151,25 +151,22 @@
     .bar-group span { white-space: nowrap; }
     #ship-img{ width:16px; height:16px; }
 
-    /* 로그아웃: 상단에 고정, 바텀 내비보다 위 */
+    /* 로그아웃 버튼 */
     #logout-btn {
       display:none;
       position:fixed; top:56px; right:8px;
       background:#f44; color:#fff; border:none;
       padding:8px 12px; border-radius:8px; cursor:pointer;
-      z-index:1400;
-      box-shadow:0 6px 16px rgba(0,0,0,.35);
+      z-index:1400; box-shadow:0 6px 16px rgba(0,0,0,.35);
     }
-    #logout-btn:active{ transform: translateY(1px); }
 
-    /* 설정 버튼(항상 가로 표기) */
+    /* 설정 버튼 */
     #settings-btn {
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
       border: 1px solid rgba(255,255,255,0.12); color: #e6f5ff;
-      cursor: pointer; font-weight: 700; writing-mode: horizontal-tb;
+      cursor: pointer; font-weight: 700;
     }
-    #settings-btn:hover { filter: brightness(1.08); }
 
     /* 메인 컨테이너 */
     #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
@@ -189,45 +186,30 @@
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-    /* === Bottom Nav (glass floating) === */
+    /* Bottom Nav */
     #bottom-nav{
-      position: fixed;
-      left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
+      position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
       display: flex; gap: 8px; padding: 8px;
-      background: rgba(10,12,20,0.65);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      background: rgba(10,12,20,0.65); backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-      z-index: 1200;
-      max-width: 96vw;
+      border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+      z-index: 1200; max-width: 96vw;
     }
     #bottom-nav .tab{
-      display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; min-width: 70px;
-      padding: 10px 12px;
-      font-size: 13px; line-height: 1;
-      color: #d7e8ff; cursor: pointer; user-select: none;
-      border-radius: 12px;
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:6px; min-width:70px; padding:10px 12px; font-size:13px; color:#d7e8ff;
+      cursor:pointer; border-radius:12px;
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
       border: 1px solid rgba(255,255,255,0.06);
-      transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
-      outline: none;
     }
-    #bottom-nav .tab:hover{ transform: translateY(-1px); }
     #bottom-nav .tab.active{
-      color: #001218; background: linear-gradient(180deg,#00c0ff,#00a2ff);
-      border-color: rgba(0,0,0,0.0); box-shadow: 0 6px 18px rgba(0,160,255,0.28);
+      color:#001218; background: linear-gradient(180deg,#00c0ff,#00a2ff); box-shadow: 0 6px 18px rgba(0,160,255,0.28);
     }
-    #bottom-nav .t-icon{ font-size: 16px; display:inline-block; transform: translateY(-1px); }
-    #bottom-nav .t-label{ font-weight: 800; letter-spacing: .2px; }
-
-    /* 컨텐츠가 바텀바에 가리지 않도록 여백 */
     #container{ padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
     #planets-content{ padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px)); }
 
-    /* 모바일 최적화 */
+    /* 모바일 */
     @media (max-width: 420px){
       #top-bar{ font-size:11px; padding:6px 8px; }
       #settings-btn{ padding:5px 8px; font-size:12px; }
@@ -237,63 +219,61 @@
       h1{ font-size:1.2em; }
     }
 
-    /* ===== 사이드 메뉴 (추가) ===== */
+    /* 사이드 메뉴 */
     #side-menu-toggle{
-      position: fixed;
-      left: 8px;
+      position: fixed; left: 8px;
       bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-      z-index: 1600;
-      width: 44px; height: 44px;
+      z-index: 1600; width: 44px; height: 44px;
       border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
       background: rgba(10,12,20,0.65);
-      backdrop-filter: blur(10px);
       color:#e6f5ff; font-size: 20px; cursor: pointer;
       display:flex; align-items:center; justify-content:center;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    #side-menu-toggle:active{ transform: translateY(1px); }
-
-    #side-backdrop{
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.35);
-      opacity: 0; pointer-events: none;
-      transition: opacity .2s ease;
-      z-index: 1550;
-    }
+    #side-backdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.35); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 1550; }
     #side-backdrop.show{ opacity:1; pointer-events:auto; }
-
     #side-menu{
       position: fixed; top: 0; left: 0; bottom: 0;
-      width: 260px; max-width: 84vw;
-      transform: translateX(-100%);
+      width: 260px; max-width: 84vw; transform: translateX(-100%);
       transition: transform .24s cubic-bezier(.2,.9,.3,1);
       background: rgba(15,18,28,0.9);
       border-right: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(10px);
-      z-index: 1600;
-      box-shadow: 10px 0 30px rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px); z-index: 1600; box-shadow: 10px 0 30px rgba(0,0,0,0.35);
     }
     #side-menu.open{ transform: translateX(0); }
-    .side-header{
-      padding: 14px 14px 10px;
-      font-weight: 800; color:#dbefff; letter-spacing:.3px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
+    .side-header{ padding: 14px 14px 10px; font-weight: 800; color:#dbefff; letter-spacing:.3px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .side-items{ padding: 8px; display:flex; flex-direction:column; gap:8px; }
     .side-item{
       display:flex; align-items:center; gap:10px;
       padding:10px 12px; border-radius:10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
       border: 1px solid rgba(255,255,255,0.10);
-      color:#eaf6ff; font-weight:700; cursor:pointer;
-      user-select:none;
+      color:#eaf6ff; font-weight:700; cursor:pointer; user-select:none;
     }
-    .side-item:hover{ filter: brightness(1.08); }
-    .side-item .icon{ width:18px; text-align:center; }
-    @media (max-width: 420px){
-      #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; }
-      #side-menu{ width: 240px; }
+
+    /* ====== (추가) 상담요청 버튼 & 채팅 패널 ====== */
+    #help-request-btn{
+      position: fixed; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+      z-index: 1600; padding: 12px 14px; border-radius: 12px;
+      background: linear-gradient(180deg,#00c0ff,#00a2ff);
+      color: #001218; font-weight: 800; border: none; cursor: pointer;
+      box-shadow: 0 8px 22px rgba(0,160,255,0.28);
     }
+    #support-chat{
+      position: fixed; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      width: 280px; max-width: 92vw; z-index: 1600;
+      display: none; flex-direction: column; gap: 6px;
+      background: rgba(10,12,20,0.8); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px;
+    }
+    #support-chat.active{ display: flex; }
+    #chat-log{ height: 160px; overflow: auto; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px; font-size: 13px; }
+    .bubble{ margin: 4px 0; padding: 6px 8px; border-radius: 8px; max-width: 90%; }
+    .from-user{ background: rgba(0,192,255,0.16); align-self: flex-end; }
+    .from-agent{ background: rgba(255,255,255,0.1); align-self: flex-start; }
+    #chat-input{ display: flex; gap: 6px; }
+    #chat-input input{ flex:1; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #e6f7ff; }
+    #chat-input button{ padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: linear-gradient(180deg,#fff,#f2f2f2); color:#000; font-weight:800; }
   </style>
 </head>
 <body>
@@ -351,10 +331,10 @@
     </div>
   </div>
 
-  <!-- 로그아웃 버튼(상단에 고정) -->
+  <!-- 로그아웃 버튼 -->
   <button id="logout-btn">로그아웃</button>
 
-  <!-- 상단 바 & 메인 게임 -->
+  <!-- 상단 바 & 메인 -->
   <div id="top-bar">
     <div class="bar-group">
       <img src="/images/resource-icon.png" alt="Resource" />
@@ -424,32 +404,34 @@
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
 
-  <!-- ===== 사이드 메뉴 (추가) ===== -->
+  <!-- 사이드 메뉴 -->
   <button id="side-menu-toggle" aria-label="사이드 메뉴 열기" title="메뉴">☰</button>
   <div id="side-backdrop" aria-hidden="true"></div>
   <aside id="side-menu" aria-label="사이드 메뉴" aria-hidden="true">
     <div class="side-header">메뉴</div>
     <nav class="side-items">
-      <button class="side-item" data-action="menu">
-        <span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span>
-      </button>
-      <button class="side-item" data-action="download">
-        <span class="icon">⬇️</span><span>앱 다운로드</span>
-      </button>
-      <button class="side-item" data-action="resume">
-        <span class="icon">▶️</span><span>게임 계속하기</span>
-      </button>
-      <button class="side-item" data-action="rank">
-        <span class="icon">🏆</span><span>랭킹 보기</span>
-      </button>
+      <button class="side-item" data-action="menu"><span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span></button>
+      <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
+      <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
+      <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
     </nav>
   </aside>
+
+  <!-- ====== (추가) 상담요청 버튼 & 채팅 패널 ====== -->
+  <button id="help-request-btn">도움이 필요하신가요? 상담사에게 도움 요청</button>
+  <section id="support-chat" aria-live="polite">
+    <div id="chat-log" role="log"></div>
+    <div id="chat-input">
+      <input id="chat-text" type="text" placeholder="상담사에게 메시지…" />
+      <button id="chat-send">보내기</button>
+    </div>
+  </section>
 
   <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, onValue, runTransaction, update, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -558,6 +540,44 @@
       } catch (e) { console.error('showGameUI error', e); }
     }
 
+    // ========= 상담/채팅 상태 =========
+    let currentSessionId = null;
+    let chatRef = null;
+    let chatUnsub = null;
+
+    function openChat(sessionId){
+      currentSessionId = sessionId;
+      const box = document.getElementById('support-chat');
+      box.classList.add('active');
+      const log = document.getElementById('chat-log');
+      log.innerHTML = '';
+      if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+      chatRef = ref(db, `support/chats/${sessionId}`);
+      chatUnsub = onChildAdded(chatRef, (snap) => {
+        const msg = snap.val();
+        const div = document.createElement('div');
+        div.className = 'bubble ' + (msg.from === 'agent' ? 'from-agent' : 'from-user');
+        div.textContent = msg.text || '';
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      });
+    }
+    async function sendChat(text){
+      if (!currentSessionId || !text.trim()) return;
+      const msg = { text: text.trim(), from: 'user', at: Date.now() };
+      await push(ref(db, `support/chats/${currentSessionId}`), msg);
+    }
+    async function endSessionCleanup(){
+      try{
+        if (!currentSessionId) return;
+        // 세션 상태 종료 + 채팅 삭제(로그 제외)
+        await update(ref(db, `support/sessions/${currentSessionId}`), { status:'ended', endedAt: Date.now() });
+        await remove(ref(db, `support/chats/${currentSessionId}`)); // 채팅 내용 삭제
+      }catch(e){}
+      currentSessionId = null;
+      document.getElementById('support-chat').classList.remove('active');
+    }
+
     onAuthStateChanged(auth, async user => {
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -616,6 +636,14 @@
           }
           updateUI(); renderPlanets();
         });
+
+        // ===== Cobrowse 사용자 식별/시작 =====
+        try {
+          window.CobrowseIO = window.CobrowseIO || {};
+          CobrowseIO.customData = { user_id: user.uid, user_email: user.email || '', page: location.pathname };
+          await CobrowseIO.client?.();
+          CobrowseIO.start?.();
+        } catch (e) { console.warn('Cobrowse init failed', e); }
 
       } else {
         try { showLoginOverlay(false); } catch {}
@@ -709,7 +737,7 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-               const msg = (
+        const msg = (
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
           code === 'auth/weak-password' ? '비밀번호가 너무 약합니다. 6자 이상으로 설정하세요.' :
@@ -740,7 +768,10 @@
     });
 
     // 로그아웃(상단 버튼)
-    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await endSessionCleanup();
+      signOut(auth);
+    });
 
     // ===== 게임 UI =====
     function updateUI() {
@@ -835,13 +866,14 @@
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
 
       // 바텀 내비 탭 전환
-      document.querySelectorAll('#bottom-nav .tab').forEach(tab => addEvent(tab, 'click', () => {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
-        document.querySelectorAll('#bottom-nav .tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-      }));
-      function addEvent(el, ev, fn){ el.addEventListener(ev, fn); }
+      document.querySelectorAll('#bottom-nav .tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+          document.querySelectorAll('#bottom-nav .tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        });
+      });
 
       setInterval(() => {
         if (!uid || isInitialSync) return;
@@ -851,9 +883,8 @@
         save(); updateUI();
       }, 1000);
     };
-  </script>
 
-  <script>
+    // ===== 커스텀 메뉴 =====
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
@@ -876,52 +907,47 @@
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
 
-    document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+    // ===== 상담요청/채팅 =====
+    const helpBtn = document.getElementById('help-request-btn');
+    const chatInput = document.getElementById('chat-text');
+    const chatSend  = document.getElementById('chat-send');
+
+    helpBtn.addEventListener('click', async () => {
+      if (!ensureReady()) return;
+      try{
+        await CobrowseIO.client?.();
+        const session = await CobrowseIO.createSession?.();
+        if (!session) return;
+
+        // 브로드캐스트(상담사 자동 연결용)
+        const payload = {
+          id: session.id, code: session.code, createdAt: Date.now(), status: 'waiting',
+          user: { uid, email: (auth.currentUser && auth.currentUser.email) || '' },
+          page: location.pathname,
+          connectUrl: `https://cobrowse.io/connect?filter_user_id=${encodeURIComponent(uid||'')}`
+        };
+        await update(ref(db, `support/sessions/${session.id}`), payload);
+
+        // 채팅 열기
+        openChat(session.id);
+      }catch(e){ console.error(e); }
     });
-  </script>
 
-  <!-- ===== 사이드 메뉴 스크립트 (추가) ===== -->
-  <script>
-    (function(){
-      const sideToggle = document.getElementById('side-menu-toggle');
-      const sideMenu   = document.getElementById('side-menu');
-      const backdrop   = document.getElementById('side-backdrop');
-
-      function openSide(){
-        sideMenu.classList.add('open');
-        sideMenu.setAttribute('aria-hidden','false');
-        backdrop.classList.add('show');
-        backdrop.setAttribute('aria-hidden','false');
+    chatSend.addEventListener('click', async () => {
+      const t = chatInput.value;
+      chatInput.value = '';
+      await sendChat(t);
+    });
+    chatInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        const t = chatInput.value;
+        chatInput.value = '';
+        await sendChat(t);
       }
-      function closeSide(){
-        sideMenu.classList.remove('open');
-        sideMenu.setAttribute('aria-hidden','true');
-        backdrop.classList.remove('show');
-        backdrop.setAttribute('aria-hidden','true');
-      }
+    });
 
-      sideToggle.addEventListener('click', openSide);
-      backdrop.addEventListener('click', closeSide);
-      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSide(); });
-
-      // 사이드 메뉴 액션 (우클릭 커스텀 메뉴와 동일 동작)
-      sideMenu.addEventListener('click', (e)=>{
-        const btn = e.target.closest('.side-item');
-        if(!btn) return;
-        const action = btn.getAttribute('data-action');
-        if (action === 'menu') {
-          try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
-          try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
-          try { window.close(); } catch {}
-          setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
-        }
-        if (action === 'download') { location.href='/app-download.html'; }
-        if (action === 'rank')     { location.href='/ranking.html'; }
-        if (action === 'resume')   { /* 단순히 닫기 */ }
-        closeSide();
-      });
-    })();
+    // 창 닫힘/새로고침 시 세션 종료 처리(채팅 삭제)
+    window.addEventListener('beforeunload', async () => { await endSessionCleanup(); });
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
@@ -933,135 +959,24 @@
       disableCut: true,
       disablePaste: true,
       clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        try { window.close(); } catch {}
-        next();
-      },
+      ondevtoolopen(type, next) { try { window.close(); } catch {} next(); },
       ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
   </script>
 
-  <!-- === ✅ 추가 1: Cobrowse.io 로더(원격 제어) === -->
+  <!-- === Cobrowse.io: 사용자측 원격제어 가능 === -->
+  <script src="https://js.cobrowse.io/CobrowseIO.js"></script>
   <script>
-    (function(w,t,c,p,s,e){
-      p=new Promise(function(r){
-        w[c]={client:function(){
-          if(!s){ s=document.createElement(t);
-            s.src='https://js.cobrowse.io/CobrowseIO.js'; s.async=1; s.crossOrigin='anonymous';
-            e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
-            s.onload=function(){ r(w[c]); };
-          } return p;
-        }};
-      });
-    })(window,'script','CobrowseIO');
-
-    // Cobrowse 라이선스 & 권한
-    window.CobrowseIO = window.CobrowseIO || {};
-    CobrowseIO.license = "eFtcbWqBdRylMQ";
-    CobrowseIO.capabilities = ["cursor","remote-control"];
-
-    // 페이지 로드시 클라이언트 등록(세션 유지)
+    CobrowseIO.license = 'eFtcbWqBdRylMQ';
+    CobrowseIO.capabilities = ['cursor','pointer','scroll','keypress','select'];
+    CobrowseIO.trustedOrigins = [
+      location.origin,
+      'https://siustudio.kro.kr',
+      'https://xn--989a202a4ogwtc69p.siustudio.kro.kr'
+    ];
+    // (개발용) 원격제어 자동 허용 — 운영은 제거 권장
+    CobrowseIO.confirmRemoteControl = function(){ return Promise.resolve(true); };
     CobrowseIO.client().then(function(){ CobrowseIO.start(); });
-  </script>
-
-  <!-- === ✅ 추가 2: Firebase commands 구독 (navigate / click / highlight) === -->
-  <script type="module">
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, query, orderByChild, equalTo, onChildAdded, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-
-    // 기존 앱 재사용(중복 초기화 방지)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-      authDomain: "siu-studio.firebaseapp.com",
-      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "siu-studio",
-      storageBucket: "siu-studio.appspot.com",
-      messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140e893c31f01",
-      measurementId: "G-1Y090YJDB6"
-    };
-    const app2 = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    const auth2 = getAuth(app2);
-    const db2   = getDatabase(app2);
-
-    let sessionId = null;
-
-    function setActiveSession(id){
-      if (!id) return;
-      sessionId = String(id);
-      try { sessionStorage.setItem('cobrowse_session_id', sessionId); } catch {}
-      bindCommands(sessionId);
-      watchSessionEnd(sessionId);
-    }
-
-    function bindCommands(id){
-      const cmdRef = ref(db2, `sessions/${id}/commands`);
-      onChildAdded(cmdRef, (snap) => {
-        const cmd = snap.val() || {};
-        try {
-          if (cmd.type === 'navigate' && cmd.path){
-            if (/^https?:\/\//i.test(cmd.path)) {
-              const ok = (typeof window.isAllowedRedirect === 'function') ? window.isAllowedRedirect(cmd.path) : true;
-              if (ok) location.assign(cmd.path);
-            } else {
-              location.assign(cmd.path);
-            }
-          }
-          else if (cmd.type === 'click' && cmd.selector){
-            const el = document.querySelector(cmd.selector);
-            if (el){
-              el.focus?.();
-              el.click?.();
-              el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window }));
-            }
-          }
-          else if (cmd.type === 'highlight' && cmd.selector){
-            const el = document.querySelector(cmd.selector);
-            if (el){
-              const prev = el.style.outline;
-              el.style.outline = '3px solid #00e5ff';
-              setTimeout(()=>{ el.style.outline = prev; }, 1800);
-            }
-          }
-        } catch (e) {
-          // 조용히 무시 (원본 기능 보존)
-        }
-      });
-    }
-
-    function watchSessionEnd(id){
-      const statusRef = ref(db2, `sessions/${id}/meta/status`);
-      onValue(statusRef, (snap) => {
-        if (snap.val() === 'ended') {
-          try { sessionStorage.removeItem('cobrowse_session_id'); } catch {}
-        }
-      });
-    }
-
-    // 1순위: sessionStorage 값 사용
-    try { sessionId = sessionStorage.getItem('cobrowse_session_id') || null; } catch {}
-    if (sessionId) {
-      setActiveSession(sessionId);
-    } else {
-      // 2순위: 내 uid의 active 세션 자동탐색(가장 최근)
-      onAuthStateChanged(auth2, (user) => {
-        if (!user) return;
-        const q = query(ref(db2, 'sessions'), orderByChild('meta/userUid'), equalTo(user.uid));
-        onValue(q, (snap) => {
-          let latestId = null, latestAt = 0;
-          snap.forEach(child => {
-            const v = child.val();
-            const st = v?.meta?.status;
-            const created = v?.meta?.createdAt || 0;
-            if (st === 'active' && created > latestAt) {
-              latestAt = created; latestId = child.key;
-            }
-          });
-          if (latestId) setActiveSession(latestId);
-        }, { onlyOnce: true });
-      });
-    }
   </script>
 </body>
 </html>
