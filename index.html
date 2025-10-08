@@ -1,78 +1,278 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>태양계정복 - 메인 메뉴</title>
-  <meta name="description" content="태양계정복 - 우주 생존 클릭커. 직관적인 조작과 화려한 그래픽의 HTML 게임입니다. PC는 팝업, 모바일/웹뷰는 같은 탭으로 게임을 실행합니다." />
-  <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio" />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="./" />
+  <meta name="description" content="태양계정복 - 우주 생존 클릭커. 직관적인 조작과 화려한 그래픽의 HTML 게임입니다. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="./">
 
-  <!-- Open Graph / Social share -->
-  <meta property="og:title" content="태양계정복 - SIU Studio" />
-  <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. PC는 팝업, 모바일/웹뷰는 같은 탭으로 실행." />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="space-bg.jpg" />
-  <meta property="og:image:alt" content="태양계정복 썸네일" />
+  <!-- Open Graph / Social share (간단 설정, 공유 시 space-bg.jpg 사용) -->
+  <meta property="og:title" content="태양계정복 - SIU Studio">
+  <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="space-bg.jpg">
+  <meta property="og:image:alt" content="태양계정복 썸네일">
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="태양계정복 - SIU Studio" />
-  <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. PC는 팝업, 모바일/웹뷰는 같은 탭으로 실행." />
-  <meta name="twitter:image" content="space-bg.jpg" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="태양계정복 - SIU Studio">
+  <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="twitter:image" content="space-bg.jpg">
 
-  <!-- Icons -->
-  <link rel="icon" href="space-bg.jpg" type="image/jpeg" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
-  <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon" />
+  <!-- 공유/탭 아이콘: space-bg.jpg 사용 -->
+  <link rel="icon" href="space-bg.jpg" type="image/jpeg">
+  
+  <!-- Apple 홈스크린 아이콘 (iOS) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
-  <!-- PWA (있다면 유지) -->
-  <link rel="manifest" href="/site.webmanifest" />
-  <meta name="msapplication-TileColor" content="#2d89ef" />
-  <meta name="theme-color" content="#ffffff" />
+  <!-- PNG 파비콘 (모던 브라우저) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 
-  <!-- 주소창 표시 교정 -->
+  <!-- Safari pinned tab (SVG) -->
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+  <!-- .ico (레거시 백업) -->
+  <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
+
+  <!-- PWA 메타 (있다면 유지) -->
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileColor" content="#2d89ef">
+  <meta name="theme-color" content="#ffffff">
+
   <script>
-    try { history.replaceState(null, '', '/main' + (location.hash || '')); } catch (e) { console.warn('주소 표시 변경 실패:', e); }
+    try { history.replaceState(null, '', '/main' + (location.hash || '')); }
+    catch(e){ console.warn('주소 표시 변경 실패:', e); }
   </script>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
-
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
+    body, html { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
     .container { display: flex; flex-direction: row; height: 100vh; }
     .sidebar {
-      width: 250px; background: rgba(10, 10, 30, 0.8);
-      display: flex; flex-direction: column; align-items: center; gap: 20px; padding-top: 40px;
+      width: 250px;
+      background: rgba(10, 10, 30, 0.8);
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 40px; gap: 20px;
       box-shadow: 5px 0 15px rgba(0,0,0,0.5);
     }
     .sidebar button {
-      width: 80%; padding: 12px 0; color: #fff; border: none; border-radius: 30px; cursor: pointer;
-      background: rgba(255,255,255,0.1); transition: background 0.3s, transform 0.2s; text-align: center;
+      width: 80%; padding: 12px 0; text-align: center; text-decoration: none;
+      color: #fff; background: rgba(255,255,255,0.1); border: none; border-radius: 30px;
+      cursor: pointer; transition: background 0.3s, transform 0.2s;
     }
-    .sidebar button:hover { background: rgba(244,180,0,0.8); color: #000; transform: scale(1.05); }
+    .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
     .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
     .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
-    .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
+    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
     .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; }
     .overlay a.start-btn {
-      display: inline-block; padding: 16px 32px; font-size: 20px; color: #000; text-decoration: none;
-      background: linear-gradient(45deg, #f4b400, #ffea00); border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7);
-      transition: box-shadow 0.3s, transform 0.2s;
+      display: inline-block; padding: 16px 32px; font-size: 20px;
+      background: linear-gradient(45deg, #f4b400, #ffea00); color: #000; text-decoration: none;
+      border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7); transition: box-shadow 0.3s, transform 0.2s;
     }
     .overlay a.start-btn:hover { box-shadow: 0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); }
     .panel {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
       background: rgba(20,20,40,0.9); padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; display: none; z-index: 2; box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
     .panel.active { display: block; }
     .panel h2 { font-size: 24px; margin-bottom: 10px; color: #f4b400; }
-    .panel p, .panel ul { color: #ddd; font-size: 14px; }
-    .panel p { margin-bottom: 15px; line-height: 1.5; }
-    .panel ul
+    .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
+    .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
+    .panel ul li { margin-bottom: 8px; font-size: 14px; }
+    .panel .close-btn { display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
+    .panel .close-btn:hover { background: #e53935; }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      .sidebar { width: 100%; flex-direction: row; justify-content: space-around; padding: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+      .sidebar button { width: auto; padding: 10px 15px; font-size: 14px; }
+      .overlay h1 { font-size: 36px; }
+      .overlay a.start-btn { padding: 12px 24px; font-size: 18px; }
+      .panel { width: 95%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="sidebar">
+      <button id="show-license">라이센스 정보</button>
+      <button id="show-contact">Contact Us</button>
+    </nav>
+    <div class="content">
+      <div class="overlay">
+        <h1>태양계정복</h1>
+        <!-- 데스크톱이면 팝업, 아니면 같은 탭 -->
+        <a href="#" id="start-btn" class="start-btn">게임 시작</a>
+      </div>
+      <div class="panel" id="license-panel">
+        <h2>라이센스 정보</h2>
+        <p>© 2025 SIU Studio. All rights reserved.</p>
+        <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
+        <ul>
+          <li>복사(Copying)</li>
+          <li>수정(Modification)</li>
+          <li>리버스 엔지니어링(Reverse Engineering)</li>
+          <li>재배포(Redistribution)</li>
+          <li>상업적 이용(Commercial Use)</li>
+        </ul>
+        <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
+        <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
+        <button class="close-btn" data-target="license-panel">닫기</button>
+      </div>
+      <div class="panel" id="contact-panel">
+        <h2>Contact Us</h2>
+        <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
+        <p><a href="mailto:support@siustudio.kro.kr" style="color: #f4b400; text-decoration: none;">support@siustudio.kro.kr</a></p>
+        <button class="close-btn" data-target="contact-panel">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 기존 패널 제어 스크립트 (원본 유지)
+    document.querySelectorAll('.close-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
+      });
+    });
+    document.getElementById('show-license').addEventListener('click', () => document.getElementById('license-panel').classList.add('active'));
+    document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
+  </script>
+
+  <!-- 핵심 변경: "데스크톱이면 팝업, 아니면 같은 탭" (이벤트 제스처당 window.open 1회만 실행) -->
+  <script>
+    (function() {
+      const GAME_POPUP_WIDTH = 1024;
+      const GAME_POPUP_HEIGHT = 768;
+      const POPUP_NAME = 'gameWindow';
+      const SUPPRESS_POPUP_ALERT = true; // 팝업 실패시 경고창 표시 안 함
+
+      // 데스크톱 판단 로직 (원본 유지)
+      function isDesktop() {
+        const ua = navigator.userAgent || '';
+        if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+          if (navigator.userAgentData.mobile === false) return true;
+          if (navigator.userAgentData.mobile === true) return false;
+        }
+        const looksLikeIPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+        if (looksLikeIPadOS) return false;
+        if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false;
+        const finePointer = window.matchMedia?.('(pointer: fine)')?.matches;
+        const canHover    = window.matchMedia?.('(hover: hover)')?.matches;
+        if (finePointer && canHover) return true;
+        return Math.max(screen.width, screen.height) >= 1024;
+      }
+
+      // 팝업 열기 (이름 고정 + 한 번만 open 호출)
+      function openGamePopup(url) {
+        const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
+        const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
+        const opts = [
+          `width=${GAME_POPUP_WIDTH}`,
+          `height=${GAME_POPUP_HEIGHT}`,
+          `left=${left}`,
+          `top=${top}`,
+          'resizable=yes', 'scrollbars=yes', 'status=no', 'toolbar=no', 'menubar=no', 'noopener', 'noreferrer'
+        ].join(',');
+
+        // 중요: 사용자 제스처 안에서 window.open을 단 1회만 호출하고, 그 핸들을 재사용
+        let popup = null;
+        try {
+          popup = window.open('', POPUP_NAME, opts);
+        } catch (e) {
+          popup = null;
+        }
+
+        if (!popup || typeof popup.closed === 'undefined') {
+          if (!SUPPRESS_POPUP_ALERT) alert('팝업이 차단되었거나 열 수 없습니다. 같은 탭으로 이동합니다.');
+          return null;
+        }
+
+        try { popup.location.href = url; popup.focus(); } catch (e) { /* fallback은 호출부에서 처리 */ }
+        return popup;
+      }
+
+      function launchGame() {
+        if (isDesktop()) {
+          // 데스크톱: 팝업 시도 → 실패 시 같은 탭 이동
+          const p = openGamePopup('game.html');
+          if (!p) {
+            location.href = 'game.html';
+          }
+        } else {
+          // 모바일/웹뷰/인앱 등: 같은 탭 이동
+          location.href = 'game.html';
+        }
+      }
+
+      const startBtn = document.getElementById('start-btn');
+      startBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        launchGame();
+      });
+      startBtn.addEventListener('auxclick', function(e) {
+        if (e.button === 1) { e.preventDefault(); launchGame(); }
+      });
+      startBtn.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); launchGame(); }
+      });
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        // 즉시 사이트 닫기
+        window.close();
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+  </script>
+  <script>
+    // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
+  </script>
+
+  <!-- 원본 유지: "팝업으로 열렸을 때 자동 종료" -->
+  <script>
+    (function() {
+      try {
+        const openedByScript = !!window.opener;
+        if (openedByScript) {
+          const CLOSE_DELAY_MS = 500;
+          setTimeout(() => {
+            try { window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*'); } catch (e) {}
+            try { window.close(); } catch (e) {}
+            setTimeout(() => {
+              try { window.location.href = 'about:blank'; } catch (e) {}
+              try { window.close(); } catch (e) {}
+            }, 50);
+          }, CLOSE_DELAY_MS);
+        }
+      } catch (e) {
+        console.warn('팝업 자동 종료 검사 중 오류:', e);
+      }
+    })();
+  </script>
+</body>
+</html>
