@@ -107,11 +107,9 @@
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
 
-    /* 공통 스피너 */
     .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
-    /* 초기 부팅 오버레이 (로그인 상태 확인 중) */
     #boot-overlay{
       position:fixed; inset:0; z-index:3000;
       display:flex; align-items:center; justify-content:center;
@@ -136,7 +134,7 @@
       box-shadow: 0 12px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.02);
       backdrop-filter: blur(6px);
       transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
-      display:none; /* ✅ 초기에는 로그인 UI 숨김 */
+      display:none;
     }
     #auth-container.hidden { opacity:0; transform: translate(-50%, -46% ) scale(.98); pointer-events:none; visibility:hidden; }
     #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
@@ -158,7 +156,6 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
-    /* 상단바 (연하게) */
     #top-bar {
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
@@ -173,7 +170,6 @@
     .bar-group span { white-space: nowrap; }
     #ship-img{ width:16px; height:16px; }
 
-    /* 설정 버튼 */
     #settings-btn {
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
@@ -182,7 +178,6 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
-    /* 메인 컨테이너 (연하게) */
     #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
     h1 { font-size:1.4em; margin:6px 0 14px; color:#00d4ff; }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
@@ -195,12 +190,10 @@
     @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
     #ore { width:200px; cursor:pointer; }
 
-    /* 커스텀 메뉴 (우클릭) */
-    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 180px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-    /* === Bottom Nav (연하게) === */
     #bottom-nav{
       position: fixed;
       left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
@@ -243,7 +236,7 @@
       h1{ font-size:1.2em; }
     }
 
-    /* ===== 사이드 메뉴 (연하게) ===== */
+    /* 사이드 메뉴 */
     #side-menu-toggle{
       position: fixed;
       left: 8px;
@@ -259,104 +252,72 @@
     }
     #side-menu-toggle:active{ transform: translateY(1px); }
 
-    #side-backdrop{
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.25);
-      opacity: 0; pointer-events: none;
-      transition: opacity .2s ease;
-      z-index: 1550;
-    }
+    #side-backdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.25); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 1550; }
     #side-backdrop.show{ opacity:1; pointer-events:auto; }
 
     #side-menu{
-      position: fixed; top: 0; left: 0; bottom: 0;
-      width: 260px; max-width: 84vw;
-      transform: translateX(-100%);
-      transition: transform .24s cubic-bezier(.2,.9,.3,1);
-      background: rgba(15,18,28,0.60);
-      border-right: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(10px);
-      z-index: 1600;
-      box-shadow: 10px 0 30px rgba(0,0,0,0.28);
+      position: fixed; top: 0; left: 0; bottom: 0; width: 260px; max-width: 84vw;
+      transform: translateX(-100%); transition: transform .24s cubic-bezier(.2,.9,.3,1);
+      background: rgba(15,18,28,0.60); border-right: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px); z-index: 1600; box-shadow: 10px 0 30px rgba(0,0,0,0.28);
     }
     #side-menu.open{ transform: translateX(0); }
-    .side-header{
-      padding: 14px 14px 10px;
-      font-weight: 800; color:#dbefff; letter-spacing:.3px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
+    .side-header{ padding: 14px 14px 10px; font-weight: 800; color:#dbefff; letter-spacing:.3px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .side-items{ padding: 8px; display:flex; flex-direction:column; gap:8px; }
     .side-item{
-      display:flex; align-items:center; gap:10px;
-      padding:10px 12px; border-radius:10px;
+      display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.10);
-      color:#eaf6ff; font-weight:700; cursor:pointer;
-      user-select:none;
+      border: 1px solid rgba(255,255,255,0.10); color:#eaf6ff; font-weight:700; cursor:pointer; user-select:none;
     }
     .side-item:hover{ filter: brightness(1.08); }
     .side-item .icon{ width:18px; text-align:center; }
-    @media (max-width: 420px){
-      #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; }
-      #side-menu{ width: 240px; }
-    }
+    @media (max-width: 420px){ #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; } #side-menu{ width: 240px; } }
 
-    /* ✅ Popup Gate 오버레이 (연하게) */
-    #popup-gate {
-      position: fixed; inset: 0; z-index: 5000;
-      display: none; align-items: center; justify-content: center;
-      background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70));
-      backdrop-filter: blur(4px);
-    }
-    #popup-gate .card{
-      width: min(420px, 92vw);
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.55));
-      padding: 16px 16px 14px;
-      box-shadow: 0 16px 44px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.06);
-      text-align: center;
-      color: #eaf6ff;
-    }
-    #popup-gate h3{ margin: 0 0 8px; font-size: 18px; }
-    #popup-gate p { margin: 6px 0 12px; font-size: 13px; color:#cfe6ff; }
-    #popup-gate .actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-    #popup-gate button{
-      padding: 10px 12px; border-radius: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, #00c0ff, #0077ff); color:#001218; font-weight:800;
-      box-shadow: 0 6px 18px rgba(0,160,255,.22);
-    }
-    #popup-gate .secondary{ background: transparent; color:#eaf6ff; font-weight:700; }
-
-    /* ✅ 출석 보상 오버레이 */
+    /* ✅ 출석 룰렛 오버레이 */
     #daily-overlay{
-      position: fixed; inset:0; z-index:5200;
-      display:none; align-items:center; justify-content:center;
-      background: linear-gradient(180deg, rgba(2,6,12,.55), rgba(2,6,12,.75));
-      backdrop-filter: blur(6px);
+      position:fixed; inset:0; z-index:3500; display:none; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70)); backdrop-filter: blur(4px);
     }
+    #daily-overlay.show{ display:flex; }
     #daily-card{
-      width:min(420px, 92vw);
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(10,12,18,.55));
-      box-shadow: 0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
-      color:#eaf6ff;
-      padding:16px;
-      text-align:center;
+      width:min(420px, 92vw); border-radius:14px; border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.55));
+      padding:16px 16px 14px; box-shadow: 0 16px 44px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.06);
+      text-align:center; color:#eaf6ff;
     }
-    #daily-card h3{ margin:0 0 6px; font-size:18px; }
-    #daily-info{ font-size:13px; color:#cfe6ff; margin:6px 0 12px; min-height:18px; }
-    #daily-actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-    #daily-claim, #daily-close{
+    #daily-title{ margin:0 0 8px; font-size:18px; }
+    #daily-info{ margin:6px 0 10px; font-size:13px; color:#cfe6ff; min-height:36px; }
+    #daily-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
+    #daily-actions button{
       padding:10px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
+      background: transparent; color:#eaf6ff; font-weight:700;
     }
-    #daily-claim{ background: linear-gradient(180deg,#00c0ff,#0077ff); color:#001218; font-weight:800; }
-    #daily-close{ background: transparent; color:#eaf6ff; font-weight:700; }
+    #daily-actions .secondary{opacity:.85;}
+
+    /* 룰렛 UI */
+    #roulette-wrap{ display:flex; flex-direction:column; align-items:center; gap:12px; }
+    #wheel{ width:260px; height:260px; border-radius:50%;
+      box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
+      border:2px solid rgba(255,255,255,.18);
+      transition: transform 3.2s cubic-bezier(.17,.89,.35,1.21);
+      position:relative; overflow:hidden; }
+    #pointer{
+      width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
+      border-bottom:18px solid #ffed9a; filter: drop-shadow(0 0 6px rgba(255,230,140,.7));
+      margin-top:-4px;
+    }
+    #daily-spin{ padding:10px 14px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; font-weight:900; }
+    #info-row{ display:flex; align-items:center; gap:10px; }
+    #prob-toggle{ width:28px; height:28px; border-radius:50%; font-weight:900; cursor:pointer;
+      border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#eaf6ff; }
+    #prob-panel{ display:none; margin-top:4px; font-size:12px; color:#cfe6ff; text-align:left; max-width:320px; }
+    #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
+    #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
   </style>
 </head>
 <body>
-  <!-- ✅ 부팅 중 오버레이 -->
+  <!-- 부팅 중 오버레이 -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
@@ -431,6 +392,9 @@
       <span id="score">자원: 0</span>
       <img src="/images/coin-icon.png" alt="Coin" />
       <span id="coins">코인: 0</span>
+      <!-- ✅ 이벤트 코인 추가 -->
+      <img src="/images/event-icon.png" alt="EventCoin" />
+      <span id="ecoins">이벤트코인: 0</span>
     </div>
     <div class="bar-group">
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
@@ -486,13 +450,14 @@
     </nav>
   </div>
 
-  <!-- 커스텀 메뉴 (우클릭) -->
+  <!-- 커스텀 메뉴 -->
   <div id="custom-menu">
     <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
     <div class="menu-item" data-action="download">⬇️ 앱 다운로드</div>
     <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
-    <div class="menu-item" data-action="attendance">📅 출석 보상</div><!-- ✅ 추가 -->
+    <!-- ✅ 출석 메뉴 추가 -->
+    <div class="menu-item" data-action="attendance">📅 출석 보상</div>
   </div>
 
   <!-- 사이드 메뉴 -->
@@ -501,54 +466,45 @@
   <aside id="side-menu" aria-label="사이드 메뉴" aria-hidden="true">
     <div class="side-header">메뉴</div>
     <nav class="side-items">
-      <button class="side-item" data-action="menu">
-        <span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span>
-      </button>
-      <button class="side-item" data-action="download">
-        <span class="icon">⬇️</span><span>앱 다운로드</span>
-      </button>
-      <button class="side-item" data-action="resume">
-        <span class="icon">▶️</span><span>게임 계속하기</span>
-      </button>
-      <button class="side-item" data-action="rank">
-        <span class="icon">🏆</span><span>랭킹 보기</span>
-      </button>
-      <button class="side-item" data-action="attendance">
-        <span class="icon">📅</span><span>출석 보상</span>
-      </button><!-- ✅ 추가 -->
+      <button class="side-item" data-action="menu"><span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span></button>
+      <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
+      <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
+      <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
+      <!-- ✅ 출석 메뉴 추가 -->
+      <button class="side-item" data-action="attendance"><span class="icon">📅</span><span>출석 보상</span></button>
     </nav>
   </aside>
 
-  <!-- ✅ 출석 보상 오버레이 -->
+  <!-- ✅ 출석 룰렛 오버레이 -->
   <div id="daily-overlay" aria-hidden="true">
     <div id="daily-card" role="dialog" aria-modal="true" aria-labelledby="daily-title">
-      <h3 id="daily-title">📅 오늘의 출석 보상</h3>
+      <h3 id="daily-title">📅 오늘의 출석 룰렛</h3>
       <div id="daily-info">확인 중…</div>
+      <div id="roulette-wrap">
+        <div id="pointer"></div>
+        <div id="wheel" aria-label="룰렛 휠"></div>
+        <div id="info-row">
+          <button id="daily-spin">룰렛 돌리기</button>
+          <button id="prob-toggle" title="확률 보기">i</button>
+        </div>
+        <div id="prob-panel"></div>
+      </div>
       <div id="daily-actions">
-        <button id="daily-claim">보상 받기</button>
         <button id="daily-close" class="secondary">닫기</button>
       </div>
     </div>
   </div>
 
-  <!-- ✅ Popup Gate 오버레이 -->
-  <div id="popup-gate" aria-hidden="true">
-    <div class="card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-      <h3 id="gate-title">PC에서는 팝업으로만 실행됩니다</h3>
-      <p>브라우저의 팝업 차단을 해제하고 아래 버튼을 눌러 이 페이지를 <strong>팝업으로 다시 열어주세요</strong>. 팝업이 열리지 않으면 게임을 이용할 수 없습니다.</p>
-      <div class="actions">
-        <button id="gate-open">팝업으로 다시 열기</button>
-        <button id="gate-howto" class="secondary">팝업 허용 방법</button>
-      </div>
-      <p id="gate-msg" style="margin-top:10px; font-size:12px; color:#ffdddd; min-height:18px;"></p>
-    </div>
-  </div>
+  <!-- ✅ 룰렛 SFX (없으면 자동 비프 대체) -->
+  <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
+  <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
+  <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
 
   <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -572,7 +528,12 @@
     let localLastWrite = 0;
     let isInitialSync = false;
 
-    const defaultData = { resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20, workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[] };
+    // ✅ 이벤트코인 필드 추가
+    const defaultData = {
+      resources:0, coins:0, eventCoins:0,
+      clickPower:1, shipLevel:1, shipUpgradeCost:20,
+      workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[]
+    };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
     const initialConversionCost=50, conversionCostGrowth=1.3;
@@ -665,312 +626,181 @@
       } catch (e) { console.error('showGameUI error', e); }
     }
 
-    // ===== 출석(KST) 유틸 =====
-    function kstDayKey(ts = Date.now()){
-      try {
-        return new Intl.DateTimeFormat('en-CA',{ timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}).format(ts);
-      } catch { // 폴백(로컬)
-        const d = new Date(ts); const m=('0'+(d.getMonth()+1)).slice(-2); const dd=('0'+d.getDate()).slice(-2);
-        return `${d.getFullYear()}-${m}-${dd}`;
-      }
+    // ====== 출석(KST) 유틸 ======
+    function kstDate(d=new Date()){
+      // 브라우저 타임존 상관없이 KST로 날짜 계산
+      return new Date(new Date(d).toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+    }
+    function kstDayKey(d=new Date()){
+      const t = kstDate(d);
+      const y=t.getFullYear(), m=String(t.getMonth()+1).padStart(2,'0'), day=String(t.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
     }
     function prevDayKeyOf(key){
-      const d = new Date(key+'T00:00:00+09:00');
-      d.setDate(d.getDate()-1);
-      return kstDayKey(+d);
+      const [y,m,d]=key.split('-').map(Number);
+      const dt = kstDate(new Date(y, m-1, d)); dt.setDate(dt.getDate()-1);
+      return kstDayKey(dt);
     }
 
-    // ===== 출석 보상 로직 =====
-    let dailyCache = null; // { lastKey, streak }
+    // ====== 출석 룰렛 구성 ======
+    const WHEEL_ITEMS = [
+      { key:'coin_300',  label:'코인 300',     color:'#00E5FF',  w:0.10,  onWin:()=>{ state.coins += 300; } },
+      { key:'coin_150',  label:'코인 150',     color:'#4DFFB5',  w:0.25,  onWin:()=>{ state.coins += 150; } },
+      { key:'coin_100',  label:'코인 100',     color:'#7AFBFF',  w:0.35,  onWin:()=>{ state.coins += 100; } },
+      { key:'res_200',   label:'자원 200',     color:'#FFEA70',  w:0.10,  onWin:()=>{ state.resources += 200; } },
+      { key:'buff_click',label:'클릭 +50%/5m', color:'#FFA8FF',  w:0.075, onWin:()=>{ addTempBuff('click',0.5,5*60*1000); } },
+      { key:'buff_conv', label:'변환 +100%/3m',color:'#FFD0A8',  w:0.05,  onWin:()=>{ addTempBuff('convert',1.0,3*60*1000); } },
+      { key:'eco_1',     label:'이벤트코인 ×1',color:'#FFD05C',  w:0.020, onWin:()=>{ state.eventCoins = (state.eventCoins||0)+1; } },
+      { key:'eco_3',     label:'이벤트코인 ×3',color:'#FF9E3D',  w:0.005, onWin:()=>{ state.eventCoins = (state.eventCoins||0)+3; } },
+    ];
+    function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
+    function playSfx(id){
+      const el=document.getElementById(id);
+      if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o = ctx.createOscillator(); const g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination); o.type='triangle';
+        o.frequency.value = id==='sfx-start'? 340 : id==='sfx-win'? 660 : 880;
+        g.gain.setValueAtTime(.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.12, ctx.currentTime+.02);
+        o.start(); o.stop(ctx.currentTime+.08);
+      }catch{}
+    }
+    function startTickLoop(){ stopTickLoop(); startTickLoop._id=setInterval(()=>playSfx('sfx-tick'), 120); }
+    function stopTickLoop(){ if(startTickLoop._id){ clearInterval(startTickLoop._id); startTickLoop._id=null; } }
+    function addTempBuff(type, value, dur){
+      const now=Date.now(); const cur=window.fx?._tempBuff||null;
+      if (!window.fx) window.fx={};
+      if (!cur || now>=cur.until){ window.fx._tempBuff={type,value,until:now+dur}; }
+      else{
+        if (cur.type===type){ window.fx._tempBuff.value=Math.max(cur.value,value); window.fx._tempBuff.until=Math.max(cur.until, now+dur); }
+        else { window.fx._tempBuff2={type,value,until:now+dur}; }
+      }
+    }
+    function buildProbPanel(){
+      const total=WHEEL_ITEMS.reduce((a,b)=>a+b.w,0);
+      const rows=WHEEL_ITEMS.map(it=>`<tr><td>${it.label}</td><td style="text-align:right">${(it.w/total*100).toFixed(2)}%</td></tr>`).join('');
+      document.getElementById('prob-panel').innerHTML = `
+        <div style="margin-bottom:6px; color:#9fdcff;">※ 이벤트코인 확률은 매우 낮습니다.</div>
+        <table>${rows}</table>`;
+    }
+    function drawWheel(){
+      const total=WHEEL_ITEMS.reduce((a,b)=>a+b.w,0);
+      let acc=0; const stops=[];
+      for(const it of WHEEL_ITEMS){ const from=acc/total*360; acc+=it.w; const to=acc/total*360; stops.push(`${it.color} ${from}deg ${to}deg`); }
+      document.getElementById('wheel').style.background = `conic-gradient(${stops.join(',')})`;
+    }
+    function computeTargetRotation(picked){
+      const total=WHEEL_ITEMS.reduce((a,b)=>a+b.w,0); let acc=0, from=0, to=0;
+      for(const it of WHEEL_ITEMS){ const segFrom=acc/total*360; acc+=it.w; const segTo=acc/total*360; if(it.key===picked.key){ from=segFrom; to=segTo; break; } }
+      const center=(from+to)/2; const spins=6;
+      const current=(computeTargetRotation._rot||0)%360;
+      const delta=(spins*360 + (360-center) - current);
+      computeTargetRotation._rot=current+delta; return computeTargetRotation._rot;
+    }
+
+    // ===== 출석 저장/표시 =====
     const dailyOverlay = document.getElementById('daily-overlay');
-    const dailyInfo = document.getElementById('daily-info');
-    const dailyClaimBtn = document.getElementById('daily-claim');
-    const dailyCloseBtn = document.getElementById('daily-close');
+    const dailyInfo    = document.getElementById('daily-info');
+    const dailyCloseBtn= document.getElementById('daily-close');
+    const dailySpinBtn = document.getElementById('daily-spin');
+    const wheelEl      = document.getElementById('wheel');
+    const probPanel    = document.getElementById('prob-panel');
+    const probToggle   = document.getElementById('prob-toggle');
 
-    function openDailyOverlay(text){
-      dailyInfo.textContent = text || '';
-      dailyOverlay.style.display = 'flex';
-      dailyOverlay.setAttribute('aria-hidden','false');
-    }
-    function closeDailyOverlay(){
-      dailyOverlay.style.display = 'none';
-      dailyOverlay.setAttribute('aria-hidden','true');
-    }
-    dailyCloseBtn.addEventListener('click', closeDailyOverlay);
+    let dailyCache = null;
 
-    function calcReward(streak){
-      // 100 + (streak*10), max 300
-      const v = 100 + (Number(streak||0)*10);
-      return Math.min(v, 300);
-    }
+    function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
+    function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
+    dailyCloseBtn.onclick = closeDailyOverlay;
+    probToggle.onclick = ()=>{ probPanel.style.display = (probPanel.style.display==='block'?'none':'block'); };
+    buildProbPanel(); drawWheel();
 
     function refreshDailyInfo(canClaim){
       if (!dailyCache){ dailyInfo.textContent='확인 중…'; return; }
       const today = kstDayKey();
-      const last = dailyCache.lastKey || '(없음)';
       const streak = dailyCache.streak || 0;
-      const reward = calcReward(streak + (canClaim?1:0));
-      dailyInfo.innerHTML =
-        canClaim
-          ? `오늘(${today}) 출석 가능!<br>연속 ${streak}일 → 수령 시 <b>${reward} 코인</b>`
-          : `오늘(${today})은 이미 수령했어요.<br>현재 연속 ${streak}일`;
-      dailyClaimBtn.style.display = canClaim ? 'inline-block' : 'none';
+      dailyInfo.innerHTML = canClaim
+        ? `오늘(${today}) 출석 룰렛 가능!<br>연속 ${streak}일`
+        : `오늘(${today})은 이미 룰렛을 돌렸어요.<br>현재 연속 ${streak}일`;
+      dailySpinBtn.style.display = canClaim ? 'inline-block' : 'none';
+      dailySpinBtn.disabled = !canClaim;
     }
 
     function bindDailyClaim(){
-      dailyClaimBtn.onclick = async () => {
+      dailySpinBtn.onclick = async () => {
         if (!uid || !window.__PLAY_ALLOWED) return;
-        const today = kstDayKey();
-        const yesterday = prevDayKeyOf(today);
-        // 1) daily path 업데이트
-        const dailyRef = ref(db, `users/${uid}/daily`);
-        // onValue로 현재값을 한번 읽고 처리(트랜잭션은 게임 데이터 코인 증분에 사용)
-        let lastKey = dailyCache?.lastKey || null;
-        let streak  = Number(dailyCache?.streak || 0);
-        if (lastKey === today){
-          refreshDailyInfo(false);
-          return;
-        }
-        if (lastKey === yesterday) streak = streak + 1;
-        else streak = 1;
-        const reward = calcReward(streak);
+        const today = kstDayKey(); const yesterday = prevDayKeyOf(today);
+        if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
 
-        try {
-          // 2) 코인은 트랜잭션으로 안전 증분
-          await runTransaction(dataRef, current => {
-            const cur = current || { ...defaultData };
-            cur.coins = Math.floor((cur.coins||0) + reward);
-            cur._lastUpdated = Date.now();
-            return cur;
-          });
-          // 3) 일일 기록 저장(별도 경로)
-          await update(dailyRef, { lastKey: today, streak: streak, lastClaimAt: Date.now() });
+        let streak = Number(dailyCache?.streak || 0);
+        if (dailyCache?.lastKey === yesterday) streak += 1; else streak = 1;
 
-          // 4) 로컬 상태 반영 & UI 갱신
-          dailyCache = { lastKey: today, streak };
-          state.coins = (state.coins||0) + reward;
-          updateUI();
-          dailyInfo.innerHTML = `✅ 수령 완료! <b>${reward} 코인</b>이 지급되었습니다.<br>연속 ${streak}일 유지 중`;
-          dailyClaimBtn.style.display = 'none';
-        } catch (e){
-          dailyInfo.textContent = '보상 지급 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-          console.error(e);
-        }
+        playSfx('sfx-start'); startTickLoop();
+        const picked = pickWeighted(WHEEL_ITEMS);
+        const target = computeTargetRotation(picked);
+        wheelEl.style.transform = `rotate(${target}deg)`;
+        dailySpinBtn.disabled = true;
+
+        setTimeout(async ()=>{
+          stopTickLoop(); playSfx('sfx-win');
+          try {
+            await runTransaction(dataRef, current => {
+              const cur = current || { ...defaultData };
+              const before = { coins: state.coins||0, resources: state.resources||0, eventCoins: state.eventCoins||0 };
+              picked.onWin(); // 로컬 반영
+              const delta = {
+                coins: (state.coins||0) - before.coins,
+                resources: (state.resources||0) - before.resources,
+                eventCoins: (state.eventCoins||0) - before.eventCoins
+              };
+              const next = { ...cur };
+              next.coins      = (next.coins||0) + delta.coins;
+              next.resources  = (next.resources||0) + delta.resources;
+              next.eventCoins = (next.eventCoins||0) + delta.eventCoins;
+              next._lastUpdated = Date.now();
+              return next;
+            });
+
+            const dailyRef = ref(db, `users/${uid}/daily`);
+            await update(dailyRef, { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
+
+            dailyCache = { lastKey: today, streak };
+            updateUI();
+            dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+          } catch (e){
+            console.error(e);
+            dailyInfo.textContent = '보상 지급 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+          } finally {
+            dailySpinBtn.disabled = true;
+          }
+        }, 3300);
       };
     }
+    bindDailyClaim();
 
-    function checkDailyAndMaybeShow(){
-      if (!uid || !window.__PLAY_ALLOWED) return;
+    async function fetchDaily(){
+      if (!uid) return;
       const dailyRef = ref(db, `users/${uid}/daily`);
-      onValue(dailyRef, (snap) => {
-        const v = snap.exists() ? snap.val() : {};
-        dailyCache = { lastKey: v.lastKey || null, streak: Number(v.streak||0) };
-        const today = kstDayKey();
-        const can = (dailyCache.lastKey !== today);
-        refreshDailyInfo(can);
-        // 자동 표시: 오늘 미수령이면 오버레이 열기
-        if (can) openDailyOverlay('오늘 출석 보상을 받아보세요!');
-      }, { onlyOnce: true });
+      try{
+        const snap = await get(dailyRef);
+        dailyCache = snap.exists() ? snap.val() : { lastKey:null, streak:0 };
+      }catch{ dailyCache = { lastKey:null, streak:0 }; }
     }
-
-    onAuthStateChanged(auth, async user => {
-      setBootVisible(false);
-      showAuthStatus('');
-      if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
-
-      if (user) {
-        if (!user.emailVerified) {
-          try { showLoginOverlay(false); } catch {}
-          try { await sendEmailVerification(user); } catch {}
-          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
-          try { await signOut(auth); } catch {}
-          authContainer.style.display = 'block';
-          return;
-        }
-
-        uid = user.uid;
-        dataRef = ref(db, `users/${uid}/gameData`);
-        isInitialSync = true;
-        try {
-          const saved = localStorage.getItem(`lastWrite_${uid}`);
-          localLastWrite = saved ? parseInt(saved, 10) : 0;
-        } catch { localLastWrite = 0; }
-
-        await ensureInitialData(dataRef);
-
-        dataUnsubscribe = onValue(dataRef, snap => {
-          const server = snap.exists() ? snap.val() : null;
-          if (!server) {
-            if (isInitialSync) {
-              state = { ...defaultData };
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-              isInitialSync = false;
-              showGameUI();
-              window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-              // ✅ 출석 체크
-              bindDailyClaim();
-              checkDailyAndMaybeShow();
-            } else {
-              state = { ...defaultData };
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-            }
-            return;
-          }
-
-          const serverLast = server._lastUpdated || 0;
-          if (isInitialSync) {
-            state = { ...defaultData, ...server };
-            if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-            isInitialSync = false;
-            showGameUI();
-            window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-            // ✅ 출석 체크
-            bindDailyClaim();
-            checkDailyAndMaybeShow();
-            return;
-          }
-
-          if (serverLast >= (localLastWrite || 0)) {
-            state = { ...defaultData, ...server };
-          } else {
-            state = { ...defaultData, ...server, ...state };
-            try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
-            catch { save(); }
-          }
-          if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-        });
-
-      } else {
-        try { showLoginOverlay(false); } catch {}
-        uid = null; dataRef = null;
-        state = { ...defaultData };
-        localLastWrite = 0; isInitialSync = false;
-
-        authContainer.style.display = 'block';
-        setTimeout(() => authContainer.classList.remove('hidden'), 16);
-        const lb = document.getElementById('logout-btn');
-        if (lb) lb.style.display = 'none';
-        ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
-
-        setAuthMode(currentAuthMode);
-      }
-    });
-
-    const tabLogin  = document.getElementById('auth-tab-login');
-    const tabSignup = document.getElementById('auth-tab-signup');
-    const signupExtra = document.getElementById('signup-extra');
-    const loginBtn  = document.getElementById('login-btn');
-    const signupBtn = document.getElementById('signup-btn');
-
-    function setAuthMode(mode) {
-      currentAuthMode = (mode === 'signup') ? 'signup' : 'login';
-      if (mode === 'signup') {
-        tabLogin.classList.remove('active'); tabSignup.classList.add('active');
-        signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtn.style.display='block';
-      } else {
-        tabLogin.classList.add('active'); tabSignup.classList.remove('active');
-        signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtn.style.display='none';
-      }
-      showAuthStatus(''); document.getElementById('verify-info').textContent = '';
-      try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
+    async function checkDailyAndMaybeShow(){
+      await fetchDaily();
+      const today = kstDayKey();
+      const canClaim = dailyCache?.lastKey !== today;
+      refreshDailyInfo(canClaim);
+      if (canClaim) openDailyOverlay();
     }
-    tabLogin.addEventListener('click',  () => setAuthMode('login'));
-    tabSignup.addEventListener('click', () => setAuthMode('signup'));
-    setAuthMode('login');
-
-    // 설정 이동
-    document.getElementById('settings-btn').addEventListener('click', () => {
-      try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
-      location.href = '/setting.html';
-    });
-
-    // 로그인
-    loginBtn.addEventListener('click', async () => {
-      showAuthStatus('');
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
-      try {
-        showLoginOverlay(true, '로그인 중… 잠시만요');
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        const user = cred.user;
-        if (user && !user.emailVerified) {
-          try { await sendEmailVerification(user); } catch {}
-          showLoginOverlay(false);
-          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
-          await signOut(auth);
-        }
-      } catch (err) {
-        showLoginOverlay(false);
-        const code = err && err.code || '';
-        const msg = (
-          code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
-          code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
-          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
-          code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
-          err.message || '로그인 중 오류가 발생했습니다.'
-        );
-        showAuthStatus(msg);
-      }
-    });
-
-    // 회원가입
-    signupBtn.addEventListener('click', async (e) => {
-      e.preventDefault(); showAuthStatus('');
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const passwordConfirm = document.getElementById('password-confirm').value;
-      if (!email || !password || !passwordConfirm) { showAuthStatus('모든 필드를 입력하세요.'); return; }
-      if (password !== passwordConfirm) { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
-      try {
-        showLoginOverlay(true, '계정 생성 중…');
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const user = cred.user;
-        try { await sendEmailVerification(user); } catch {}
-        showLoginOverlay(false);
-        showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
-        await signOut(auth);
-      } catch (err) {
-        showLoginOverlay(false);
-        const code = err && err.code || '';
-        const msg = (
-          code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
-          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
-          code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
-          err.message || '회원가입 중 문제가 발생했습니다.'
-        );
-        showAuthStatus(msg);
-      }
-    });
-
-    // Google 로그인
-    document.getElementById('google-btn').addEventListener('click', async () => {
-      showAuthStatus('');
-      const provider = new GoogleAuthProvider();
-      try {
-        showLoginOverlay(true, '구글 인증 시작', { provider:'google', subText:'구글 계정으로 안전하게 연결합니다.' });
-        await signInWithPopup(auth, provider);
-        const overlay = document.getElementById('login-overlay');
-        overlay && overlay.classList.remove('show');
-      } catch (err) {
-        try {
-          showLoginOverlay(true, '리다이렉트 로그인 시도', { provider:'google' });
-          await signInWithRedirect(auth, provider);
-        } catch (err2) {
-          showLoginOverlay(false);
-          showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
-        }
-      }
-    });
-
-    // (삭제된 로그아웃 버튼 안전 가드)
-    const _lb = document.getElementById('logout-btn');
-    if (_lb) _lb.addEventListener('click', () => signOut(auth));
+    function openDailyManual(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
 
     // ===== 게임 UI =====
     function updateUI() {
       document.getElementById('score').innerText  = `자원: ${Math.floor(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${Math.floor(state.coins)}`;
+      document.getElementById('ecoins').innerText = `이벤트코인: ${Math.floor(state.eventCoins||0)}`;
       document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${state.shipUpgradeCost}코인)`;
       document.getElementById('ship-img').src = `/images/ship-level${state.shipLevel}.png`;
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
@@ -1015,7 +845,7 @@
         btn.onclick = () => {
           if (!ensureReady()) return;
           if (state.coins >= p.cost) {
-            state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; if (!state.ownedPlanets.includes(i)) state.ownedPlanets.push(i);
+            state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
           }
@@ -1068,36 +898,221 @@
         tab.classList.add('active');
       }));
 
+      // 1초 루프 (임시버프 반영)
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
-        if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
-        if (state.conversionCount > 0) state.coins += state.conversionCount;
+        let workerGain = state.workerCount * getWorkerPower();
+        const now = Date.now();
+        if (window.fx?._tempBuff && now < window.fx._tempBuff.until && window.fx._tempBuff.type==='worker') workerGain *= (1+window.fx._tempBuff.value);
+        if (window.fx?._tempBuff2 && now < window.fx._tempBuff2.until && window.fx._tempBuff2.type==='worker') workerGain *= (1+window.fx._tempBuff2.value);
+        if (state.workerCount > 0) state.resources += workerGain;
+
+        let convGain = state.conversionCount;
+        if (window.fx?._tempBuff && now < window.fx._tempBuff.until && window.fx._tempBuff.type==='convert') convGain *= (1+window.fx._tempBuff.value);
+        if (window.fx?._tempBuff2 && now < window.fx._tempBuff2.until && window.fx._tempBuff2.type==='convert') convGain *= (1+window.fx._tempBuff2.value);
+        if (state.conversionCount > 0) state.coins += convGain;
+
+        if (window.fx?._tempBuff && now >= window.fx._tempBuff.until) window.fx._tempBuff=null;
+        if (window.fx?._tempBuff2 && now >= window.fx._tempBuff2.until) window.fx._tempBuff2=null;
+
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       }, 1000);
     }
 
+    onAuthStateChanged(auth, async user => {
+      setBootVisible(false);
+      showAuthStatus('');
+      if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
+
+      if (user) {
+        if (!user.emailVerified) {
+          try { showLoginOverlay(false); } catch {}
+          try { await sendEmailVerification(user); } catch {}
+          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
+          try { await signOut(auth); } catch {}
+          authContainer.style.display = 'block';
+          return;
+        }
+
+        uid = user.uid;
+        dataRef = ref(db, `users/${uid}/gameData`);
+        isInitialSync = true;
+        try {
+          const saved = localStorage.getItem(`lastWrite_${uid}`);
+          localLastWrite = saved ? parseInt(saved, 10) : 0;
+        } catch { localLastWrite = 0; }
+
+        await ensureInitialData(dataRef);
+
+        dataUnsubscribe = onValue(dataRef, async snap => {
+          const server = snap.exists() ? snap.val() : null;
+          if (!server) {
+            if (isInitialSync) {
+              state = { ...defaultData };
+              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+              isInitialSync = false;
+              showGameUI();
+              window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
+              await checkDailyAndMaybeShow(); // ✅ 로그인 직후 출석 체크
+            } else {
+              state = { ...defaultData };
+              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+            }
+            return;
+          }
+
+          const serverLast = server._lastUpdated || 0;
+          if (isInitialSync) {
+            state = { ...defaultData, ...server };
+            if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+            isInitialSync = false;
+            showGameUI();
+            window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
+            await checkDailyAndMaybeShow(); // ✅ 로그인 직후 출석 체크
+            return;
+          }
+
+          if (serverLast >= (localLastWrite || 0)) {
+            state = { ...defaultData, ...server };
+          } else {
+            state = { ...defaultData, ...server, ...state };
+            try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
+            catch { save(); }
+          }
+          if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+        });
+
+      } else {
+        try { showLoginOverlay(false); } catch {}
+        uid = null; dataRef = null;
+        state = { ...defaultData };
+        localLastWrite = 0; isInitialSync = false;
+
+        authContainer.style.display = 'block';
+        setTimeout(() => authContainer.classList.remove('hidden'), 16);
+        const lb = document.getElementById('logout-btn');
+        if (lb) lb.style.display = 'none';
+        ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
+
+        setAuthMode(currentAuthMode);
+      }
+    });
+
+    const tabLogin  = document.getElementById('auth-tab-login');
+    const tabSignup = document.getElementById('auth-tab-signup');
+    const signupExtra = document.getElementById('signup-extra');
+    const loginBtn  = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('signup-btn');
+
+    function setAuthMode(mode) {
+      currentAuthMode = (mode === 'signup') ? 'signup' : 'login';
+      if (mode === 'signup') {
+        tabLogin.classList.remove('active'); tabSignup.classList.add('active');
+        signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtn.style.display='block';
+      } else {
+        tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+        signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtn.style.display='none';
+      }
+      showAuthStatus(''); document.getElementById('verify-info').textContent = '';
+      try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
+    }
+    tabLogin.addEventListener('click',  () => setAuthMode('login'));
+    tabSignup.addEventListener('click', () => setAuthMode('signup'));
+    setAuthMode('login');
+
+    document.getElementById('settings-btn').addEventListener('click', () => {
+      try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
+      location.href = '/setting.html';
+    });
+
+    loginBtn.addEventListener('click', async () => {
+      showAuthStatus('');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
+      try {
+        showLoginOverlay(true, '로그인 중… 잠시만요');
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const user = cred.user;
+        if (user && !user.emailVerified) {
+          try { await sendEmailVerification(user); } catch {}
+          showLoginOverlay(false);
+          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
+          await signOut(auth);
+        }
+      } catch (err) {
+        showLoginOverlay(false);
+        const code = err && err.code || '';
+        const msg = (
+          code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
+          code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
+          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
+          code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
+          err.message || '로그인 중 오류가 발생했습니다.'
+        );
+        showAuthStatus(msg);
+      }
+    });
+
+    signupBtn.addEventListener('click', async (e) => {
+      e.preventDefault(); showAuthStatus('');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const passwordConfirm = document.getElementById('password-confirm').value;
+      if (!email || !password || !passwordConfirm) { showAuthStatus('모든 필드를 입력하세요.'); return; }
+      if (password !== passwordConfirm) { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
+      try {
+        showLoginOverlay(true, '계정 생성 중…');
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const user = cred.user;
+        try { await sendEmailVerification(user); } catch {}
+        showLoginOverlay(false);
+        showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
+        await signOut(auth);
+      } catch (err) {
+        showLoginOverlay(false);
+        const code = err && err.code || '';
+        const msg = (
+          code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
+          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
+          code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
+          err.message || '회원가입 중 문제가 발생했습니다.'
+        );
+        showAuthStatus(msg);
+      }
+    });
+
+    document.getElementById('google-btn').addEventListener('click', async () => {
+      showAuthStatus('');
+      const provider = new GoogleAuthProvider();
+      try {
+        showLoginOverlay(true, '구글 인증 시작', { provider:'google', subText:'구글 계정으로 안전하게 연결합니다.' });
+        await signInWithPopup(auth, provider);
+        const overlay = document.getElementById('login-overlay');
+        overlay && overlay.classList.remove('show');
+      } catch (err) {
+        try {
+          showLoginOverlay(true, '리다이렉트 로그인 시도', { provider:'google' });
+          await signInWithRedirect(auth, provider);
+        } catch (err2) {
+          showLoginOverlay(false);
+          showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
+        }
+      }
+    });
+
+    // (삭제된 로그아웃 버튼 안전 가드)
+    const _lb = document.getElementById('logout-btn');
+    if (_lb) _lb.addEventListener('click', () => signOut(auth));
+
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
     });
-
-    // ✅ 출석 오버레이 수동 열기 훅(메뉴에서)
-    function openDailyManual(){
-      if (!uid || !window.__PLAY_ALLOWED) { openDailyOverlay('로그인 후 이용하세요.'); dailyClaimBtn.style.display='none'; return; }
-      const dailyRef = ref(db, `users/${uid}/daily`);
-      onValue(dailyRef, (snap) => {
-        const v = snap.exists() ? snap.val() : {};
-        dailyCache = { lastKey: v.lastKey || null, streak: Number(v.streak||0) };
-        const today = kstDayKey();
-        const can = (dailyCache.lastKey !== today);
-        refreshDailyInfo(can);
-        openDailyOverlay('');
-      }, { onlyOnce: true });
-    }
-    bindDailyClaim();
   </script>
 
+  <!-- 우클릭 커스텀 메뉴 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
@@ -1107,27 +1122,23 @@
       customMenu.style.display = 'block';
     });
     customMenu.addEventListener('click', (e) => {
-      const mi = e.target.closest('.menu-item');
-      if (!mi) return;
-      const action = mi.getAttribute('data-action');
+      const action = e.target.getAttribute('data-action');
       if (!action) return;
       if (action === 'menu') {
         try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
-        try {
-          const targetOrigin = (typeof parentOrigin === 'string' && ['https://xn--989a202a4ogwtc69p.siustudio.kro.kr','https://siustudio.kro.kr', location.origin].includes(parentOrigin))
-            ? parentOrigin : location.origin;
-          window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, targetOrigin);
-        } catch {}
+        try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
         try { window.close(); } catch {}
         setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
       }
       if (action === 'download') { location.href='/app-download.html'; }
-      if (action === 'resume')   { /* 닫기만 */ }
-      if (action === 'rank')     { location.href='/ranking.html'; }
-      if (action === 'attendance'){ openDailyManual(); } /* ✅ 추가 */
-      customMenu.style.display='none';
+      if (action === 'resume') { customMenu.style.display='none'; }
+      if (action === 'rank')   { location.href='/ranking.html'; }
+      if (action === 'attendance') { customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
+
+    // 전역 접근용
+    window.openDailyManual = function(){ const f = window.checkDailyAndMaybeShow || (window.__pendingDaily=1); try{ window.dispatchEvent(new Event('open-daily')); }catch{} }
   </script>
 
   <!-- 사이드 메뉴 -->
@@ -1160,18 +1171,14 @@
         const action = btn.getAttribute('data-action');
         if (action === 'menu') {
           try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
-          try {
-            const targetOrigin = (typeof parentOrigin === 'string' && ['https://xn--989a202a4ogwtc69p.siustudio.kro.kr','https://siustudio.kro.kr', location.origin].includes(parentOrigin))
-              ? parentOrigin : location.origin;
-            window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, targetOrigin);
-          } catch {}
+          try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
           try { window.close(); } catch {}
           setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
         }
         if (action === 'download') { location.href='/app-download.html'; }
         if (action === 'rank')     { location.href='/ranking.html'; }
+        if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
         if (action === 'resume')   { /* 닫기만 */ }
-        if (action === 'attendance'){ openDailyManual(); } /* ✅ 추가 */
         closeSide();
       });
     })();
@@ -1194,7 +1201,7 @@
     });
   </script>
 
-  <!-- === 원격 제어 (그대로) === -->
+  <!-- 원격 제어 (그대로) -->
   <script>
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
@@ -1204,8 +1211,7 @@
             e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
             s.onload=function(){ r(w[c]); };
           } return p;
-        }}; 
-      });
+        }}; });
     })(window,'script','CobrowseIO');
     window.CobrowseIO = window.CobrowseIO || {};
     CobrowseIO.license = "eFtcbWqBdRylMQ";
@@ -1213,7 +1219,7 @@
     CobrowseIO.client().then(function(){ CobrowseIO.start(); });
   </script>
 
-  <!-- === Firebase commands (그대로) === -->
+  <!-- Firebase 커맨드(세션 제어) -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -1252,24 +1258,17 @@
             if (/^https?:\/\//i.test(cmd.path)) {
               const ok = (typeof window.isAllowedRedirect === 'function') ? window.isAllowedRedirect(cmd.path) : true;
               if (ok) location.assign(cmd.path);
-            } else {
-              location.assign(cmd.path);
-            }
+            } else { location.assign(cmd.path); }
           }
           else if (cmd.type === 'click' && cmd.selector){
             const el = document.querySelector(cmd.selector);
             if (el){
-              el.focus?.();
-              el.click?.();
+              el.focus?.(); el.click?.();
               el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window })); }
           }
           else if (cmd.type === 'highlight' && cmd.selector){
             const el = document.querySelector(cmd.selector);
-            if (el){
-              const prev = el.style.outline;
-              el.style.outline = '3px solid #00e5ff';
-              setTimeout(()=>{ el.style.outline = prev; }, 1800);
-            }
+            if (el){ const prev = el.style.outline; el.style.outline = '3px solid #00e5ff'; setTimeout(()=>{ el.style.outline = prev; }, 1800); }
           }
         } catch (e) { /* noop */ }
       });
@@ -1297,9 +1296,7 @@
             const v = child.val();
             const st = v?.meta?.status;
             const created = v?.meta?.createdAt || 0;
-            if (st === 'active' && created > latestAt) {
-              latestAt = created; latestId = child.key;
-            }
+            if (st === 'active' && created > latestAt) { latestAt = created; latestId = child.key; }
           });
           if (latestId) setActiveSession(latestId);
         }, { onlyOnce: true });
@@ -1311,72 +1308,25 @@
   <script>
     (function(){
       const gate     = document.getElementById('popup-gate');
-      const gateBtn  = document.getElementById('gate-open');
-      const howtoBtn = document.getElementById('gate-howto');
-      const gateMsg  = document.getElementById('gate-msg');
-      const ALLOWED_NAMES = ['gameWindow','siuGame','popup'];
-
-      function isMobileStrict(){
-        try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
-        const ua = navigator.userAgent || '';
-        if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
-        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
-        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-        const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
-        if (coarse && !canHover) return true;
-        return false;
+      if (!gate) {
+        // gate가 없는 버전에서도 안전 실행
+        window.__PLAY_ALLOWED = (function(){
+          // 모바일은 허용, PC는 팝업/허용 네임만 허용
+          function isMobileStrict(){
+            try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
+            const ua = navigator.userAgent || '';
+            if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
+            if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
+            const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+            const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+            return (coarse && !canHover);
+          }
+          function isPopup(){ try { if (window.opener && !window.opener.closed) return true; } catch {} try { if (['gameWindow','siuGame','popup'].includes(window.name)) return true; } catch {} return false; }
+          return isMobileStrict() || isPopup();
+        })();
+        if (window.__PLAY_ALLOWED){ ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; }); }
+        return;
       }
-      function isPopup(){
-        try { if (window.opener && !window.opener.closed) return true; } catch {}
-        try { if (ALLOWED_NAMES.includes(window.name)) return true; } catch {}
-        return false;
-      }
-
-      function allowPlay(){
-        window.__PLAY_ALLOWED = true;
-        if (window.__DEFER_INIT) { try { window.__DEFER_INIT(); } catch(e){} window.__DEFER_INIT = null; }
-        try { gate.style.display = 'none'; gate.setAttribute('aria-hidden','true'); } catch {}
-        try { ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible'); } catch {}
-      }
-
-      function showGate(){
-        window.__PLAY_ALLOWED = false;
-        gate.style.display = 'flex';
-        gate.setAttribute('aria-hidden','false');
-      }
-
-      function openSelfAsPopup(){
-        gateMsg.textContent = '';
-        const w = 1024, h = 768;
-        const left = window.screenX ? Math.max(0, Math.round(window.screenX + (window.outerWidth - w)/2)) : 0;
-        const top  = window.screenY ? Math.max(0, Math.round(window.screenY + (window.outerHeight - h)/2)) : 0;
-        const opts = [`width=${w}`,`height=${h}`,`left=${left}`,`top=${top}`,'resizable=yes','scrollbars=yes','status=no','toolbar=no','menubar=no','noopener','noreferrer'].join(',');
-        let pop = null;
-        try { pop = window.open(window.location.href, 'gameWindow', opts); } catch(e){ pop = null; }
-        if (!pop || pop.closed) { gateMsg.textContent = '팝업이 차단되었습니다. 브라우저 설정에서 이 사이트의 팝업을 허용해 주세요.'; return; }
-        try { pop.focus(); } catch {}
-        try { window.close(); } catch {}
-        setTimeout(()=>{ if (!window.closed) location.replace('/'); }, 400);
-      }
-
-      function openHelp(){
-        alert('팝업 허용 방법:\n\n크롬: 주소창 우측 팝업 차단 아이콘 → 이 사이트의 팝업 허용\n엣지/웨일/브레이브도 유사 위치에 있습니다.');
-      }
-
-      gateBtn.addEventListener('click', openSelfAsPopup);
-      howtoBtn.addEventListener('click', openHelp);
-
-      if (isMobileStrict()) {
-        allowPlay();
-      } else {
-        if (isPopup()) allowPlay();
-        else showGate();
-      }
-
-      window.addEventListener('pageshow', () => {
-        if (isMobileStrict()) return;
-        if (!isPopup()) showGate();
-      });
     })();
   </script>
 </body>
