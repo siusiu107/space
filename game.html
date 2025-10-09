@@ -87,7 +87,7 @@
     }
     body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
-    #top-bar, #container { visibility: hidden; } /* ✅ 로그인 전엔 반드시 숨김 */
+    #top-bar, #container { visibility: hidden; }
 
     .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
     @keyframes spin { to { transform:rotate(360deg); } }
@@ -109,7 +109,7 @@
 
     /* 로그인 카드 */
     #auth-container {
-      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:3501; /* ✅ 게임 UI보다 항상 위 */
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000;
       width:360px; max-width:92%; padding:22px; border-radius:14px; text-align:center;
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(6,7,12,0.45));
       box-shadow: 0 12px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.02);
@@ -181,7 +181,8 @@
 
     /* 바텀 내비 */
     #bottom-nav{
-      position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
+      position: fixed;
+      left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
       display: flex; gap: 8px; padding: 8px;
       background: var(--glass-bg); backdrop-filter: blur(10px);
@@ -295,53 +296,6 @@
       <div style="margin:0 auto 12px;"><div class="spinner" aria-hidden="true"></div></div>
     </div>
   </div>
-
-  <!-- ✅ 프리-워치독: 모듈 실패 시 오버레이 강제 해제 -->
-  <script>
-    (function(){
-      function forceShowAuth(){
-        var overlay = document.getElementById('boot-overlay');
-        if (overlay){ overlay.style.display='none'; overlay.setAttribute('aria-hidden','true'); }
-        var auth = document.getElementById('auth-container');
-        if (auth){ auth.style.display='block'; auth.classList.remove('hidden'); }
-        // 게임 UI는 로그인 전엔 절대 표시하지 않음 (겹침 방지)
-        ['top-bar','container'].forEach(id=>{ var el=document.getElementById(id); if(el){ el.style.visibility='hidden'; } });
-      }
-      var DOMTimer = null;
-      window.addEventListener('DOMContentLoaded', function(){
-        DOMTimer = setTimeout(forceShowAuth, 4000);
-      });
-      var HardTimer = setTimeout(forceShowAuth, 10000);
-      window.__cancelPreBootWatchdogs = function(){
-        try{ clearTimeout(DOMTimer); }catch(e){}
-        try{ clearTimeout(HardTimer); }catch(e){}
-      };
-    })();
-  </script>
-
-  <!-- ✅ 조기 바인더: 모듈 로딩 전에도 버튼 클릭은 반응 -->
-  <script>
-    (function(){
-      function bindEarly(){
-        const authErr = document.getElementById('auth-error');
-        function showBooting(){
-          if(authErr){ authErr.textContent = '로그인 시스템 준비 중입니다. 잠시 후 다시 시도하세요.'; authErr.classList.add('show'); }
-        }
-        window.AuthActions = window.AuthActions || {};
-        window.AuthActions.login  = window.AuthActions.login  || showBooting;
-        window.AuthActions.signup = window.AuthActions.signup || showBooting;
-        window.AuthActions.google = window.AuthActions.google || showBooting;
-
-        const L = document.getElementById('login-btn');
-        const S = document.getElementById('signup-btn');
-        const G = document.getElementById('google-btn');
-        if (L) L.onclick = ()=>window.AuthActions.login();
-        if (S) S.onclick = ()=>window.AuthActions.signup();
-        if (G) G.onclick = ()=>window.AuthActions.google();
-      }
-      document.addEventListener('DOMContentLoaded', bindEarly);
-    })();
-  </script>
 
   <!-- 인증 -->
   <div id="auth-container" role="dialog" aria-labelledby="auth-title">
@@ -532,9 +486,6 @@
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // ✅ 프리-워치독 취소 (모듈 로드 확인)
-    try { window.__cancelPreBootWatchdogs && window.__cancelPreBootWatchdogs(); } catch(e){}
-
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -649,7 +600,7 @@
           authContainer.style.display = 'none';
           const lb = document.getElementById('logout-btn');
           if (lb) lb.style.display = 'block';
-          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible'); /* ✅ 로그인 후에만 보이기 */
+          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
@@ -673,9 +624,9 @@
 
     // === (하향) 코인 보상 스케일러 ===
     function calcBaseCoin(){
-      const rps = state.workerCount * getWorkerPower();
-      const cps = state.conversionCount;
-      const rpc = state.clickPower;
+      const rps = state.workerCount * getWorkerPower();     // 초당 자원
+      const cps = state.conversionCount;                    // 초당 코인(알바)
+      const rpc = state.clickPower;                         // 클릭당 자원
       const planets = (state.ownedPlanets?.length || 0);
       const ship = (state.shipLevel || 1);
       const auto = state.autoConvertBought ? 1 : 0;
@@ -688,11 +639,13 @@
           35  * ship +
           (auto ? 25 : 0);
 
+      // ✔ 전체적으로 약 30% 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
     }
 
+    /* ===== BALANCE ENGINE: 진행도 기반 보상/생산 자동 조정 ===== */
     function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
 
     function progressScore(s){
@@ -713,16 +666,19 @@
     }
 
     function generosity(score){
+      // 초반 살짝 후함 → 중후반 점진적 박함
       const a = 0.58, b = 0.55, k = 0.020, x0 = 110;
-      return a + b / (1 + Math.exp(k*(score - x0)));
+      return a + b / (1 + Math.exp(k*(score - x0))); // ~0.58 ~ 1.13
     }
 
     function wealthDampen(coins, resources){
+      // 보유량 많을수록 살짝 짜게
       const w = Math.log10(1 + coins/400 + resources/600);
-      return 1 / (1 + 0.25 * w);
+      return 1 / (1 + 0.25 * w); // ~1.00 → ~0.75
     }
 
     function sinkBoost(s){
+      // 행성/함선 소모처 → 약간 후하게
       const p = (s.ownedPlanets?.length || 0);
       const ship = Math.max(0, (s.shipLevel || 1) - 1);
       const boost = 1 + 0.05 * p + 0.02 * ship;
@@ -734,13 +690,14 @@
       const mul = generosity(score)
                 * wealthDampen(state.coins || 0, state.resources || 0)
                 * sinkBoost(state);
-      const prizeMul = clamp(mul, 0.55, 1.00);
-      const resMul   = clamp(prizeMul + 0.07, 0.62, 1.08);
-      const coinMul  = clamp(prizeMul * 0.95, 0.52, 0.97);
+      const prizeMul = clamp(mul, 0.55, 1.00);         // 룰렛/일회성
+      const resMul   = clamp(prizeMul + 0.07, 0.62, 1.08); // 자원(클릭/워커)
+      const coinMul  = clamp(prizeMul * 0.95, 0.52, 0.97); // 코인(알바)
       return { score, prizeMul, resMul, coinMul };
     }
 
     // ===== 슬롯 템플릿 & 머터리얼라이즈 =====
+    // 출석은 유지 / 프리미엄·EC는 이벤트코인 확률 하향
     const TPL_DAILY = [
       { key:'coin_x0_4',  type:'coin', coinMul:0.4,  icon:'🪙', color:'#7AFBFF', w:0.35 },
       { key:'coin_x0_8',  type:'coin', coinMul:0.8,  icon:'💰', color:'#4DFFB5', w:0.25 },
@@ -752,6 +709,7 @@
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.005 }
     ];
 
+    // 프리미엄: EC 확률 1.5%로 하향(0.04 → 0.015), 나머지 가중치로 보충
     const TPL_PREMIUM = [
       { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.31 },
       { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
@@ -762,6 +720,7 @@
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.015 }
     ];
 
+    // EC 슬롯: EC 총확률 28% → 12% (0.08+0.03+0.01)
     const TPL_ECOIN = [
       { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.30 },
       { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.22 },
@@ -772,8 +731,9 @@
       { key:'eco_20',     type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.01 }
     ];
 
-    const DAILY_COIN_RATE = 0.0035;
+    const DAILY_COIN_RATE = 0.0035; // 출석 코인 보상 = 기존 코인의 0.35%
 
+    // === SFX & 버프 ===
     function playSfx(id){
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
@@ -805,6 +765,7 @@
       return m;
     }
 
+    /* 출석/프리미엄/EC 룰렛 머터리얼라이즈 + 밸런싱 */
     function materializeItems(tpl, mode){
       const base = calcBaseCoin();
       const eco  = economy();
@@ -843,6 +804,7 @@
       return materializeItems(tpl, mode);
     }
 
+    // ===== 슬롯(세로 낙하식) =====
     const slotWrap = document.getElementById('slot-wrap');
     const reel = document.getElementById('slot-reel');
     function buildSlot(items){
@@ -854,7 +816,7 @@
     function spinSlot(items, picked){
       const rowH=56, totalRows = items.length*8;
       const idx = items.findIndex(it=>it.key===picked.key);
-      const stopRow = (items.length*6) + idx;
+      const stopRow = (items.length*6) + idx; // 충분히 굴리기
       const targetY = - stopRow * rowH;
       startTickLoop(90);
       playSfx('sfx-start');
@@ -869,6 +831,7 @@
       });
     }
 
+    // ===== 출석 저장/표시 =====
     const dailyOverlay = document.getElementById('daily-overlay');
     const dailyInfo    = document.getElementById('daily-info');
     const dailyCloseBtn= document.getElementById('daily-close');
@@ -897,6 +860,7 @@
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
 
+      // 슬롯만 사용
       slotWrap.style.display     = 'flex';
       document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
       document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
@@ -958,6 +922,7 @@
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
     // ==== 스핀 버튼 ====
+    // 출석(무료) — 10연속마다 EC 1개 추가 지급(룰렛 외 보너스)
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
@@ -967,12 +932,15 @@
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
 
+      // 먼저 룰렛 실행 및 보상 적용
       await spinSlot(activeItems, picked);
       picked.onWin();
 
+      // 연속 보너스 계산(룰렛과 별개)
       const wasYesterday = (dailyCache?.lastKey === yesterday);
       const nextStreak = wasYesterday ? (Number(dailyCache?.streak||0) + 1) : 1;
 
+      // 10연속 보너스: EC +1 (보상 트랜잭션에 포함시키기 위해 state에 먼저 반영)
       let bonusMsg = '';
       if (nextStreak % 10 === 0) {
         state.eventCoins = (state.eventCoins||0) + 1;
@@ -993,6 +961,7 @@
       }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
     };
 
+    // 프리미엄(EC -1)
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
@@ -1011,6 +980,7 @@
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
+    // 이벤트코인(EC -10)
     spinEcoinBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
@@ -1029,6 +999,7 @@
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
+    // ===== 데이터 & 출석 캐시 =====
     async function fetchDaily(){
       if (!uid) return;
       const dailyRef = ref(db, `users/${uid}/daily`);
@@ -1047,6 +1018,7 @@
     }
     function openDailyManual(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
 
+    // ===== 메뉴에 "남은 시간" 표시 =====
     const attMenuRight = document.getElementById('attendance-left');
     const attSideRight = document.getElementById('attendance-left-side');
     function updateAttendanceLabels(){
@@ -1062,6 +1034,7 @@
     }
     setInterval(updateAttendanceLabels, 1000);
 
+    // ===== 게임 UI =====
     function updateUI() {
       document.getElementById('score').innerText  = `자원: ${Math.floor(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${Math.floor(state.coins)}`;
@@ -1153,6 +1126,7 @@
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
 
+        // 클릭 버프 + 밸런스 반영 (클릭 +50% 등 동작)
         const eco = economy();
         const clickMul = activeMultiplier('click');
         state.resources += state.clickPower * clickMul * eco.resMul;
@@ -1174,17 +1148,21 @@
         tab.classList.add('active');
       }));
 
+      // 1초 루프 (워커/알바 생산에 버프+밸런스 적용)
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
         const eco = economy();
         const now = Date.now();
 
+        // 자원(워커)
         let workerGain = state.workerCount * getWorkerPower() * activeMultiplier('worker') * eco.resMul;
         if (state.workerCount > 0) state.resources += workerGain;
 
+        // 코인(알바)
         let convGain = state.conversionCount * activeMultiplier('convert') * eco.coinMul;
         if (state.conversionCount > 0) state.coins += convGain;
 
+        // 버프 만료 정리
         if (window.fx?._tempBuff && now >= window.fx._tempBuff.until) window.fx._tempBuff=null;
         if (window.fx?._tempBuff2 && now >= window.fx._tempBuff2.until) window.fx._tempBuff2=null;
 
@@ -1194,7 +1172,6 @@
     }
 
     onAuthStateChanged(auth, async user => {
-      try { window.__cancelPreBootWatchdogs && window.__cancelPreBootWatchdogs(); } catch(e){}
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -1206,8 +1183,6 @@
           showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
           try { await signOut(auth); } catch {}
           authContainer.style.display = 'block';
-          // 로그인 상태 아니므로 게임 UI는 숨김 유지
-          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
           return;
         }
 
@@ -1267,9 +1242,10 @@
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
-        // 로그인 화면만 표시, 게임 UI는 숨김
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
+        const lb = document.getElementById('logout-btn');
+        if (lb) lb.style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
 
         setAuthMode(currentAuthMode);
@@ -1302,9 +1278,7 @@
       location.href = '/setting.html';
     });
 
-    // ✅ 버튼 동작을 글로벌로 제공: 조기 바인더가 클릭을 이쪽으로 전달
-    window.AuthActions = window.AuthActions || {};
-    window.AuthActions.login = async function () {
+    loginBtn.addEventListener('click', async () => {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -1331,10 +1305,10 @@
         );
         showAuthStatus(msg);
       }
-    };
+    });
 
-    window.AuthActions.signup = async function (e) {
-      showAuthStatus('');
+    signupBtnEl?.addEventListener('click', async (e) => {
+      e.preventDefault(); showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const passwordConfirm = document.getElementById('password-confirm').value;
@@ -1359,9 +1333,9 @@
         );
         showAuthStatus(msg);
       }
-    };
+    });
 
-    window.AuthActions.google = async function () {
+    document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
       try {
@@ -1378,7 +1352,10 @@
           showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
         }
       }
-    };
+    });
+
+    const _lb = document.getElementById('logout-btn');
+    if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
@@ -1578,7 +1555,7 @@
     }
   </script>
 
-  <!-- Popup Enforcement (겹침 방지: 강제표시 제거) -->
+  <!-- Popup Enforcement (간소) -->
   <script>
     (function(){
       const gate = document.getElementById('popup-gate');
@@ -1596,7 +1573,7 @@
           function isPopup(){ try { if (window.opener && !window.opener.closed) return true; } catch {} try { if (['gameWindow','siuGame','popup'].includes(window.name)) return true; } catch {} return false; }
           return isMobileStrict() || isPopup();
         })();
-        // ❌ 여기서 게임 UI를 보이게 하지 않음. onAuthStateChanged/showGameUI에서만 표시.
+        if (window.__PLAY_ALLOWED){ ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; }); }
         return;
       }
     })();
