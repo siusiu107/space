@@ -163,7 +163,7 @@
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
       justify-content: space-between; align-items: center;
-      background: rgba(30,30,30,0.55); /* ← 0.85 → 0.55 */
+      background: rgba(30,30,30,0.55);
       padding:6px 10px; border-radius:8px;
       font-size:12px; z-index:1000;
       border: 1px solid rgba(255,255,255,0.08);
@@ -196,7 +196,7 @@
     #ore { width:200px; cursor:pointer; }
 
     /* 커스텀 메뉴 (우클릭) */
-    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 180px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
@@ -206,7 +206,7 @@
       left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
       display: flex; gap: 8px; padding: 8px;
-      background: rgba(10,12,20,0.40); /* ← 0.65 → 0.40 */
+      background: rgba(10,12,20,0.40);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px;
@@ -251,7 +251,7 @@
       z-index: 1600;
       width: 44px; height: 44px;
       border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(10,12,20,0.40); /* ← 0.65 → 0.40 */
+      background: rgba(10,12,20,0.40);
       backdrop-filter: blur(10px);
       color:#e6f5ff; font-size: 20px; cursor: pointer;
       display:flex; align-items:center; justify-content:center;
@@ -261,7 +261,7 @@
 
     #side-backdrop{
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.25); /* ← 0.35 → 0.25 */
+      background: rgba(0,0,0,0.25);
       opacity: 0; pointer-events: none;
       transition: opacity .2s ease;
       z-index: 1550;
@@ -273,7 +273,7 @@
       width: 260px; max-width: 84vw;
       transform: translateX(-100%);
       transition: transform .24s cubic-bezier(.2,.9,.3,1);
-      background: rgba(15,18,28,0.60); /* ← 0.90 → 0.60 */
+      background: rgba(15,18,28,0.60);
       border-right: 1px solid rgba(255,255,255,0.08);
       backdrop-filter: blur(10px);
       z-index: 1600;
@@ -305,7 +305,7 @@
     #popup-gate {
       position: fixed; inset: 0; z-index: 5000;
       display: none; align-items: center; justify-content: center;
-      background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70)); /* ← 0.65/0.85 → 0.50/0.70 */
+      background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70));
       backdrop-filter: blur(4px);
     }
     #popup-gate .card{
@@ -327,10 +327,36 @@
       box-shadow: 0 6px 18px rgba(0,160,255,.22);
     }
     #popup-gate .secondary{ background: transparent; color:#eaf6ff; font-weight:700; }
+
+    /* ✅ 출석 보상 오버레이 */
+    #daily-overlay{
+      position: fixed; inset:0; z-index:5200;
+      display:none; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,.55), rgba(2,6,12,.75));
+      backdrop-filter: blur(6px);
+    }
+    #daily-card{
+      width:min(420px, 92vw);
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(10,12,18,.55));
+      box-shadow: 0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      color:#eaf6ff;
+      padding:16px;
+      text-align:center;
+    }
+    #daily-card h3{ margin:0 0 6px; font-size:18px; }
+    #daily-info{ font-size:13px; color:#cfe6ff; margin:6px 0 12px; min-height:18px; }
+    #daily-actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    #daily-claim, #daily-close{
+      padding:10px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
+    }
+    #daily-claim{ background: linear-gradient(180deg,#00c0ff,#0077ff); color:#001218; font-weight:800; }
+    #daily-close{ background: transparent; color:#eaf6ff; font-weight:700; }
   </style>
 </head>
 <body>
-  <!-- ✅ 부팅 중 오버레이: 로그인 UI 대신 먼저 노출 -->
+  <!-- ✅ 부팅 중 오버레이 -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
@@ -397,8 +423,6 @@
       </div>
     </div>
   </div>
-
-  <!-- (삭제됨) 로그아웃 버튼 -->
 
   <!-- 상단 바 & 메인 게임 -->
   <div id="top-bar">
@@ -468,6 +492,7 @@
     <div class="menu-item" data-action="download">⬇️ 앱 다운로드</div>
     <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
+    <div class="menu-item" data-action="attendance">📅 출석 보상</div><!-- ✅ 추가 -->
   </div>
 
   <!-- 사이드 메뉴 -->
@@ -488,8 +513,23 @@
       <button class="side-item" data-action="rank">
         <span class="icon">🏆</span><span>랭킹 보기</span>
       </button>
+      <button class="side-item" data-action="attendance">
+        <span class="icon">📅</span><span>출석 보상</span>
+      </button><!-- ✅ 추가 -->
     </nav>
   </aside>
+
+  <!-- ✅ 출석 보상 오버레이 -->
+  <div id="daily-overlay" aria-hidden="true">
+    <div id="daily-card" role="dialog" aria-modal="true" aria-labelledby="daily-title">
+      <h3 id="daily-title">📅 오늘의 출석 보상</h3>
+      <div id="daily-info">확인 중…</div>
+      <div id="daily-actions">
+        <button id="daily-claim">보상 받기</button>
+        <button id="daily-close" class="secondary">닫기</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ✅ Popup Gate 오버레이 -->
   <div id="popup-gate" aria-hidden="true">
@@ -562,7 +602,7 @@
     function save() {
       if (!uid || !dataRef) return;
       if (isInitialSync) return;
-      if (!window.__PLAY_ALLOWED) return; // ✅ 팝업 승인 전 저장 차단
+      if (!window.__PLAY_ALLOWED) return;
       const now = Date.now();
       state._lastUpdated = now;
       localLastWrite = now;
@@ -612,13 +652,12 @@
     }
 
     function showGameUI() {
-      if (!window.__PLAY_ALLOWED) return; // ✅ 팝업 승인 전 UI 표시 금지
+      if (!window.__PLAY_ALLOWED) return;
       try {
         authContainer.classList.add('hidden');
         try { history.replaceState(null, '', '/게임' + (location.hash || '')); } catch {}
         setTimeout(() => {
           authContainer.style.display = 'none';
-          // (삭제된 로그아웃 버튼 안전 처리)
           const lb = document.getElementById('logout-btn');
           if (lb) lb.style.display = 'block';
           ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
@@ -626,8 +665,115 @@
       } catch (e) { console.error('showGameUI error', e); }
     }
 
+    // ===== 출석(KST) 유틸 =====
+    function kstDayKey(ts = Date.now()){
+      try {
+        return new Intl.DateTimeFormat('en-CA',{ timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}).format(ts);
+      } catch { // 폴백(로컬)
+        const d = new Date(ts); const m=('0'+(d.getMonth()+1)).slice(-2); const dd=('0'+d.getDate()).slice(-2);
+        return `${d.getFullYear()}-${m}-${dd}`;
+      }
+    }
+    function prevDayKeyOf(key){
+      const d = new Date(key+'T00:00:00+09:00');
+      d.setDate(d.getDate()-1);
+      return kstDayKey(+d);
+    }
+
+    // ===== 출석 보상 로직 =====
+    let dailyCache = null; // { lastKey, streak }
+    const dailyOverlay = document.getElementById('daily-overlay');
+    const dailyInfo = document.getElementById('daily-info');
+    const dailyClaimBtn = document.getElementById('daily-claim');
+    const dailyCloseBtn = document.getElementById('daily-close');
+
+    function openDailyOverlay(text){
+      dailyInfo.textContent = text || '';
+      dailyOverlay.style.display = 'flex';
+      dailyOverlay.setAttribute('aria-hidden','false');
+    }
+    function closeDailyOverlay(){
+      dailyOverlay.style.display = 'none';
+      dailyOverlay.setAttribute('aria-hidden','true');
+    }
+    dailyCloseBtn.addEventListener('click', closeDailyOverlay);
+
+    function calcReward(streak){
+      // 100 + (streak*10), max 300
+      const v = 100 + (Number(streak||0)*10);
+      return Math.min(v, 300);
+    }
+
+    function refreshDailyInfo(canClaim){
+      if (!dailyCache){ dailyInfo.textContent='확인 중…'; return; }
+      const today = kstDayKey();
+      const last = dailyCache.lastKey || '(없음)';
+      const streak = dailyCache.streak || 0;
+      const reward = calcReward(streak + (canClaim?1:0));
+      dailyInfo.innerHTML =
+        canClaim
+          ? `오늘(${today}) 출석 가능!<br>연속 ${streak}일 → 수령 시 <b>${reward} 코인</b>`
+          : `오늘(${today})은 이미 수령했어요.<br>현재 연속 ${streak}일`;
+      dailyClaimBtn.style.display = canClaim ? 'inline-block' : 'none';
+    }
+
+    function bindDailyClaim(){
+      dailyClaimBtn.onclick = async () => {
+        if (!uid || !window.__PLAY_ALLOWED) return;
+        const today = kstDayKey();
+        const yesterday = prevDayKeyOf(today);
+        // 1) daily path 업데이트
+        const dailyRef = ref(db, `users/${uid}/daily`);
+        // onValue로 현재값을 한번 읽고 처리(트랜잭션은 게임 데이터 코인 증분에 사용)
+        let lastKey = dailyCache?.lastKey || null;
+        let streak  = Number(dailyCache?.streak || 0);
+        if (lastKey === today){
+          refreshDailyInfo(false);
+          return;
+        }
+        if (lastKey === yesterday) streak = streak + 1;
+        else streak = 1;
+        const reward = calcReward(streak);
+
+        try {
+          // 2) 코인은 트랜잭션으로 안전 증분
+          await runTransaction(dataRef, current => {
+            const cur = current || { ...defaultData };
+            cur.coins = Math.floor((cur.coins||0) + reward);
+            cur._lastUpdated = Date.now();
+            return cur;
+          });
+          // 3) 일일 기록 저장(별도 경로)
+          await update(dailyRef, { lastKey: today, streak: streak, lastClaimAt: Date.now() });
+
+          // 4) 로컬 상태 반영 & UI 갱신
+          dailyCache = { lastKey: today, streak };
+          state.coins = (state.coins||0) + reward;
+          updateUI();
+          dailyInfo.innerHTML = `✅ 수령 완료! <b>${reward} 코인</b>이 지급되었습니다.<br>연속 ${streak}일 유지 중`;
+          dailyClaimBtn.style.display = 'none';
+        } catch (e){
+          dailyInfo.textContent = '보상 지급 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+          console.error(e);
+        }
+      };
+    }
+
+    function checkDailyAndMaybeShow(){
+      if (!uid || !window.__PLAY_ALLOWED) return;
+      const dailyRef = ref(db, `users/${uid}/daily`);
+      onValue(dailyRef, (snap) => {
+        const v = snap.exists() ? snap.val() : {};
+        dailyCache = { lastKey: v.lastKey || null, streak: Number(v.streak||0) };
+        const today = kstDayKey();
+        const can = (dailyCache.lastKey !== today);
+        refreshDailyInfo(can);
+        // 자동 표시: 오늘 미수령이면 오버레이 열기
+        if (can) openDailyOverlay('오늘 출석 보상을 받아보세요!');
+      }, { onlyOnce: true });
+    }
+
     onAuthStateChanged(auth, async user => {
-      // ✅ 부팅 오버레이는 상태 확인 후 즉시 숨김
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -638,7 +784,6 @@
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
           try { await signOut(auth); } catch {}
-          // 인증 미완료 → 로그인 UI 표시
           authContainer.style.display = 'block';
           return;
         }
@@ -662,6 +807,9 @@
               isInitialSync = false;
               showGameUI();
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
+              // ✅ 출석 체크
+              bindDailyClaim();
+              checkDailyAndMaybeShow();
             } else {
               state = { ...defaultData };
               if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
@@ -676,6 +824,9 @@
             isInitialSync = false;
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
+            // ✅ 출석 체크
+            bindDailyClaim();
+            checkDailyAndMaybeShow();
             return;
           }
 
@@ -695,7 +846,6 @@
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
-        // 로그인 UI 표시 (초기에는 숨겨져 있었음)
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         const lb = document.getElementById('logout-btn');
@@ -865,7 +1015,7 @@
         btn.onclick = () => {
           if (!ensureReady()) return;
           if (state.coins >= p.cost) {
-            state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i);
+            state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; if (!state.ownedPlanets.includes(i)) state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
           }
@@ -887,7 +1037,7 @@
     }
 
     function ensureReady() {
-      if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; } // ✅ 플레이 게이트
+      if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
       showAuthStatus('');
@@ -896,7 +1046,6 @@
 
     // ===== 초기화(지연 실행) =====
     function wireGame() {
-      // 이벤트 바인딩/타이머는 허용된 뒤에만 설치
       document.getElementById('ore').addEventListener('click', e => {
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
@@ -932,6 +1081,21 @@
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
     });
+
+    // ✅ 출석 오버레이 수동 열기 훅(메뉴에서)
+    function openDailyManual(){
+      if (!uid || !window.__PLAY_ALLOWED) { openDailyOverlay('로그인 후 이용하세요.'); dailyClaimBtn.style.display='none'; return; }
+      const dailyRef = ref(db, `users/${uid}/daily`);
+      onValue(dailyRef, (snap) => {
+        const v = snap.exists() ? snap.val() : {};
+        dailyCache = { lastKey: v.lastKey || null, streak: Number(v.streak||0) };
+        const today = kstDayKey();
+        const can = (dailyCache.lastKey !== today);
+        refreshDailyInfo(can);
+        openDailyOverlay('');
+      }, { onlyOnce: true });
+    }
+    bindDailyClaim();
   </script>
 
   <script>
@@ -943,17 +1107,25 @@
       customMenu.style.display = 'block';
     });
     customMenu.addEventListener('click', (e) => {
-      const action = e.target.getAttribute('data-action');
+      const mi = e.target.closest('.menu-item');
+      if (!mi) return;
+      const action = mi.getAttribute('data-action');
       if (!action) return;
       if (action === 'menu') {
         try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
-        try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
+        try {
+          const targetOrigin = (typeof parentOrigin === 'string' && ['https://xn--989a202a4ogwtc69p.siustudio.kro.kr','https://siustudio.kro.kr', location.origin].includes(parentOrigin))
+            ? parentOrigin : location.origin;
+          window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, targetOrigin);
+        } catch {}
         try { window.close(); } catch {}
         setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
       }
       if (action === 'download') { location.href='/app-download.html'; }
-      if (action === 'resume') { customMenu.style.display='none'; }
-      if (action === 'rank')   { location.href='/ranking.html'; }
+      if (action === 'resume')   { /* 닫기만 */ }
+      if (action === 'rank')     { location.href='/ranking.html'; }
+      if (action === 'attendance'){ openDailyManual(); } /* ✅ 추가 */
+      customMenu.style.display='none';
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
   </script>
@@ -988,13 +1160,18 @@
         const action = btn.getAttribute('data-action');
         if (action === 'menu') {
           try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
-          try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
+          try {
+            const targetOrigin = (typeof parentOrigin === 'string' && ['https://xn--989a202a4ogwtc69p.siustudio.kro.kr','https://siustudio.kro.kr', location.origin].includes(parentOrigin))
+              ? parentOrigin : location.origin;
+            window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, targetOrigin);
+          } catch {}
           try { window.close(); } catch {}
           setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
         }
         if (action === 'download') { location.href='/app-download.html'; }
         if (action === 'rank')     { location.href='/ranking.html'; }
         if (action === 'resume')   { /* 닫기만 */ }
+        if (action === 'attendance'){ openDailyManual(); } /* ✅ 추가 */
         closeSide();
       });
     })();
@@ -1027,7 +1204,7 @@
             e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
             s.onload=function(){ r(w[c]); };
           } return p;
-        }};
+        }}; 
       });
     })(window,'script','CobrowseIO');
     window.CobrowseIO = window.CobrowseIO || {};
@@ -1130,7 +1307,7 @@
     }
   </script>
 
-  <!-- ✅ Popup Enforcement: 모바일은 허용, PC는 팝업(또는 name 인증)만 허용 -->
+  <!-- ✅ Popup Enforcement -->
   <script>
     (function(){
       const gate     = document.getElementById('popup-gate');
@@ -1143,7 +1320,7 @@
         try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
         const ua = navigator.userAgent || '';
         if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
-        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true; // iPadOS
+        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
         const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
         if (coarse && !canHover) return true;
@@ -1159,7 +1336,6 @@
         window.__PLAY_ALLOWED = true;
         if (window.__DEFER_INIT) { try { window.__DEFER_INIT(); } catch(e){} window.__DEFER_INIT = null; }
         try { gate.style.display = 'none'; gate.setAttribute('aria-hidden','true'); } catch {}
-        // 로그인 UI/게임 UI 표시(이미 onAuthStateChanged에서 처리하지만, 미로그인 상태 대비)
         try { ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible'); } catch {}
       }
 
@@ -1190,15 +1366,13 @@
       gateBtn.addEventListener('click', openSelfAsPopup);
       howtoBtn.addEventListener('click', openHelp);
 
-      // 결정 로직
       if (isMobileStrict()) {
-        allowPlay(); // 모바일은 그대로 허용
+        allowPlay();
       } else {
         if (isPopup()) allowPlay();
-        else showGate(); // PC + 팝업 아님 → 차단
+        else showGate();
       }
 
-      // 뒤로가기로 돌아와도 유지
       window.addEventListener('pageshow', () => {
         if (isMobileStrict()) return;
         if (!isPopup()) showGate();
