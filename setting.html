@@ -145,7 +145,7 @@
     /* 섹션 토글 */
     #user-section, #admin-section{ display:none; }
 
-    /* === 요청 목록 스타일 (관리자용) === */
+    /* 요청 목록 (관리자) */
     .req-wrap{ display:none; margin-top:10px; border:1px solid var(--stroke); border-radius:12px; padding:10px; background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
     .req-list{ max-height:240px; overflow:auto; border:1px solid rgba(255,255,255,0.08); border-radius:10px; background:rgba(0,0,0,0.2); }
     .req-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.08); }
@@ -187,17 +187,17 @@
 
       <div class="hr"></div>
 
-      <!-- 데이터(실제 동작) -->
+      <!-- 데이터(전체 삭제) -->
       <div class="item">
         <div class="left">
           <div>♻️</div>
           <div>
             <div class="title">게임 데이터 초기화</div>
-            <div class="desc">자원·코인·업그레이드·행성 구매 내역을 기본값으로 되돌립니다.</div>
+            <div class="desc">내 UID 아래 저장된 모든 데이터를 완전히 삭제한 뒤 자동 로그아웃합니다.</div>
           </div>
         </div>
         <div class="right">
-          <button id="reset-btn" class="btn danger" disabled>초기화</button>
+          <button id="reset-btn" class="btn danger" disabled>전체 삭제</button>
         </div>
       </div>
 
@@ -221,7 +221,7 @@
         <div class="desc">세션 종료 시 채팅은 삭제되고 로그만 보존됩니다.</div>
         <div id="chat-log-user" class="log" role="log"></div>
         <div class="row">
-          <input id="chat-input-user" placeholder="메시지 입력…" />
+          <input id="chat-input-user" placeholder="मे시지 입력…" />
           <button id="chat-send-user" class="btn secondary">전송</button>
           <button id="end-session-user" class="btn danger">세션 종료</button>
         </div>
@@ -278,7 +278,7 @@
         <div class="desc" style="margin-top:6px" id="status-admin">대기중…</div>
       </div>
 
-      <!-- ✅ 실시간 요청 목록 (자동 표시) -->
+      <!-- 실시간 요청 목록 -->
       <div id="req-wrap" class="req-wrap">
         <div class="title">요청 목록</div>
         <div class="desc">사용자가 생성한 <b>활성 세션</b>이 자동으로 표시됩니다.</div>
@@ -325,10 +325,10 @@
       serverTimestamp, update, get, child, onChildChanged, onChildRemoved
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    /* ===== 주소 표시를 /setting 으로 고정 ===== */
+    /* 주소 표시 고정 */
     try { history.replaceState(null, '', '/setting' + (location.hash || '')); } catch (e) {}
 
-    /* ===== Firebase 설정 ===== */
+    /* Firebase 설정 */
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -344,7 +344,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    /* ===== 공통 UI ===== */
+    /* 공통 UI */
     const backBtn     = document.getElementById('back-btn');
     const toast       = document.getElementById('toast');
     const overlay     = document.getElementById('overlay');
@@ -361,18 +361,18 @@
     }
     backBtn.addEventListener('click', () => { location.href = '/game.html'; });
 
-    /* ===== 기본 게임 데이터(사용자용) ===== */
+    /* 기본 게임 데이터(참고용) */
     const defaultData = {
       resources:0, coins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20,
       workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
       _lastUpdated: Date.now()
     };
 
-    /* ===== 섹션 참조 ===== */
+    /* 섹션 참조 */
     const userSection  = document.getElementById('user-section');
     const adminSection = document.getElementById('admin-section');
 
-    /* ===== 사용자 섹션 refs ===== */
+    /* 사용자 섹션 refs */
     const accountDesc = document.getElementById('account-desc');
     const signoutBtn  = document.getElementById('signout-btn');
     const resetBtn    = document.getElementById('reset-btn');
@@ -389,7 +389,7 @@
     const tosAccept = document.getElementById('tos-accept');
     const tosCancel = document.getElementById('tos-cancel');
 
-    /* ===== 관리자 섹션 refs ===== */
+    /* 관리자 섹션 refs */
     const sessAdmin     = document.getElementById('sess-admin');
     const connectAdmin  = document.getElementById('connect-admin');
     const openDashBtn   = document.getElementById('openDash-admin');
@@ -407,11 +407,11 @@
     const endBtnAdmin   = document.getElementById('end-session-admin');
     const statusAdmin   = document.getElementById('status-admin');
 
-    /* === 요청 목록 refs === */
+    /* 요청 목록 refs */
     const reqWrap = document.getElementById('req-wrap');
     const reqList = document.getElementById('req-list');
 
-    /* ===== 사용자 기능 구현 ===== */
+    /* 사용자 기능 구현 */
     let uid = null;
     let userSessionId = null; // 6자리 세션 코드
     let userChatRef = null;
@@ -463,7 +463,7 @@
           appendMsgUser(m.from==='agent'?'상담사':'나', m.text, m.ts || Date.now());
         });
 
-        // 🧭 원격 명령 구독 (경로 이동/선택자 조작)
+        // 🧭 원격 명령 구독
         userCmdRef = ref(db, `sessions/${userSessionId}/commands`);
         onChildAdded(userCmdRef, (snap) => {
           const cmd = snap.val(); if (!cmd) return;
@@ -518,7 +518,7 @@
     chatSendUser.addEventListener('click', sendUserMsg);
     chatInputUser.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendUserMsg(); });
 
-    // 사용자: 세션 종료 (채팅 삭제 + 로그 보존)
+    // 사용자: 세션 종료
     endBtnUser.addEventListener('click', async () => {
       if (!userSessionId) return;
       const ok = confirm('원격 지원 세션을 종료할까요? (채팅내용은 삭제되고 로그는 보존됩니다)');
@@ -536,25 +536,51 @@
 
     // 사용자: 계정/초기화
     signoutBtn.addEventListener('click', async () => {
-      try { await signOut(auth); showToast('로그아웃 되었어요'); }
+      try { await signOut(auth); showToast('로그아웃 되었어요'); setTimeout(()=>location.href='/index.html', 400); }
       catch (e) { console.error(e); showToast('로그아웃 실패'); }
     });
+
+    // ✅ 변경된 “전체 삭제 + 자동 로그아웃” 핸들러
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
-      const ok = confirm('정말 초기화할까요?\n자원/코인/업그레이드/행성 구매 내역이 모두 기본값으로 되돌아갑니다.');
+      const ok = confirm(
+        '정말 삭제할까요?\n' +
+        '※ 경고: users/{uid} 아래 저장된 모든 데이터(게임데이터, 출석/이벤트/설정 등)가 완전히 삭제됩니다.\n' +
+        '이 작업은 되돌릴 수 없으며, 완료 후 자동으로 로그아웃됩니다.'
+      );
       if (!ok) return;
+
+      // 버튼 중복 클릭 방지
+      resetBtn.disabled = true;
+      signoutBtn.disabled = true;
+      helpBtn.disabled = true;
       showOverlay(true);
+
       try{
-        const data = { ...defaultData, _lastUpdated: Date.now() };
-        await runTransaction(ref(db, `users/${uid}/gameData`), () => data);
+        // users/{uid} 전체 제거
+        await remove(ref(db, `users/${uid}`));
+
+        // 로컬 캐시 정리
         try { localStorage.removeItem(`lastWrite_${uid}`); } catch {}
-        showToast('초기화 완료!');
+
+        showToast('사용자 데이터가 완전히 삭제되었습니다. 로그아웃합니다…');
+        // 자동 로그아웃
+        try { await signOut(auth); } catch(e){ console.warn('signOut 실패:', e); }
+        // 홈으로 이동
+        setTimeout(()=>{ location.href = '/index.html'; }, 600);
       }catch(e){
-        console.error(e); showToast('초기화 실패. 네트워크를 확인하세요.');
-      }finally{ showOverlay(false); }
+        console.error(e);
+        showToast('삭제 실패. 네트워크/권한을 확인하세요.');
+        // 실패 시 버튼 원복
+        resetBtn.disabled = false;
+        signoutBtn.disabled = false;
+        helpBtn.disabled = false;
+      }finally{
+        showOverlay(false);
+      }
     });
 
-    /* ===== 관리자 기능 구현 ===== */
+    /* 관리자 기능 구현 */
     let adminSessionId = null;
 
     function appendMsgAdmin(who, text, ts){
@@ -635,13 +661,12 @@
         statusAdmin.textContent = '세션 종료됨 (채팅 삭제 완료)';
       };
 
-      // 🔔 요청 목록 워처 (관리자 전용)
+      // 요청 목록 워처
       if (!window.__REQ_BOUND__) { startRequestWatcher(); window.__REQ_BOUND__ = true; }
     }
 
-    // === 관리자 요청 목록 ===
+    // 요청 목록
     const reqEls = new Map(); // code -> row element
-
     function fmt(ts){
       if (!ts) return '';
       try {
@@ -649,7 +674,6 @@
         return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
       } catch { return ''; }
     }
-
     function makeReqRow(code, meta){
       const row = document.createElement('div');
       row.className = 'req-row';
@@ -692,17 +716,14 @@
       row.appendChild(actions);
       return row;
     }
-
     function upsertReq(code, meta){
-      // 활성 세션만 표시, 종료되면 제거
       if (!meta || meta.status !== 'active'){
         const exist = reqEls.get(code);
         if (exist){ exist.remove(); reqEls.delete(code); }
+        if (reqEls.size === 0) reqWrap.style.display = 'none';
         return;
       }
-
       if (reqEls.has(code)){
-        // 업데이트
         const row = reqEls.get(code);
         const badge = row.querySelector('.badge');
         const timeEl = row.querySelector('.muted');
@@ -713,17 +734,12 @@
         reqList.appendChild(row);
         reqEls.set(code, row);
       }
-      // 목록 래퍼 표시
-      if (reqEls.size > 0) reqWrap.style.display = 'block';
+      reqWrap.style.display = 'block';
     }
-
     function startRequestWatcher(){
       const sessionsRef = ref(db, 'sessions');
-
-      // 새 세션(요청) 추가 시
       onChildAdded(sessionsRef, async (snap) => {
         const code = snap.key;
-        // meta가 스냅샷에 없을 수 있으므로 안전하게 읽기
         let meta = snap.child('meta').val();
         if (!meta){
           const metaSnap = await get(child(ref(db, `sessions/${code}`), 'meta'));
@@ -731,15 +747,11 @@
         }
         upsertReq(code, meta);
       });
-
-      // 세션 변경(특히 status 변경) 시
       onChildChanged(sessionsRef, (snap) => {
         const code = snap.key;
         const meta = snap.child('meta').val();
         upsertReq(code, meta);
       });
-
-      // 세션 삭제 시
       onChildRemoved(sessionsRef, (snap) => {
         const code = snap.key;
         const exist = reqEls.get(code);
@@ -748,24 +760,20 @@
       });
     }
 
-    /* ===== 인증 상태: 관리자/사용자 UI 토글 ===== */
+    /* 인증 상태: 관리자/사용자 UI 토글 */
     onAuthStateChanged(auth, (user) => {
-      // 현재 로그인 사용자의 uid는 관리자/일반 모두에서 사용
       uid = user ? user.uid : null;
-
       const isAdmin = !!(user && user.email === 'siu46852579@gmail.com');
 
       if (isAdmin) {
-        // 관리자: 두 섹션 모두 표시 + '상담사 도움'만 비활성화, 나머지 설정 사용 가능
         userSection.style.display = 'block';
         adminSection.style.display = 'block';
 
-        helpBtn.disabled = true;          // 상담사 도움만 제한
-        signoutBtn.disabled = false;      // 나머지 설정 허용
+        helpBtn.disabled = true;
+        signoutBtn.disabled = false;
         resetBtn.disabled = false;
 
         accountDesc.textContent = user ? `${user.email} (관리자 로그인됨)` : '로그인이 필요합니다.';
-
         if (!window.__ADMIN_BOUND__) { bindAdminHandlers(); window.__ADMIN_BOUND__ = true; }
         return;
       }
@@ -789,7 +797,7 @@
       }
     });
 
-    /* ===== Cobrowse.io SDK 로더 + 라이선스 (전역) ===== */
+    /* Cobrowse.io SDK 로더 (전역) */
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
         w[c]={client:function(){
@@ -798,8 +806,7 @@
             e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
             s.onload=function(){ r(w[c]); };
           } return p;
-        }};
-      });
+        }}; });
     })(window,'script','CobrowseIO');
     window.CobrowseIO = window.CobrowseIO || {};
     window.CobrowseIO.license = "eFtcbWqBdRylMQ";
