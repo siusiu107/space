@@ -107,29 +107,49 @@
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
 
+    /* 공통 스피너 */
+    .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* 초기 부팅 오버레이 (로그인 상태 확인 중) */
+    #boot-overlay{
+      position:fixed; inset:0; z-index:3000;
+      display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,0.40), rgba(2,6,12,0.60));
+      backdrop-filter: blur(3px);
+    }
+    #boot-overlay .card{
+      width:min(420px,92vw); border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(10,12,18,0.45));
+      padding:16px;
+      text-align:center; color:#e6f7ff;
+      box-shadow:0 16px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    #boot-overlay h3{ margin:0 0 8px; font-size:18px; }
+
     /* 로그인 카드 */
     #auth-container {
       position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000;
       width:360px; max-width:92%; padding:22px; border-radius:14px; text-align:center;
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(6,7,12,0.55));
-      box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(6,7,12,0.45));
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.02);
       backdrop-filter: blur(6px);
       transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
+      display:none; /* ✅ 초기에는 로그인 UI 숨김 */
     }
     #auth-container.hidden { opacity:0; transform: translate(-50%, -46% ) scale(.98); pointer-events:none; visibility:hidden; }
     #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
-    #auth-container input { width:100%; padding:12px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.25); color:#fff; outline:none; font-size:14px; }
-    #auth-container input:focus { box-shadow:0 8px 20px rgba(0,160,255,0.08); border-color:rgba(0,160,255,0.25); }
+    #auth-container input { width:100%; padding:12px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.20); color:#fff; outline:none; font-size:14px; }
+    #auth-container input:focus { box-shadow:0 8px 20px rgba(0,160,255,0.08); border-color:rgba(0,160,255,0.22); }
     #auth-container .primary-btn { width:100%; padding:12px; margin-top:8px; border-radius:10px; background:linear-gradient(90deg,#00c0ff,#0077ff); color:#00120b; font-weight:800; border:none; cursor:pointer; box-shadow: 0 6px 18px rgba(0,120,255,0.12); }
-    #auth-container .ghost-btn { width:100%; padding:10px; margin-top:6px; border-radius:10px; background:transparent; color:#e6f5ff; border:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+    #auth-container .ghost-btn { width:100%; padding:10px; margin-top:6px; border-radius:10px; background:transparent; color:#e6f5ff; border:1px solid rgba(255,255,255,0.08); cursor:pointer; }
 
     .auth-status { margin-top:10px; min-height:22px; font-size:13px; color:#ffdede; opacity:0; transform:translateY(6px); transition:opacity .22s ease, transform .22s ease; }
     .auth-status.show { opacity:1; transform:translateY(0); }
 
-    .login-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,12,0.55), rgba(2,6,12,0.75)); border-radius:14px; z-index:1100; opacity:0; pointer-events:none; transition:opacity .24s ease; }
-    .login-overlay.show { opacity:1; pointer-events:auto; }
-    .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+    .login-overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,12,0.40), rgba(2,6,12,0.60)); border-radius:14px; z-index:1100; opacity:1; pointer-events:auto; }
+    .login-overlay.show { display:flex; }
 
     .google-btn { width:95%; display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:10px; margin:8px 0 4px; background:linear-gradient(180deg,#fff,#f2f2f2); color:#000; border-radius:8px; border:1px solid rgba(0,0,0,0.08); cursor:pointer; font-weight:700; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
     .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
@@ -138,29 +158,20 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
-    /* 상단바 */
+    /* 상단바 (연하게) */
     #top-bar {
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
       justify-content: space-between; align-items: center;
-      background: rgba(30,30,30,0.85); padding:6px 10px; border-radius:8px;
+      background: rgba(30,30,30,0.55); /* ← 0.85 → 0.55 */
+      padding:6px 10px; border-radius:8px;
       font-size:12px; z-index:1000;
+      border: 1px solid rgba(255,255,255,0.08);
     }
     .bar-group { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; }
     .bar-group img { width:16px; height:16px; }
     .bar-group span { white-space: nowrap; }
     #ship-img{ width:16px; height:16px; }
-
-    /* 로그아웃 */
-    #logout-btn {
-      display:none;
-      position:fixed; top:56px; right:8px;
-      background:#f44; color:#fff; border:none;
-      padding:8px 12px; border-radius:8px; cursor:pointer;
-      z-index:1400;
-      box-shadow:0 6px 16px rgba(0,0,0,.35);
-    }
-    #logout-btn:active{ transform: translateY(1px); }
 
     /* 설정 버튼 */
     #settings-btn {
@@ -171,8 +182,8 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
-    /* 메인 컨테이너 */
-    #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.9); border-radius:10px; text-align:center; }
+    /* 메인 컨테이너 (연하게) */
+    #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
     h1 { font-size:1.4em; margin:6px 0 14px; color:#00d4ff; }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
@@ -185,21 +196,21 @@
     #ore { width:200px; cursor:pointer; }
 
     /* 커스텀 메뉴 (우클릭) */
-    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.95); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-    /* === Bottom Nav === */
+    /* === Bottom Nav (연하게) === */
     #bottom-nav{
       position: fixed;
       left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
       display: flex; gap: 8px; padding: 8px;
-      background: rgba(10,12,20,0.65);
+      background: rgba(10,12,20,0.40); /* ← 0.65 → 0.40 */
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
       z-index: 1200;
       max-width: 96vw;
     }
@@ -227,13 +238,12 @@
     @media (max-width: 420px){
       #top-bar{ font-size:11px; padding:6px 8px; }
       #settings-btn{ padding:5px 8px; font-size:12px; }
-      #logout-btn{ top:52px; right:6px; padding:6px 10px; font-size:12px; }
       #bottom-nav{ left:8px; right:8px; transform:none; border-radius:14px; gap:6px; }
       #bottom-nav .tab{ padding:10px 8px; min-width:0; }
       h1{ font-size:1.2em; }
     }
 
-    /* ===== 사이드 메뉴 ===== */
+    /* ===== 사이드 메뉴 (연하게) ===== */
     #side-menu-toggle{
       position: fixed;
       left: 8px;
@@ -241,17 +251,17 @@
       z-index: 1600;
       width: 44px; height: 44px;
       border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(10,12,20,0.65);
+      background: rgba(10,12,20,0.40); /* ← 0.65 → 0.40 */
       backdrop-filter: blur(10px);
       color:#e6f5ff; font-size: 20px; cursor: pointer;
       display:flex; align-items:center; justify-content:center;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
     }
     #side-menu-toggle:active{ transform: translateY(1px); }
 
     #side-backdrop{
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.35);
+      background: rgba(0,0,0,0.25); /* ← 0.35 → 0.25 */
       opacity: 0; pointer-events: none;
       transition: opacity .2s ease;
       z-index: 1550;
@@ -263,11 +273,11 @@
       width: 260px; max-width: 84vw;
       transform: translateX(-100%);
       transition: transform .24s cubic-bezier(.2,.9,.3,1);
-      background: rgba(15,18,28,0.9);
+      background: rgba(15,18,28,0.60); /* ← 0.90 → 0.60 */
       border-right: 1px solid rgba(255,255,255,0.08);
       backdrop-filter: blur(10px);
       z-index: 1600;
-      box-shadow: 10px 0 30px rgba(0,0,0,0.35);
+      box-shadow: 10px 0 30px rgba(0,0,0,0.28);
     }
     #side-menu.open{ transform: translateX(0); }
     .side-header{
@@ -291,20 +301,20 @@
       #side-menu{ width: 240px; }
     }
 
-    /* ✅ Popup Gate 오버레이 */
+    /* ✅ Popup Gate 오버레이 (연하게) */
     #popup-gate {
       position: fixed; inset: 0; z-index: 5000;
       display: none; align-items: center; justify-content: center;
-      background: linear-gradient(180deg, rgba(2,6,12,.65), rgba(2,6,12,.85));
+      background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70)); /* ← 0.65/0.85 → 0.50/0.70 */
       backdrop-filter: blur(4px);
     }
     #popup-gate .card{
       width: min(420px, 92vw);
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.6));
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.55));
       padding: 16px 16px 14px;
-      box-shadow: 0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      box-shadow: 0 16px 44px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.06);
       text-align: center;
       color: #eaf6ff;
     }
@@ -320,6 +330,20 @@
   </style>
 </head>
 <body>
+  <!-- ✅ 부팅 중 오버레이: 로그인 UI 대신 먼저 노출 -->
+  <div id="boot-overlay" aria-hidden="false">
+    <div class="card" role="status" aria-live="polite" aria-atomic="true">
+      <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
+        <div aria-hidden="true" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,0.06);">🔒</div>
+        <div style="text-align:left;">
+          <div style="font-weight:800; font-size:15px;">로그인 상태 확인 중…</div>
+          <div style="font-size:12px; color:#bcd8ee; margin-top:2px;">잠시만 기다려주세요</div>
+        </div>
+      </div>
+      <div style="margin:0 auto 12px;"><div class="spinner" aria-hidden="true"></div></div>
+    </div>
+  </div>
+
   <!-- 인증 -->
   <div id="auth-container" role="dialog" aria-labelledby="auth-title">
     <div style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
@@ -374,8 +398,7 @@
     </div>
   </div>
 
-  <!-- 로그아웃 버튼 -->
-  <button id="logout-btn">로그아웃</button>
+  <!-- (삭제됨) 로그아웃 버튼 -->
 
   <!-- 상단 바 & 메인 게임 -->
   <div id="top-bar">
@@ -549,6 +572,13 @@
 
     const authContainer = document.getElementById('auth-container');
     const authErrorEl   = document.getElementById('auth-error');
+    const bootOverlay   = document.getElementById('boot-overlay');
+
+    function setBootVisible(v){
+      if (!bootOverlay) return;
+      bootOverlay.style.display = v ? 'flex' : 'none';
+      bootOverlay.setAttribute('aria-hidden', v ? 'false' : 'true');
+    }
 
     function showAuthStatus(msg, isError = true) {
       authErrorEl.textContent = msg || '';
@@ -588,13 +618,17 @@
         try { history.replaceState(null, '', '/게임' + (location.hash || '')); } catch {}
         setTimeout(() => {
           authContainer.style.display = 'none';
-          document.getElementById('logout-btn').style.display = 'block';
+          // (삭제된 로그아웃 버튼 안전 처리)
+          const lb = document.getElementById('logout-btn');
+          if (lb) lb.style.display = 'block';
           ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
 
     onAuthStateChanged(auth, async user => {
+      // ✅ 부팅 오버레이는 상태 확인 후 즉시 숨김
+      setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
@@ -604,6 +638,8 @@
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
           try { await signOut(auth); } catch {}
+          // 인증 미완료 → 로그인 UI 표시
+          authContainer.style.display = 'block';
           return;
         }
 
@@ -659,9 +695,11 @@
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
+        // 로그인 UI 표시 (초기에는 숨겨져 있었음)
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
-        document.getElementById('logout-btn').style.display = 'none';
+        const lb = document.getElementById('logout-btn');
+        if (lb) lb.style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
 
         setAuthMode(currentAuthMode);
@@ -775,8 +813,9 @@
       }
     });
 
-    // 로그아웃
-    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    // (삭제된 로그아웃 버튼 안전 가드)
+    const _lb = document.getElementById('logout-btn');
+    if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
     // ===== 게임 UI =====
     function updateUI() {
