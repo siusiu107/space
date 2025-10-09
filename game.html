@@ -460,22 +460,21 @@
       </div>
 
       <div class="tabbar">
-        <button class="tbtn active" data-mode="daily">출석 룰렛(무료/일1회)</button>
+        <button class="tbtn active" data-mode="daily">출석 슬롯(무료/일1회)</button>
         <button class="tbtn" data-mode="premium">프리미엄(이벤트코인 1)</button>
         <button class="tbtn" data-mode="ecoin">이벤트코인 룰렛(10)</button>
-        <button class="tbtn" data-mode="slot">슬롯형(이벤트코인 1)</button>
       </div>
 
       <div id="daily-info">확인 중…</div>
 
-      <!-- 원형 룰렛 -->
+      <!-- 원형 룰렛 (프리미엄/이벤트코인에서 사용) -->
       <div id="roulette-wrap">
         <div id="pointer"></div>
         <div id="wheel" aria-label="룰렛 휠"></div>
         <div id="wheel-labels"></div>
       </div>
 
-      <!-- 슬롯형 룰렛 -->
+      <!-- 슬롯형 룰렛 (출석 전용) -->
       <div id="slot-wrap">
         <div class="slot-window">
           <div id="slot-reel" class="reel"></div>
@@ -486,7 +485,6 @@
         <button id="spin-daily"   class="spinbtn spin-free">무료 출석 돌리기</button>
         <button id="spin-premium" class="spinbtn spin-prem">프리미엄 돌리기(-EC 1)</button>
         <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 룰렛(-EC 10)</button>
-        <button id="spin-slot"    class="spinbtn spin-prem" style="display:none;">슬롯 돌리기(-EC 1)</button>
       </div>
 
       <div id="prob-panel"></div>
@@ -722,7 +720,7 @@
       const tpl = mode==='daily'   ? TPL_DAILY
                : mode==='premium' ? TPL_PREMIUM
                : mode==='ecoin'   ? TPL_ECOIN
-               : TPL_PREMIUM; // 슬롯은 프리미엄 구성 사용
+               : TPL_PREMIUM;
       return materializeItems(tpl);
     }
 
@@ -748,7 +746,7 @@
       else{ window.fx[slot].type=type; window.fx[slot].value=value; window.fx[slot].until=now+dur; }
     }
 
-    // ===== 원형 룰렛 렌더 =====
+    // ===== 원형 룰렛 렌더 (프리미엄/이벤트코인 전용) =====
     const wheelEl      = document.getElementById('wheel');
     const wheelLabels  = document.getElementById('wheel-labels');
     function drawWheel(items){
@@ -774,7 +772,7 @@
       computeTargetRotation._rot=current+delta; return computeTargetRotation._rot;
     }
 
-    // ===== 슬롯(세로 낙하식) =====
+    // ===== 슬롯(세로 낙하식) — 출석 전용 =====
     const slotWrap = document.getElementById('slot-wrap');
     const reel = document.getElementById('slot-reel');
     function buildSlot(items){
@@ -789,6 +787,7 @@
       const stopRow = (items.length*6) + idx;
       const targetY = - stopRow * rowH;
       startTickLoop(90);
+      playSfx('sfx-start');
       requestAnimationFrame(()=>{
         requestAnimationFrame(()=>{
           reel.style.transition = 'transform 2.6s cubic-bezier(.17,.89,.35,1.12)';
@@ -796,7 +795,7 @@
         });
       });
       return new Promise(resolve=>{
-        reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); resolve(); };
+        reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); playSfx('sfx-win'); resolve(); };
       });
     }
 
@@ -814,7 +813,6 @@
     const spinDailyBtn   = document.getElementById('spin-daily');
     const spinPremiumBtn = document.getElementById('spin-premium');
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
-    const spinSlotBtn    = document.getElementById('spin-slot');
 
     let dailyCache = null;
     let currentMode = 'daily';
@@ -831,29 +829,31 @@
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
 
-      const isSlot = (mode==='slot');
-      rouletteWrap.style.display = isSlot? 'none':'flex';
-      slotWrap.style.display     = isSlot? 'flex':'none';
-      document.getElementById('spin-slot').style.display    = isSlot? 'inline-block':'none';
+      // ✅ 출석(daily)은 슬롯형, 나머지는 원형 룰렛
+      const useSlot = (mode==='daily');
+      rouletteWrap.style.display = useSlot? 'none':'flex';
+      slotWrap.style.display     = useSlot? 'flex':'none';
+
       document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
       document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
       document.getElementById('spin-ecoin').style.display   = (mode==='ecoin')? 'inline-block':'none';
 
-      drawWheel(activeItems);
+      if (useSlot){
+        buildSlot(activeItems);
+      } else {
+        drawWheel(activeItems);
+      }
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
-
-      if (isSlot) buildSlot(activeItems);
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
     function buildProbPanel(items, mode){
       const total=items.reduce((a,b)=>a+b.w,0);
       const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${(it.w/total*100).toFixed(2)}%</td></tr>`).join('');
-      const header = mode==='daily' ? '출석 룰렛 확률'
+      const header = mode==='daily' ? '출석 슬롯 확률'
                   : mode==='premium' ? '프리미엄 룰렛 확률(EC -1)'
-                  : mode==='ecoin'   ? '이벤트코인 룰렛 확률(EC -10)'
-                  : '슬롯형(EC -1) 확률(세로 낙하식)';
+                  : '이벤트코인 룰렛 확률(EC -10)';
       probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
     }
     function buildRewardList(items){
@@ -866,8 +866,8 @@
       const resetLeft = Math.max(0, nextResetKST()-kstDate());
       const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
       dailyInfo.innerHTML = canClaim
-        ? `오늘(${today}) 출석 룰렛 가능! <b>${leftText}</b><br>연속 ${streak}일`
-        : `오늘(${today})은 이미 룰렛 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
+        ? `오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일`
+        : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
       spinDailyBtn.disabled = !canClaim;
     }
 
@@ -906,28 +906,31 @@
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
     // ==== 스핀 버튼 ====
+    // ✅ 출석: 슬롯형으로 동작
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
 
-      setMode('daily'); // 최신 진행도 반영
-      spinWheel(activeItems, async (picked)=>{
-        const before = makeDeltaSnapshot();
-        picked.onWin();
+      setMode('daily'); // 슬롯 아이템 최신화
+      const picked = pickWeighted(activeItems);
+      const before = makeDeltaSnapshot();
+      await spinSlot(activeItems, picked);
+      picked.onWin();
+
+      try{
         const delta = deltaFrom(before);
-        try{
-          await applyPrizeTransaction(delta);
-          let streak = Number(dailyCache?.streak||0);
-          if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
-          await update(ref(db, `users/${uid}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
-          dailyCache = { lastKey: today, streak };
-          updateUI();
-          dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
-        }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
-      });
+        await applyPrizeTransaction(delta);
+        let streak = Number(dailyCache?.streak||0);
+        if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
+        await update(ref(db, `users/${uid}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
+        dailyCache = { lastKey: today, streak };
+        updateUI();
+        dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+      }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
     };
 
+    // 프리미엄: 원형 룰렛 유지
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
@@ -943,6 +946,7 @@
       });
     };
 
+    // 이벤트코인: 원형 룰렛 유지
     spinEcoinBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
@@ -956,23 +960,6 @@
         try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎉 EC 룰렛 당첨: <b>${picked.label}</b>`; }
         catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
       });
-    };
-
-    spinSlotBtn.onclick = async ()=>{
-      if (!uid || !window.__PLAY_ALLOWED) return;
-      if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
-
-      setMode('slot'); // activeItems = 프리미엄 구성 동적화
-      const picked = pickWeighted(activeItems);
-      const before = makeDeltaSnapshot();
-      state.eventCoins -= 1;
-      playSfx('sfx-start');
-      await spinSlot(activeItems, picked);
-      playSfx('sfx-win');
-      picked.onWin();
-      const delta = deltaFrom(before);
-      try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎰 슬롯 당첨: <b>${picked.label}</b>`; }
-      catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
     // ===== 데이터 & 출석 캐시 =====
@@ -1234,7 +1221,7 @@
     }
     tabLogin.addEventListener('click',  () => setAuthMode('login'));
     tabSignup.addEventListener('click', () => setAuthMode('signup'));
-    
+
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
       location.href = '/setting.html';
@@ -1258,7 +1245,6 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-        aconst = 0; // no-op guard
         const msg = (
           code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
           code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
