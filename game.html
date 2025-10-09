@@ -275,7 +275,7 @@
     .spin-prem{ background:linear-gradient(180deg,#ffd26b,#ff8b3d); color:#3b1a00; }
     .spin-ecoin{ background:linear-gradient(180deg,#ffe26b,#ff3dd1); color:#3b0030; }
     #prob-toggle{ width:28px; height:28px; border-radius:50%; font-weight:900; cursor:pointer;
-      border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#eaf6ff; }
+      border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#eaf6ff; }
     #prob-panel{ display:none; font-size:12px; color:#cfe6ff; text-align:left; max-width:420px; margin-top:4px; }
     #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
@@ -657,7 +657,7 @@
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.005 }
     ];
 
-    // ⬇️ 프리미엄/이벤트코인 룰렛에서 "이벤트코인" 확률 하향
+    /* 프리미엄/이벤트코인 룰렛: 이벤트코인 확률 하향 반영 */
     const TPL_PREMIUM = [
       { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.30 },
       { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
@@ -665,7 +665,7 @@
       { key:'res_1000',   type:'res',  val:1000,     icon:'🪨', color:'#FFEA70', w:0.14 },
       { key:'buff_click2',type:'buff', btype:'click', bval:1.0, bdur:10*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
       { key:'buff_conv2', type:'buff', btype:'convert', bval:2.0, bdur:5*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.06 },
-      { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.02 }  /* ↓ 0.04 → 0.02 */
+      { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.02 }  /* 0.04 → 0.02 */
     ];
 
     const TPL_ECOIN = [
@@ -673,18 +673,20 @@
       { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
       { key:'coin_x8',    type:'coin', coinMul:8.0,  icon:'💰', color:'#32C6FF', w:0.10 },
       { key:'buff_duo',   type:'buffBoth', bval:1.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
-      { key:'eco_8',      type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.08 }, /* ↓ 0.16 → 0.08 */
-      { key:'eco_12',     type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.04 }, /* ↓ 0.08 → 0.04 */
-      { key:'eco_20',     type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.02 }  /* ↓ 0.04 → 0.02 */
+      { key:'eco_8',      type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.08 }, /* 0.16 → 0.08 */
+      { key:'eco_12',     type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.04 }, /* 0.08 → 0.04 */
+      { key:'eco_20',     type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.02 }  /* 0.04 → 0.02 */
     ];
+
+    /* 출석 룰렛 코인 보상 비율 (체감 완화용 상향) */
+    const DAILY_COIN_RATE = 0.008; // 0.8%
 
     function materializeItems(tpl, mode){
       const base = calcBaseCoin();
       return tpl.map(it=>{
         if (it.type==='coin'){
           let amt = Math.max(1, Math.round(base * it.coinMul));
-          // ⬇️ 출석 룰렛 코인 보상은 "현재 주는 코인"의 0.35%로 축소
-          if (mode === 'daily') { amt = Math.max(1, Math.round(amt * 0.0035)); }
+          if (mode === 'daily') { amt = Math.max(1, Math.round(amt * DAILY_COIN_RATE)); } // 출석은 base*mul의 0.8%만
           return { ...it, label:`코인 ${amt.toLocaleString()}`, onWin:()=>{ state.coins += amt; } };
         }
         if (it.type==='res'){
@@ -733,6 +735,17 @@
       const slot = (!window.fx._tempBuff || now>=window.fx._tempBuff.until) ? '_tempBuff' : '_tempBuff2';
       if(!window.fx[slot]) window.fx[slot]={type,value,until:now+dur};
       else{ window.fx[slot].type=type; window.fx[slot].value=value; window.fx[slot].until=now+dur; }
+    }
+    /* 활성 버프 누적 곱 계산 (클릭/변환/워커 공통) */
+    function activeMultiplier(type){
+      const now = Date.now();
+      let m = 1;
+      const slots = ['_tempBuff','_tempBuff2'];
+      for (const s of slots){
+        const b = window.fx?.[s];
+        if (b && now < b.until && b.type === type) m *= (1 + Number(b.value || 0));
+      }
+      return m;
     }
 
     // ===== 슬롯(세로 낙하식) =====
@@ -865,14 +878,14 @@
       await spinSlot(activeItems, picked);
       picked.onWin();
 
-      // ⬇️ 10연속 출석 보너스: 이벤트코인 1개 (룰렛과 별개)
+      // 10연속 출석 보너스: 이벤트코인 1개 (룰렛과 별개)
       let streak = Number(dailyCache?.streak||0);
       if (dailyCache?.lastKey === yesterday) streak += 1; else streak = 1;
       let bonusEC = 0;
       if (streak % 10 === 0) { state.eventCoins = (state.eventCoins||0) + 1; bonusEC = 1; }
 
       try{
-        const delta = deltaFrom(before);              // 룰렛 보상 + (있다면) 보너스 EC 포함
+        const delta = deltaFrom(before); // 룰렛 + 보너스 포함
         await applyPrizeTransaction(delta);
         await update(ref(db, `users/${uid}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
         dailyCache = { lastKey: today, streak };
@@ -1033,11 +1046,13 @@
 
     // ===== 초기화 =====
     function wireGame() {
+      /* 클릭 시 버프(클릭 +50% 등) 즉시 반영 */
       document.getElementById('ore').addEventListener('click', e => {
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
-        state.resources += state.clickPower;
+        const clickMul = activeMultiplier('click');
+        state.resources += state.clickPower * clickMul;
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
@@ -1064,9 +1079,7 @@
         if (window.fx?._tempBuff2 && now < window.fx._tempBuff2.until && window.fx._tempBuff2.type==='worker') workerGain *= (1+window.fx._tempBuff2.value);
         if (state.workerCount > 0) state.resources += workerGain;
 
-        let convGain = state.conversionCount;
-        if (window.fx?._tempBuff && now < window.fx._tempBuff.until && window.fx._tempBuff.type==='convert') convGain *= (1+window.fx._tempBuff.value);
-        if (window.fx?._tempBuff2 && now < window.fx._tempBuff2.until && window.fx._tempBuff2.type==='convert') convGain *= (1+window.fx._tempBuff2.value);
+        let convGain = state.conversionCount * activeMultiplier('convert');
         if (state.conversionCount > 0) state.coins += convGain;
 
         if (window.fx?._tempBuff && now >= window.fx._tempBuff.until) window.fx._tempBuff=null;
@@ -1078,7 +1091,6 @@
     }
 
     onAuthStateChanged(auth, async user => {
-      // 🔧 중요: 모듈 파싱 실패로 여기가 호출 안 되면 부팅 오버레이가 안 닫힘 → 위 문법 오류들을 모두 수정함.
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -1203,7 +1215,7 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-        const msg = (
+               const msg = (
           code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
           code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
