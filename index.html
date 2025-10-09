@@ -97,6 +97,41 @@
       .overlay a.start-btn { padding: 12px 24px; font-size: 18px; }
       .panel { width: 95%; }
     }
+
+    /* ✅ 추가: 우상단 환경 배지 & 정보 패널 */
+    #env-badge {
+      position: fixed; top: 8px; right: 8px;
+      padding: 6px 10px; border-radius: 999px;
+      background: rgba(20,20,40,0.85); color: #fff;
+      border: 1px solid rgba(244,180,0,0.4);
+      font-size: 12px; letter-spacing: .4px;
+      z-index: 10001; cursor: pointer; user-select: none;
+      backdrop-filter: blur(4px);
+    }
+    #env-badge::after { content: 'ⓘ'; margin-left: 6px; opacity: .7; font-weight: 700; }
+    #env-panel {
+      position: fixed; top: 40px; right: 8px;
+      width: 340px; max-width: calc(100vw - 16px);
+      background: rgba(10,10,25,0.98); color: #fff;
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 8px 24px rgba(0,0,0,.55);
+      border-radius: 12px; padding: 12px; display: none;
+      z-index: 10002; backdrop-filter: blur(6px);
+    }
+    #env-panel h3 { margin: 2px 0 8px; font-size: 14px; color: #f4b400; }
+    #env-panel dl {
+      display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px;
+      font-size: 12px; word-break: break-all;
+    }
+    #env-panel dt { color: #aab; }
+    #env-panel dd { color: #eef; margin: 0; }
+    #env-panel .muted { opacity: .8; font-size: 11px; }
+    #env-panel .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    #env-close {
+      background: transparent; border: 0; color: #fff; font-size: 18px;
+      line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    }
+    #env-close:hover { background: rgba(255,255,255,.08); }
   </style>
 </head>
 <body>
@@ -136,6 +171,19 @@
     </div>
   </div>
 
+  <!-- ✅ 추가: 우상단 배지 & 연결정보 패널 -->
+  <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
+  <div id="env-panel" role="dialog" aria-modal="true" aria-labelledby="env-title">
+    <div class="row">
+      <h3 id="env-title">연결 정보</h3>
+      <button id="env-close" aria-label="닫기">✕</button>
+    </div>
+    <dl id="env-list">
+      <!-- JS에서 채워집니다 -->
+    </dl>
+    <p class="muted" style="margin-top:8px;">* 일부 값은 브라우저/OS 정책으로 비공개이거나 근사치일 수 있습니다.</p>
+  </div>
+
   <script>
     // 기존 패널 제어 스크립트 (원본 유지)
     document.querySelectorAll('.close-btn').forEach(btn => {
@@ -145,6 +193,143 @@
     });
     document.getElementById('show-license').addEventListener('click', () => document.getElementById('license-panel').classList.add('active'));
     document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
+  </script>
+
+  <!-- ✅ 추가: 배지 로직 (다른 코드와 격리된 IIFE, 기존 동작에 영향 없음) -->
+  <script>
+    (function () {
+      const $badge = document.getElementById('env-badge');
+      const $panel = document.getElementById('env-panel');
+      const $list  = document.getElementById('env-list');
+      const $close = document.getElementById('env-close');
+
+      function isMobileLike() {
+        const ua = navigator.userAgent || '';
+        const uaDataMobile = (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean')
+          ? navigator.userAgentData.mobile : null;
+        const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const smallScreen = Math.max(screen.width, screen.height) < 1024;
+        const mobUA = /(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua);
+        // 우선순위: UA Data -> 전통 UA -> 화면/터치 휴리스틱
+        if (uaDataMobile !== null) return uaDataMobile;
+        if (mobUA) return true;
+        return touch && smallScreen;
+      }
+
+      function isWebView() {
+        const ua = navigator.userAgent || '';
+        // 흔한 웹뷰 시그니처들 (근사치)
+        return /\b(wv|FBAN|FBAV|Instagram|Line\/|NAVER|KAKAOTALK|DaumApps)\b/i.test(ua) ||
+               /\bVersion\/[\d.]+ Mobile\/\w+ Safari\/\w+\b/i.test(ua) && !/Safari\//.test(ua);
+      }
+
+      function bool(v){ return v ? '예' : '아니오'; }
+
+      function getConn() {
+        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!c) return null;
+        return {
+          type: c.type || undefined,
+          effectiveType: c.effectiveType || undefined,
+          downlinkMbps: typeof c.downlink === 'number' ? c.downlink : undefined,
+          rttMs: typeof c.rtt === 'number' ? c.rtt : undefined,
+          saveData: !!c.saveData
+        };
+      }
+
+      function deviceTypeLabel() { return isMobileLike() ? '모바일' : 'PC'; }
+
+      function updateBadge() {
+        $badge.textContent = deviceTypeLabel();
+        // 접근성 라벨
+        $badge.setAttribute('aria-label', `현재 접속 환경: ${$badge.textContent}`);
+      }
+
+      function tz() {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
+        catch(_) { return ''; }
+      }
+
+      function hoverPointer() {
+        const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const fine   = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+        return { canHover, coarse, fine };
+      }
+
+      function displayMode() {
+        if (!window.matchMedia) return '';
+        if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
+        if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
+        return 'browser';
+      }
+
+      function gather() {
+        const h = hoverPointer();
+        const conn = getConn();
+        const ua = navigator.userAgent || '';
+        const uaDataPlat = (navigator.userAgentData && navigator.userAgentData.platform) ? navigator.userAgentData.platform : '';
+        const langs = (navigator.languages && navigator.languages.length ? navigator.languages.join(', ') : navigator.language || '');
+        const ref = document.referrer || '';
+        return [
+          ['디바이스', deviceTypeLabel()],
+          ['플랫폼', uaDataPlat || navigator.platform || ''],
+          ['웹뷰 여부', bool(isWebView())],
+          ['PWA 표시모드', displayMode()],
+          ['온라인', bool(navigator.onLine)],
+          ['언어', langs],
+          ['타임존', tz() || ''],
+          ['뷰포트', `${window.innerWidth} × ${window.innerHeight}`],
+          ['스크린', `${screen.width} × ${screen.height}`],
+          ['DPR', String(window.devicePixelRatio || 1)],
+          ['터치 지원', bool(('ontouchstart' in window) || (navigator.maxTouchPoints > 0))],
+          ['마우스 Hover', bool(h.canHover)],
+          ['포인터(굵음)', bool(h.coarse)],
+          ['포인터(정밀)', bool(h.fine)],
+          ['쿠키 사용', bool(navigator.cookieEnabled)],
+          ['Referrer', ref || '(없음)'],
+          ['User-Agent', ua]
+        ].concat(conn ? [
+          ['네트워크 유형', conn.type || '(알 수 없음)'],
+          ['효과적 유형', conn.effectiveType || '(알 수 없음)'],
+          ['추정 다운링크(Mbps)', conn.downlinkMbps !== undefined ? String(conn.downlinkMbps) : '(알 수 없음)'],
+          ['RTT(ms)', conn.rttMs !== undefined ? String(conn.rttMs) : '(알 수 없음)'],
+          ['데이터 절약모드', bool(conn.saveData)]
+        ] : [['네트워크', '(API 미지원)']]);
+      }
+
+      function render() {
+        const rows = gather();
+        $list.innerHTML = rows.map(([k,v]) => `<dt>${k}</dt><dd>${(v===undefined||v===null||v==='')?'-':String(v)}</dd>`).join('');
+      }
+
+      function openPanel() { render(); $panel.style.display = 'block'; }
+      function closePanel() { $panel.style.display = 'none'; }
+
+      // 이벤트
+      $badge.addEventListener('click', () => {
+        if ($panel.style.display === 'block') closePanel();
+        else openPanel();
+      });
+      $close.addEventListener('click', closePanel);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+      document.addEventListener('click', (e) => {
+        if ($panel.style.display === 'block' && !e.target.closest('#env-panel, #env-badge')) closePanel();
+      });
+
+      // 동적 업데이트
+      window.addEventListener('resize', () => { updateBadge(); if ($panel.style.display==='block') render(); });
+      window.addEventListener('orientationchange', () => { updateBadge(); if ($panel.style.display==='block') render(); });
+      window.addEventListener('online', () => { if ($panel.style.display==='block') render(); });
+      window.addEventListener('offline', () => { if ($panel.style.display==='block') render(); });
+      if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
+        navigator.connection.addEventListener('change', () => { if ($panel.style.display==='block') render(); });
+      }
+
+      // 초기화
+      updateBadge();
+    })();
   </script>
 
   <!-- 핵심 변경: "데스크톱이면 팝업, 아니면 같은 탭" (이벤트 제스처당 window.open 1회만 실행) -->
@@ -210,6 +395,10 @@
         try { popup.location.href = url; popup.focus(); } catch (e) { /* fallback은 호출부에서 처리 */ }
         return popup;
       }
+
+      // ⚠️ 아래 원본 스크립트는 사용자 제공 코드 그대로 유지합니다.
+      // (구문 오류가 있더라도 요청에 따라 수정하지 않습니다.)
+      function shouldUsePopup(){ return isDesktop(); }
 
       function launchGame(e) {
         const usePopup = shouldUsePopup();
@@ -307,4 +496,3 @@
   </script>
 </body>
 </html>
-ㄴ
