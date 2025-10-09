@@ -1171,7 +1171,19 @@
       }, 1000);
     }
 
+    /* ======== 🔧 부팅 워치독: onAuthStateChanged 지연/실패 시 오버레이 자동 해제 ======== */
+    let __bootWatchdog = setTimeout(() => {
+      try {
+        setBootVisible(false);                 // 로그인 상태 확인 오버레이 숨김
+        authContainer.style.display = 'block'; // 로그인 UI 강제 표시
+        authContainer.classList.remove('hidden');
+      } catch {}
+    }, 6000);
+
     onAuthStateChanged(auth, async user => {
+      // 워치독 해제
+      try { clearTimeout(__bootWatchdog); __bootWatchdog = null; } catch {}
+
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
