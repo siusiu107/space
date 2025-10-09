@@ -240,7 +240,7 @@
     .side-right { opacity:.9; color:#9fdcff; font-variant-numeric: tabular-nums; }
     @media (max-width: 420px){ #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; } #side-menu{ width: 240px; } }
 
-    /* ===== 출석 & 룰렛 오버레이 ===== */
+    /* ===== 출석 & 슬롯 오버레이 ===== */
     #daily-overlay{
       position:fixed; inset:0; z-index:3500; display:none; align-items:center; justify-content:center;
       background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70)); backdrop-filter: blur(4px);
@@ -260,18 +260,8 @@
     .tbtn{ padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#eaf6ff; cursor:pointer; font-weight:800; }
     .tbtn.active{ background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#001820; border-color:transparent; }
 
-    /* 원형 룰렛 */
-    #roulette-wrap{ display:flex; flex-direction:column; align-items:center; gap:10px; }
-    #pointer{ width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
-      border-bottom:18px solid #ffed9a; filter: drop-shadow(0 0 6px rgba(255,230,140,.7)); margin-top:-4px; }
-    #wheel{ width:300px; height:300px; border-radius:50%;
-      box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
-      border:2px solid rgba(255,255,255,.18); transition: transform 3.2s cubic-bezier(.17,.89,.35,1.21);
-      position:relative; overflow:hidden; }
-    #wheel-labels{ position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; font-size:12px; opacity:.9; }
-
-    /* 슬롯형 룰렛 (세로 낙하식) */
-    #slot-wrap{ display:none; flex-direction:column; align-items:center; gap:10px; }
+    /* 슬롯형 (세로 낙하) */
+    #slot-wrap{ display:flex; flex-direction:column; align-items:center; gap:10px; }
     .slot-window{ width:320px; height:56px; overflow:hidden; border-radius:10px;
       background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.12); }
     .reel{ display:flex; flex-direction:column; }
@@ -284,16 +274,12 @@
     .spin-free{ background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; }
     .spin-prem{ background:linear-gradient(180deg,#ffd26b,#ff8b3d); color:#3b1a00; }
     .spin-ecoin{ background:linear-gradient(180deg,#ffe26b,#ff3dd1); color:#3b0030; }
-    #info-row{ display:flex; align-items:center; gap:10px; }
     #prob-toggle{ width:28px; height:28px; border-radius:50%; font-weight:900; cursor:pointer;
       border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#eaf6ff; }
     #prob-panel{ display:none; font-size:12px; color:#cfe6ff; text-align:left; max-width:420px; margin-top:4px; }
     #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
-
-    #daily-actions button{ padding:10px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
-      background: transparent; color:#eaf6ff; font-weight:700; }
   </style>
 </head>
 <body>
@@ -451,30 +437,23 @@
     </nav>
   </aside>
 
-  <!-- 출석/룰렛 오버레이 -->
+  <!-- 출석/슬롯 오버레이 -->
   <div id="daily-overlay" aria-hidden="true">
     <div id="daily-card" role="dialog" aria-modal="true" aria-labelledby="daily-title">
       <div id="daily-title">
-        <span>📅 오늘의 보상 & 룰렛</span>
+        <span>📅 오늘의 보상 & 슬롯</span>
         <button id="prob-toggle" title="확률/보상 정보">i</button>
       </div>
 
       <div class="tabbar">
         <button class="tbtn active" data-mode="daily">출석 슬롯(무료/일1회)</button>
-        <button class="tbtn" data-mode="premium">프리미엄(이벤트코인 1)</button>
-        <button class="tbtn" data-mode="ecoin">이벤트코인 룰렛(10)</button>
+        <button class="tbtn" data-mode="premium">프리미엄 슬롯(이벤트코인 1)</button>
+        <button class="tbtn" data-mode="ecoin">이벤트코인 슬롯(10)</button>
       </div>
 
       <div id="daily-info">확인 중…</div>
 
-      <!-- 원형 룰렛 (프리미엄/이벤트코인에서 사용) -->
-      <div id="roulette-wrap">
-        <div id="pointer"></div>
-        <div id="wheel" aria-label="룰렛 휠"></div>
-        <div id="wheel-labels"></div>
-      </div>
-
-      <!-- 슬롯형 룰렛 (출석 전용) -->
+      <!-- 슬롯형 (세로 낙하) -->
       <div id="slot-wrap">
         <div class="slot-window">
           <div id="slot-reel" class="reel"></div>
@@ -484,7 +463,7 @@
       <div id="mode-row">
         <button id="spin-daily"   class="spinbtn spin-free">무료 출석 돌리기</button>
         <button id="spin-premium" class="spinbtn spin-prem">프리미엄 돌리기(-EC 1)</button>
-        <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 룰렛(-EC 10)</button>
+        <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 돌리기(-EC 10)</button>
       </div>
 
       <div id="prob-panel"></div>
@@ -496,7 +475,7 @@
     </div>
   </div>
 
-  <!-- 룰렛 SFX -->
+  <!-- 사운드 -->
   <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
@@ -638,7 +617,7 @@
     function nextResetKST(d=new Date()){ const t=kstDate(d); const n=new Date(t); n.setHours(24,0,0,0); return n; }
     function fmtLeft(ms){ if(ms<=0) return '지금 가능'; const s=Math.floor(ms/1000); const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`; }
 
-    // === 코인 보상 스케일러 ===
+    // === (하향) 코인 보상 스케일러 ===
     function calcBaseCoin(){
       const rps = state.workerCount * getWorkerPower();     // 초당 자원
       const cps = state.conversionCount;                    // 초당 코인(알바)
@@ -655,15 +634,18 @@
           35  * ship +
           (auto ? 25 : 0);
 
-      const base = Math.round(60 + score);
-      return Math.min(Math.max(base, 60), 50000);
+      // ✔ 전체적으로 약 30% 낮춤, 하한·상한도 살짝 보수적으로
+      const baseRaw = 60 + score;
+      const base = Math.round(baseRaw * 0.7);
+      return Math.min(Math.max(base, 40), 30000);
     }
 
-    // ====== 룰렛 템플릿 & 실시간 머터리얼라이즈 ======
+    // ====== 슬롯 템플릿 & 머터리얼라이즈 ======
+    // 하루 출석: 코인 멀티 살짝 하향(0.6→0.4, 1.0→0.8, 1.4→1.2)
     const TPL_DAILY = [
-      { key:'coin_x0_6',  type:'coin', coinMul:0.6,  icon:'🪙', color:'#7AFBFF', w:0.35 },
-      { key:'coin_x1_0',  type:'coin', coinMul:1.0,  icon:'💰', color:'#4DFFB5', w:0.25 },
-      { key:'coin_x1_4',  type:'coin', coinMul:1.4,  icon:'💰', color:'#00E5FF', w:0.10 },
+      { key:'coin_x0_4',  type:'coin', coinMul:0.4,  icon:'🪙', color:'#7AFBFF', w:0.35 },
+      { key:'coin_x0_8',  type:'coin', coinMul:0.8,  icon:'💰', color:'#4DFFB5', w:0.25 },
+      { key:'coin_x1_2',  type:'coin', coinMul:1.2,  icon:'💰', color:'#00E5FF', w:0.10 },
       { key:'res_200',    type:'res',  val:200,      icon:'🪨', color:'#FFEA70', w:0.10 },
       { key:'buff_click', type:'buff', btype:'click', bval:0.5,  bdur:5*60*1000, icon:'⚡', color:'#FFA8FF', w:0.075 },
       { key:'buff_conv',  type:'buff', btype:'convert', bval:1.0, bdur:3*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.05 },
@@ -671,20 +653,22 @@
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.005 }
     ];
 
+    // 프리미엄: 코인 멀티 하향(1.8,2.5,3.5 → 1.3,1.9,2.6), EC 보상 유지
     const TPL_PREMIUM = [
-      { key:'coin_x1_8',  type:'coin', coinMul:1.8,  icon:'💰', color:'#00E5FF', w:0.30 },
-      { key:'coin_x2_5',  type:'coin', coinMul:2.5,  icon:'💰', color:'#4DFFB5', w:0.22 },
-      { key:'coin_x3_5',  type:'coin', coinMul:3.5,  icon:'💰', color:'#32C6FF', w:0.12 },
+      { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.30 },
+      { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
+      { key:'coin_x2_6',  type:'coin', coinMul:2.6,  icon:'💰', color:'#32C6FF', w:0.12 },
       { key:'res_1000',   type:'res',  val:1000,     icon:'🪨', color:'#FFEA70', w:0.14 },
       { key:'buff_click2',type:'buff', btype:'click', bval:1.0, bdur:10*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
       { key:'buff_conv2', type:'buff', btype:'convert', bval:2.0, bdur:5*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.06 },
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
     ];
 
+    // 이벤트코인 슬롯: 코인 멀티 하향(4,7,12 → 3,5,8)
     const TPL_ECOIN = [
-      { key:'coin_x4',    type:'coin', coinMul:4.0,  icon:'💰', color:'#00E5FF', w:0.26 },
-      { key:'coin_x7',    type:'coin', coinMul:7.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
-      { key:'coin_x12',   type:'coin', coinMul:12.0, icon:'💰', color:'#32C6FF', w:0.10 },
+      { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.26 },
+      { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x8',    type:'coin', coinMul:8.0,  icon:'💰', color:'#32C6FF', w:0.10 },
       { key:'buff_duo',   type:'buffBoth', bval:1.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
       { key:'eco_8',      type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.16 },
       { key:'eco_12',     type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.08 },
@@ -746,33 +730,7 @@
       else{ window.fx[slot].type=type; window.fx[slot].value=value; window.fx[slot].until=now+dur; }
     }
 
-    // ===== 원형 룰렛 렌더 (프리미엄/이벤트코인 전용) =====
-    const wheelEl      = document.getElementById('wheel');
-    const wheelLabels  = document.getElementById('wheel-labels');
-    function drawWheel(items){
-      const total=items.reduce((a,b)=>a+b.w,0);
-      let acc=0; const stops=[], labels=[];
-      items.forEach((it,i)=>{
-        const from=acc/total*360; acc+=it.w; const to=acc/total*360;
-        stops.push(`${it.color} ${from}deg ${to}deg`);
-        const mid=(from+to)/2;
-        const rad=(mid-90)*Math.PI/180;
-        const x=140*Math.cos(rad)+150, y=140*Math.sin(rad)+150;
-        labels.push(`<div style="position:absolute; left:${x}px; top:${y}px; transform:translate(-50%,-50%) rotate(${mid}deg);">${it.icon||''} ${it.label||it.key}</div>`);
-      });
-      wheelEl.style.background = `conic-gradient(${stops.join(',')})`;
-      wheelLabels.innerHTML = labels.join('');
-    }
-    function computeTargetRotation(items, picked){
-      const total=items.reduce((a,b)=>a+b.w,0); let acc=0, from=0, to=0;
-      for(const it of items){ const segFrom=acc/total*360; acc+=it.w; const segTo=acc/total*360; if(it.key===picked.key){ from=segFrom; to=segTo; break; } }
-      const center=(from+to)/2; const spins=6;
-      const current=(computeTargetRotation._rot||0)%360;
-      const delta=(spins*360 + (360-center) - current);
-      computeTargetRotation._rot=current+delta; return computeTargetRotation._rot;
-    }
-
-    // ===== 슬롯(세로 낙하식) — 출석 전용 =====
+    // ===== 슬롯(세로 낙하식) =====
     const slotWrap = document.getElementById('slot-wrap');
     const reel = document.getElementById('slot-reel');
     function buildSlot(items){
@@ -784,7 +742,7 @@
     function spinSlot(items, picked){
       const rowH=56, totalRows = items.length*8;
       const idx = items.findIndex(it=>it.key===picked.key);
-      const stopRow = (items.length*6) + idx;
+      const stopRow = (items.length*6) + idx; // 충분히 굴리기
       const targetY = - stopRow * rowH;
       startTickLoop(90);
       playSfx('sfx-start');
@@ -808,7 +766,6 @@
     const rewardList   = document.getElementById('reward-list');
 
     const tabs = Array.from(document.querySelectorAll('.tbtn'));
-    const rouletteWrap = document.getElementById('roulette-wrap');
 
     const spinDailyBtn   = document.getElementById('spin-daily');
     const spinPremiumBtn = document.getElementById('spin-premium');
@@ -829,20 +786,13 @@
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
 
-      // ✅ 출석(daily)은 슬롯형, 나머지는 원형 룰렛
-      const useSlot = (mode==='daily');
-      rouletteWrap.style.display = useSlot? 'none':'flex';
-      slotWrap.style.display     = useSlot? 'flex':'none';
-
+      // 슬롯만 사용
+      slotWrap.style.display     = 'flex';
       document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
       document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
       document.getElementById('spin-ecoin').style.display   = (mode==='ecoin')? 'inline-block':'none';
 
-      if (useSlot){
-        buildSlot(activeItems);
-      } else {
-        drawWheel(activeItems);
-      }
+      buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
     }
@@ -852,12 +802,12 @@
       const total=items.reduce((a,b)=>a+b.w,0);
       const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${(it.w/total*100).toFixed(2)}%</td></tr>`).join('');
       const header = mode==='daily' ? '출석 슬롯 확률'
-                  : mode==='premium' ? '프리미엄 룰렛 확률(EC -1)'
-                  : '이벤트코인 룰렛 확률(EC -10)';
+                  : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
+                  : '이벤트코인 슬롯 확률(EC -10)';
       probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
     }
     function buildRewardList(items){
-      rewardList.innerHTML = '🎁 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
+      rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
     }
 
     function refreshDailyInfo(canClaim){
@@ -894,19 +844,11 @@
       };
     }
 
-    function spinWheel(items, afterAnim){
-      playSfx('sfx-start'); startTickLoop();
-      const picked = pickWeighted(items);
-      const target = computeTargetRotation(items, picked);
-      wheelEl.style.transform = `rotate(${target}deg)`;
-      setTimeout(()=>{ stopTickLoop(); playSfx('sfx-win'); afterAnim(picked); }, 3300);
-    }
-
     function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
     // ==== 스핀 버튼 ====
-    // ✅ 출석: 슬롯형으로 동작
+    // 출석(무료) — 슬롯 사용
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
@@ -930,36 +872,42 @@
       }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
     };
 
-    // 프리미엄: 원형 룰렛 유지
+    // 프리미엄(EC -1) — 슬롯 사용
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
 
       setMode('premium');
+      const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       state.eventCoins -= 1;
-      spinWheel(activeItems, async (picked)=>{
-        picked.onWin();
+      await spinSlot(activeItems, picked);
+      picked.onWin();
+
+      try{
         const delta = deltaFrom(before);
-        try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`; }
-        catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
-      });
+        await applyPrizeTransaction(delta); updateUI();
+        dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`;
+      }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
-    // 이벤트코인: 원형 룰렛 유지
+    // 이벤트코인(EC -10) — 슬롯 사용
     spinEcoinBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
 
       setMode('ecoin');
+      const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       state.eventCoins -= 10;
-      spinWheel(activeItems, async (picked)=>{
-        picked.onWin();
+      await spinSlot(activeItems, picked);
+      picked.onWin();
+
+      try{
         const delta = deltaFrom(before);
-        try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎉 EC 룰렛 당첨: <b>${picked.label}</b>`; }
-        catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
-      });
+        await applyPrizeTransaction(delta); updateUI();
+        dailyInfo.innerHTML=`🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
+      }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
     // ===== 데이터 & 출석 캐시 =====
@@ -1256,7 +1204,8 @@
       }
     });
 
-    signupBtn.addEventListener('click', async (e) => {
+    const signupBtn = document.getElementById('signup-btn');
+    signupBtn?.addEventListener('click', async (e) => {
       e.preventDefault(); showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
