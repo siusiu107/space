@@ -87,7 +87,7 @@
     }
     body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
-    #top-bar, #container { visibility: hidden; }
+    #top-bar, #container { visibility: hidden; } /* ✅ 로그인 전엔 반드시 숨김 */
 
     .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
     @keyframes spin { to { transform:rotate(360deg); } }
@@ -109,7 +109,7 @@
 
     /* 로그인 카드 */
     #auth-container {
-      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000;
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:3501; /* ✅ 게임 UI보다 항상 위 */
       width:360px; max-width:92%; padding:22px; border-radius:14px; text-align:center;
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(6,7,12,0.45));
       box-shadow: 0 12px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.02);
@@ -181,8 +181,7 @@
 
     /* 바텀 내비 */
     #bottom-nav{
-      position: fixed;
-      left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
+      position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
       display: flex; gap: 8px; padding: 8px;
       background: var(--glass-bg); backdrop-filter: blur(10px);
@@ -297,7 +296,7 @@
     </div>
   </div>
 
-  <!-- ✅ 프리-워치독: Firebase가 안 떠도 오버레이가 안박히게 강제 해제 -->
+  <!-- ✅ 프리-워치독: 모듈 실패 시 오버레이 강제 해제 -->
   <script>
     (function(){
       function forceShowAuth(){
@@ -305,19 +304,42 @@
         if (overlay){ overlay.style.display='none'; overlay.setAttribute('aria-hidden','true'); }
         var auth = document.getElementById('auth-container');
         if (auth){ auth.style.display='block'; auth.classList.remove('hidden'); }
+        // 게임 UI는 로그인 전엔 절대 표시하지 않음 (겹침 방지)
+        ['top-bar','container'].forEach(id=>{ var el=document.getElementById(id); if(el){ el.style.visibility='hidden'; } });
       }
       var DOMTimer = null;
       window.addEventListener('DOMContentLoaded', function(){
-        DOMTimer = setTimeout(forceShowAuth, 4000); // DOM 준비 후 4초 내 응답 없으면, 로그인 UI 강제 표시
+        DOMTimer = setTimeout(forceShowAuth, 4000);
       });
-      // 어떤 경우에도 10초가 지나면 무조건 오버레이 해제 (절대 타임아웃)
       var HardTimer = setTimeout(forceShowAuth, 10000);
-
-      // 모듈 스크립트가 정상 구동되면 아래 함수를 호출해 타이머 취소
       window.__cancelPreBootWatchdogs = function(){
         try{ clearTimeout(DOMTimer); }catch(e){}
         try{ clearTimeout(HardTimer); }catch(e){}
       };
+    })();
+  </script>
+
+  <!-- ✅ 조기 바인더: 모듈 로딩 전에도 버튼 클릭은 반응 -->
+  <script>
+    (function(){
+      function bindEarly(){
+        const authErr = document.getElementById('auth-error');
+        function showBooting(){
+          if(authErr){ authErr.textContent = '로그인 시스템 준비 중입니다. 잠시 후 다시 시도하세요.'; authErr.classList.add('show'); }
+        }
+        window.AuthActions = window.AuthActions || {};
+        window.AuthActions.login  = window.AuthActions.login  || showBooting;
+        window.AuthActions.signup = window.AuthActions.signup || showBooting;
+        window.AuthActions.google = window.AuthActions.google || showBooting;
+
+        const L = document.getElementById('login-btn');
+        const S = document.getElementById('signup-btn');
+        const G = document.getElementById('google-btn');
+        if (L) L.onclick = ()=>window.AuthActions.login();
+        if (S) S.onclick = ()=>window.AuthActions.signup();
+        if (G) G.onclick = ()=>window.AuthActions.google();
+      }
+      document.addEventListener('DOMContentLoaded', bindEarly);
     })();
   </script>
 
@@ -510,7 +532,7 @@
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // ✅ 프리-워치독 취소 (모듈이 정상 로드됨)
+    // ✅ 프리-워치독 취소 (모듈 로드 확인)
     try { window.__cancelPreBootWatchdogs && window.__cancelPreBootWatchdogs(); } catch(e){}
 
     const firebaseConfig = {
@@ -627,7 +649,7 @@
           authContainer.style.display = 'none';
           const lb = document.getElementById('logout-btn');
           if (lb) lb.style.display = 'block';
-          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible'); /* ✅ 로그인 후에만 보이기 */
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
@@ -651,9 +673,9 @@
 
     // === (하향) 코인 보상 스케일러 ===
     function calcBaseCoin(){
-      const rps = state.workerCount * getWorkerPower();     // 초당 자원
-      const cps = state.conversionCount;                    // 초당 코인(알바)
-      const rpc = state.clickPower;                         // 클릭당 자원
+      const rps = state.workerCount * getWorkerPower();
+      const cps = state.conversionCount;
+      const rpc = state.clickPower;
       const planets = (state.ownedPlanets?.length || 0);
       const ship = (state.shipLevel || 1);
       const auto = state.autoConvertBought ? 1 : 0;
@@ -666,13 +688,11 @@
           35  * ship +
           (auto ? 25 : 0);
 
-      // ✔ 전체적으로 약 30% 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
     }
 
-    /* ===== BALANCE ENGINE: 진행도 기반 보상/생산 자동 조정 ===== */
     function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
 
     function progressScore(s){
@@ -937,6 +957,7 @@
     function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
+    // ==== 스핀 버튼 ====
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
@@ -1173,7 +1194,6 @@
     }
 
     onAuthStateChanged(auth, async user => {
-      // 모듈이 정상 동작했으니 프리-워치독 확실히 취소하고 오버레이 해제
       try { window.__cancelPreBootWatchdogs && window.__cancelPreBootWatchdogs(); } catch(e){}
       setBootVisible(false);
       showAuthStatus('');
@@ -1186,6 +1206,8 @@
           showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
           try { await signOut(auth); } catch {}
           authContainer.style.display = 'block';
+          // 로그인 상태 아니므로 게임 UI는 숨김 유지
+          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
           return;
         }
 
@@ -1245,10 +1267,9 @@
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
+        // 로그인 화면만 표시, 게임 UI는 숨김
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
-        const lb = document.getElementById('logout-btn');
-        if (lb) lb.style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
 
         setAuthMode(currentAuthMode);
@@ -1281,7 +1302,9 @@
       location.href = '/setting.html';
     });
 
-    loginBtn.addEventListener('click', async () => {
+    // ✅ 버튼 동작을 글로벌로 제공: 조기 바인더가 클릭을 이쪽으로 전달
+    window.AuthActions = window.AuthActions || {};
+    window.AuthActions.login = async function () {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -1308,10 +1331,10 @@
         );
         showAuthStatus(msg);
       }
-    });
+    };
 
-    signupBtnEl?.addEventListener('click', async (e) => {
-      e.preventDefault(); showAuthStatus('');
+    window.AuthActions.signup = async function (e) {
+      showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const passwordConfirm = document.getElementById('password-confirm').value;
@@ -1336,9 +1359,9 @@
         );
         showAuthStatus(msg);
       }
-    });
+    };
 
-    document.getElementById('google-btn').addEventListener('click', async () => {
+    window.AuthActions.google = async function () {
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
       try {
@@ -1355,10 +1378,7 @@
           showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
         }
       }
-    });
-
-    const _lb = document.getElementById('logout-btn');
-    if (_lb) _lb.addEventListener('click', () => signOut(auth));
+    };
 
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
@@ -1558,7 +1578,7 @@
     }
   </script>
 
-  <!-- Popup Enforcement (간소) -->
+  <!-- Popup Enforcement (겹침 방지: 강제표시 제거) -->
   <script>
     (function(){
       const gate = document.getElementById('popup-gate');
@@ -1576,7 +1596,7 @@
           function isPopup(){ try { if (window.opener && !window.opener.closed) return true; } catch {} try { if (['gameWindow','siuGame','popup'].includes(window.name)) return true; } catch {} return false; }
           return isMobileStrict() || isPopup();
         })();
-        if (window.__PLAY_ALLOWED){ ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; }); }
+        // ❌ 여기서 게임 UI를 보이게 하지 않음. onAuthStateChanged/showGameUI에서만 표시.
         return;
       }
     })();
