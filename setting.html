@@ -144,6 +144,18 @@
 
     /* 섹션 토글 */
     #user-section, #admin-section{ display:none; }
+
+    /* === 요청 목록 스타일 (관리자용) === */
+    .req-wrap{ display:none; margin-top:10px; border:1px solid var(--stroke); border-radius:12px; padding:10px; background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
+    .req-list{ max-height:240px; overflow:auto; border:1px solid rgba(255,255,255,0.08); border-radius:10px; background:rgba(0,0,0,0.2); }
+    .req-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .req-row:last-child{ border-bottom:none; }
+    .req-code{ font-weight:800; letter-spacing:0.5px; margin-right:6px; }
+    .badge{ font-size:11px; padding:2px 6px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); margin-right:6px; }
+    .badge.active{ background:rgba(0,200,255,0.12); }
+    .badge.ended{ background:rgba(255,80,80,0.12); }
+    .muted{ color:var(--muted); font-size:12px; }
+    .req-actions{ display:flex; gap:6px; }
   </style>
 </head>
 <body>
@@ -265,6 +277,13 @@
         </div>
         <div class="desc" style="margin-top:6px" id="status-admin">대기중…</div>
       </div>
+
+      <!-- ✅ 실시간 요청 목록 (자동 표시) -->
+      <div id="req-wrap" class="req-wrap">
+        <div class="title">요청 목록</div>
+        <div class="desc">사용자가 생성한 <b>활성 세션</b>이 자동으로 표시됩니다.</div>
+        <div id="req-list" class="req-list" role="list"></div>
+      </div>
     </div>
 
     <footer>태양계 정복: 우주 생존 클릭커 · v0.1.0</footer>
@@ -301,7 +320,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, runTransaction, push, onChildAdded, set, remove, serverTimestamp, update, get, child } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import {
+      getDatabase, ref, runTransaction, push, onChildAdded, set, remove,
+      serverTimestamp, update, get, child, onChildChanged, onChildRemoved
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     /* ===== 주소 표시를 /setting 으로 고정 ===== */
     try { history.replaceState(null, '', '/setting' + (location.hash || '')); } catch (e) {}
@@ -385,6 +407,10 @@
     const endBtnAdmin   = document.getElementById('end-session-admin');
     const statusAdmin   = document.getElementById('status-admin');
 
+    /* === 요청 목록 refs === */
+    const reqWrap = document.getElementById('req-wrap');
+    const reqList = document.getElementById('req-list');
+
     /* ===== 사용자 기능 구현 ===== */
     let uid = null;
     let userSessionId = null; // 6자리 세션 코드
@@ -442,18 +468,13 @@
         onChildAdded(userCmdRef, (snap) => {
           const cmd = snap.val(); if (!cmd) return;
           if (cmd.type === 'navigate' && cmd.path) {
-            try {
-              // 절대/상대 경로 모두 허용
-              location.assign(cmd.path);
-            } catch(e) {
-              push(ref(db, `sessions/${userSessionId}/logs`), { type:'error', msg:'navigate failed', detail:String(e), at: serverTimestamp() });
-            }
+            try { location.assign(cmd.path); }
+            catch(e){ push(ref(db, `sessions/${userSessionId}/logs`), { type:'error', msg:'navigate failed', detail:String(e), at: serverTimestamp() }); }
           } else if (cmd.type === 'click' && cmd.selector) {
             const el = document.querySelector(cmd.selector);
             if (el) {
               try {
-                el.focus?.();
-                el.click?.();
+                el.focus?.(); el.click?.();
                 el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window }));
                 push(ref(db, `sessions/${userSessionId}/logs`), { type:'action', msg:'click', selector:cmd.selector, at: serverTimestamp() });
               } catch(e) {
@@ -613,36 +634,155 @@
         await remove(ref(db, `sessions/${adminSessionId}/chat`));
         statusAdmin.textContent = '세션 종료됨 (채팅 삭제 완료)';
       };
+
+      // 🔔 요청 목록 워처 (관리자 전용)
+      if (!window.__REQ_BOUND__) { startRequestWatcher(); window.__REQ_BOUND__ = true; }
+    }
+
+    // === 관리자 요청 목록 ===
+    const reqEls = new Map(); // code -> row element
+
+    function fmt(ts){
+      if (!ts) return '';
+      try {
+        const d = new Date(ts);
+        return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+      } catch { return ''; }
+    }
+
+    function makeReqRow(code, meta){
+      const row = document.createElement('div');
+      row.className = 'req-row';
+      row.id = `req-${code}`;
+
+      const left = document.createElement('div');
+      const codeEl = document.createElement('span');
+      codeEl.className = 'req-code';
+      codeEl.textContent = code;
+
+      const badge = document.createElement('span');
+      badge.className = `badge ${meta?.status || 'unknown'}`;
+      badge.textContent = meta?.status || 'unknown';
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'muted';
+      timeEl.textContent = meta?.createdAt ? `· ${fmt(meta.createdAt)}` : '';
+
+      left.appendChild(codeEl); left.appendChild(badge); left.appendChild(timeEl);
+
+      const actions = document.createElement('div');
+      actions.className = 'req-actions';
+
+      const btnConn = document.createElement('button');
+      btnConn.className = 'btn secondary';
+      btnConn.textContent = '연결';
+      btnConn.onclick = () => { sessAdmin.value = code; connectAdmin.click(); };
+
+      const btnCopy = document.createElement('button');
+      btnCopy.className = 'btn secondary';
+      btnCopy.textContent = '코드 복사';
+      btnCopy.onclick = async () => {
+        try { await navigator.clipboard.writeText(code); showToast('코드를 복사했어요'); } catch {}
+      };
+
+      actions.appendChild(btnConn);
+      actions.appendChild(btnCopy);
+
+      row.appendChild(left);
+      row.appendChild(actions);
+      return row;
+    }
+
+    function upsertReq(code, meta){
+      // 활성 세션만 표시, 종료되면 제거
+      if (!meta || meta.status !== 'active'){
+        const exist = reqEls.get(code);
+        if (exist){ exist.remove(); reqEls.delete(code); }
+        return;
+      }
+
+      if (reqEls.has(code)){
+        // 업데이트
+        const row = reqEls.get(code);
+        const badge = row.querySelector('.badge');
+        const timeEl = row.querySelector('.muted');
+        if (badge){ badge.className = `badge ${meta.status}`; badge.textContent = meta.status; }
+        if (timeEl){ timeEl.textContent = meta.createdAt ? `· ${fmt(meta.createdAt)}` : ''; }
+      } else {
+        const row = makeReqRow(code, meta);
+        reqList.appendChild(row);
+        reqEls.set(code, row);
+      }
+      // 목록 래퍼 표시
+      if (reqEls.size > 0) reqWrap.style.display = 'block';
+    }
+
+    function startRequestWatcher(){
+      const sessionsRef = ref(db, 'sessions');
+
+      // 새 세션(요청) 추가 시
+      onChildAdded(sessionsRef, async (snap) => {
+        const code = snap.key;
+        // meta가 스냅샷에 없을 수 있으므로 안전하게 읽기
+        let meta = snap.child('meta').val();
+        if (!meta){
+          const metaSnap = await get(child(ref(db, `sessions/${code}`), 'meta'));
+          meta = metaSnap.val();
+        }
+        upsertReq(code, meta);
+      });
+
+      // 세션 변경(특히 status 변경) 시
+      onChildChanged(sessionsRef, (snap) => {
+        const code = snap.key;
+        const meta = snap.child('meta').val();
+        upsertReq(code, meta);
+      });
+
+      // 세션 삭제 시
+      onChildRemoved(sessionsRef, (snap) => {
+        const code = snap.key;
+        const exist = reqEls.get(code);
+        if (exist){ exist.remove(); reqEls.delete(code); }
+        if (reqEls.size === 0) reqWrap.style.display = 'none';
+      });
     }
 
     /* ===== 인증 상태: 관리자/사용자 UI 토글 ===== */
     onAuthStateChanged(auth, (user) => {
+      // 현재 로그인 사용자의 uid는 관리자/일반 모두에서 사용
+      uid = user ? user.uid : null;
+
       const isAdmin = !!(user && user.email === 'siu46852579@gmail.com');
 
-      // 관리자일 땐 두 섹션 모두 표시(요청대로 '다른 설정도 표시')
       if (isAdmin) {
+        // 관리자: 두 섹션 모두 표시 + '상담사 도움'만 비활성화, 나머지 설정 사용 가능
         userSection.style.display = 'block';
         adminSection.style.display = 'block';
-        // 관리자는 도움요청 버튼 의미 없으니 비활성화
-        helpBtn.disabled = true;
-        // 관리자 핸들러 1회 바인딩
+
+        helpBtn.disabled = true;          // 상담사 도움만 제한
+        signoutBtn.disabled = false;      // 나머지 설정 허용
+        resetBtn.disabled = false;
+
+        accountDesc.textContent = user ? `${user.email} (관리자 로그인됨)` : '로그인이 필요합니다.';
+
         if (!window.__ADMIN_BOUND__) { bindAdminHandlers(); window.__ADMIN_BOUND__ = true; }
-      } else {
-        userSection.style.display = 'block';
-        adminSection.style.display = 'none';
+        return;
       }
 
-      // 사용자 상태 표기
-      if (!isAdmin && user && user.emailVerified){
-        uid = user.uid;
+      // 일반 사용자
+      userSection.style.display = 'block';
+      adminSection.style.display = 'none';
+
+      if (user && user.emailVerified){
         accountDesc.textContent = `${user.email} (로그인됨)`;
         signoutBtn.disabled = false;
         resetBtn.disabled = false;
-      } else if (!isAdmin && user && !user.emailVerified){
+      } else if (user && !user.emailVerified){
         accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
         signoutBtn.disabled = false;
         resetBtn.disabled = true;
-      } else if (!isAdmin) {
+      } else {
         accountDesc.textContent = '로그인이 필요합니다.';
         signoutBtn.disabled = true;
         resetBtn.disabled = true;
