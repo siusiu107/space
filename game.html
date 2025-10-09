@@ -138,7 +138,7 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
-    /* 상단바: 모바일 줄바꿈 허용 */
+    /* 상단바 */
     #top-bar {
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
@@ -151,7 +151,7 @@
     .bar-group span { white-space: nowrap; }
     #ship-img{ width:16px; height:16px; }
 
-    /* 로그아웃: 상단에 고정, 바텀 내비보다 위 */
+    /* 로그아웃 */
     #logout-btn {
       display:none;
       position:fixed; top:56px; right:8px;
@@ -162,7 +162,7 @@
     }
     #logout-btn:active{ transform: translateY(1px); }
 
-    /* 설정 버튼(항상 가로 표기) */
+    /* 설정 버튼 */
     #settings-btn {
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
@@ -189,7 +189,7 @@
     #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
 
-    /* === Bottom Nav (glass floating) === */
+    /* === Bottom Nav === */
     #bottom-nav{
       position: fixed;
       left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
@@ -220,14 +220,10 @@
       color: #001218; background: linear-gradient(180deg,#00c0ff,#00a2ff);
       border-color: rgba(0,0,0,0.0); box-shadow: 0 6px 18px rgba(0,160,255,0.28);
     }
-    #bottom-nav .t-icon{ font-size: 16px; display:inline-block; transform: translateY(-1px); }
-    #bottom-nav .t-label{ font-weight: 800; letter-spacing: .2px; }
 
-    /* 컨텐츠가 바텀바에 가리지 않도록 여백 */
     #container{ padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
     #planets-content{ padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px)); }
 
-    /* 모바일 최적화 */
     @media (max-width: 420px){
       #top-bar{ font-size:11px; padding:6px 8px; }
       #settings-btn{ padding:5px 8px; font-size:12px; }
@@ -237,7 +233,7 @@
       h1{ font-size:1.2em; }
     }
 
-    /* ===== 사이드 메뉴 (추가) ===== */
+    /* ===== 사이드 메뉴 ===== */
     #side-menu-toggle{
       position: fixed;
       left: 8px;
@@ -295,7 +291,7 @@
       #side-menu{ width: 240px; }
     }
 
-    /* ✅ Popup Gate: PC에서 팝업이 아닐 때 전체 차단 오버레이 */
+    /* ✅ Popup Gate 오버레이 */
     #popup-gate {
       position: fixed; inset: 0; z-index: 5000;
       display: none; align-items: center; justify-content: center;
@@ -320,9 +316,7 @@
       background: linear-gradient(180deg, #00c0ff, #0077ff); color:#001218; font-weight:800;
       box-shadow: 0 6px 18px rgba(0,160,255,.22);
     }
-    #popup-gate .secondary{
-      background: transparent; color:#eaf6ff; font-weight:700;
-    }
+    #popup-gate .secondary{ background: transparent; color:#eaf6ff; font-weight:700; }
   </style>
 </head>
 <body>
@@ -380,7 +374,7 @@
     </div>
   </div>
 
-  <!-- 로그아웃 버튼(상단에 고정) -->
+  <!-- 로그아웃 버튼 -->
   <button id="logout-btn">로그아웃</button>
 
   <!-- 상단 바 & 메인 게임 -->
@@ -453,7 +447,7 @@
     <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
   </div>
 
-  <!-- ===== 사이드 메뉴 (추가) ===== -->
+  <!-- 사이드 메뉴 -->
   <button id="side-menu-toggle" aria-label="사이드 메뉴 열기" title="메뉴">☰</button>
   <div id="side-backdrop" aria-hidden="true"></div>
   <aside id="side-menu" aria-label="사이드 메뉴" aria-hidden="true">
@@ -474,7 +468,7 @@
     </nav>
   </aside>
 
-  <!-- ✅ Popup Gate: 오버레이 -->
+  <!-- ✅ Popup Gate 오버레이 -->
   <div id="popup-gate" aria-hidden="true">
     <div class="card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
       <h3 id="gate-title">PC에서는 팝업으로만 실행됩니다</h3>
@@ -545,6 +539,7 @@
     function save() {
       if (!uid || !dataRef) return;
       if (isInitialSync) return;
+      if (!window.__PLAY_ALLOWED) return; // ✅ 팝업 승인 전 저장 차단
       const now = Date.now();
       state._lastUpdated = now;
       localLastWrite = now;
@@ -573,9 +568,7 @@
       sub.textContent    = opts.subText || '보안 연결 · 인증 중…';
       detail.textContent = opts.detail  || '브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다.';
       steps.forEach(li => { li.removeAttribute('data-active'); li.style.opacity = 0.6; });
-
       function activateStep(n){ steps.forEach((li,i)=>{ if(i<n){ li.setAttribute('data-active','true'); li.style.opacity=1; } }); }
-
       if (show) {
         overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
         activateStep(1); progress.style.width='24%';
@@ -589,6 +582,7 @@
     }
 
     function showGameUI() {
+      if (!window.__PLAY_ALLOWED) return; // ✅ 팝업 승인 전 UI 표시 금지
       try {
         authContainer.classList.add('hidden');
         try { history.replaceState(null, '', '/게임' + (location.hash || '')); } catch {}
@@ -628,13 +622,13 @@
           if (!server) {
             if (isInitialSync) {
               state = { ...defaultData };
-              updateUI(); renderPlanets();
+              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
               isInitialSync = false;
               showGameUI();
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
             } else {
               state = { ...defaultData };
-              updateUI(); renderPlanets();
+              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
             }
             return;
           }
@@ -642,7 +636,7 @@
           const serverLast = server._lastUpdated || 0;
           if (isInitialSync) {
             state = { ...defaultData, ...server };
-            updateUI(); renderPlanets();
+            if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
             isInitialSync = false;
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
@@ -656,7 +650,7 @@
             try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
             catch { save(); }
           }
-          updateUI(); renderPlanets();
+          if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
         });
 
       } else {
@@ -754,7 +748,7 @@
         const msg = (
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
-          code === 'auth/weak-password' ? '비밀번호가 너무 약합니다. 6자 이상으로 설정하세요.' :
+          code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
           err.message || '회원가입 중 문제가 발생했습니다.'
         );
         showAuthStatus(msg);
@@ -781,7 +775,7 @@
       }
     });
 
-    // 로그아웃(상단 버튼)
+    // 로그아웃
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     // ===== 게임 UI =====
@@ -854,13 +848,16 @@
     }
 
     function ensureReady() {
+      if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; } // ✅ 플레이 게이트
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
       showAuthStatus('');
       return true;
     }
 
-    window.onload = () => {
+    // ===== 초기화(지연 실행) =====
+    function wireGame() {
+      // 이벤트 바인딩/타이머는 허용된 뒤에만 설치
       document.getElementById('ore').addEventListener('click', e => {
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
@@ -876,23 +873,26 @@
       document.getElementById('hire-conversion').addEventListener('click', () => { if (!ensureReady()) return; const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
 
-      // 바텀 내비 탭 전환
-      document.querySelectorAll('#bottom-nav .tab').forEach(tab => addEvent(tab, 'click', () => {
+      document.querySelectorAll('#bottom-nav .tab').forEach(tab => tab.addEventListener('click', () => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
         document.querySelectorAll('#bottom-nav .tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
       }));
-      function addEvent(el, ev, fn){ el.addEventListener(ev, fn); }
 
-      setInterval(() => {
-        if (!uid || isInitialSync) return;
+      window.__gameTimer = setInterval(() => {
+        if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
         if (state.workerCount > 0) state.resources += state.workerCount * getWorkerPower();
         if (state.conversionCount > 0) state.coins += state.conversionCount;
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       }, 1000);
-    };
+    }
+
+    window.addEventListener('load', () => {
+      if (window.__PLAY_ALLOWED) wireGame();
+      else window.__DEFER_INIT = wireGame;
+    });
   </script>
 
   <script>
@@ -917,13 +917,9 @@
       if (action === 'rank')   { location.href='/ranking.html'; }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
-
-    document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
-    });
   </script>
 
-  <!-- ===== 사이드 메뉴 스크립트 (추가) ===== -->
+  <!-- 사이드 메뉴 -->
   <script>
     (function(){
       const sideToggle = document.getElementById('side-menu-toggle');
@@ -947,7 +943,6 @@
       backdrop.addEventListener('click', closeSide);
       window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSide(); });
 
-      // 사이드 메뉴 액션 (우클릭 커스텀 메뉴와 동일 동작)
       sideMenu.addEventListener('click', (e)=>{
         const btn = e.target.closest('.side-item');
         if(!btn) return;
@@ -960,7 +955,7 @@
         }
         if (action === 'download') { location.href='/app-download.html'; }
         if (action === 'rank')     { location.href='/ranking.html'; }
-        if (action === 'resume')   { /* 단순히 닫기 */ }
+        if (action === 'resume')   { /* 닫기만 */ }
         closeSide();
       });
     })();
@@ -983,7 +978,7 @@
     });
   </script>
 
-  <!-- === ✅ 추가 1: Cobrowse.io 로더(원격 제어) === -->
+  <!-- === 원격 제어 (그대로) === -->
   <script>
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
@@ -996,23 +991,18 @@
         }};
       });
     })(window,'script','CobrowseIO');
-
-    // Cobrowse 라이선스 & 권한
     window.CobrowseIO = window.CobrowseIO || {};
     CobrowseIO.license = "eFtcbWqBdRylMQ";
     CobrowseIO.capabilities = ["cursor","remote-control"];
-
-    // 페이지 로드시 클라이언트 등록(세션 유지)
     CobrowseIO.client().then(function(){ CobrowseIO.start(); });
   </script>
 
-  <!-- === ✅ 추가 2: Firebase commands 구독 (navigate / click / highlight) === -->
+  <!-- === Firebase commands (그대로) === -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, query, orderByChild, equalTo, onChildAdded, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    // 기존 앱 재사용(중복 초기화 방지)
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -1078,12 +1068,10 @@
       });
     }
 
-    // 1순위: sessionStorage 값 사용
     try { sessionId = sessionStorage.getItem('cobrowse_session_id') || null; } catch {}
     if (sessionId) {
       setActiveSession(sessionId);
     } else {
-      // 2순위: 내 uid의 active 세션 자동탐색(가장 최근)
       onAuthStateChanged(auth2, (user) => {
         if (!user) return;
         const q = query(ref(db2, 'sessions'), orderByChild('meta/userUid'), equalTo(user.uid));
@@ -1103,46 +1091,41 @@
     }
   </script>
 
-  <!-- ✅ Popup Gate: 강력한 PC 판별 + 팝업 강제 -->
+  <!-- ✅ Popup Enforcement: 모바일은 허용, PC는 팝업(또는 name 인증)만 허용 -->
   <script>
     (function(){
-      const ALLOWED_POPUP_NAMES = ['gameWindow','siuGame','popup'];
       const gate     = document.getElementById('popup-gate');
       const gateBtn  = document.getElementById('gate-open');
       const howtoBtn = document.getElementById('gate-howto');
       const gateMsg  = document.getElementById('gate-msg');
+      const ALLOWED_NAMES = ['gameWindow','siuGame','popup'];
 
       function isMobileStrict(){
-        try {
-          if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
-            return navigator.userAgentData.mobile === true;
-          }
-        } catch {}
+        try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
         const ua = navigator.userAgent || '';
-        // 명시적 모바일 토큰
         if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
-        // iPadOS (MacIntel + 터치)
-        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
-        // 포인터 특성: 굵은 포인터(coarse) + hover 불가 → 모바일 성향
+        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true; // iPadOS
         const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
         if (coarse && !canHover) return true;
         return false;
       }
-      function isDesktopStrict(){ return !isMobileStrict(); }
-
-      function isLikelyPopup(){
-        try {
-          if (window.opener && !window.opener.closed) return true;
-        } catch {}
-        try {
-          if (ALLOWED_POPUP_NAMES.includes(window.name)) return true;
-        } catch {}
-        // 추가 시그널: 리퍼러가 동일 출처의 런처일 수 있으나 강제 조건으론 사용하지 않음.
+      function isPopup(){
+        try { if (window.opener && !window.opener.closed) return true; } catch {}
+        try { if (ALLOWED_NAMES.includes(window.name)) return true; } catch {}
         return false;
       }
 
+      function allowPlay(){
+        window.__PLAY_ALLOWED = true;
+        if (window.__DEFER_INIT) { try { window.__DEFER_INIT(); } catch(e){} window.__DEFER_INIT = null; }
+        try { gate.style.display = 'none'; gate.setAttribute('aria-hidden','true'); } catch {}
+        // 로그인 UI/게임 UI 표시(이미 onAuthStateChanged에서 처리하지만, 미로그인 상태 대비)
+        try { ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible'); } catch {}
+      }
+
       function showGate(){
+        window.__PLAY_ALLOWED = false;
         gate.style.display = 'flex';
         gate.setAttribute('aria-hidden','false');
       }
@@ -1152,20 +1135,11 @@
         const w = 1024, h = 768;
         const left = window.screenX ? Math.max(0, Math.round(window.screenX + (window.outerWidth - w)/2)) : 0;
         const top  = window.screenY ? Math.max(0, Math.round(window.screenY + (window.outerHeight - h)/2)) : 0;
-        const opts = [
-          `width=${w}`, `height=${h}`, `left=${left}`, `top=${top}`,
-          'resizable=yes','scrollbars=yes','status=no','toolbar=no','menubar=no','noopener','noreferrer'
-        ].join(',');
+        const opts = [`width=${w}`,`height=${h}`,`left=${left}`,`top=${top}`,'resizable=yes','scrollbars=yes','status=no','toolbar=no','menubar=no','noopener','noreferrer'].join(',');
         let pop = null;
-        try {
-          pop = window.open(window.location.href, 'gameWindow', opts);
-        } catch(e){ pop = null; }
-        if (!pop || pop.closed) {
-          gateMsg.textContent = '팝업이 차단되었습니다. 브라우저 설정에서 이 사이트의 팝업을 허용해 주세요.';
-          return;
-        }
+        try { pop = window.open(window.location.href, 'gameWindow', opts); } catch(e){ pop = null; }
+        if (!pop || pop.closed) { gateMsg.textContent = '팝업이 차단되었습니다. 브라우저 설정에서 이 사이트의 팝업을 허용해 주세요.'; return; }
         try { pop.focus(); } catch {}
-        // 현재 탭은 닫거나 다른 페이지로 이동 (닫기 실패 대비)
         try { window.close(); } catch {}
         setTimeout(()=>{ if (!window.closed) location.replace('/'); }, 400);
       }
@@ -1177,13 +1151,19 @@
       gateBtn.addEventListener('click', openSelfAsPopup);
       howtoBtn.addEventListener('click', openHelp);
 
-      // 초기 판별: 모바일은 건들지 않음, PC이고 팝업이 아니면 차단
-      if (isDesktopStrict() && !isLikelyPopup()) {
-        showGate();
+      // 결정 로직
+      if (isMobileStrict()) {
+        allowPlay(); // 모바일은 그대로 허용
+      } else {
+        if (isPopup()) allowPlay();
+        else showGate(); // PC + 팝업 아님 → 차단
       }
 
-      // 만약 사용자가 히스토리 내비게이션 등으로 돌아와도 계속 차단 유지
-      window.addEventListener('pageshow', function(){ if (isDesktopStrict() && !isLikelyPopup()) showGate(); });
+      // 뒤로가기로 돌아와도 유지
+      window.addEventListener('pageshow', () => {
+        if (isMobileStrict()) return;
+        if (!isPopup()) showGate();
+      });
     })();
   </script>
 </body>
