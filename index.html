@@ -120,33 +120,41 @@
     }
     #env-close:hover { background: rgba(255,255,255,.08); }
 
-    /* Responsive (모바일 최적화 + 겹침 방지) */
+    /* Responsive (모바일 더 작게) */
     @media (max-width: 768px) {
       .container { flex-direction: column; }
+
       .sidebar {
-        width: 100%; flex-direction: row; justify-content: space-around; padding: 10px 8px;
+        width: 100%; flex-direction: row; justify-content: space-around;
+        padding: 8px 6px; gap: 8px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
       }
-      .sidebar button { width: auto; padding: 8px 12px; font-size: 13px; border-radius: 20px; }
-      .overlay h1 { font-size: 32px; }
-      .overlay a.start-btn { padding: 10px 18px; font-size: 16px; }
+      .sidebar button { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
 
-      /* ✅ 배지를 우상단 → 우하단으로 이동(사이드바와 겹침 방지) + 크기 축소 */
+      .overlay h1 { font-size: 28px; }
+      .overlay a.start-btn { padding: 9px 16px; font-size: 15px; border-radius: 18px; }
+
+      /* ✅ 배지 더 작게 + 우하단 */
       #env-badge {
-        top: auto; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-        padding: 5px 8px; font-size: 11px;
-        border-radius: 14px; z-index: 10001;
+        top: auto; right: 6px; bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        padding: 4px 7px; font-size: 10px; border-radius: 12px;
       }
 
-      /* ✅ 패널도 작게 + 화면 하단 우측에서 뜨도록 위치 조정 */
+      /* ✅ 패널 더 작게 */
       #env-panel {
-        top: auto; bottom: calc(48px + env(safe-area-inset-bottom, 0px)); right: 8px;
-        width: 280px; max-width: calc(100vw - 16px);
-        max-height: 60vh; padding: 10px;
+        top: auto; bottom: calc(42px + env(safe-area-inset-bottom, 0px)); right: 6px;
+        width: 240px; max-width: calc(100vw - 12px);
+        max-height: 55vh; padding: 8px; border-radius: 10px;
       }
-      #env-panel h3 { font-size: 13px; }
-      #env-panel dl { grid-template-columns: 100px 1fr; gap: 4px 8px; font-size: 11px; }
-      #env-panel .muted { font-size: 10px; }
+      #env-panel h3 { font-size: 12px; }
+      #env-panel dl { grid-template-columns: 90px 1fr; gap: 3px 6px; font-size: 10px; }
+      #env-panel .muted { font-size: 9px; }
+
+      /* ✅ 라이센스/컨택 패널도 소형화 */
+      .panel { width: 92%; max-width: 420px; padding: 20px; }
+      .panel h2 { font-size: 20px; }
+      .panel p, .panel ul li { font-size: 12px; }
+      .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; }
     }
   </style>
 </head>
@@ -160,7 +168,7 @@
     <div class="content">
       <div class="overlay">
         <h1>태양계정복</h1>
-        <!-- 데스크톱이면 팝업(현재 탭 유지), 모바일이면 같은 탭 -->
+        <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 -->
         <a href="game.html" id="start-btn" class="start-btn">게임 시작</a>
       </div>
 
@@ -194,7 +202,7 @@
     </div>
   </div>
 
-  <!-- 우하단/우상단 환경 배지 & 연결정보 패널 -->
+  <!-- 환경 배지 & 연결정보 패널 -->
   <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
   <div id="env-panel" role="dialog" aria-modal="true" aria-labelledby="env-title">
     <div class="row">
@@ -214,7 +222,6 @@
     const $envPanel = document.getElementById('env-panel');
 
     function closeEnvPanel(){ $envPanel.style.display = 'none'; }
-    function closePanels(){ $licensePanel.classList.remove('active'); $contactPanel.classList.remove('active'); }
 
     document.querySelectorAll('.close-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -222,7 +229,7 @@
       });
     });
 
-    // 열기 시 서로 겹치지 않도록 처리
+    // 열기 시 서로 겹치지 않도록
     $licenseBtn.addEventListener('click', () => {
       closeEnvPanel();
       $contactPanel.classList.remove('active');
@@ -320,7 +327,7 @@
       }
 
       function openPanel(){
-        // 다른 패널 닫고 열기(겹침 방지)
+        // 다른 패널 닫고 열기
         document.getElementById('license-panel').classList.remove('active');
         document.getElementById('contact-panel').classList.remove('active');
         render();
@@ -328,8 +335,8 @@
       }
       function closePanel(){ $panel.style.display = 'none'; }
 
-      $badge.addEventListener('click', () => ($panel.style.display === 'block' ? closePanel() : openPanel()));
-      $close.addEventListener('click', closePanel);
+      document.getElementById('env-badge').addEventListener('click', () => ($panel.style.display === 'block' ? closePanel() : openPanel()));
+      document.getElementById('env-close').addEventListener('click', closePanel);
       document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
       document.addEventListener('click', e => { if ($panel.style.display==='block' && !e.target.closest('#env-panel, #env-badge')) closePanel(); });
 
@@ -338,16 +345,16 @@
         navigator.connection.addEventListener('change', () => { if ($panel.style.display==='block') render(); });
       }
 
-      // 초기 라벨 세팅
+      // 초기 라벨
       document.getElementById('env-badge').textContent = deviceTypeLabel();
     })();
   </script>
 
-  <!-- PC면 팝업(현재 탭 유지), 모바일이면 같은 탭 이동 -->
+  <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 -->
   <script>
     (function () {
       const POPUP_NAME = 'gameWindow';
-      const GAME_URL   = 'game.html'; // 절대경로 쓰려면 교체
+      const GAME_URL   = 'game.html';
       const W = 1024, H = 768;
 
       function showPopupHint(msg){
@@ -389,13 +396,11 @@
       if (!startBtn) return;
 
       startBtn.addEventListener('click', function (e) {
-        if (!shouldUsePopup()) return; // 모바일/웹뷰: 기본 이동(같은 탭)
-        // PC: 현재 탭 유지 + 팝업
-        e.preventDefault();
+        if (!shouldUsePopup()) return; // 모바일: 기본 이동
+        e.preventDefault(); // PC: 현재 탭 유지
         const p = openGamePopup(GAME_URL);
         if (!p || p.closed) {
           showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.');
-          // 필요시: window.location.href = GAME_URL;
         }
       });
     })();
@@ -437,7 +442,7 @@
               try { window.location.href = 'about:blank'; } catch (e) {}
               try { window.close(); } catch (e) {}
             }, 50);
-          }, CLOSE_DELAY_MS);
+          }, 50 0);
         }
       } catch (e) {
         console.warn('팝업 자동 종료 검사 중 오류:', e);
