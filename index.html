@@ -9,7 +9,7 @@
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="./">
 
-  <!-- Open Graph / Social share (간단 설정, 공유 시 space-bg.jpg 사용) -->
+  <!-- Open Graph -->
   <meta property="og:title" content="태양계정복 - SIU Studio">
   <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
   <meta property="og:type" content="website">
@@ -22,23 +22,15 @@
   <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
   <meta name="twitter:image" content="space-bg.jpg">
 
-  <!-- 공유/탭 아이콘: space-bg.jpg 사용 -->
+  <!-- Icons -->
   <link rel="icon" href="space-bg.jpg" type="image/jpeg">
-  
-  <!-- Apple 홈스크린 아이콘 (iOS) -->
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
-  <!-- PNG 파비콘 (모던 브라우저) -->
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-
-  <!-- Safari pinned tab (SVG) -->
   <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
-
-  <!-- .ico (레거시 백업) -->
   <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
 
-  <!-- PWA 메타 (있다면 유지) -->
+  <!-- PWA -->
   <link rel="manifest" href="/site.webmanifest">
   <meta name="msapplication-TileColor" content="#2d89ef">
   <meta name="theme-color" content="#ffffff">
@@ -48,8 +40,9 @@
     catch(e){ console.warn('주소 표시 변경 실패:', e); }
   </script>
 
-  <!-- Google Font -->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
@@ -60,6 +53,7 @@
       display: flex; flex-direction: column; align-items: center;
       padding-top: 40px; gap: 20px;
       box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+      z-index: 3;
     }
     .sidebar button {
       width: 80%; padding: 12px 0; text-align: center; text-decoration: none;
@@ -67,8 +61,10 @@
       cursor: pointer; transition: background 0.3s, transform 0.2s;
     }
     .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
+
     .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
     .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
+
     .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
     .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; }
     .overlay a.start-btn {
@@ -77,6 +73,7 @@
       border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7); transition: box-shadow 0.3s, transform 0.2s;
     }
     .overlay a.start-btn:hover { box-shadow: 0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); }
+
     .panel {
       position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
       background: rgba(20,20,40,0.9); padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; display: none; z-index: 2; box-shadow: 0 0 20px rgba(0,0,0,0.7);
@@ -88,17 +85,8 @@
     .panel ul li { margin-bottom: 8px; font-size: 14px; }
     .panel .close-btn { display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
     .panel .close-btn:hover { background: #e53935; }
-    /* Responsive */
-    @media (max-width: 768px) {
-      .container { flex-direction: column; }
-      .sidebar { width: 100%; flex-direction: row; justify-content: space-around; padding: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-      .sidebar button { width: auto; padding: 10px 15px; font-size: 14px; }
-      .overlay h1 { font-size: 36px; }
-      .overlay a.start-btn { padding: 12px 24px; font-size: 18px; }
-      .panel { width: 95%; }
-    }
 
-    /* ✅ 추가: 우상단 환경 배지 & 정보 패널 */
+    /* ✅ 환경 배지 & 연결정보 패널 (기본: PC 레이아웃) */
     #env-badge {
       position: fixed; top: 8px; right: 8px;
       padding: 6px 10px; border-radius: 999px;
@@ -112,17 +100,16 @@
     #env-panel {
       position: fixed; top: 40px; right: 8px;
       width: 340px; max-width: calc(100vw - 16px);
+      max-height: 80vh; overflow: auto;
       background: rgba(10,10,25,0.98); color: #fff;
       border: 1px solid rgba(255,255,255,.08);
       box-shadow: 0 8px 24px rgba(0,0,0,.55);
       border-radius: 12px; padding: 12px; display: none;
       z-index: 10002; backdrop-filter: blur(6px);
+      -webkit-overflow-scrolling: touch;
     }
     #env-panel h3 { margin: 2px 0 8px; font-size: 14px; color: #f4b400; }
-    #env-panel dl {
-      display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px;
-      font-size: 12px; word-break: break-all;
-    }
+    #env-panel dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-size: 12px; word-break: break-all; }
     #env-panel dt { color: #aab; }
     #env-panel dd { color: #eef; margin: 0; }
     #env-panel .muted { opacity: .8; font-size: 11px; }
@@ -132,6 +119,35 @@
       line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px;
     }
     #env-close:hover { background: rgba(255,255,255,.08); }
+
+    /* Responsive (모바일 최적화 + 겹침 방지) */
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      .sidebar {
+        width: 100%; flex-direction: row; justify-content: space-around; padding: 10px 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      }
+      .sidebar button { width: auto; padding: 8px 12px; font-size: 13px; border-radius: 20px; }
+      .overlay h1 { font-size: 32px; }
+      .overlay a.start-btn { padding: 10px 18px; font-size: 16px; }
+
+      /* ✅ 배지를 우상단 → 우하단으로 이동(사이드바와 겹침 방지) + 크기 축소 */
+      #env-badge {
+        top: auto; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        padding: 5px 8px; font-size: 11px;
+        border-radius: 14px; z-index: 10001;
+      }
+
+      /* ✅ 패널도 작게 + 화면 하단 우측에서 뜨도록 위치 조정 */
+      #env-panel {
+        top: auto; bottom: calc(48px + env(safe-area-inset-bottom, 0px)); right: 8px;
+        width: 280px; max-width: calc(100vw - 16px);
+        max-height: 60vh; padding: 10px;
+      }
+      #env-panel h3 { font-size: 13px; }
+      #env-panel dl { grid-template-columns: 100px 1fr; gap: 4px 8px; font-size: 11px; }
+      #env-panel .muted { font-size: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -140,14 +156,20 @@
       <button id="show-license">라이센스 정보</button>
       <button id="show-contact">Contact Us</button>
     </nav>
+
     <div class="content">
       <div class="overlay">
         <h1>태양계정복</h1>
-        <!-- 데스크톱이면 팝업, 아니면 같은 탭 -->
+        <!-- 데스크톱이면 팝업(현재 탭 유지), 모바일이면 같은 탭 -->
         <a href="game.html" id="start-btn" class="start-btn">게임 시작</a>
       </div>
-      <div id="popup-hint" style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;">팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.</div>
-      <div class="panel" id="license-panel">
+
+      <!-- 팝업 차단 안내 토스트 -->
+      <div id="popup-hint" style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;">
+        팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.
+      </div>
+
+      <div class="panel" id="license-panel" aria-modal="true" role="dialog">
         <h2>라이센스 정보</h2>
         <p>© 2025 SIU Studio. All rights reserved.</p>
         <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
@@ -162,7 +184,8 @@
         <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
         <button class="close-btn" data-target="license-panel">닫기</button>
       </div>
-      <div class="panel" id="contact-panel">
+
+      <div class="panel" id="contact-panel" aria-modal="true" role="dialog">
         <h2>Contact Us</h2>
         <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
         <p><a href="mailto:support@siustudio.kro.kr" style="color: #f4b400; text-decoration: none;">support@siustudio.kro.kr</a></p>
@@ -171,31 +194,48 @@
     </div>
   </div>
 
-  <!-- ✅ 추가: 우상단 배지 & 연결정보 패널 -->
+  <!-- 우하단/우상단 환경 배지 & 연결정보 패널 -->
   <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
   <div id="env-panel" role="dialog" aria-modal="true" aria-labelledby="env-title">
     <div class="row">
       <h3 id="env-title">연결 정보</h3>
       <button id="env-close" aria-label="닫기">✕</button>
     </div>
-    <dl id="env-list">
-      <!-- JS에서 채워집니다 -->
-    </dl>
+    <dl id="env-list"><!-- JS에서 채웁니다 --></dl>
     <p class="muted" style="margin-top:8px;">* 일부 값은 브라우저/OS 정책으로 비공개이거나 근사치일 수 있습니다.</p>
   </div>
 
+  <!-- 패널 토글 -->
   <script>
-    // 기존 패널 제어 스크립트 (원본 유지)
+    const $licenseBtn = document.getElementById('show-license');
+    const $contactBtn = document.getElementById('show-contact');
+    const $licensePanel = document.getElementById('license-panel');
+    const $contactPanel = document.getElementById('contact-panel');
+    const $envPanel = document.getElementById('env-panel');
+
+    function closeEnvPanel(){ $envPanel.style.display = 'none'; }
+    function closePanels(){ $licensePanel.classList.remove('active'); $contactPanel.classList.remove('active'); }
+
     document.querySelectorAll('.close-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
       });
     });
-    document.getElementById('show-license').addEventListener('click', () => document.getElementById('license-panel').classList.add('active'));
-    document.getElementById('show-contact').addEventListener('click', () => document.getElementById('contact-panel').classList.add('active'));
+
+    // 열기 시 서로 겹치지 않도록 처리
+    $licenseBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      $contactPanel.classList.remove('active');
+      $licensePanel.classList.add('active');
+    });
+    $contactBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      $licensePanel.classList.remove('active');
+      $contactPanel.classList.add('active');
+    });
   </script>
 
-  <!-- ✅ 추가: 배지 로직 (다른 코드와 격리된 IIFE, 기존 동작에 영향 없음) -->
+  <!-- 환경 배지 & 연결정보 로직 -->
   <script>
     (function () {
       const $badge = document.getElementById('env-badge');
@@ -210,60 +250,31 @@
         const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         const smallScreen = Math.max(screen.width, screen.height) < 1024;
         const mobUA = /(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua);
-        // 우선순위: UA Data -> 전통 UA -> 화면/터치 휴리스틱
         if (uaDataMobile !== null) return uaDataMobile;
         if (mobUA) return true;
         return touch && smallScreen;
       }
-
-      function isWebView() {
-        const ua = navigator.userAgent || '';
-        // 흔한 웹뷰 시그니처들 (근사치)
-        return /\b(wv|FBAN|FBAV|Instagram|Line\/|NAVER|KAKAOTALK|DaumApps)\b/i.test(ua) ||
-               /\bVersion\/[\d.]+ Mobile\/\w+ Safari\/\w+\b/i.test(ua) && !/Safari\//.test(ua);
-      }
-
       function bool(v){ return v ? '예' : '아니오'; }
-
       function getConn() {
         const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         if (!c) return null;
-        return {
-          type: c.type || undefined,
-          effectiveType: c.effectiveType || undefined,
-          downlinkMbps: typeof c.downlink === 'number' ? c.downlink : undefined,
-          rttMs: typeof c.rtt === 'number' ? c.rtt : undefined,
-          saveData: !!c.saveData
-        };
+        return { type: c.type, effectiveType: c.effectiveType, downlinkMbps: c.downlink, rttMs: c.rtt, saveData: !!c.saveData };
       }
-
-      function deviceTypeLabel() { return isMobileLike() ? '모바일' : 'PC'; }
-
-      function updateBadge() {
-        $badge.textContent = deviceTypeLabel();
-        // 접근성 라벨
-        $badge.setAttribute('aria-label', `현재 접속 환경: ${$badge.textContent}`);
-      }
-
-      function tz() {
-        try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
-        catch(_) { return ''; }
-      }
-
+      function tz(){ try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(_) { return ''; } }
       function hoverPointer() {
         const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
         const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         const fine   = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
         return { canHover, coarse, fine };
       }
-
       function displayMode() {
-        if (!window.matchMedia) return '';
+        if (!window.matchMedia) return 'browser';
         if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
         if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
         if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
         return 'browser';
       }
+      function deviceTypeLabel(){ return isMobileLike() ? '모바일' : 'PC'; }
 
       function gather() {
         const h = hoverPointer();
@@ -272,10 +283,9 @@
         const uaDataPlat = (navigator.userAgentData && navigator.userAgentData.platform) ? navigator.userAgentData.platform : '';
         const langs = (navigator.languages && navigator.languages.length ? navigator.languages.join(', ') : navigator.language || '');
         const ref = document.referrer || '';
-        return [
+        const rows = [
           ['디바이스', deviceTypeLabel()],
           ['플랫폼', uaDataPlat || navigator.platform || ''],
-          ['웹뷰 여부', bool(isWebView())],
           ['PWA 표시모드', displayMode()],
           ['온라인', bool(navigator.onLine)],
           ['언어', langs],
@@ -290,66 +300,70 @@
           ['쿠키 사용', bool(navigator.cookieEnabled)],
           ['Referrer', ref || '(없음)'],
           ['User-Agent', ua]
-        ].concat(conn ? [
-          ['네트워크 유형', conn.type || '(알 수 없음)'],
-          ['효과적 유형', conn.effectiveType || '(알 수 없음)'],
-          ['추정 다운링크(Mbps)', conn.downlinkMbps !== undefined ? String(conn.downlinkMbps) : '(알 수 없음)'],
-          ['RTT(ms)', conn.rttMs !== undefined ? String(conn.rttMs) : '(알 수 없음)'],
-          ['데이터 절약모드', bool(conn.saveData)]
-        ] : [['네트워크', '(API 미지원)']]);
+        ];
+        if (conn) {
+          rows.push(['네트워크 유형', conn.type || '(알 수 없음)']);
+          rows.push(['효과적 유형', conn.effectiveType || '(알 수 없음)']);
+          rows.push(['추정 다운링크(Mbps)', typeof conn.downlinkMbps === 'number' ? String(conn.downlinkMbps) : '(알 수 없음)']);
+          rows.push(['RTT(ms)', typeof conn.rttMs === 'number' ? String(conn.rttMs) : '(알 수 없음)']);
+          rows.push(['데이터 절약모드', bool(conn.saveData)]);
+        } else {
+          rows.push(['네트워크', '(API 미지원)']);
+        }
+        return rows;
       }
 
       function render() {
         const rows = gather();
+        document.getElementById('env-badge').textContent = deviceTypeLabel();
         $list.innerHTML = rows.map(([k,v]) => `<dt>${k}</dt><dd>${(v===undefined||v===null||v==='')?'-':String(v)}</dd>`).join('');
       }
 
-      function openPanel() { render(); $panel.style.display = 'block'; }
-      function closePanel() { $panel.style.display = 'none'; }
+      function openPanel(){
+        // 다른 패널 닫고 열기(겹침 방지)
+        document.getElementById('license-panel').classList.remove('active');
+        document.getElementById('contact-panel').classList.remove('active');
+        render();
+        $panel.style.display = 'block';
+      }
+      function closePanel(){ $panel.style.display = 'none'; }
 
-      // 이벤트
-      $badge.addEventListener('click', () => {
-        if ($panel.style.display === 'block') closePanel();
-        else openPanel();
-      });
+      $badge.addEventListener('click', () => ($panel.style.display === 'block' ? closePanel() : openPanel()));
       $close.addEventListener('click', closePanel);
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
-      document.addEventListener('click', (e) => {
-        if ($panel.style.display === 'block' && !e.target.closest('#env-panel, #env-badge')) closePanel();
-      });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+      document.addEventListener('click', e => { if ($panel.style.display==='block' && !e.target.closest('#env-panel, #env-badge')) closePanel(); });
 
-      // 동적 업데이트
-      window.addEventListener('resize', () => { updateBadge(); if ($panel.style.display==='block') render(); });
-      window.addEventListener('orientationchange', () => { updateBadge(); if ($panel.style.display==='block') render(); });
-      window.addEventListener('online', () => { if ($panel.style.display==='block') render(); });
-      window.addEventListener('offline', () => { if ($panel.style.display==='block') render(); });
+      ['resize', 'orientationchange', 'online', 'offline'].forEach(evt => window.addEventListener(evt, () => { if ($panel.style.display==='block') render(); }));
       if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
         navigator.connection.addEventListener('change', () => { if ($panel.style.display==='block') render(); });
       }
 
-      // 초기화
-      updateBadge();
+      // 초기 라벨 세팅
+      document.getElementById('env-badge').textContent = deviceTypeLabel();
     })();
   </script>
 
-  <!-- 핵심 변경: "데스크톱이면 팝업, 아니면 같은 탭" (이벤트 제스처당 window.open 1회만 실행) -->
+  <!-- PC면 팝업(현재 탭 유지), 모바일이면 같은 탭 이동 -->
   <script>
-    (function() {
-      const GAME_POPUP_WIDTH = 1024;
-      const GAME_POPUP_HEIGHT = 768;
+    (function () {
       const POPUP_NAME = 'gameWindow';
-      const SUPPRESS_POPUP_ALERT = true; // 팝업 실패시 경고창 표시 안 함
-      const ABS_GAME_URL = 'https://xn--989a202a4ogwtc69p.siustudio.kro.kr/game.html';
+      const GAME_URL   = 'game.html'; // 절대경로 쓰려면 교체
+      const W = 1024, H = 768;
 
-      // 데스크톱 판단 로직 (원본 유지)
+      function showPopupHint(msg){
+        var el = document.getElementById('popup-hint');
+        if(!el) return;
+        el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.';
+        el.style.display = 'block';
+        clearTimeout(showPopupHint._t);
+        showPopupHint._t = setTimeout(function(){ el.style.display='none'; }, 4000);
+      }
+
       function isDesktop() {
         const ua = navigator.userAgent || '';
         if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
-          if (navigator.userAgentData.mobile === false) return true;
-          if (navigator.userAgentData.mobile === true) return false;
+          return navigator.userAgentData.mobile === false;
         }
-        const looksLikeIPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
-        if (looksLikeIPadOS) return false;
         if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false;
         const finePointer = window.matchMedia?.('(pointer: fine)')?.matches;
         const canHover    = window.matchMedia?.('(hover: hover)')?.matches;
@@ -357,91 +371,32 @@
         return Math.max(screen.width, screen.height) >= 1024;
       }
 
-      // 안내 토스트
-      function showPopupHint(msg){
-        var el = document.getElementById('popup-hint');
-        if(!el) return;
-        el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 아이콘에서 허용해 주세요.';
-        el.style.display = 'block';
-        clearTimeout(showPopupHint._t);
-        showPopupHint._t = setTimeout(function(){ el.style.display='none'; }, 4000);
-      }
-
-      // 팝업 열기 (이름 고정 + 한 번만 open 호출)
       function openGamePopup(url) {
-        const left = Math.max(0, Math.round((screen.width - GAME_POPUP_WIDTH) / 2));
-        const top  = Math.max(0, Math.round((screen.height - GAME_POPUP_HEIGHT) / 2));
+        const left = Math.max(0, Math.round((screen.width  - W) / 2));
+        const top  = Math.max(0, Math.round((screen.height - H) / 2));
         const opts = [
-          `width=${GAME_POPUP_WIDTH}`,
-          `height=${GAME_POPUP_HEIGHT}`,
-          `left=${left}`,
-          `top=${top}`,
-          'resizable=yes', 'scrollbars=yes', 'status=no', 'toolbar=no', 'menubar=no', 'noopener', 'noreferrer'
+          `width=${W}`, `height=${H}`, `left=${left}`, `top=${top}`,
+          'resizable=yes','scrollbars=yes','status=no','toolbar=no','menubar=no','noopener','noreferrer'
         ].join(',');
-
-        // 중요: 사용자 제스처 안에서 window.open을 단 1회만 호출하고, 그 핸들을 재사용
-        let popup = null;
-        try {
-          popup = window.open('', POPUP_NAME, opts);
-        } catch (e) {
-          popup = null;
-        }
-
-        if (!popup || typeof popup.closed === 'undefined') {
-          if (!SUPPRESS_POPUP_ALERT) showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 아이콘에서 허용해 주세요.');
-          return null;
-        }
-
-        try { popup.location.href = url; popup.focus(); } catch (e) { /* fallback은 호출부에서 처리 */ }
-        return popup;
+        let win = null;
+        try { win = window.open(url, POPUP_NAME, opts); } catch(e) { win = null; }
+        return win;
       }
 
-      // ⚠️ 아래 원본 스크립트는 사용자 제공 코드 그대로 유지합니다.
-      // (구문 오류가 있더라도 요청에 따라 수정하지 않습니다.)
       function shouldUsePopup(){ return isDesktop(); }
 
-      function launchGame(e) {
-        const usePopup = shouldUsePopup();
-        if (usePopup) {
-          if (e) e.preventDefault();
-          const p = openGamePopup(ABS_GAME_URL);
-          if (!p) { if (!SUPPRESS_POPUP_ALERT) showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 아이콘에서 허용해 주세요.'); }
-          return;
-        }
-        // 모바일/인앱/PWA/소형 화면: 기본 앵커 동작으로 game.html 이동
-      } else {
-          // 모바일/웹뷰/인앱: 같은 탭 이동
-          location.href = 'game.html';
-        }
-      }
-        } else {
-          // 모바일/웹뷰/인앱 등: 같은 탭 이동
-          location.href = 'game.html';
-        }
-      }
-
       const startBtn = document.getElementById('start-btn');
+      if (!startBtn) return;
+
       startBtn.addEventListener('click', function (e) {
-        // 사용자 제스처 감지: 일반 클릭이면 활성화 상태임
-        if (navigator.userActivation && !navigator.userActivation.isActive) return; // 기본 이동 허용
-        launchGame(e);
-      });
-        launchGame();
-      });
-      startBtn.addEventListener('auxclick', function(e) {
-        if (e.button !== 1) return;
-        const usePopup = shouldUsePopup();
-        if (usePopup) { e.preventDefault(); openGamePopup(ABS_GAME_URL); }
-        // 모바일 등은 중클릭 기본 동작(새 탭으로 game.html) 유지
-      }); launchGame(); }
-      });
-      startBtn.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          const usePopup = shouldUsePopup();
-          if (usePopup) { e.preventDefault(); openGamePopup(ABS_GAME_URL); }
-          else { window.location.href = startBtn.href; }
+        if (!shouldUsePopup()) return; // 모바일/웹뷰: 기본 이동(같은 탭)
+        // PC: 현재 탭 유지 + 팝업
+        e.preventDefault();
+        const p = openGamePopup(GAME_URL);
+        if (!p || p.closed) {
+          showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.');
+          // 필요시: window.location.href = GAME_URL;
         }
-      }); launchGame(); }
       });
     })();
   </script>
@@ -455,25 +410,20 @@
       disableCut: true,
       disablePaste: true,
       clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        // 즉시 사이트 닫기
-        window.close();
-        next();
-      },
-      ondevtoolclose() {
-        console.warn('DevTools 닫힘 감지됨');
-      }
+      ondevtoolopen(type, next) { window.close(); next(); },
+      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
   </script>
+
   <script>
-    // 우클릭 전체 차단하되 input / textarea / contenteditable 요소는 예외로 둠
+    // 우클릭 차단 (입력 영역은 허용)
     document.addEventListener('contextmenu', function (e) {
       if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
       e.preventDefault();
     });
   </script>
 
-  <!-- 원본 유지: "팝업으로 열렸을 때 자동 종료" -->
+  <!-- 팝업으로 열렸을 때 자동 종료 (원본 유지) -->
   <script>
     (function() {
       try {
