@@ -294,6 +294,35 @@
       #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; }
       #side-menu{ width: 240px; }
     }
+
+    /* ✅ Popup Gate: PC에서 팝업이 아닐 때 전체 차단 오버레이 */
+    #popup-gate {
+      position: fixed; inset: 0; z-index: 5000;
+      display: none; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, rgba(2,6,12,.65), rgba(2,6,12,.85));
+      backdrop-filter: blur(4px);
+    }
+    #popup-gate .card{
+      width: min(420px, 92vw);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.6));
+      padding: 16px 16px 14px;
+      box-shadow: 0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      text-align: center;
+      color: #eaf6ff;
+    }
+    #popup-gate h3{ margin: 0 0 8px; font-size: 18px; }
+    #popup-gate p { margin: 6px 0 12px; font-size: 13px; color:#cfe6ff; }
+    #popup-gate .actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    #popup-gate button{
+      padding: 10px 12px; border-radius: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, #00c0ff, #0077ff); color:#001218; font-weight:800;
+      box-shadow: 0 6px 18px rgba(0,160,255,.22);
+    }
+    #popup-gate .secondary{
+      background: transparent; color:#eaf6ff; font-weight:700;
+    }
   </style>
 </head>
 <body>
@@ -444,6 +473,19 @@
       </button>
     </nav>
   </aside>
+
+  <!-- ✅ Popup Gate: 오버레이 -->
+  <div id="popup-gate" aria-hidden="true">
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+      <h3 id="gate-title">PC에서는 팝업으로만 실행됩니다</h3>
+      <p>브라우저의 팝업 차단을 해제하고 아래 버튼을 눌러 이 페이지를 <strong>팝업으로 다시 열어주세요</strong>. 팝업이 열리지 않으면 게임을 이용할 수 없습니다.</p>
+      <div class="actions">
+        <button id="gate-open">팝업으로 다시 열기</button>
+        <button id="gate-howto" class="secondary">팝업 허용 방법</button>
+      </div>
+      <p id="gate-msg" style="margin-top:10px; font-size:12px; color:#ffdddd; min-height:18px;"></p>
+    </div>
+  </div>
 
   <!-- Firebase + 게임 로직 -->
   <script type="module">
@@ -709,7 +751,7 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-               const msg = (
+        const msg = (
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
           code === 'auth/weak-password' ? '비밀번호가 너무 약합니다. 6자 이상으로 설정하세요.' :
@@ -1013,8 +1055,7 @@
             if (el){
               el.focus?.();
               el.click?.();
-              el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window }));
-            }
+              el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window })); }
           }
           else if (cmd.type === 'highlight' && cmd.selector){
             const el = document.querySelector(cmd.selector);
@@ -1024,9 +1065,7 @@
               setTimeout(()=>{ el.style.outline = prev; }, 1800);
             }
           }
-        } catch (e) {
-          // 조용히 무시 (원본 기능 보존)
-        }
+        } catch (e) { /* noop */ }
       });
     }
 
@@ -1062,6 +1101,90 @@
         }, { onlyOnce: true });
       });
     }
+  </script>
+
+  <!-- ✅ Popup Gate: 강력한 PC 판별 + 팝업 강제 -->
+  <script>
+    (function(){
+      const ALLOWED_POPUP_NAMES = ['gameWindow','siuGame','popup'];
+      const gate     = document.getElementById('popup-gate');
+      const gateBtn  = document.getElementById('gate-open');
+      const howtoBtn = document.getElementById('gate-howto');
+      const gateMsg  = document.getElementById('gate-msg');
+
+      function isMobileStrict(){
+        try {
+          if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+            return navigator.userAgentData.mobile === true;
+          }
+        } catch {}
+        const ua = navigator.userAgent || '';
+        // 명시적 모바일 토큰
+        if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
+        // iPadOS (MacIntel + 터치)
+        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
+        // 포인터 특성: 굵은 포인터(coarse) + hover 불가 → 모바일 성향
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+        if (coarse && !canHover) return true;
+        return false;
+      }
+      function isDesktopStrict(){ return !isMobileStrict(); }
+
+      function isLikelyPopup(){
+        try {
+          if (window.opener && !window.opener.closed) return true;
+        } catch {}
+        try {
+          if (ALLOWED_POPUP_NAMES.includes(window.name)) return true;
+        } catch {}
+        // 추가 시그널: 리퍼러가 동일 출처의 런처일 수 있으나 강제 조건으론 사용하지 않음.
+        return false;
+      }
+
+      function showGate(){
+        gate.style.display = 'flex';
+        gate.setAttribute('aria-hidden','false');
+      }
+
+      function openSelfAsPopup(){
+        gateMsg.textContent = '';
+        const w = 1024, h = 768;
+        const left = window.screenX ? Math.max(0, Math.round(window.screenX + (window.outerWidth - w)/2)) : 0;
+        const top  = window.screenY ? Math.max(0, Math.round(window.screenY + (window.outerHeight - h)/2)) : 0;
+        const opts = [
+          `width=${w}`, `height=${h}`, `left=${left}`, `top=${top}`,
+          'resizable=yes','scrollbars=yes','status=no','toolbar=no','menubar=no','noopener','noreferrer'
+        ].join(',');
+        let pop = null;
+        try {
+          pop = window.open(window.location.href, 'gameWindow', opts);
+        } catch(e){ pop = null; }
+        if (!pop || pop.closed) {
+          gateMsg.textContent = '팝업이 차단되었습니다. 브라우저 설정에서 이 사이트의 팝업을 허용해 주세요.';
+          return;
+        }
+        try { pop.focus(); } catch {}
+        // 현재 탭은 닫거나 다른 페이지로 이동 (닫기 실패 대비)
+        try { window.close(); } catch {}
+        setTimeout(()=>{ if (!window.closed) location.replace('/'); }, 400);
+      }
+
+      function openHelp(){
+        alert('팝업 허용 방법:\n\n크롬: 주소창 우측 팝업 차단 아이콘 → 이 사이트의 팝업 허용\n엣지/웨일/브레이브도 유사 위치에 있습니다.');
+      }
+
+      gateBtn.addEventListener('click', openSelfAsPopup);
+      howtoBtn.addEventListener('click', openHelp);
+
+      // 초기 판별: 모바일은 건들지 않음, PC이고 팝업이 아니면 차단
+      if (isDesktopStrict() && !isLikelyPopup()) {
+        showGate();
+      }
+
+      // 만약 사용자가 히스토리 내비게이션 등으로 돌아와도 계속 차단 유지
+      window.addEventListener('pageshow', function(){ if (isDesktopStrict() && !isLikelyPopup()) showGate(); });
+    })();
   </script>
 </body>
 </html>
