@@ -357,7 +357,12 @@
       const GAME_URL   = 'game.html';
       const W = 1024, H = 768;
 
+      // ✅ 토스트는 "사용자 제스처 순간의 open 실패"일 때만 노출
+      let lastAttemptFromUser = false;
+      let suppressNextHint = false;
+
       function showPopupHint(msg){
+        if (!lastAttemptFromUser || suppressNextHint) return;
         var el = document.getElementById('popup-hint');
         if(!el) return;
         el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.';
@@ -398,11 +403,28 @@
       startBtn.addEventListener('click', function (e) {
         if (!shouldUsePopup()) return; // 모바일: 기본 이동
         e.preventDefault(); // PC: 현재 탭 유지
+        lastAttemptFromUser = true;
+        suppressNextHint = false;
+
         const p = openGamePopup(GAME_URL);
         if (!p || p.closed) {
           showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.');
+        } else {
+          try { p.focus(); } catch {}
         }
+
+        // 제스처 종료: 동일 tick 이후로 플래그 해제
+        setTimeout(()=>{ lastAttemptFromUser = false; }, 0);
       });
+
+      // ✅ 팝업이 정상 종료/요청 종료될 때는 "차단" 토스트를 억제
+      window.addEventListener('message', (e)=>{
+        const t = e.data && e.data.type;
+        if (t === 'request-close-popup' || t === 'auto-close') {
+          suppressNextHint = true;
+          setTimeout(()=>{ suppressNextHint = false; }, 1000);
+        }
+      }, false);
     })();
   </script>
 
@@ -428,7 +450,7 @@
     });
   </script>
 
-  <!-- 팝업으로 열렸을 때 자동 종료 (원본 유지) -->
+  <!-- 팝업으로 열렸을 때 자동 종료 (원본 유지 + 오타 수정) -->
   <script>
     (function() {
       try {
@@ -442,7 +464,7 @@
               try { window.location.href = 'about:blank'; } catch (e) {}
               try { window.close(); } catch (e) {}
             }, 50);
-          }, 50 0);
+          }, CLOSE_DELAY_MS);
         }
       } catch (e) {
         console.warn('팝업 자동 종료 검사 중 오류:', e);
