@@ -615,7 +615,12 @@
       return `${y}-${m}-${day}`;
     }
     function nextResetKST(d=new Date()){ const t=kstDate(d); const n=new Date(t); n.setHours(24,0,0,0); return n; }
-    function fmtLeft(ms){ if(ms<=0) return '지금 가능'; const s=Math.floor(ms/1000); const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`; }
+    function fmtLeft(ms){
+      if(ms<=0) return '지금 가능';
+      const s=Math.floor(ms/1000);
+      const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60;
+      return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
+    }
 
     // === (하향) 코인 보상 스케일러 ===
     function calcBaseCoin(){
@@ -634,14 +639,13 @@
           35  * ship +
           (auto ? 25 : 0);
 
-      // ✔ 전체적으로 약 30% 낮춤, 하한·상한도 살짝 보수적으로
+      // ✔ 전체적으로 약 30% 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
     }
 
     // ====== 슬롯 템플릿 & 머터리얼라이즈 ======
-    // 하루 출석: 코인 멀티 살짝 하향(0.6→0.4, 1.0→0.8, 1.4→1.2)
     const TPL_DAILY = [
       { key:'coin_x0_4',  type:'coin', coinMul:0.4,  icon:'🪙', color:'#7AFBFF', w:0.35 },
       { key:'coin_x0_8',  type:'coin', coinMul:0.8,  icon:'💰', color:'#4DFFB5', w:0.25 },
@@ -653,7 +657,6 @@
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.005 }
     ];
 
-    // 프리미엄: 코인 멀티 하향(1.8,2.5,3.5 → 1.3,1.9,2.6), EC 보상 유지
     const TPL_PREMIUM = [
       { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.30 },
       { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
@@ -664,7 +667,6 @@
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
     ];
 
-    // 이벤트코인 슬롯: 코인 멀티 하향(4,7,12 → 3,5,8)
     const TPL_ECOIN = [
       { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.26 },
       { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
@@ -736,7 +738,7 @@
     function buildSlot(items){
       const rows = items.map(it=>`<div class="slot-item"><span class="slot-icon">${it.icon||'🎁'}</span>${it.label||it.key}</div>`).join('');
       reel.innerHTML = rows.repeat(8);
-      reel.style.transform = `translateY(0px)`;
+      reel.style.transform = 'translateY(0px)';
       reel.style.transition = 'none';
     }
     function spinSlot(items, picked){
@@ -800,7 +802,7 @@
 
     function buildProbPanel(items, mode){
       const total=items.reduce((a,b)=>a+b.w,0);
-      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${(it.w/total*100).toFixed(2)}%</td></tr>`).join('');
+      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
       const header = mode==='daily' ? '출석 슬롯 확률'
                   : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
                   : '이벤트코인 슬롯 확률(EC -10)';
@@ -848,13 +850,13 @@
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
     // ==== 스핀 버튼 ====
-    // 출석(무료) — 슬롯 사용
+    // 출석(무료)
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
 
-      setMode('daily'); // 슬롯 아이템 최신화
+      setMode('daily');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       await spinSlot(activeItems, picked);
@@ -872,7 +874,7 @@
       }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
     };
 
-    // 프리미엄(EC -1) — 슬롯 사용
+    // 프리미엄(EC -1)
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
@@ -891,7 +893,7 @@
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
-    // 이벤트코인(EC -10) — 슬롯 사용
+    // 이벤트코인(EC -10)
     spinEcoinBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
@@ -1041,7 +1043,7 @@
 
       document.querySelectorAll('#bottom-nav .tab').forEach(tab => tab.addEventListener('click', () => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+        document.getElementById(tab.dataset.tab + '-content').classList.add('active');
         document.querySelectorAll('#bottom-nav .tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
       }));
@@ -1069,6 +1071,7 @@
     }
 
     onAuthStateChanged(auth, async user => {
+      // 🔧 중요: 모듈 파싱 실패로 여기가 호출 안 되면 부팅 오버레이가 안 닫힘 → 위 문법 오류들을 모두 수정함.
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -1153,16 +1156,16 @@
     const tabSignup = document.getElementById('auth-tab-signup');
     const signupExtra = document.getElementById('signup-extra');
     const loginBtn  = document.getElementById('login-btn');
-    const signupBtn = document.getElementById('signup-btn');
+    const signupBtnEl = document.getElementById('signup-btn');
 
     function setAuthMode(mode) {
       currentAuthMode = (mode === 'signup') ? 'signup' : 'login';
       if (mode === 'signup') {
         tabLogin.classList.remove('active'); tabSignup.classList.add('active');
-        signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtn.style.display='block';
+        signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtnEl.style.display='block';
       } else {
         tabLogin.classList.add('active'); tabSignup.classList.remove('active');
-        signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtn.style.display='none';
+        signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
       }
       showAuthStatus(''); document.getElementById('verify-info').textContent = '';
       try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
@@ -1204,8 +1207,7 @@
       }
     });
 
-    const signupBtn = document.getElementById('signup-btn');
-    signupBtn?.addEventListener('click', async (e) => {
+    signupBtnEl?.addEventListener('click', async (e) => {
       e.preventDefault(); showAuthStatus('');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
