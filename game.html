@@ -62,29 +62,6 @@
     }
     notifyReadyToParent();
 
-    window.addEventListener('message', (e) => {
-      if (!allowedParentOrigins.includes(e.origin)) return;
-      const { type, redirect, state } = e.data || {};
-      if (type !== 'init-login') return;
-
-      if (!isAllowedRedirect(redirect)) {
-        e.source && e.source.postMessage(
-          { type: 'auth-error', message: '로그인 요청 url이 유효하지 않습니다.' },
-          e.origin
-        );
-        return;
-      }
-      parentOrigin    = e.origin;
-      pendingRedirect = redirect;
-      pendingState    = state;
-
-      sessionStorage.setItem('parent_origin', parentOrigin);
-      sessionStorage.setItem('pending_redirect', pendingRedirect);
-      sessionStorage.setItem('pending_state', pendingState);
-
-      e.source && e.source.postMessage({ type: 'init-ack' }, e.origin);
-    }, false);
-
     function notifyAuthSuccessAndExit() {
       const target = consumePendingRedirect();
       const hasParent = window.opener && !window.opener.closed && parentOrigin;
@@ -103,6 +80,11 @@
   </script>
 
   <style>
+    :root{
+      --glass-bg: rgba(10,12,20,0.40);
+      --glass-brd: rgba(255,255,255,0.08);
+      --accent: #00d4ff;
+    }
     body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
     #top-bar, #container { visibility: hidden; }
@@ -124,7 +106,6 @@
       text-align:center; color:#e6f7ff;
       box-shadow:0 16px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
     }
-    #boot-overlay h3{ margin:0 0 8px; font-size:18px; }
 
     /* 로그인 카드 */
     #auth-container {
@@ -156,6 +137,7 @@
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
+    /* 상단 바 */
     #top-bar {
       position: fixed; top: 5px; left: 5px; right: 5px;
       display: flex; flex-wrap: wrap; gap:6px 8px;
@@ -178,8 +160,9 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
+    /* 본문 */
     #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
-    h1 { font-size:1.4em; margin:6px 0 14px; color:#00d4ff; }
+    h1 { font-size:1.4em; margin:6px 0 14px; color:var(--accent); }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
 
@@ -190,39 +173,34 @@
     @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
     #ore { width:200px; cursor:pointer; }
 
-    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; }
+    /* 우클릭 메뉴 */
+    #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; display:flex; justify-content:space-between; gap:10px; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
+    #attendance-left { opacity:.9; color:#9fdcff; font-variant-numeric: tabular-nums; }
 
+    /* 바텀 내비 */
     #bottom-nav{
       position: fixed;
       left: 50%; bottom: max(12px, env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%);
       display: flex; gap: 8px; padding: 8px;
-      background: rgba(10,12,20,0.40);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
-      z-index: 1200;
-      max-width: 96vw;
+      background: var(--glass-bg); backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-brd);
+      border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      z-index: 1200; max-width: 96vw;
     }
     #bottom-nav .tab{
       display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; min-width: 70px;
-      padding: 10px 12px;
-      font-size: 13px; line-height: 1;
-      color: #d7e8ff; cursor: pointer; user-select: none;
-      border-radius: 12px;
+      gap: 6px; min-width: 70px; padding: 10px 12px; font-size: 13px;
+      color: #d7e8ff; cursor: pointer; user-select: none; border-radius: 12px;
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-      border: 1px solid rgba(255,255,255,0.06);
-      transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
-      outline: none;
+      border: 1px solid rgba(255,255,255,0.06); transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
     }
     #bottom-nav .tab:hover{ transform: translateY(-1px); }
     #bottom-nav .tab.active{
       color: #001218; background: linear-gradient(180deg,#00c0ff,#00a2ff);
-      border-color: rgba(0,0,0,0.0); box-shadow: 0 6px 18px rgba(0,160,255,0.28);
+      border-color: transparent; box-shadow: 0 6px 18px rgba(0,160,255,0.28);
     }
 
     #container{ padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
@@ -238,23 +216,13 @@
 
     /* 사이드 메뉴 */
     #side-menu-toggle{
-      position: fixed;
-      left: 8px;
-      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-      z-index: 1600;
-      width: 44px; height: 44px;
-      border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(10,12,20,0.40);
-      backdrop-filter: blur(10px);
-      color:#e6f5ff; font-size: 20px; cursor: pointer;
-      display:flex; align-items:center; justify-content:center;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
+      position: fixed; left: 8px; bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      z-index: 1600; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
+      background: var(--glass-bg); backdrop-filter: blur(10px); color:#e6f5ff; font-size: 20px; cursor: pointer;
+      display:flex; align-items:center; justify-content:center; box-shadow: 0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    #side-menu-toggle:active{ transform: translateY(1px); }
-
     #side-backdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.25); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 1550; }
     #side-backdrop.show{ opacity:1; pointer-events:auto; }
-
     #side-menu{
       position: fixed; top: 0; left: 0; bottom: 0; width: 260px; max-width: 84vw;
       transform: translateX(-100%); transition: transform .24s cubic-bezier(.2,.9,.3,1);
@@ -264,56 +232,68 @@
     #side-menu.open{ transform: translateX(0); }
     .side-header{ padding: 14px 14px 10px; font-weight: 800; color:#dbefff; letter-spacing:.3px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .side-items{ padding: 8px; display:flex; flex-direction:column; gap:8px; }
-    .side-item{
-      display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+    .side-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.10); color:#eaf6ff; font-weight:700; cursor:pointer; user-select:none;
-    }
+      border: 1px solid rgba(255,255,255,0.10); color:#eaf6ff; font-weight:700; cursor:pointer; user-select:none; }
     .side-item:hover{ filter: brightness(1.08); }
     .side-item .icon{ width:18px; text-align:center; }
+    .side-right { opacity:.9; color:#9fdcff; font-variant-numeric: tabular-nums; }
     @media (max-width: 420px){ #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; } #side-menu{ width: 240px; } }
 
-    /* ✅ 출석 룰렛 오버레이 */
+    /* ===== 출석 & 룰렛 오버레이 ===== */
     #daily-overlay{
       position:fixed; inset:0; z-index:3500; display:none; align-items:center; justify-content:center;
       background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.70)); backdrop-filter: blur(4px);
     }
     #daily-overlay.show{ display:flex; }
     #daily-card{
-      width:min(420px, 92vw); border-radius:14px; border:1px solid rgba(255,255,255,.12);
+      width:min(520px, 94vw); border-radius:14px; border:1px solid rgba(255,255,255,.12);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.55));
-      padding:16px 16px 14px; box-shadow: 0 16px 44px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.06);
-      text-align:center; color:#eaf6ff;
+      padding:14px; box-shadow: 0 16px 44px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.06);
+      color:#eaf6ff;
     }
-    #daily-title{ margin:0 0 8px; font-size:18px; }
+    #daily-title{ margin:0 0 8px; font-size:18px; display:flex; justify-content:space-between; align-items:center; gap:6px; }
     #daily-info{ margin:6px 0 10px; font-size:13px; color:#cfe6ff; min-height:36px; }
     #daily-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
-    #daily-actions button{
-      padding:10px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
-      background: transparent; color:#eaf6ff; font-weight:700;
-    }
-    #daily-actions .secondary{opacity:.85;}
 
-    /* 룰렛 UI */
-    #roulette-wrap{ display:flex; flex-direction:column; align-items:center; gap:12px; }
-    #wheel{ width:260px; height:260px; border-radius:50%;
+    .tabbar{ display:flex; gap:6px; margin:8px 0 10px; flex-wrap:wrap; }
+    .tbtn{ padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#eaf6ff; cursor:pointer; font-weight:800; }
+    .tbtn.active{ background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#001820; border-color:transparent; }
+
+    /* 원형 룰렛 */
+    #roulette-wrap{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+    #pointer{ width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
+      border-bottom:18px solid #ffed9a; filter: drop-shadow(0 0 6px rgba(255,230,140,.7)); margin-top:-4px; }
+    #wheel{ width:300px; height:300px; border-radius:50%;
       box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
-      border:2px solid rgba(255,255,255,.18);
-      transition: transform 3.2s cubic-bezier(.17,.89,.35,1.21);
+      border:2px solid rgba(255,255,255,.18); transition: transform 3.2s cubic-bezier(.17,.89,.35,1.21);
       position:relative; overflow:hidden; }
-    #pointer{
-      width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
-      border-bottom:18px solid #ffed9a; filter: drop-shadow(0 0 6px rgba(255,230,140,.7));
-      margin-top:-4px;
-    }
-    #daily-spin{ padding:10px 14px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
-      background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; font-weight:900; }
+    #wheel-labels{ position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; font-size:12px; opacity:.9; }
+
+    /* 슬롯형 룰렛 (세로 낙하식) */
+    #slot-wrap{ display:none; flex-direction:column; align-items:center; gap:10px; }
+    .slot-window{ width:320px; height:56px; overflow:hidden; border-radius:10px;
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.12); }
+    .reel{ display:flex; flex-direction:column; }
+    .slot-item{ height:56px; display:flex; align-items:center; justify-content:center; font-weight:800; gap:8px; }
+    .slot-icon{ font-size:20px; }
+
+    /* 컨트롤/확률/목록 */
+    #mode-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .spinbtn{ padding:10px 14px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14); font-weight:900; }
+    .spin-free{ background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; }
+    .spin-prem{ background:linear-gradient(180deg,#ffd26b,#ff8b3d); color:#3b1a00; }
+    .spin-ecoin{ background:linear-gradient(180deg,#ffe26b,#ff3dd1); color:#3b0030; }
     #info-row{ display:flex; align-items:center; gap:10px; }
     #prob-toggle{ width:28px; height:28px; border-radius:50%; font-weight:900; cursor:pointer;
       border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#eaf6ff; }
-    #prob-panel{ display:none; margin-top:4px; font-size:12px; color:#cfe6ff; text-align:left; max-width:320px; }
+    #prob-panel{ display:none; font-size:12px; color:#cfe6ff; text-align:left; max-width:420px; margin-top:4px; }
     #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
+    #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
+
+    #daily-actions button{ padding:10px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14);
+      background: transparent; color:#eaf6ff; font-weight:700; }
   </style>
 </head>
 <body>
@@ -392,7 +372,7 @@
       <span id="score">자원: 0</span>
       <img src="/images/coin-icon.png" alt="Coin" />
       <span id="coins">코인: 0</span>
-      <!-- ✅ 이벤트 코인 추가 -->
+      <!-- 이벤트 코인 -->
       <img src="/images/event-icon.png" alt="EventCoin" />
       <span id="ecoins">이벤트코인: 0</span>
     </div>
@@ -433,31 +413,25 @@
       <div id="planet-list"></div>
     </div>
 
-    <!-- 바텀 내비게이션 -->
+    <!-- 바텀 내비 -->
     <nav id="bottom-nav" aria-label="게임 탭 내비게이션">
-      <div class="tab active" data-tab="main"     role="button" tabindex="0">
-        <span class="t-icon" aria-hidden="true">🪨</span><span class="t-label">메인</span>
-      </div>
-      <div class="tab"        data-tab="workers"  role="button" tabindex="0">
-        <span class="t-icon" aria-hidden="true">👩‍🚀</span><span class="t-label">우주인</span>
-      </div>
-      <div class="tab"        data-tab="upgrades" role="button" tabindex="0">
-        <span class="t-icon" aria-hidden="true">⚙️</span><span class="t-label">업그레이드</span>
-      </div>
-      <div class="tab"        data-tab="planets"  role="button" tabindex="0">
-        <span class="t-icon" aria-hidden="true">🪐</span><span class="t-label">행성</span>
-      </div>
+      <div class="tab active" data-tab="main"     role="button" tabindex="0"><span class="t-icon">🪨</span><span class="t-label">메인</span></div>
+      <div class="tab"        data-tab="workers"  role="button" tabindex="0"><span class="t-icon">👩‍🚀</span><span class="t-label">우주인</span></div>
+      <div class="tab"        data-tab="upgrades" role="button" tabindex="0"><span class="t-icon">⚙️</span><span class="t-label">업그레이드</span></div>
+      <div class="tab"        data-tab="planets"  role="button" tabindex="0"><span class="t-icon">🪐</span><span class="t-label">행성</span></div>
     </nav>
   </div>
 
   <!-- 커스텀 메뉴 -->
   <div id="custom-menu">
-    <div class="menu-item" data-action="menu">🎮 게임 메뉴로 돌아가기</div>
-    <div class="menu-item" data-action="download">⬇️ 앱 다운로드</div>
-    <div class="menu-item" data-action="resume">▶️ 게임 계속하기</div>
-    <div class="menu-item" data-action="rank">🏆 랭킹 보기</div>
-    <!-- ✅ 출석 메뉴 추가 -->
-    <div class="menu-item" data-action="attendance">📅 출석 보상</div>
+    <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
+    <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
+    <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
+    <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
+    <div class="menu-item" data-action="attendance">
+      <span>📅 출석 보상</span>
+      <span id="attendance-left">-</span>
+    </div>
   </div>
 
   <!-- 사이드 메뉴 -->
@@ -470,32 +444,61 @@
       <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
       <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
       <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
-      <!-- ✅ 출석 메뉴 추가 -->
-      <button class="side-item" data-action="attendance"><span class="icon">📅</span><span>출석 보상</span></button>
+      <button class="side-item" data-action="attendance">
+        <span><span class="icon">📅</span>출석 보상</span>
+        <span class="side-right" id="attendance-left-side">-</span>
+      </button>
     </nav>
   </aside>
 
-  <!-- ✅ 출석 룰렛 오버레이 -->
+  <!-- 출석/룰렛 오버레이 -->
   <div id="daily-overlay" aria-hidden="true">
     <div id="daily-card" role="dialog" aria-modal="true" aria-labelledby="daily-title">
-      <h3 id="daily-title">📅 오늘의 출석 룰렛</h3>
+      <div id="daily-title">
+        <span>📅 오늘의 보상 & 룰렛</span>
+        <button id="prob-toggle" title="확률/보상 정보">i</button>
+      </div>
+
+      <div class="tabbar">
+        <button class="tbtn active" data-mode="daily">출석 룰렛(무료/일1회)</button>
+        <button class="tbtn" data-mode="premium">프리미엄(이벤트코인 1)</button>
+        <button class="tbtn" data-mode="ecoin">이벤트코인 룰렛(10)</button>
+        <button class="tbtn" data-mode="slot">슬롯형(이벤트코인 1)</button>
+      </div>
+
       <div id="daily-info">확인 중…</div>
+
+      <!-- 원형 룰렛 -->
       <div id="roulette-wrap">
         <div id="pointer"></div>
         <div id="wheel" aria-label="룰렛 휠"></div>
-        <div id="info-row">
-          <button id="daily-spin">룰렛 돌리기</button>
-          <button id="prob-toggle" title="확률 보기">i</button>
-        </div>
-        <div id="prob-panel"></div>
+        <div id="wheel-labels"></div>
       </div>
+
+      <!-- 슬롯형 룰렛 -->
+      <div id="slot-wrap">
+        <div class="slot-window">
+          <div id="slot-reel" class="reel"></div>
+        </div>
+      </div>
+
+      <div id="mode-row">
+        <button id="spin-daily"   class="spinbtn spin-free">무료 출석 돌리기</button>
+        <button id="spin-premium" class="spinbtn spin-prem">프리미엄 돌리기(-EC 1)</button>
+        <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 룰렛(-EC 10)</button>
+        <button id="spin-slot"    class="spinbtn spin-prem" style="display:none;">슬롯 돌리기(-EC 1)</button>
+      </div>
+
+      <div id="prob-panel"></div>
+      <div id="reward-list"></div>
+
       <div id="daily-actions">
-        <button id="daily-close" class="secondary">닫기</button>
+        <button id="daily-close">닫기</button>
       </div>
     </div>
   </div>
 
-  <!-- ✅ 룰렛 SFX (없으면 자동 비프 대체) -->
+  <!-- 룰렛 SFX -->
   <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
@@ -528,7 +531,6 @@
     let localLastWrite = 0;
     let isInitialSync = false;
 
-    // ✅ 이벤트코인 필드 추가
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20,
@@ -626,9 +628,8 @@
       } catch (e) { console.error('showGameUI error', e); }
     }
 
-    // ====== 출석(KST) 유틸 ======
+    // ====== 출석(KST) 유틸 & 남은시간 ======
     function kstDate(d=new Date()){
-      // 브라우저 타임존 상관없이 KST로 날짜 계산
       return new Date(new Date(d).toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
     }
     function kstDayKey(d=new Date()){
@@ -636,24 +637,96 @@
       const y=t.getFullYear(), m=String(t.getMonth()+1).padStart(2,'0'), day=String(t.getDate()).padStart(2,'0');
       return `${y}-${m}-${day}`;
     }
-    function prevDayKeyOf(key){
-      const [y,m,d]=key.split('-').map(Number);
-      const dt = kstDate(new Date(y, m-1, d)); dt.setDate(dt.getDate()-1);
-      return kstDayKey(dt);
+    function nextResetKST(d=new Date()){ const t=kstDate(d); const n=new Date(t); n.setHours(24,0,0,0); return n; }
+    function fmtLeft(ms){ if(ms<=0) return '지금 가능'; const s=Math.floor(ms/1000); const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`; }
+
+    // === 코인 보상 스케일러 ===
+    function calcBaseCoin(){
+      const rps = state.workerCount * getWorkerPower();     // 초당 자원
+      const cps = state.conversionCount;                    // 초당 코인(알바)
+      const rpc = state.clickPower;                         // 클릭당 자원
+      const planets = (state.ownedPlanets?.length || 0);
+      const ship = (state.shipLevel || 1);
+      const auto = state.autoConvertBought ? 1 : 0;
+
+      const score =
+          20 * Math.log2(1 + rps) +
+          50 * Math.log2(1 + cps) +
+          10 * Math.log2(1 + rpc) +
+          140 * planets +
+          35  * ship +
+          (auto ? 25 : 0);
+
+      const base = Math.round(60 + score);
+      return Math.min(Math.max(base, 60), 50000);
     }
 
-    // ====== 출석 룰렛 구성 ======
-    const WHEEL_ITEMS = [
-      { key:'coin_300',  label:'코인 300',     color:'#00E5FF',  w:0.10,  onWin:()=>{ state.coins += 300; } },
-      { key:'coin_150',  label:'코인 150',     color:'#4DFFB5',  w:0.25,  onWin:()=>{ state.coins += 150; } },
-      { key:'coin_100',  label:'코인 100',     color:'#7AFBFF',  w:0.35,  onWin:()=>{ state.coins += 100; } },
-      { key:'res_200',   label:'자원 200',     color:'#FFEA70',  w:0.10,  onWin:()=>{ state.resources += 200; } },
-      { key:'buff_click',label:'클릭 +50%/5m', color:'#FFA8FF',  w:0.075, onWin:()=>{ addTempBuff('click',0.5,5*60*1000); } },
-      { key:'buff_conv', label:'변환 +100%/3m',color:'#FFD0A8',  w:0.05,  onWin:()=>{ addTempBuff('convert',1.0,3*60*1000); } },
-      { key:'eco_1',     label:'이벤트코인 ×1',color:'#FFD05C',  w:0.020, onWin:()=>{ state.eventCoins = (state.eventCoins||0)+1; } },
-      { key:'eco_3',     label:'이벤트코인 ×3',color:'#FF9E3D',  w:0.005, onWin:()=>{ state.eventCoins = (state.eventCoins||0)+3; } },
+    // ====== 룰렛 템플릿 & 실시간 머터리얼라이즈 ======
+    const TPL_DAILY = [
+      { key:'coin_x0_6',  type:'coin', coinMul:0.6,  icon:'🪙', color:'#7AFBFF', w:0.35 },
+      { key:'coin_x1_0',  type:'coin', coinMul:1.0,  icon:'💰', color:'#4DFFB5', w:0.25 },
+      { key:'coin_x1_4',  type:'coin', coinMul:1.4,  icon:'💰', color:'#00E5FF', w:0.10 },
+      { key:'res_200',    type:'res',  val:200,      icon:'🪨', color:'#FFEA70', w:0.10 },
+      { key:'buff_click', type:'buff', btype:'click', bval:0.5,  bdur:5*60*1000, icon:'⚡', color:'#FFA8FF', w:0.075 },
+      { key:'buff_conv',  type:'buff', btype:'convert', bval:1.0, bdur:3*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.05 },
+      { key:'eco_1',      type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.020 },
+      { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.005 }
     ];
-    function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
+
+    const TPL_PREMIUM = [
+      { key:'coin_x1_8',  type:'coin', coinMul:1.8,  icon:'💰', color:'#00E5FF', w:0.30 },
+      { key:'coin_x2_5',  type:'coin', coinMul:2.5,  icon:'💰', color:'#4DFFB5', w:0.22 },
+      { key:'coin_x3_5',  type:'coin', coinMul:3.5,  icon:'💰', color:'#32C6FF', w:0.12 },
+      { key:'res_1000',   type:'res',  val:1000,     icon:'🪨', color:'#FFEA70', w:0.14 },
+      { key:'buff_click2',type:'buff', btype:'click', bval:1.0, bdur:10*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
+      { key:'buff_conv2', type:'buff', btype:'convert', bval:2.0, bdur:5*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.06 },
+      { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
+    ];
+
+    const TPL_ECOIN = [
+      { key:'coin_x4',    type:'coin', coinMul:4.0,  icon:'💰', color:'#00E5FF', w:0.26 },
+      { key:'coin_x7',    type:'coin', coinMul:7.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x12',   type:'coin', coinMul:12.0, icon:'💰', color:'#32C6FF', w:0.10 },
+      { key:'buff_duo',   type:'buffBoth', bval:1.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
+      { key:'eco_8',      type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.16 },
+      { key:'eco_12',     type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.08 },
+      { key:'eco_20',     type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.04 }
+    ];
+
+    function materializeItems(tpl){
+      const base = calcBaseCoin();
+      return tpl.map(it=>{
+        if (it.type==='coin'){
+          const amt = Math.max(1, Math.round(base * it.coinMul));
+          return { ...it, label:`코인 ${amt.toLocaleString()}`, onWin:()=>{ state.coins += amt; } };
+        }
+        if (it.type==='res'){
+          return { ...it, label:`자원 ${it.val.toLocaleString()}`, onWin:()=>{ state.resources += it.val; } };
+        }
+        if (it.type==='ecoin'){
+          return { ...it, label:`이벤트코인 ×${it.val}`, onWin:()=>{ state.eventCoins = (state.eventCoins||0) + it.val; } };
+        }
+        if (it.type==='buff'){
+          return { ...it, label:`${it.btype==='click'?'클릭':'변환'} +${Math.round(it.bval*100)}% / ${Math.round(it.bdur/60000)}m`,
+            onWin:()=>{ addTempBuff(it.btype, it.bval, it.bdur); } };
+        }
+        if (it.type==='buffBoth'){
+          return { ...it, label:`모든 생산 +${Math.round(it.bval*100)}% / ${Math.round(it.bdur/60000)}m`,
+            onWin:()=>{ addTempBuff('click', it.bval, it.bdur); addTempBuff('convert', it.bval, it.bdur); } };
+        }
+        return it;
+      });
+    }
+
+    function getItemsForMode(mode){
+      const tpl = mode==='daily'   ? TPL_DAILY
+               : mode==='premium' ? TPL_PREMIUM
+               : mode==='ecoin'   ? TPL_ECOIN
+               : TPL_PREMIUM; // 슬롯은 프리미엄 구성 사용
+      return materializeItems(tpl);
+    }
+
+    // ==== SFX & 버프 ====
     function playSfx(id){
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
@@ -666,119 +739,243 @@
         o.start(); o.stop(ctx.currentTime+.08);
       }catch{}
     }
-    function startTickLoop(){ stopTickLoop(); startTickLoop._id=setInterval(()=>playSfx('sfx-tick'), 120); }
+    function startTickLoop(intv=120){ stopTickLoop(); startTickLoop._id=setInterval(()=>playSfx('sfx-tick'), intv); }
     function stopTickLoop(){ if(startTickLoop._id){ clearInterval(startTickLoop._id); startTickLoop._id=null; } }
     function addTempBuff(type, value, dur){
-      const now=Date.now(); const cur=window.fx?._tempBuff||null;
-      if (!window.fx) window.fx={};
-      if (!cur || now>=cur.until){ window.fx._tempBuff={type,value,until:now+dur}; }
-      else{
-        if (cur.type===type){ window.fx._tempBuff.value=Math.max(cur.value,value); window.fx._tempBuff.until=Math.max(cur.until, now+dur); }
-        else { window.fx._tempBuff2={type,value,until:now+dur}; }
-      }
+      const now=Date.now(); if (!window.fx) window.fx={};
+      const slot = (!window.fx._tempBuff || now>=window.fx._tempBuff.until) ? '_tempBuff' : '_tempBuff2';
+      if(!window.fx[slot]) window.fx[slot]={type,value,until:now+dur};
+      else{ window.fx[slot].type=type; window.fx[slot].value=value; window.fx[slot].until=now+dur; }
     }
-    function buildProbPanel(){
-      const total=WHEEL_ITEMS.reduce((a,b)=>a+b.w,0);
-      const rows=WHEEL_ITEMS.map(it=>`<tr><td>${it.label}</td><td style="text-align:right">${(it.w/total*100).toFixed(2)}%</td></tr>`).join('');
-      document.getElementById('prob-panel').innerHTML = `
-        <div style="margin-bottom:6px; color:#9fdcff;">※ 이벤트코인 확률은 매우 낮습니다.</div>
-        <table>${rows}</table>`;
+
+    // ===== 원형 룰렛 렌더 =====
+    const wheelEl      = document.getElementById('wheel');
+    const wheelLabels  = document.getElementById('wheel-labels');
+    function drawWheel(items){
+      const total=items.reduce((a,b)=>a+b.w,0);
+      let acc=0; const stops=[], labels=[];
+      items.forEach((it,i)=>{
+        const from=acc/total*360; acc+=it.w; const to=acc/total*360;
+        stops.push(`${it.color} ${from}deg ${to}deg`);
+        const mid=(from+to)/2;
+        const rad=(mid-90)*Math.PI/180;
+        const x=140*Math.cos(rad)+150, y=140*Math.sin(rad)+150;
+        labels.push(`<div style="position:absolute; left:${x}px; top:${y}px; transform:translate(-50%,-50%) rotate(${mid}deg);">${it.icon||''} ${it.label||it.key}</div>`);
+      });
+      wheelEl.style.background = `conic-gradient(${stops.join(',')})`;
+      wheelLabels.innerHTML = labels.join('');
     }
-    function drawWheel(){
-      const total=WHEEL_ITEMS.reduce((a,b)=>a+b.w,0);
-      let acc=0; const stops=[];
-      for(const it of WHEEL_ITEMS){ const from=acc/total*360; acc+=it.w; const to=acc/total*360; stops.push(`${it.color} ${from}deg ${to}deg`); }
-      document.getElementById('wheel').style.background = `conic-gradient(${stops.join(',')})`;
-    }
-    function computeTargetRotation(picked){
-      const total=WHEEL_ITEMS.reduce((a,b)=>a+b.w,0); let acc=0, from=0, to=0;
-      for(const it of WHEEL_ITEMS){ const segFrom=acc/total*360; acc+=it.w; const segTo=acc/total*360; if(it.key===picked.key){ from=segFrom; to=segTo; break; } }
+    function computeTargetRotation(items, picked){
+      const total=items.reduce((a,b)=>a+b.w,0); let acc=0, from=0, to=0;
+      for(const it of items){ const segFrom=acc/total*360; acc+=it.w; const segTo=acc/total*360; if(it.key===picked.key){ from=segFrom; to=segTo; break; } }
       const center=(from+to)/2; const spins=6;
       const current=(computeTargetRotation._rot||0)%360;
       const delta=(spins*360 + (360-center) - current);
       computeTargetRotation._rot=current+delta; return computeTargetRotation._rot;
     }
 
+    // ===== 슬롯(세로 낙하식) =====
+    const slotWrap = document.getElementById('slot-wrap');
+    const reel = document.getElementById('slot-reel');
+    function buildSlot(items){
+      const rows = items.map(it=>`<div class="slot-item"><span class="slot-icon">${it.icon||'🎁'}</span>${it.label||it.key}</div>`).join('');
+      reel.innerHTML = rows.repeat(8);
+      reel.style.transform = `translateY(0px)`;
+      reel.style.transition = 'none';
+    }
+    function spinSlot(items, picked){
+      const rowH=56, totalRows = items.length*8;
+      const idx = items.findIndex(it=>it.key===picked.key);
+      const stopRow = (items.length*6) + idx;
+      const targetY = - stopRow * rowH;
+      startTickLoop(90);
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          reel.style.transition = 'transform 2.6s cubic-bezier(.17,.89,.35,1.12)';
+          reel.style.transform = `translateY(${targetY}px)`;
+        });
+      });
+      return new Promise(resolve=>{
+        reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); resolve(); };
+      });
+    }
+
     // ===== 출석 저장/표시 =====
     const dailyOverlay = document.getElementById('daily-overlay');
     const dailyInfo    = document.getElementById('daily-info');
     const dailyCloseBtn= document.getElementById('daily-close');
-    const dailySpinBtn = document.getElementById('daily-spin');
-    const wheelEl      = document.getElementById('wheel');
     const probPanel    = document.getElementById('prob-panel');
     const probToggle   = document.getElementById('prob-toggle');
+    const rewardList   = document.getElementById('reward-list');
+
+    const tabs = Array.from(document.querySelectorAll('.tbtn'));
+    const rouletteWrap = document.getElementById('roulette-wrap');
+
+    const spinDailyBtn   = document.getElementById('spin-daily');
+    const spinPremiumBtn = document.getElementById('spin-premium');
+    const spinEcoinBtn   = document.getElementById('spin-ecoin');
+    const spinSlotBtn    = document.getElementById('spin-slot');
 
     let dailyCache = null;
+    let currentMode = 'daily';
+    let activeItems = [];
 
     function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
     function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
     dailyCloseBtn.onclick = closeDailyOverlay;
+
     probToggle.onclick = ()=>{ probPanel.style.display = (probPanel.style.display==='block'?'none':'block'); };
-    buildProbPanel(); drawWheel();
+
+    function setMode(mode){
+      currentMode = mode;
+      tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
+      activeItems = getItemsForMode(mode);
+
+      const isSlot = (mode==='slot');
+      rouletteWrap.style.display = isSlot? 'none':'flex';
+      slotWrap.style.display     = isSlot? 'flex':'none';
+      document.getElementById('spin-slot').style.display    = isSlot? 'inline-block':'none';
+      document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
+      document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
+      document.getElementById('spin-ecoin').style.display   = (mode==='ecoin')? 'inline-block':'none';
+
+      drawWheel(activeItems);
+      buildProbPanel(activeItems, mode);
+      buildRewardList(activeItems);
+
+      if (isSlot) buildSlot(activeItems);
+    }
+    tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
+
+    function buildProbPanel(items, mode){
+      const total=items.reduce((a,b)=>a+b.w,0);
+      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${(it.w/total*100).toFixed(2)}%</td></tr>`).join('');
+      const header = mode==='daily' ? '출석 룰렛 확률'
+                  : mode==='premium' ? '프리미엄 룰렛 확률(EC -1)'
+                  : mode==='ecoin'   ? '이벤트코인 룰렛 확률(EC -10)'
+                  : '슬롯형(EC -1) 확률(세로 낙하식)';
+      probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
+    }
+    function buildRewardList(items){
+      rewardList.innerHTML = '🎁 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
+    }
 
     function refreshDailyInfo(canClaim){
-      if (!dailyCache){ dailyInfo.textContent='확인 중…'; return; }
       const today = kstDayKey();
-      const streak = dailyCache.streak || 0;
+      const streak = dailyCache?.streak || 0;
+      const resetLeft = Math.max(0, nextResetKST()-kstDate());
+      const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
       dailyInfo.innerHTML = canClaim
-        ? `오늘(${today}) 출석 룰렛 가능!<br>연속 ${streak}일`
-        : `오늘(${today})은 이미 룰렛을 돌렸어요.<br>현재 연속 ${streak}일`;
-      dailySpinBtn.style.display = canClaim ? 'inline-block' : 'none';
-      dailySpinBtn.disabled = !canClaim;
+        ? `오늘(${today}) 출석 룰렛 가능! <b>${leftText}</b><br>연속 ${streak}일`
+        : `오늘(${today})은 이미 룰렛 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
+      spinDailyBtn.disabled = !canClaim;
     }
 
-    function bindDailyClaim(){
-      dailySpinBtn.onclick = async () => {
-        if (!uid || !window.__PLAY_ALLOWED) return;
-        const today = kstDayKey(); const yesterday = prevDayKeyOf(today);
-        if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
+    async function applyPrizeTransaction(delta){
+      await runTransaction(dataRef, current => {
+        const cur = current || { ...defaultData };
+        const next = { ...cur };
+        next.coins      = (next.coins||0) + (delta.coins||0);
+        next.resources  = (next.resources||0) + (delta.resources||0);
+        next.eventCoins = (next.eventCoins||0) + (delta.eventCoins||0);
+        next._lastUpdated = Date.now();
+        return next;
+      });
+    }
 
-        let streak = Number(dailyCache?.streak || 0);
-        if (dailyCache?.lastKey === yesterday) streak += 1; else streak = 1;
-
-        playSfx('sfx-start'); startTickLoop();
-        const picked = pickWeighted(WHEEL_ITEMS);
-        const target = computeTargetRotation(picked);
-        wheelEl.style.transform = `rotate(${target}deg)`;
-        dailySpinBtn.disabled = true;
-
-        setTimeout(async ()=>{
-          stopTickLoop(); playSfx('sfx-win');
-          try {
-            await runTransaction(dataRef, current => {
-              const cur = current || { ...defaultData };
-              const before = { coins: state.coins||0, resources: state.resources||0, eventCoins: state.eventCoins||0 };
-              picked.onWin(); // 로컬 반영
-              const delta = {
-                coins: (state.coins||0) - before.coins,
-                resources: (state.resources||0) - before.resources,
-                eventCoins: (state.eventCoins||0) - before.eventCoins
-              };
-              const next = { ...cur };
-              next.coins      = (next.coins||0) + delta.coins;
-              next.resources  = (next.resources||0) + delta.resources;
-              next.eventCoins = (next.eventCoins||0) + delta.eventCoins;
-              next._lastUpdated = Date.now();
-              return next;
-            });
-
-            const dailyRef = ref(db, `users/${uid}/daily`);
-            await update(dailyRef, { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
-
-            dailyCache = { lastKey: today, streak };
-            updateUI();
-            dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
-          } catch (e){
-            console.error(e);
-            dailyInfo.textContent = '보상 지급 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-          } finally {
-            dailySpinBtn.disabled = true;
-          }
-        }, 3300);
+    function makeDeltaSnapshot(){
+      return { coins: state.coins||0, resources: state.resources||0, eventCoins: state.eventCoins||0 };
+    }
+    function deltaFrom(before){
+      return {
+        coins: (state.coins||0) - before.coins,
+        resources: (state.resources||0) - before.resources,
+        eventCoins: (state.eventCoins||0) - before.eventCoins
       };
     }
-    bindDailyClaim();
 
+    function spinWheel(items, afterAnim){
+      playSfx('sfx-start'); startTickLoop();
+      const picked = pickWeighted(items);
+      const target = computeTargetRotation(items, picked);
+      wheelEl.style.transform = `rotate(${target}deg)`;
+      setTimeout(()=>{ stopTickLoop(); playSfx('sfx-win'); afterAnim(picked); }, 3300);
+    }
+
+    function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
+    function canSpendEC(n){ return (state.eventCoins||0) >= n; }
+
+    // ==== 스핀 버튼 ====
+    spinDailyBtn.onclick = async ()=>{
+      if (!uid || !window.__PLAY_ALLOWED) return;
+      const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
+      if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
+
+      setMode('daily'); // 최신 진행도 반영
+      spinWheel(activeItems, async (picked)=>{
+        const before = makeDeltaSnapshot();
+        picked.onWin();
+        const delta = deltaFrom(before);
+        try{
+          await applyPrizeTransaction(delta);
+          let streak = Number(dailyCache?.streak||0);
+          if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
+          await update(ref(db, `users/${uid}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
+          dailyCache = { lastKey: today, streak };
+          updateUI();
+          dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+        }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
+      });
+    };
+
+    spinPremiumBtn.onclick = async ()=>{
+      if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
+
+      setMode('premium');
+      const before = makeDeltaSnapshot();
+      state.eventCoins -= 1;
+      spinWheel(activeItems, async (picked)=>{
+        picked.onWin();
+        const delta = deltaFrom(before);
+        try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`; }
+        catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
+      });
+    };
+
+    spinEcoinBtn.onclick = async ()=>{
+      if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
+
+      setMode('ecoin');
+      const before = makeDeltaSnapshot();
+      state.eventCoins -= 10;
+      spinWheel(activeItems, async (picked)=>{
+        picked.onWin();
+        const delta = deltaFrom(before);
+        try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎉 EC 룰렛 당첨: <b>${picked.label}</b>`; }
+        catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
+      });
+    };
+
+    spinSlotBtn.onclick = async ()=>{
+      if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
+
+      setMode('slot'); // activeItems = 프리미엄 구성 동적화
+      const picked = pickWeighted(activeItems);
+      const before = makeDeltaSnapshot();
+      state.eventCoins -= 1;
+      playSfx('sfx-start');
+      await spinSlot(activeItems, picked);
+      playSfx('sfx-win');
+      picked.onWin();
+      const delta = deltaFrom(before);
+      try{ await applyPrizeTransaction(delta); updateUI(); dailyInfo.innerHTML=`🎰 슬롯 당첨: <b>${picked.label}</b>`; }
+      catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
+    };
+
+    // ===== 데이터 & 출석 캐시 =====
     async function fetchDaily(){
       if (!uid) return;
       const dailyRef = ref(db, `users/${uid}/daily`);
@@ -792,9 +989,26 @@
       const today = kstDayKey();
       const canClaim = dailyCache?.lastKey !== today;
       refreshDailyInfo(canClaim);
+      setMode('daily');
       if (canClaim) openDailyOverlay();
     }
     function openDailyManual(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
+
+    // ===== 메뉴에 "남은 시간" 표시 =====
+    const attMenuRight = document.getElementById('attendance-left');
+    const attSideRight = document.getElementById('attendance-left-side');
+    function updateAttendanceLabels(){
+      if (!uid){ attMenuRight.textContent='-'; attSideRight.textContent='-'; return; }
+      const today = kstDayKey();
+      const can = (dailyCache?.lastKey !== today);
+      if (can){ attMenuRight.textContent='지금 가능'; attSideRight.textContent='지금 가능'; }
+      else{
+        const left = Math.max(0, nextResetKST()-kstDate());
+        const txt = fmtLeft(left);
+        attMenuRight.textContent=txt; attSideRight.textContent=txt;
+      }
+    }
+    setInterval(updateAttendanceLabels, 1000);
 
     // ===== 게임 UI =====
     function updateUI() {
@@ -870,11 +1084,10 @@
       if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
-      showAuthStatus('');
-      return true;
+      showAuthStatus(''); return true;
     }
 
-    // ===== 초기화(지연 실행) =====
+    // ===== 초기화 =====
     function wireGame() {
       document.getElementById('ore').addEventListener('click', e => {
         if (!ensureReady()) return;
@@ -898,7 +1111,7 @@
         tab.classList.add('active');
       }));
 
-      // 1초 루프 (임시버프 반영)
+      // 1초 루프
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
         let workerGain = state.workerCount * getWorkerPower();
@@ -954,7 +1167,8 @@
               isInitialSync = false;
               showGameUI();
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-              await checkDailyAndMaybeShow(); // ✅ 로그인 직후 출석 체크
+              await checkDailyAndMaybeShow();
+              updateAttendanceLabels();
             } else {
               state = { ...defaultData };
               if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
@@ -969,7 +1183,8 @@
             isInitialSync = false;
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-            await checkDailyAndMaybeShow(); // ✅ 로그인 직후 출석 체크
+            await checkDailyAndMaybeShow();
+            updateAttendanceLabels();
             return;
           }
 
@@ -1019,8 +1234,7 @@
     }
     tabLogin.addEventListener('click',  () => setAuthMode('login'));
     tabSignup.addEventListener('click', () => setAuthMode('signup'));
-    setAuthMode('login');
-
+    
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
       location.href = '/setting.html';
@@ -1044,6 +1258,7 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
+        aconst = 0; // no-op guard
         const msg = (
           code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
           code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
@@ -1102,7 +1317,6 @@
       }
     });
 
-    // (삭제된 로그아웃 버튼 안전 가드)
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
@@ -1110,6 +1324,8 @@
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
     });
+
+    window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
   </script>
 
   <!-- 우클릭 커스텀 메뉴 -->
@@ -1122,7 +1338,8 @@
       customMenu.style.display = 'block';
     });
     customMenu.addEventListener('click', (e) => {
-      const action = e.target.getAttribute('data-action');
+      const btn = e.target.closest('.menu-item');
+      const action = btn && btn.getAttribute('data-action');
       if (!action) return;
       if (action === 'menu') {
         try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
@@ -1131,14 +1348,11 @@
         setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
       }
       if (action === 'download') { location.href='/app-download.html'; }
-      if (action === 'resume') { customMenu.style.display='none'; }
-      if (action === 'rank')   { location.href='/ranking.html'; }
-      if (action === 'attendance') { customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
+      if (action === 'resume')   { customMenu.style.display='none'; }
+      if (action === 'rank')     { location.href='/ranking.html'; }
+      if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
-
-    // 전역 접근용
-    window.openDailyManual = function(){ const f = window.checkDailyAndMaybeShow || (window.__pendingDaily=1); try{ window.dispatchEvent(new Event('open-daily')); }catch{} }
   </script>
 
   <!-- 사이드 메뉴 -->
@@ -1201,7 +1415,7 @@
     });
   </script>
 
-  <!-- 원격 제어 (그대로) -->
+  <!-- 원격 제어 -->
   <script>
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
@@ -1304,14 +1518,12 @@
     }
   </script>
 
-  <!-- ✅ Popup Enforcement -->
+  <!-- Popup Enforcement (간소) -->
   <script>
     (function(){
-      const gate     = document.getElementById('popup-gate');
+      const gate = document.getElementById('popup-gate');
       if (!gate) {
-        // gate가 없는 버전에서도 안전 실행
         window.__PLAY_ALLOWED = (function(){
-          // 모바일은 허용, PC는 팝업/허용 네임만 허용
           function isMobileStrict(){
             try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
             const ua = navigator.userAgent || '';
