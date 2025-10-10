@@ -483,11 +483,7 @@
   <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-      signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-      getRedirectResult
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -502,7 +498,6 @@
     };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    try { auth.useDeviceLanguage(); } catch {}
     const db = getDatabase(app);
 
     // ===== 게임 상태 =====
@@ -596,8 +591,8 @@
       }
     }
 
+    /* ========= 수정 1: 팝업 강제 여부와 무관하게 로그인 성공 시 UI를 항상 표시 ========= */
     function showGameUI() {
-      if (!window.__PLAY_ALLOWED) return;
       try {
         authContainer.classList.add('hidden');
         try { history.replaceState(null, '', '/게임' + (location.hash || '')); } catch {}
@@ -605,10 +600,14 @@
           authContainer.style.display = 'none';
           const lb = document.getElementById('logout-btn');
           if (lb) lb.style.display = 'block';
-          ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'visible');
+          ['top-bar','container'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.visibility = 'visible';
+          });
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
+    /* ========================================================================= */
 
     // ====== 출석(KST) 유틸 & 남은시간 ======
     function kstDate(d=new Date()){
@@ -1075,19 +1074,20 @@
       }, 1000);
     }
 
+    /* ========= 수정 2: 이메일/비번 미인증이어도 로그아웃하지 않고 계속 진행 ========= */
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        if (!user.emailVerified) {
+        // 이메일/비번(providerId === 'password')이며 미인증이면 안내만 하고 계속
+        const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
+        if (isEmailPassword && !user.emailVerified) {
           try { showLoginOverlay(false); } catch {}
           try { await sendEmailVerification(user); } catch {}
-          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
-          try { await signOut(auth); } catch {}
-          authContainer.style.display = 'block';
-          return;
+          showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
+          // 여기서 signOut 또는 return 하지 않음
         }
 
         uid = user.uid;
@@ -1155,6 +1155,7 @@
         setAuthMode(currentAuthMode);
       }
     });
+    /* ========================================================================= */
 
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
@@ -1191,11 +1192,10 @@
         showLoginOverlay(true, '로그인 중… 잠시만요');
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const user = cred.user;
-        if (user && !user.emailVerified) {
+        if (user && user.providerData.some(p=>p.providerId==='password') && !user.emailVerified) {
           try { await sendEmailVerification(user); } catch {}
           showLoginOverlay(false);
-          showAuthStatus('이메일 인증이 필요합니다. 인증 메일을 발송했습니다. 메일 확인 후 로그인하세요.');
-          await signOut(auth);
+          showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
         }
       } catch (err) {
         showLoginOverlay(false);
@@ -1225,80 +1225,38 @@
         try { await sendEmailVerification(user); } catch {}
         showLoginOverlay(false);
         showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
-        await signOut(auth);
+        // 회원가입 직후에는 로그인 상태. 원하면 바로 이용 가능.
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-        theMsg = (
+        const msg = (
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
           code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
           err.message || '회원가입 중 문제가 발생했습니다.'
         );
-        showAuthStatus(theMsg);
+        showAuthStatus(msg);
       }
     });
 
-    // ========================
-    // Google 로그인 최소 패치
-    // ========================
-    function mapAuthErr(err){
-      const code = err && err.code || '';
-      return (
-        code === 'auth/popup-blocked' ? '브라우저가 팝업을 차단했습니다. 팝업 허용 후 다시 시도해주세요.' :
-        code === 'auth/cancelled-popup-request' ? '다른 로그인 요청이 진행 중입니다. 잠시 후 다시 시도하세요.' :
-        code === 'auth/popup-closed-by-user' ? '로그인 창이 닫혔습니다.' :
-        code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
-        code === 'auth/operation-not-supported-in-this-environment' ? '현재 환경에서 팝업 로그인이 지원되지 않습니다. 자동으로 리다이렉트 로그인으로 전환합니다.' :
-        err?.message || '로그인 중 오류가 발생했습니다.'
-      );
-    }
-
-    async function handleGoogleLogin(){
-      const btn = document.getElementById('google-btn');
-      if (btn) btn.setAttribute('disabled','disabled');
+    document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
-      try { provider.setCustomParameters({ prompt:'select_account' }); } catch {}
-
-      showLoginOverlay(true, '구글 인증 시작', { subText:'구글 계정으로 안전하게 연결합니다.' });
-
-      // 팝업 차단 우회를 위한 선오픈(가능한 브라우저에서)
-      let preWin = null;
-      try { preWin = window.open('', 'google-auth', 'width=520,height=640'); } catch {}
-
       try {
+        showLoginOverlay(true, '구글 인증 시작', { provider:'google', subText:'구글 계정으로 안전하게 연결합니다.' });
         await signInWithPopup(auth, provider);
-        if (preWin) try { preWin.close(); } catch {}
+        const overlay = document.getElementById('login-overlay');
+        overlay && overlay.classList.remove('show');
       } catch (err) {
-        const msg = mapAuthErr(err);
-        if (err && (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment')) {
-          if (preWin) try { preWin.close(); } catch {}
-          try {
-            showLoginOverlay(true, '구글로 이동합니다', { subText:'리다이렉트 로그인 진행 중…' });
-            await signInWithRedirect(auth, provider);
-            return;
-          } catch (err2) {
-            showLoginOverlay(false);
-            showAuthStatus(mapAuthErr(err2));
-          }
-        } else {
-          if (preWin) try { preWin.close(); } catch {}
+        try {
+          showLoginOverlay(true, '리다이렉트 로그인 시도', { provider:'google' });
+          await signInWithRedirect(auth, provider);
+        } catch (err2) {
           showLoginOverlay(false);
-          showAuthStatus(msg);
+          showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
         }
-      } finally {
-        if (btn) btn.removeAttribute('disabled');
       }
-    }
-
-    // 버튼 바인딩
-    document.getElementById('google-btn')?.addEventListener('click', handleGoogleLogin);
-
-    // 리다이렉트 복귀 처리
-    getRedirectResult(auth)
-      .then(() => { /* 성공은 onAuthStateChanged에서 처리 */ })
-      .catch(err => { showLoginOverlay(false); showAuthStatus(mapAuthErr(err)); });
+    });
 
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
