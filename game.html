@@ -160,6 +160,21 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
+    /* 미니 타이머 칩 */
+    #mini-timers{
+      display:inline-flex; align-items:center; gap:6px; margin-left:8px; flex-wrap:wrap;
+    }
+    .mini-chip{
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 6px; border:1px solid rgba(255,255,255,.16);
+      border-radius:8px; background:rgba(255,255,255,.06);
+      font-size:11px; color:#e6f5ff; min-width:58px; justify-content:center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .mini-chip .tt{ font-variant-numeric: tabular-nums; opacity:.9; }
+    .mini-chip .i { opacity:.95; }
+    .mini-chip .lb{ opacity:.85; }
+
     /* 본문 */
     #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
     h1 { font-size:1.4em; margin:6px 0 14px; color:var(--accent); }
@@ -367,6 +382,8 @@
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
+      <!-- 미니 타이머 칩 영역 -->
+      <div id="mini-timers" aria-live="polite" title="버프/타이머"></div>
     </div>
   </div>
 
@@ -511,7 +528,8 @@
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20,
-      workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[]
+      workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
+      _coinResid: 0   // 소수점 코인 누적 버킷
     };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
@@ -524,15 +542,27 @@
     function getWorkerPower()  { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost(){ return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
 
-    // ===== 변환: 코인 버프 적용 가능 =====
-    function convertResources(maxCount = null, coinMul = 1) {
+    // === 버프 보조 ===
+    function activeBuffMul(kind){
+      const now = Date.now();
+      const b = window.fx && window.fx[kind];
+      return (b && now < b.until) ? (1 + b.value) : 1;
+    }
+
+    function addCoinsWithResid(amount){
+      const total = (state._coinResid || 0) + amount;
+      const whole = Math.floor(total);
+      state._coinResid = total - whole;
+      if (whole > 0) state.coins += whole;
+    }
+
+    function convertResources(maxCount = null) {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
       if (count > 0) {
+        const mul = activeBuffMul('coin'); // 코인 버프 적용
         state.resources -= count * 10;
-        // 버프 적용: 코인 생산량 배수
-        const gain = Math.max(0, Math.floor(count * coinMul));
-        state.coins += gain;
+        addCoinsWithResid(count * mul);
       }
     }
 
@@ -565,19 +595,6 @@
       bootOverlay.style.display = v ? 'flex' : 'none';
       bootOverlay.setAttribute('aria-hidden', v ? 'false' : 'true');
     }
-
-    // === 부팅 오버레이 안전 해제 가드(최대 4초) ===
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        const hidden = bootOverlay?.getAttribute('aria-hidden') === 'true';
-        if (!hidden) {
-          console.warn('부팅 가드 발동: 오버레이 강제 해제');
-          setBootVisible(false);
-          authContainer.style.display = 'block';
-          authContainer.classList.remove('hidden');
-        }
-      }, 4000);
-    });
 
     function showAuthStatus(msg, isError = true) {
       authErrorEl.textContent = msg || '';
@@ -641,7 +658,7 @@
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
     }
 
-    // === 밸런싱 스코어 → BaseCoin 산출 ===
+    // === (하향) 코인 보상 스케일러 ===
     function calcBaseCoin(){
       const rps = state.workerCount * getWorkerPower();     // 초당 자원
       const cps = state.conversionCount;                    // 초당 코인(알바)
@@ -658,118 +675,104 @@
           35  * ship +
           (auto ? 25 : 0);
 
+      // 전체적으로 약간 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
     }
 
-    // === 출석 룰렛 코인 보상: 초반 후하게, 후반 살짝 짜게 ===
-    function dailyCoinRateByWealth(currentCoins){
-      const tiers = [
-        { max: 1_000,      rate: 0.012  }, // <=1천 : 1.2%
-        { max: 10_000,     rate: 0.008  }, // <=1만 : 0.8%
-        { max: 100_000,    rate: 0.0035 }, // <=10만: 0.35%
-        { max: 1_000_000,  rate: 0.0015 }, // <=100만: 0.15%
-        { max: Infinity,   rate: 0.0008 }  // 그 이상: 0.08%
-      ];
-      for (const t of tiers) if (currentCoins <= t.max) return t.rate;
-      return 0.0035;
+    // === 출석 코인(초반 후하게 → 후반 살짝 짜게) ===
+    function attendanceWealthRate(coins){
+      if (coins <= 1_000)        return 0.012;   // 1.2%
+      if (coins <= 10_000)       return 0.008;   // 0.8%
+      if (coins <= 100_000)      return 0.0035;  // 0.35%
+      if (coins <= 1_000_000)    return 0.0015;  // 0.15%
+      return 0.0008;                           // 0.08%
+    }
+    function dailyCoinReward() {
+      const rate = attendanceWealthRate(state.coins || 0);
+      return Math.max(1, Math.round(Math.max(0, state.coins || 0) * rate));
     }
 
-    // ====== 슬롯 템플릿 ======
-    // 변환/클릭 버프 제거 → "코인 x2 3분", "자원 x2 3분"만 사용
+    // ====== 슬롯 템플릿 & 머터리얼라이즈 ======
+    // 출석: 코인(동적) / 자원200 / 자원x2(3분) / 코인x2(3분) / EC×1
     const TPL_DAILY = [
-      { key:'coin_dyn',   type:'coin',  dynamicDaily:true, icon:'🪙', color:'#7AFBFF', w:0.35 },
-      { key:'res_200',    type:'res',   val:200,           icon:'🪨', color:'#FFEA70', w:0.18 },
-      { key:'buff_res2',  type:'buff',  kind:'resources', mul:2, dur:3*60*1000, icon:'⚡', color:'#8AE1FF', w:0.24, labelHint:'자원 x2 / 3m' },
-      { key:'buff_coin2', type:'buff',  kind:'coins',     mul:2, dur:3*60*1000, icon:'💹', color:'#FFD0A8', w:0.20, labelHint:'코인 x2 / 3m' },
-      { key:'eco_1',      type:'ecoin', val:1,            icon:'🎟️', color:'#FFD05C', w:0.03 }
+      { key:'coin_dyn',   type:'coin_dyn', icon:'🪙', color:'#7AFBFF', w:0.35 },
+      { key:'res_200',    type:'res',      val:200,   icon:'🪨', color:'#FFEA70', w:0.18 },
+      { key:'buff_res2',  type:'buff',     btype:'res',  bval:1.0, bdur:3*60*1000, icon:'⚡',  color:'#8AE1FF', w:0.24 },
+      { key:'buff_coin2', type:'buff',     btype:'coin', bval:1.0, bdur:3*60*1000, icon:'💹',  color:'#FFD0A8', w:0.20 },
+      { key:'eco_1',      type:'ecoin',    val:1,    icon:'🎟️', color:'#FFD05C', w:0.03 }
     ];
 
+    // 프리미엄(EC-1): 코인 ×1.3/1.9/2.6 / 자원1000 / 자원x2(3분) / 코인x2(3분)
     const TPL_PREMIUM = [
-      { key:'coin_x1_3',  type:'coin', coinMul:1.3, icon:'💰', color:'#00E5FF', w:0.30 },
-      { key:'coin_x1_9',  type:'coin', coinMul:1.9, icon:'💰', color:'#4DFFB5', w:0.22 },
-      { key:'coin_x2_6',  type:'coin', coinMul:2.6, icon:'💰', color:'#32C6FF', w:0.12 },
-      { key:'res_1000',   type:'res',  val:1000,    icon:'🪨', color:'#FFEA70', w:0.14 },
-      { key:'buff_res2',  type:'buff', kind:'resources', mul:2, dur:3*60*1000, icon:'⚡', color:'#8AE1FF', w:0.12, labelHint:'자원 x2 / 3m' },
-      { key:'buff_coin2', type:'buff', kind:'coins',     mul:2, dur:3*60*1000, icon:'💹', color:'#FFD0A8', w:0.10, labelHint:'코인 x2 / 3m' }
+      { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.30 },
+      { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
+      { key:'coin_x2_6',  type:'coin', coinMul:2.6,  icon:'💰', color:'#32C6FF', w:0.12 },
+      { key:'res_1000',   type:'res',  val:1000,     icon:'🪨', color:'#FFEA70', w:0.14 },
+      { key:'buff_res2',  type:'buff', btype:'res',  bval:1.0, bdur:3*60*1000, icon:'⚡',  color:'#8AE1FF', w:0.12 },
+      { key:'buff_coin2', type:'buff', btype:'coin', bval:1.0, bdur:3*60*1000, icon:'💹',  color:'#FFD0A8', w:0.10 }
     ];
 
+    // 이벤트코인(EC-10): 코인 ×3/×5/×8 / 자원x2(3분) / 코인x2(3분) / EC×8 / EC×12
     const TPL_ECOIN = [
-      { key:'coin_x3',    type:'coin', coinMul:3.0, icon:'💰', color:'#00E5FF', w:0.26 },
-      { key:'coin_x5',    type:'coin', coinMul:5.0, icon:'💰', color:'#4DFFB5', w:0.18 },
-      { key:'coin_x8',    type:'coin', coinMul:8.0, icon:'💰', color:'#32C6FF', w:0.10 },
-      { key:'buff_res2',  type:'buff', kind:'resources', mul:2, dur:3*60*1000, icon:'⚡', color:'#8AE1FF', w:0.22, labelHint:'자원 x2 / 3m' },
-      { key:'buff_coin2', type:'buff', kind:'coins',     mul:2, dur:3*60*1000, icon:'💹', color:'#FFD0A8', w:0.16, labelHint:'코인 x2 / 3m' },
-      { key:'eco_8',      type:'ecoin', val:8, icon:'🎟️', color:'#FFBE5C', w:0.06 },
-      { key:'eco_12',     type:'ecoin', val:12, icon:'🎟️', color:'#FF9E3D', w:0.02 }
+      { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.26 },
+      { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x8',    type:'coin', coinMul:8.0,  icon:'💰', color:'#32C6FF', w:0.10 },
+      { key:'buff_res2',  type:'buff', btype:'res',  bval:1.0, bdur:3*60*1000, icon:'⚡',  color:'#8AE1FF', w:0.22 },
+      { key:'buff_coin2', type:'buff', btype:'coin', bval:1.0, bdur:3*60*1000, icon:'💹',  color:'#FFD0A8', w:0.16 },
+      { key:'eco_8',      type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.06 },
+      { key:'eco_12',     type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.02 }
     ];
 
-    // ====== 버프(간단 배수형) ======
-    // coins/resources 각각 xN 배수 · 만료 시 자동 1로 복귀
-    function ensureFx(){
-      if (!window.fx) window.fx = {
-        coinsMultiplier: 1, coinsUntil: 0,
-        resMultiplier: 1,   resUntil: 0
-      };
+    // ==== 미니 타이머 칩 ====
+    const __miniTimers = {};
+    function __fmtMMSS(ms){
+      const s = Math.max(0, Math.ceil(ms/1000));
+      const m = Math.floor(s/60), ss = s % 60;
+      return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
     }
-    function getActiveCoinMul(){
-      ensureFx();
-      return (Date.now() < window.fx.coinsUntil) ? window.fx.coinsMultiplier : 1;
-    }
-    function getActiveResMul(){
-      ensureFx();
-      return (Date.now() < window.fx.resUntil) ? window.fx.resMultiplier : 1;
-    }
-    function addTimedMultiplier(kind, mul, dur){
-      ensureFx();
+    function addOrUpdateTimerChip(key, label, ms, icon='⏳'){
+      const bar = document.getElementById('mini-timers');
+      if (!bar) return;
       const now = Date.now();
-      if (kind === 'coins') {
-        // 같은 종류는 "더 큰 배수" 유지, 남은 시간은 더 길게 연장
-        window.fx.coinsMultiplier = Math.max(window.fx.coinsMultiplier, mul);
-        const tgt = now + dur;
-        window.fx.coinsUntil = Math.max(window.fx.coinsUntil, tgt);
-      } else if (kind === 'resources') {
-        window.fx.resMultiplier = Math.max(window.fx.resMultiplier, mul);
-        const tgt = now + dur;
-        window.fx.resUntil = Math.max(window.fx.resUntil, tgt);
+      const end = now + ms;
+
+      let chip = __miniTimers[key];
+      if (!chip){
+        chip = document.createElement('div');
+        chip.className = 'mini-chip';
+        chip.innerHTML = `<span class="i">${icon}</span><span class="lb">${label}</span><span class="tt">00:00</span>`;
+        bar.appendChild(chip);
+        __miniTimers[key] = chip;
+      } else {
+        chip.querySelector('.i').textContent  = icon;
+        chip.querySelector('.lb').textContent = label;
       }
+      chip.dataset.end = String(end);
+    }
+    (function __tickMiniTimers(){
+      setInterval(()=>{
+        const now = Date.now();
+        Object.entries(__miniTimers).forEach(([key, chip])=>{
+          const end = Number(chip.dataset.end || 0);
+          const left = end - now;
+          if (left <= 0){
+            chip.remove();
+            delete __miniTimers[key];
+          } else {
+            const tt = chip.querySelector('.tt');
+            if (tt) tt.textContent = __fmtMMSS(left);
+          }
+        });
+      }, 250);
+    })();
+    function __fmtMult(v){
+      const x = 1 + Number(v || 0);
+      return (Math.abs(x - Math.round(x)) < 1e-6) ? String(Math.round(x)) : x.toFixed(1);
     }
 
-    // ====== 슬롯 머터리얼라이즈 ======
-    function materializeItems(tpl, mode){
-      const base = calcBaseCoin();
-      return tpl.map(it=>{
-        if (it.type==='coin'){
-          const mul = (mode==='daily' && it.dynamicDaily)
-            ? dailyCoinRateByWealth(state.coins || 0)
-            : it.coinMul;
-          const amt = Math.max(1, Math.round(base * mul));
-          return { ...it, label:`코인 ${amt.toLocaleString()}`, onWin:()=>{ state.coins += amt; } };
-        }
-        if (it.type==='res'){
-          return { ...it, label:`자원 ${it.val.toLocaleString()}`, onWin:()=>{ state.resources += it.val; } };
-        }
-        if (it.type==='ecoin'){
-          return { ...it, label:`이벤트코인 ×${it.val}`, onWin:()=>{ state.eventCoins = (state.eventCoins||0) + it.val; } };
-        }
-        if (it.type==='buff'){
-          const pretty = it.labelHint || (it.kind==='coins' ? `코인 x${it.mul} / ${Math.round(it.dur/60000)}m` : `자원 x${it.mul} / ${Math.round(it.dur/60000)}m`);
-          return { ...it, label: pretty, onWin:()=>{ addTimedMultiplier(it.kind, it.mul, it.dur); } };
-        }
-        return it;
-      });
-    }
-
-    function getItemsForMode(mode){
-      const tpl = mode==='daily'   ? TPL_DAILY
-               : mode==='premium' ? TPL_PREMIUM
-               : mode==='ecoin'   ? TPL_ECOIN
-               : TPL_PREMIUM;
-      return materializeItems(tpl, mode);
-    }
-
-    // ==== SFX ====
+    // ==== SFX & 버프 ====
     function playSfx(id){
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
@@ -785,7 +788,24 @@
     function startTickLoop(intv=120){ stopTickLoop(); startTickLoop._id=setInterval(()=>playSfx('sfx-tick'), intv); }
     function stopTickLoop(){ if(startTickLoop._id){ clearInterval(startTickLoop._id); startTickLoop._id=null; } }
 
-    // ===== 슬롯(세로 낙하식) =====
+    // 통합 버프: 'res' (자원) / 'coin' (코인)
+    function addTempBuff(kind, value, dur){
+      const now = Date.now();
+      if (!window.fx) window.fx = {};
+      // 하위호환: click->res, convert->coin
+      const k = (kind === 'click') ? 'res' : (kind === 'convert' ? 'coin' : kind);
+
+      const prev = window.fx[k];
+      if (prev && now < prev.until){
+        window.fx[k] = { type:k, value: Math.max(prev.value, value), until: prev.until + dur };
+      } else {
+        window.fx[k] = { type:k, value, until: now + dur };
+      }
+      const icon  = (k === 'res') ? '⚡' : '💹';
+      const label = (k === 'res' ? '자원 x' : '코인 x') + __fmtMult(window.fx[k].value);
+      addOrUpdateTimerChip('buff_' + k, label, window.fx[k].until - now, icon);
+    }
+
     const slotWrap = document.getElementById('slot-wrap');
     const reel = document.getElementById('slot-reel');
     function buildSlot(items){
@@ -797,7 +817,7 @@
     function spinSlot(items, picked){
       const rowH=56, totalRows = items.length*8;
       const idx = items.findIndex(it=>it.key===picked.key);
-      const stopRow = (items.length*6) + idx;
+      const stopRow = (items.length*6) + idx; // 충분히 굴리기
       const targetY = - stopRow * rowH;
       startTickLoop(90);
       playSfx('sfx-start');
@@ -810,6 +830,40 @@
       return new Promise(resolve=>{
         reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); playSfx('sfx-win'); resolve(); };
       });
+    }
+
+    // 머터리얼라이즈
+    function materializeItems(tpl){
+      const base = calcBaseCoin();
+      return tpl.map(it=>{
+        if (it.type === 'coin') {
+          const amt = Math.max(1, Math.round(base * it.coinMul));
+          return { ...it, label:`코인 ${amt.toLocaleString()}`, onWin:()=>{ state.coins += amt; } };
+        }
+        if (it.type === 'coin_dyn') {
+          const amt = dailyCoinReward();
+          return { ...it, label:`코인 ${amt.toLocaleString()}`, onWin:()=>{ state.coins += amt; } };
+        }
+        if (it.type === 'res'){
+          return { ...it, label:`자원 ${it.val.toLocaleString()}`, onWin:()=>{ state.resources += it.val; } };
+        }
+        if (it.type === 'ecoin'){
+          return { ...it, label:`이벤트코인 ×${it.val}`, onWin:()=>{ state.eventCoins = (state.eventCoins||0) + it.val; } };
+        }
+        if (it.type === 'buff'){
+          const lab = (it.btype==='res' ? '자원' : '코인') + ' x' + __fmtMult(it.bval) + ` / ${Math.round(it.bdur/60000)}m`;
+          return { ...it, label: lab, onWin:()=>{ addTempBuff(it.btype, it.bval, it.bdur); } };
+        }
+        return it;
+      });
+    }
+
+    function getItemsForMode(mode){
+      const tpl = mode==='daily'   ? TPL_DAILY
+               : mode==='premium' ? TPL_PREMIUM
+               : mode==='ecoin'   ? TPL_ECOIN
+               : TPL_PREMIUM;
+      return materializeItems(tpl);
     }
 
     // ===== 출석 저장/표시 =====
@@ -882,19 +936,21 @@
         next.coins      = (next.coins||0) + (delta.coins||0);
         next.resources  = (next.resources||0) + (delta.resources||0);
         next.eventCoins = (next.eventCoins||0) + (delta.eventCoins||0);
+        next._coinResid = (next._coinResid||0) + (delta._coinResid||0);
         next._lastUpdated = Date.now();
         return next;
       });
     }
 
     function makeDeltaSnapshot(){
-      return { coins: state.coins||0, resources: state.resources||0, eventCoins: state.eventCoins||0 };
+      return { coins: state.coins||0, resources: state.resources||0, eventCoins: state.eventCoins||0, _coinResid: state._coinResid||0 };
     }
     function deltaFrom(before){
       return {
         coins: (state.coins||0) - before.coins,
         resources: (state.resources||0) - before.resources,
-        eventCoins: (state.eventCoins||0) - before.eventCoins
+        eventCoins: (state.eventCoins||0) - before.eventCoins,
+        _coinResid: (state._coinResid||0) - before._coinResid
       };
     }
 
@@ -915,26 +971,19 @@
       picked.onWin();
 
       try{
-        const delta = deltaFrom(before);
-        await applyPrizeTransaction(delta);
-
+        // 연속 출석 계산 및 10연속 보너스
         let streak = Number(dailyCache?.streak||0);
         if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
-
-        // 🔟 10연속 출석 보너스: 이벤트코인 +1 (룰렛과 별개)
-        let bonusEC = 0;
         if (streak % 10 === 0) {
-          state.eventCoins = (state.eventCoins||0) + 1;
-          bonusEC = 1;
+          state.eventCoins = (state.eventCoins || 0) + 1; // 확정 보상
         }
 
+        const delta = deltaFrom(before);
+        await applyPrizeTransaction(delta);
         await update(ref(db, `users/${uid}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
         dailyCache = { lastKey: today, streak };
         updateUI();
-
-        dailyInfo.innerHTML = bonusEC
-          ? `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일 · 보너스 이벤트코인 +${bonusEC}!`
-          : `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+        dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b>${(streak % 10 === 0) ? ' + 🎁 <b>10연속 보너스: EC ×1</b>' : ''}<br>연속 ${streak}일`;
       }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
     };
 
@@ -1034,12 +1083,12 @@
       const hireWork = document.getElementById('hire-worker');
       hireWork.innerText = `알바 고용 (${getWorkerCost()}코인)`;
       hireWork.disabled = state.coins < getWorkerCost();
-      document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower() * getActiveResMul()).toFixed(1);
+      document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower() * activeBuffMul('res')).toFixed(1);
 
       const hireConv = document.getElementById('hire-conversion');
       hireConv.innerText = `코인 알바 (${getConversionCost()}코인)`;
       hireConv.disabled = state.coins < getConversionCost();
-      document.getElementById('coin-per-sec').innerText = Math.floor(state.conversionCount * getActiveCoinMul());
+      document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffMul('coin')).toFixed(1);
     }
 
     function renderPlanets() {
@@ -1094,30 +1143,16 @@
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
-        // 클릭 자원에 자원 버프 적용
-        const add = Math.max(1, Math.floor(state.clickPower * getActiveResMul()));
-        state.resources += add;
-        if (state.autoConvertBought) convertResources(null, getActiveCoinMul());
+        state.resources += state.clickPower * activeBuffMul('res'); // 클릭에 자원 버프 적용
+        if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
 
-      document.getElementById('convert-button').addEventListener('click', () => {
-        if (!ensureReady()) return;
-        convertResources(1, getActiveCoinMul());
-        save(); updateUI();
-      });
-      document.getElementById('auto-convert-buy').addEventListener('click', () => {
-        if (!ensureReady()) return; if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); }
-      });
-      document.getElementById('hire-worker').addEventListener('click', () => {
-        if (!ensureReady()) return; const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); }
-      });
-      document.getElementById('hire-conversion').addEventListener('click', () => {
-        if (!ensureReady()) return; const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); }
-      });
-      document.getElementById('upgrade-ship').addEventListener('click', () => {
-        if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); }
-      });
+      document.getElementById('convert-button').addEventListener('click', () => { if (!ensureReady()) return; convertResources(1); save(); updateUI(); });
+      document.getElementById('auto-convert-buy').addEventListener('click', () => { if (!ensureReady()) return; if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); } });
+      document.getElementById('hire-worker').addEventListener('click', () => { if (!ensureReady()) return; const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } });
+      document.getElementById('hire-conversion').addEventListener('click', () => { if (!ensureReady()) return; const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
+      document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
 
       document.querySelectorAll('#bottom-nav .tab').forEach(tab => tab.addEventListener('click', () => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1129,30 +1164,26 @@
       // 1초 루프
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
-
-        // 자원 증가(알바) + 자원 버프
-        let workerGain = state.workerCount * getWorkerPower() * getActiveResMul();
+        let workerGain = state.workerCount * getWorkerPower();
+        workerGain *= activeBuffMul('res'); // 자원 버프
         if (state.workerCount > 0) state.resources += workerGain;
 
-        // 코인 알바 + 코인 버프
-        let convGain = state.conversionCount * getActiveCoinMul();
-        if (state.conversionCount > 0) state.coins += convGain;
+        let convGain = state.conversionCount;
+        convGain *= activeBuffMul('coin'); // 코인 버프
+        if (state.conversionCount > 0) addCoinsWithResid(convGain);
 
-        // 만료 처리
-        ensureFx();
+        // 버프 만료 정리
         const now = Date.now();
-        if (window.fx.coinsUntil && now >= window.fx.coinsUntil) { window.fx.coinsMultiplier = 1; }
-        if (window.fx.resUntil   && now >= window.fx.resUntil)   { window.fx.resMultiplier   = 1; }
+        if (window.fx?.res && now >= window.fx.res.until) window.fx.res=null;
+        if (window.fx?.coin && now >= window.fx.coin.until) window.fx.coin=null;
 
-        // 자동 변환(버프 적용)
-        if (state.autoConvertBought) convertResources(null, getActiveCoinMul());
-
+        if (state.autoConvertBought) convertResources();
         save(); updateUI();
       }, 1000);
     }
 
     onAuthStateChanged(auth, async user => {
-      // 항상 부팅 오버레이 내리기 (에러 보호)
+      // 부팅 오버레이 종료 (로그인 여부와 무관)
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -1232,6 +1263,15 @@
         setAuthMode(currentAuthMode);
       }
     });
+
+    // 부팅 오버레이가 드물게 안 내려갈 때(네트워크/권한 문제 등) 4초 후 강제 해제 (버그 대응)
+    setTimeout(()=>{
+      if (bootOverlay && bootOverlay.getAttribute('aria-hidden')!=='true'){
+        setBootVisible(false);
+        authContainer.style.display = 'block';
+        authContainer.classList.remove('hidden');
+      }
+    }, 4000);
 
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
@@ -1344,6 +1384,8 @@
     });
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
+    // (선택) 독립 2분 타이머: window.startInline2Min && window.startInline2Min('대기')
+    window.startInline2Min = function(label='2분'){ addOrUpdateTimerChip('demo2m', label, 2*60*1000, '⏳'); }
   </script>
 
   <!-- 우클릭 커스텀 메뉴 -->
