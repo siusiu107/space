@@ -1359,6 +1359,84 @@
       }
     });
 
+    /* === 추가: 구글 로그인 버튼 핸들러 (팝업 우선, 불가 시 리다이렉트 폴백) === */
+    const googleBtn = document.getElementById('google-btn');
+
+    function popupSupported() {
+      try {
+        const w = window.open('', '', 'width=1,height=1');
+        if (!w) return false;
+        w.close();
+        return true;
+      } catch { return false; }
+    }
+
+    function isLikelyWebView() {
+      const ua = navigator.userAgent || '';
+      return (
+        /\bLine\/|KAKAOTALK|NAVER|FBAN|FB_IAB|Instagram|DaumApps|NAVER\(inapp|Twitter/i.test(ua) ||
+        /\bwv\b/.test(ua) ||
+        (/iPhone|iPad|iPod/i.test(ua) && !/CriOS|FxiOS/i.test(ua))
+      );
+    }
+
+    async function googleSignIn() {
+      showAuthStatus('');
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      try {
+        const icon = document.getElementById('overlay-provider-icon');
+        if (icon) icon.textContent = '🟦';
+      } catch {}
+
+      const shouldRedirect = isLikelyWebView() || !popupSupported();
+
+      try {
+        showLoginOverlay(true, '구글 계정으로 로그인 중…', {
+          subText: '보안 연결 중',
+          detail: shouldRedirect
+            ? '브라우저 제한으로 리다이렉트 로그인으로 진행합니다.'
+            : '팝업 창에서 구글 로그인 중입니다.'
+        });
+
+        if (shouldRedirect) {
+          await signInWithRedirect(auth, provider);
+          return;
+        } else {
+          await signInWithPopup(auth, provider);
+        }
+      } catch (err) {
+        const code = err && err.code || '';
+        if (
+          code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/popup-closed-by-user' ||
+          code === 'auth/cancelled-popup-request'
+        ) {
+          try {
+            await signInWithRedirect(auth, provider);
+            return;
+          } catch (e2) {
+            showLoginOverlay(false);
+            showAuthStatus(e2.message || '구글 로그인 리다이렉트 중 오류가 발생했습니다.');
+            return;
+          }
+        }
+        showLoginOverlay(false);
+        const msg =
+          code === 'auth/account-exists-with-different-credential'
+            ? '해당 이메일로 다른 로그인 방식이 이미 연결되어 있습니다.'
+            : err.message || '구글 로그인 중 오류가 발생했습니다.';
+        showAuthStatus(msg);
+      }
+    }
+
+    if (googleBtn) {
+      googleBtn.addEventListener('click', googleSignIn);
+    }
+    /* === 끝: 구글 로그인 핸들러 === */
+
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
@@ -1615,4 +1693,3 @@
   </script>
 </body>
 </html>
-  
