@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 초기 진입 경로 정리 -->
   <script>
     try {
       if (!sessionStorage.getItem('pmode_init')) {
@@ -15,76 +14,25 @@
     } catch (e) {}
   </script>
 
-  <!-- ✅ 부팅 워치독: Auth 이벤트 지연/실패 시 오버레이 강제 종료 -->
-  <script>
-    (function () {
-      const TIMEOUT = 7000; // 7초
-      function showAuthUIFallback(msg) {
-        try {
-          const boot = document.getElementById('boot-overlay');
-          if (boot) { boot.style.display = 'none'; boot.setAttribute('aria-hidden', 'true'); }
-          const auth = document.getElementById('auth-container');
-          if (auth) { auth.style.display = 'block'; setTimeout(() => auth.classList.remove('hidden'), 16); }
-          const err = document.getElementById('auth-error');
-          if (err) { err.textContent = msg || '네트워크 지연으로 로그인 확인을 건너뜁니다.'; err.classList.add('show'); }
-        } catch {}
-      }
-      const id = setTimeout(() => {
-        showAuthUIFallback('로그인 상태 확인이 오래 걸려 로그인 화면을 먼저 표시합니다.');
-      }, TIMEOUT);
-      window.__CLR_BOOT_WATCHDOG__ = () => clearTimeout(id);
-      window.addEventListener('offline', () => {
-        showAuthUIFallback('오프라인 상태입니다. 인터넷 연결을 확인하세요.');
-      });
-    })();
-  </script>
-
-  <!-- 리다이렉트/팝업 보강 -->
   <script>
     const allowedParentOrigins = [
       location.origin,
       'https://xn--989a202a4ogwtc69p.siustudio.kro.kr',
       'https://siustudio.kro.kr'
     ];
-
-    // 리다이렉트 허용 판단
     function isAllowedRedirect(urlStr) {
       try {
-        // 상대경로는 허용
-        if (/^(\/(?!\/)|\.\/|\?|#)/.test(urlStr)) return true;
-
-        const u = new URL(urlStr, location.origin);
-
-        // 동일 오리진 허용
-        if (u.origin === location.origin) return true;
-
-        // 개발환경(http) 허용, 운영은 https
-        const okProto = (u.protocol === 'https:' || (location.protocol === 'http:' && u.protocol === 'http:'));
-        if (!okProto) return false;
-
+        const u = new URL(urlStr);
+        if (u.protocol !== 'https:') return false;
         const host = u.hostname;
         const base1 = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
         const base2 = 'siustudio.kro.kr';
-
         return (
           host === base1 || host === base2 ||
           host.endsWith('.' + base1) || host.endsWith('.' + base2)
         );
       } catch { return false; }
     }
-
-    const DEFAULT_AFTER_LOGIN = '/game.html';
-    function safeRedirect(target) {
-      if (!target) return;
-      try {
-        const abs = target.startsWith('/') ? new URL(target, location.origin).href : new URL(target, location.href).href;
-        if (isAllowedRedirect(abs) || isAllowedRedirect(target)) {
-          try { history.replaceState(null, '', abs); } catch {}
-          location.assign(abs);
-        }
-      } catch {}
-    }
-
     let parentOrigin     = sessionStorage.getItem('parent_origin')     || null;
     let pendingRedirect  = sessionStorage.getItem('pending_redirect')  || null;
     let pendingState     = sessionStorage.getItem('pending_state')     || null;
@@ -114,9 +62,8 @@
     }
     notifyReadyToParent();
 
-    // 팝업이 아니어도 동작하는 로그인 성공 처리
     function notifyAuthSuccessAndExit() {
-      const target = consumePendingRedirect() || DEFAULT_AFTER_LOGIN;
+      const target = consumePendingRedirect();
       const hasParent = window.opener && !window.opener.closed && parentOrigin;
       if (hasParent) {
         try {
@@ -127,7 +74,7 @@
         try { window.close(); } catch {}
         return;
       }
-      safeRedirect(target);
+      if (target) window.location.href = target;
     }
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
   </script>
@@ -536,11 +483,7 @@
   <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification,
-      GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -648,7 +591,7 @@
       }
     }
 
-    /* 로그인 성공 시 UI 표시 */
+    /* ========= 수정 1: 팝업 강제 여부와 무관하게 로그인 성공 시 UI를 항상 표시 ========= */
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
@@ -664,6 +607,7 @@
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
+    /* ========================================================================= */
 
     // ====== 출석(KST) 유틸 & 남은시간 ======
     function kstDate(d=new Date()){
@@ -699,6 +643,7 @@
           35  * ship +
           (auto ? 25 : 0);
 
+      // ✔ 전체적으로 약 30% 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
@@ -801,7 +746,7 @@
       reel.style.transition = 'none';
     }
     function spinSlot(items, picked){
-      const rowH=56;
+      const rowH=56, totalRows = items.length*8;
       const idx = items.findIndex(it=>it.key===picked.key);
       const stopRow = (items.length*6) + idx; // 충분히 굴리기
       const targetY = - stopRow * rowH;
@@ -847,6 +792,7 @@
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
 
+      // 슬롯만 사용
       slotWrap.style.display     = 'flex';
       document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
       document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
@@ -1128,21 +1074,20 @@
       }, 1000);
     }
 
-    // ✅ Auth 상태 이벤트: 워치독 해제 + 오버레이 닫기
+    /* ========= 수정 2: 이메일/비번 미인증이어도 로그아웃하지 않고 계속 진행 ========= */
     onAuthStateChanged(auth, async user => {
-      try { window.__CLR_BOOT_WATCHDOG__ && window.__CLR_BOOT_WATCHDOG__(); } catch {}
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        try { showLoginOverlay(false); } catch {}
-
         // 이메일/비번(providerId === 'password')이며 미인증이면 안내만 하고 계속
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
         if (isEmailPassword && !user.emailVerified) {
+          try { showLoginOverlay(false); } catch {}
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
+          // 여기서 signOut 또는 return 하지 않음
         }
 
         uid = user.uid;
@@ -1210,6 +1155,7 @@
         setAuthMode(currentAuthMode);
       }
     });
+    /* ========================================================================= */
 
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
@@ -1243,7 +1189,6 @@
       const password = document.getElementById('password').value;
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
       try {
-        try { sessionStorage.setItem('pending_redirect', DEFAULT_AFTER_LOGIN); } catch {}
         showLoginOverlay(true, '로그인 중… 잠시만요');
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const user = cred.user;
@@ -1280,6 +1225,7 @@
         try { await sendEmailVerification(user); } catch {}
         showLoginOverlay(false);
         showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
+        // 회원가입 직후에는 로그인 상태. 원하면 바로 이용 가능.
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
@@ -1296,9 +1242,6 @@
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
-
-      try { sessionStorage.setItem('pending_redirect', DEFAULT_AFTER_LOGIN); } catch {}
-
       try {
         showLoginOverlay(true, '구글 인증 시작', { provider:'google', subText:'구글 계정으로 안전하게 연결합니다.' });
         await signInWithPopup(auth, provider);
@@ -1318,14 +1261,7 @@
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
-    // 리다이렉트 복귀 처리 + 게임 초기화
-    window.addEventListener('load', async () => {
-      try {
-        const res = await getRedirectResult(auth);
-        if (res && res.user) {
-          try { showLoginOverlay(false); } catch {}
-        }
-      } catch {}
+    window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
     });
