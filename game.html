@@ -295,6 +295,13 @@
     #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
+
+    /* ✅ 스핀 중 비활성화 시 회색 처리 */
+    .spinbtn:disabled{
+      opacity: .6;
+      filter: grayscale(.8);
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -529,7 +536,7 @@
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20,
       workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
-      _coinResid: 0   // 소수점 코인 누적 버킷
+      _coinResid: 0
     };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
@@ -675,7 +682,6 @@
           35  * ship +
           (auto ? 25 : 0);
 
-      // 전체적으로 약간 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
@@ -695,7 +701,6 @@
     }
 
     // ====== 슬롯 템플릿 & 머터리얼라이즈 ======
-    // 출석: 코인(동적) / 자원200 / 자원x2(3분) / 코인x2(3분) / EC×1
     const TPL_DAILY = [
       { key:'coin_dyn',   type:'coin_dyn', icon:'🪙', color:'#7AFBFF', w:0.35 },
       { key:'res_200',    type:'res',      val:200,   icon:'🪨', color:'#FFEA70', w:0.18 },
@@ -704,7 +709,6 @@
       { key:'eco_1',      type:'ecoin',    val:1,    icon:'🎟️', color:'#FFD05C', w:0.03 }
     ];
 
-    // 프리미엄(EC-1): 코인 ×1.3/1.9/2.6 / 자원1000 / 자원x2(3분) / 코인x2(3분)
     const TPL_PREMIUM = [
       { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.30 },
       { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
@@ -714,7 +718,6 @@
       { key:'buff_coin2', type:'buff', btype:'coin', bval:1.0, bdur:3*60*1000, icon:'💹',  color:'#FFD0A8', w:0.10 }
     ];
 
-    // 이벤트코인(EC-10): 코인 ×3/×5/×8 / 자원x2(3분) / 코인x2(3분) / EC×8 / EC×12
     const TPL_ECOIN = [
       { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.26 },
       { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
@@ -792,7 +795,6 @@
     function addTempBuff(kind, value, dur){
       const now = Date.now();
       if (!window.fx) window.fx = {};
-      // 하위호환: click->res, convert->coin
       const k = (kind === 'click') ? 'res' : (kind === 'convert' ? 'coin' : kind);
 
       const prev = window.fx[k];
@@ -832,7 +834,6 @@
       });
     }
 
-    // 머터리얼라이즈
     function materializeItems(tpl){
       const base = calcBaseCoin();
       return tpl.map(it=>{
@@ -858,15 +859,10 @@
       });
     }
 
-    function getItemsForMode(mode){
-      const tpl = mode==='daily'   ? TPL_DAILY
-               : mode==='premium' ? TPL_PREMIUM
-               : mode==='ecoin'   ? TPL_ECOIN
-               : TPL_PREMIUM;
-      return materializeItems(tpl);
-    }
+    let dailyCache = null;
+    let currentMode = 'daily';
+    let activeItems = [];
 
-    // ===== 출석 저장/표시 =====
     const dailyOverlay = document.getElementById('daily-overlay');
     const dailyInfo    = document.getElementById('daily-info');
     const dailyCloseBtn= document.getElementById('daily-close');
@@ -880,17 +876,39 @@
     const spinPremiumBtn = document.getElementById('spin-premium');
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
 
-    let dailyCache = null;
-    let currentMode = 'daily';
-    let activeItems = [];
+    // ✅ 스핀 락/해제 (여기!)
+    let isSpinning = false;
+    let _spinPrevDisabled = {};
+    function setSpinLock(lock){
+      const btns = [spinDailyBtn, spinPremiumBtn, spinEcoinBtn];
+      if (lock){
+        isSpinning = true;
+        _spinPrevDisabled = {};
+        btns.forEach(b=>{
+          if(!b) return;
+          _spinPrevDisabled[b.id] = b.disabled;
+          b.disabled = true;
+        });
+      } else {
+        isSpinning = false;
+        btns.forEach(b=>{
+          if(!b) return;
+          const prev = _spinPrevDisabled[b.id];
+          if (typeof prev === 'boolean') b.disabled = prev;
+        });
+        _spinPrevDisabled = {};
+      }
+    }
 
     function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
-    function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
+    function closeDailyOverlay(){ if(isSpinning) return; dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
     dailyCloseBtn.onclick = closeDailyOverlay;
 
     probToggle.onclick = ()=>{ probPanel.style.display = (probPanel.style.display==='block'?'none':'block'); };
 
     function setMode(mode){
+      // 스핀 중엔 탭 전환 차단
+      if (isSpinning) return;
       currentMode = mode;
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
@@ -961,21 +979,23 @@
     // 출석(무료)
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
+      if (isSpinning) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
 
       setMode('daily');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
-      await spinSlot(activeItems, picked);
-      picked.onWin();
 
+      setSpinLock(true);
       try{
-        // 연속 출석 계산 및 10연속 보너스
+        await spinSlot(activeItems, picked);
+        picked.onWin();
+
         let streak = Number(dailyCache?.streak||0);
         if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
         if (streak % 10 === 0) {
-          state.eventCoins = (state.eventCoins || 0) + 1; // 확정 보상
+          state.eventCoins = (state.eventCoins || 0) + 1; // 10연속 보너스
         }
 
         const delta = deltaFrom(before);
@@ -984,45 +1004,69 @@
         dailyCache = { lastKey: today, streak };
         updateUI();
         dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b>${(streak % 10 === 0) ? ' + 🎁 <b>10연속 보너스: EC ×1</b>' : ''}<br>연속 ${streak}일`;
-      }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
+
+        // 방금 완료했으므로 바로 비활성화
+        refreshDailyInfo(false);
+      } catch(e){
+        console.error(e);
+        dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.';
+      } finally{
+        setSpinLock(false);
+      }
     };
 
     // 프리미엄(EC -1)
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
+      if (isSpinning) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
 
       setMode('premium');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       state.eventCoins -= 1;
-      await spinSlot(activeItems, picked);
-      picked.onWin();
 
+      setSpinLock(true);
       try{
+        await spinSlot(activeItems, picked);
+        picked.onWin();
+
         const delta = deltaFrom(before);
-        await applyPrizeTransaction(delta); updateUI();
+        await applyPrizeTransaction(delta);
+        updateUI();
         dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`;
-      }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
+      } catch(e){
+        console.error(e); dailyInfo.textContent='지급 오류';
+      } finally{
+        setSpinLock(false);
+      }
     };
 
     // 이벤트코인(EC -10)
     spinEcoinBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
+      if (isSpinning) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
 
       setMode('ecoin');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       state.eventCoins -= 10;
-      await spinSlot(activeItems, picked);
-      picked.onWin();
 
+      setSpinLock(true);
       try{
+        await spinSlot(activeItems, picked);
+        picked.onWin();
+
         const delta = deltaFrom(before);
-        await applyPrizeTransaction(delta); updateUI();
+        await applyPrizeTransaction(delta);
+        updateUI();
         dailyInfo.innerHTML=`🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
-      }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
+      } catch(e){
+        console.error(e); dailyInfo.textContent='지급 오류';
+      } finally{
+        setSpinLock(false);
+      }
     };
 
     // ===== 데이터 & 출석 캐시 =====
@@ -1183,7 +1227,6 @@
     }
 
     onAuthStateChanged(auth, async user => {
-      // 부팅 오버레이 종료 (로그인 여부와 무관)
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
@@ -1264,7 +1307,7 @@
       }
     });
 
-    // 부팅 오버레이가 드물게 안 내려갈 때(네트워크/권한 문제 등) 4초 후 강제 해제 (버그 대응)
+    // 드물게 오버레이가 안 내려갈 때 4초 후 강제 해제
     setTimeout(()=>{
       if (bootOverlay && bootOverlay.getAttribute('aria-hidden')!=='true'){
         setBootVisible(false);
@@ -1384,7 +1427,6 @@
     });
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
-    // (선택) 독립 2분 타이머: window.startInline2Min && window.startInline2Min('대기')
     window.startInline2Min = function(label='2분'){ addOrUpdateTimerChip('demo2m', label, 2*60*1000, '⏳'); }
   </script>
 
@@ -1413,49 +1455,6 @@
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
-  </script>
-
-  <!-- 사이드 메뉴 -->
-  <script>
-    (function(){
-      const sideToggle = document.getElementById('side-menu-toggle');
-      const sideMenu   = document.getElementById('side-menu');
-      const backdrop   = document.getElementById('side-backdrop');
-
-      function openSide(){
-        sideMenu.classList.add('open');
-        sideMenu.setAttribute('aria-hidden','false');
-        backdrop.classList.add('show');
-        backdrop.setAttribute('aria-hidden','false');
-      }
-      function closeSide(){
-        sideMenu.classList.remove('open');
-        sideMenu.setAttribute('aria-hidden','true');
-        backdrop.classList.remove('show');
-        backdrop.setAttribute('aria-hidden','true');
-      }
-
-      sideToggle.addEventListener('click', openSide);
-      backdrop.addEventListener('click', closeSide);
-      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSide(); });
-
-      sideMenu.addEventListener('click', (e)=>{
-        const btn = e.target.closest('.side-item');
-        if(!btn) return;
-        const action = btn.getAttribute('data-action');
-        if (action === 'menu') {
-          try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
-          try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
-          try { window.close(); } catch {}
-          setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
-        }
-        if (action === 'download') { location.href='/app-download.html'; }
-        if (action === 'rank')     { location.href='/ranking.html'; }
-        if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
-        if (action === 'resume')   { /* 닫기만 */ }
-        closeSide();
-      });
-    })();
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
