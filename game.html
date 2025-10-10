@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
+  <!-- 초기 진입 경로 정리 -->
   <script>
     try {
       if (!sessionStorage.getItem('pmode_init')) {
@@ -14,6 +15,31 @@
     } catch (e) {}
   </script>
 
+  <!-- ✅ 부팅 워치독: Auth 이벤트 지연/실패 시 오버레이 강제 종료 -->
+  <script>
+    (function () {
+      const TIMEOUT = 7000; // 7초
+      function showAuthUIFallback(msg) {
+        try {
+          const boot = document.getElementById('boot-overlay');
+          if (boot) { boot.style.display = 'none'; boot.setAttribute('aria-hidden', 'true'); }
+          const auth = document.getElementById('auth-container');
+          if (auth) { auth.style.display = 'block'; setTimeout(() => auth.classList.remove('hidden'), 16); }
+          const err = document.getElementById('auth-error');
+          if (err) { err.textContent = msg || '네트워크 지연으로 로그인 확인을 건너뜁니다.'; err.classList.add('show'); }
+        } catch {}
+      }
+      const id = setTimeout(() => {
+        showAuthUIFallback('로그인 상태 확인이 오래 걸려 로그인 화면을 먼저 표시합니다.');
+      }, TIMEOUT);
+      window.__CLR_BOOT_WATCHDOG__ = () => clearTimeout(id);
+      window.addEventListener('offline', () => {
+        showAuthUIFallback('오프라인 상태입니다. 인터넷 연결을 확인하세요.');
+      });
+    })();
+  </script>
+
+  <!-- 리다이렉트/팝업 보강 -->
   <script>
     const allowedParentOrigins = [
       location.origin,
@@ -21,15 +47,15 @@
       'https://siustudio.kro.kr'
     ];
 
-    // === 교체된 리다이렉트 허용 함수 + 안전 리다이렉트 유틸 ===
+    // 리다이렉트 허용 판단
     function isAllowedRedirect(urlStr) {
       try {
-        // 상대경로(/, ./, ?, #)는 현재 오리진으로 간주
+        // 상대경로는 허용
         if (/^(\/(?!\/)|\.\/|\?|#)/.test(urlStr)) return true;
 
         const u = new URL(urlStr, location.origin);
 
-        // 동일 오리진이면 허용
+        // 동일 오리진 허용
         if (u.origin === location.origin) return true;
 
         // 개발환경(http) 허용, 운영은 https
@@ -88,7 +114,7 @@
     }
     notifyReadyToParent();
 
-    // === 보강: 팝업이 아닐 때에도 안전하게 리다이렉트 ===
+    // 팝업이 아니어도 동작하는 로그인 성공 처리
     function notifyAuthSuccessAndExit() {
       const target = consumePendingRedirect() || DEFAULT_AFTER_LOGIN;
       const hasParent = window.opener && !window.opener.closed && parentOrigin;
@@ -101,7 +127,6 @@
         try { window.close(); } catch {}
         return;
       }
-      // 팝업이 아니면 현재 창에서 안전 리다이렉트
       safeRedirect(target);
     }
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
@@ -623,7 +648,7 @@
       }
     }
 
-    /* ========= 수정 1: 팝업 강제 여부와 무관하게 로그인 성공 시 UI를 항상 표시 ========= */
+    /* 로그인 성공 시 UI 표시 */
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
@@ -639,7 +664,6 @@
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
-    /* ========================================================================= */
 
     // ====== 출석(KST) 유틸 & 남은시간 ======
     function kstDate(d=new Date()){
@@ -675,7 +699,6 @@
           35  * ship +
           (auto ? 25 : 0);
 
-      // ✔ 전체적으로 약 30% 낮춤
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
@@ -778,7 +801,7 @@
       reel.style.transition = 'none';
     }
     function spinSlot(items, picked){
-      const rowH=56, totalRows = items.length*8;
+      const rowH=56;
       const idx = items.findIndex(it=>it.key===picked.key);
       const stopRow = (items.length*6) + idx; // 충분히 굴리기
       const targetY = - stopRow * rowH;
@@ -824,7 +847,6 @@
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
 
-      // 슬롯만 사용
       slotWrap.style.display     = 'flex';
       document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
       document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
@@ -1106,14 +1128,14 @@
       }, 1000);
     }
 
-    /* ========= 수정 2: 로그인 성공 시 오버레이를 항상 닫기 ========= */
+    // ✅ Auth 상태 이벤트: 워치독 해제 + 오버레이 닫기
     onAuthStateChanged(auth, async user => {
+      try { window.__CLR_BOOT_WATCHDOG__ && window.__CLR_BOOT_WATCHDOG__(); } catch {}
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        // 어떤 방식이든 로그인에 성공하면 오버레이 닫기
         try { showLoginOverlay(false); } catch {}
 
         // 이메일/비번(providerId === 'password')이며 미인증이면 안내만 하고 계속
@@ -1188,7 +1210,6 @@
         setAuthMode(currentAuthMode);
       }
     });
-    /* ========================================================================= */
 
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
@@ -1222,7 +1243,6 @@
       const password = document.getElementById('password').value;
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
       try {
-        // 로그인 후 경로 저장
         try { sessionStorage.setItem('pending_redirect', DEFAULT_AFTER_LOGIN); } catch {}
         showLoginOverlay(true, '로그인 중… 잠시만요');
         const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -1260,7 +1280,6 @@
         try { await sendEmailVerification(user); } catch {}
         showLoginOverlay(false);
         showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
-        // 회원가입 직후에는 로그인 상태. 원하면 바로 이용 가능.
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
@@ -1278,7 +1297,6 @@
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
 
-      // 로그인 후 돌아올 경로 저장 (팝업 실패 시 리다이렉트에서도 사용)
       try { sessionStorage.setItem('pending_redirect', DEFAULT_AFTER_LOGIN); } catch {}
 
       try {
