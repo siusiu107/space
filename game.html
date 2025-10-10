@@ -20,19 +20,45 @@
       'https://xn--989a202a4ogwtc69p.siustudio.kro.kr',
       'https://siustudio.kro.kr'
     ];
+
+    // === 교체된 리다이렉트 허용 함수 + 안전 리다이렉트 유틸 ===
     function isAllowedRedirect(urlStr) {
       try {
-        const u = new URL(urlStr);
-        if (u.protocol !== 'https:') return false;
+        // 상대경로(/, ./, ?, #)는 현재 오리진으로 간주
+        if (/^(\/(?!\/)|\.\/|\?|#)/.test(urlStr)) return true;
+
+        const u = new URL(urlStr, location.origin);
+
+        // 동일 오리진이면 허용
+        if (u.origin === location.origin) return true;
+
+        // 개발환경(http) 허용, 운영은 https
+        const okProto = (u.protocol === 'https:' || (location.protocol === 'http:' && u.protocol === 'http:'));
+        if (!okProto) return false;
+
         const host = u.hostname;
         const base1 = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
         const base2 = 'siustudio.kro.kr';
+
         return (
           host === base1 || host === base2 ||
           host.endsWith('.' + base1) || host.endsWith('.' + base2)
         );
       } catch { return false; }
     }
+
+    const DEFAULT_AFTER_LOGIN = '/game.html';
+    function safeRedirect(target) {
+      if (!target) return;
+      try {
+        const abs = target.startsWith('/') ? new URL(target, location.origin).href : new URL(target, location.href).href;
+        if (isAllowedRedirect(abs) || isAllowedRedirect(target)) {
+          try { history.replaceState(null, '', abs); } catch {}
+          location.assign(abs);
+        }
+      } catch {}
+    }
+
     let parentOrigin     = sessionStorage.getItem('parent_origin')     || null;
     let pendingRedirect  = sessionStorage.getItem('pending_redirect')  || null;
     let pendingState     = sessionStorage.getItem('pending_state')     || null;
@@ -62,8 +88,9 @@
     }
     notifyReadyToParent();
 
+    // === 보강: 팝업이 아닐 때에도 안전하게 리다이렉트 ===
     function notifyAuthSuccessAndExit() {
-      const target = consumePendingRedirect();
+      const target = consumePendingRedirect() || DEFAULT_AFTER_LOGIN;
       const hasParent = window.opener && !window.opener.closed && parentOrigin;
       if (hasParent) {
         try {
@@ -74,7 +101,8 @@
         try { window.close(); } catch {}
         return;
       }
-      if (target) window.location.href = target;
+      // 팝업이 아니면 현재 창에서 안전 리다이렉트
+      safeRedirect(target);
     }
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
   </script>
@@ -483,7 +511,11 @@
   <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import {
+      getAuth, onAuthStateChanged,
+      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification,
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -1074,20 +1106,21 @@
       }, 1000);
     }
 
-    /* ========= 수정 2: 이메일/비번 미인증이어도 로그아웃하지 않고 계속 진행 ========= */
+    /* ========= 수정 2: 로그인 성공 시 오버레이를 항상 닫기 ========= */
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
+        // 어떤 방식이든 로그인에 성공하면 오버레이 닫기
+        try { showLoginOverlay(false); } catch {}
+
         // 이메일/비번(providerId === 'password')이며 미인증이면 안내만 하고 계속
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
         if (isEmailPassword && !user.emailVerified) {
-          try { showLoginOverlay(false); } catch {}
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
-          // 여기서 signOut 또는 return 하지 않음
         }
 
         uid = user.uid;
@@ -1189,6 +1222,8 @@
       const password = document.getElementById('password').value;
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
       try {
+        // 로그인 후 경로 저장
+        try { sessionStorage.setItem('pending_redirect', DEFAULT_AFTER_LOGIN); } catch {}
         showLoginOverlay(true, '로그인 중… 잠시만요');
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const user = cred.user;
@@ -1242,6 +1277,10 @@
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
+
+      // 로그인 후 돌아올 경로 저장 (팝업 실패 시 리다이렉트에서도 사용)
+      try { sessionStorage.setItem('pending_redirect', DEFAULT_AFTER_LOGIN); } catch {}
+
       try {
         showLoginOverlay(true, '구글 인증 시작', { provider:'google', subText:'구글 계정으로 안전하게 연결합니다.' });
         await signInWithPopup(auth, provider);
@@ -1261,7 +1300,14 @@
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
-    window.addEventListener('load', () => {
+    // 리다이렉트 복귀 처리 + 게임 초기화
+    window.addEventListener('load', async () => {
+      try {
+        const res = await getRedirectResult(auth);
+        if (res && res.user) {
+          try { showLoginOverlay(false); } catch {}
+        }
+      } catch {}
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
     });
