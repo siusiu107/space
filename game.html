@@ -156,7 +156,7 @@
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
       border: 1px solid rgba(255,255,255,0.12); color: #e6f5ff;
-      cursor: pointer; font-weight: 700; writing-mode: horizontal-tb;
+      cursor: pointer; font-weight: 700;
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
@@ -224,7 +224,7 @@
     #side-backdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.25); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 1550; }
     #side-backdrop.show{ opacity:1; pointer-events:auto; }
     #side-menu{
-      position: fixed; top: 0; left:  0; bottom: 0; width: 260px; max-width: 84vw;
+      position: fixed; top: 0; left:  0; bottom:  0; width: 260px; max-width: 84vw;
       transform: translateX(-100%); transition: transform .24s cubic-bezier(.2,.9,.3,1);
       background: rgba(15,18,28,0.60); border-right: 1px solid rgba(255,255,255,0.08);
       backdrop-filter: blur(10px); z-index: 1600; box-shadow: 10px 0 30px rgba(0,0,0,0.28);
@@ -598,7 +598,6 @@
         const ms   = Math.max(0, b.until - now);
         return `${name}×${mult} ${fmtLeft(ms)}`;
       }
-      // 너무 길면 상위 3개만 표시
       const pieces = list.slice(0,3).map(labelOf);
       el.textContent = '버프: ' + pieces.join(' · ');
     }
@@ -613,7 +612,6 @@
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
       if (count > 0) {
         state.resources -= count * 10;
-        // 코인 생산 배수 버프 반영
         const coinMul = activeBuffFactor('coin');
         state.coins += count * coinMul;
       }
@@ -780,7 +778,6 @@
     }
 
     // ==== 슬롯 템플릿(배수 기반) ====
-    // value=1 => x2, value=2 => x3 ...
     const TPL_DAILY = [
       { key:'coin_x1_5', type:'coin', coinMul:1.5, icon:'💰', color:'#00E5FF', w:0.30 },
       { key:'coin_x2',   type:'coin', coinMul:2.0, icon:'💰', color:'#4DFFB5', w:0.16 },
@@ -1078,7 +1075,7 @@
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
-      renderBuffStatus(); // ★ 상단바 버프 남은 시간 갱신
+      renderBuffStatus();
     }
 
     function renderPlanets() {
@@ -1132,7 +1129,7 @@
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
-        const resMul = activeBuffFactor('res'); // 클릭 생산 배수
+        const resMul = activeBuffFactor('res');
         state.resources += state.clickPower * resMul;
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
@@ -1156,11 +1153,9 @@
 
         pruneExpiredBuffs();
 
-        // 초당 자원: 알바 × 자원버프
         let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res');
         if (state.workerCount > 0) state.resources += workerGain;
 
-        // 초당 코인: 변환 알바 × 코인버프
         let convGain = state.conversionCount * activeBuffFactor('coin');
         if (state.conversionCount > 0) state.coins += convGain;
 
@@ -1302,41 +1297,62 @@
           showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
         }
       } catch (err) {
-        const code = err && err.code || '';
-        const msg = (
-          code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
-          code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
-          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
+        const code = (err && err.code) || '';
+        const msg =
+          code === 'auth/wrong-password'         ? '비밀번호가 일치하지 않습니다.' :
+          code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
+          code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
           code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
-          err.message || '로그인 중 오류가 발생했습니다.'
-        );
+          (err.message || '로그인 중 오류가 발생했습니다.');
         showAuthStatus(msg);
       }
     });
 
+    // ✅ 회원가입 리스너: 단 한 번만 정의, 문법 오류/중복 제거
     signupBtnEl?.addEventListener('click', async (e) => {
-      e.preventDefault(); showAuthStatus('');
+      e.preventDefault();
+      showAuthStatus('');
+
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const passwordConfirm = document.getElementById('password-confirm').value;
-      if (!email || !password || !passwordConfirm) { showAuthStatus('모든 필드를 입력하세요.'); return; }
-      if (password !== passwordConfirm) { showAuthStatus('비밀번호가 일치하지 않습니다.'; return; }
+
+      if (!email || !password || !passwordConfirm) {
+        showAuthStatus('모든 필드를 입력하세요.');
+        return;
+      }
+      if (password !== passwordConfirm) {
+        showAuthStatus('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const user = cred.user;
         try { await sendEmailVerification(user); } catch {}
         showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
       } catch (err) {
-        const code = err && err.code || '';
-        const msg = (
+        const code = (err && err.code) || '';
+        const msg =
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
-          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
-          code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
-          err.message || '회원가입 중 문제가 발생했습니다.'
-        );
+          code === 'auth/invalid-email'       ? '이메일 형식이 올바르지 않습니다.' :
+          code === 'auth/weak-password'       ? '비밀번호가 너무 약합니다.' :
+          (err.message || '회원가입 중 문제가 발생했습니다.');
         showAuthStatus(msg);
       }
     });
+
+    // 🔧 부팅 오버레이 페일세이프 (옵션이지만 UX 향상)
+    setTimeout(() => {
+      const stillBooting = bootOverlay && getComputedStyle(bootOverlay).display !== 'none';
+      const gameHidden = document.getElementById('container')?.style.visibility !== 'visible';
+      if (stillBooting && gameHidden) {
+        setBootVisible(false);
+        authContainer.style.display = 'block';
+        setTimeout(() => authContainer.classList.remove('hidden'), 16);
+        showAuthStatus('세션 확인이 지연되어 로그인 화면으로 전환했습니다.', false);
+      }
+    }, 4000);
 
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
