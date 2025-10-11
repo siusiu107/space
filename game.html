@@ -480,7 +480,7 @@
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
 
-  <!-- Firebase + 게임 로직 (★ 샤딩/아이디키 반영) -->
+  <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import {
@@ -530,6 +530,9 @@
     const clickUpgradeCost=15;
 
     let currentAuthMode = 'login';
+
+    // ★ 최초 1회 출석 EC 보장 플래그
+    let firstDailyGuarantee = false;
 
     // ===== 유틸 =====
     function getWorkerCost()   { return Math.floor(initialWorkerCost   * Math.pow(workerCostGrowth, state.workerCount)); }
@@ -590,7 +593,7 @@
         }
       } catch {}
 
-      // 2) 신규 배정: global 카운터(meta/nextIndex) 트랜잭션
+      // 2) 신규 배정
       let nextIndex = 0;
       try {
         const tRef = ref(db, 'meta/nextIndex');
@@ -598,7 +601,7 @@
         nextIndex = res?.snapshot?.val() || 1;
       } catch (e) { console.warn('nextIndex txn fail, fallback index=1', e); nextIndex = 1; }
 
-      const serverNum = Math.max(1, Math.ceil(nextIndex / 15)); // ★ 15명당 한 서버
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15)); // 15명당 한 서버
       let server = `server${serverNum}`;
       let idKey  = makeIdKeyFromUser(user);
 
@@ -874,11 +877,27 @@
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
     function buildProbPanel(items, mode){
-      const total=items.reduce((a,b)=>a+b.w,0);
-      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
       const header = mode==='daily' ? '출석 슬롯 확률'
                   : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
                   : '이벤트코인 슬롯 확률(EC -10)';
+
+      // ★ 최초 1회 보장: daily + 오늘 미수령 + 보장 ON → 표기 100%
+      const today = kstDayKey();
+      const canClaim = (dailyCache?.lastKey !== today);
+      if (mode==='daily' && firstDailyGuarantee && canClaim) {
+        probPanel.innerHTML =
+          `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div>
+           <table>
+             <tr>
+               <td>🎟️ 이벤트코인 ×3 (최초 1회 보장)</td>
+               <td style="text-align:right">100.00%</td>
+             </tr>
+           </table>`;
+        return;
+      }
+
+      const total=items.reduce((a,b)=>a+b.w,0);
+      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
       probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
     }
     function buildRewardList(items){
@@ -922,23 +941,53 @@
     // ==== 스핀 버튼 ====
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
-      const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
+      const today = kstDayKey();
+      const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
+
       setMode('daily');
-      const picked = pickWeighted(activeItems);
+
+      // ★ 강제 당첨: 최초 1회 EC 보장
+      const canClaim = (dailyCache?.lastKey !== today);
+      let picked;
+      if (firstDailyGuarantee && canClaim) {
+        picked = activeItems.find(it => it.key === 'eco_3') || {
+          key:'eco_3', type:'ecoin', val:3, icon:'🎟️',
+          label:'이벤트코인 ×3',
+          onWin:()=>{ state.eventCoins = (state.eventCoins||0) + 3; }
+        };
+      } else {
+        picked = pickWeighted(activeItems);
+      }
+
       const before = makeDeltaSnapshot();
       await spinSlot(activeItems, picked);
       picked.onWin();
+
       try{
         const delta = deltaFrom(before);
         await applyPrizeTransaction(delta);
+
         let streak = Number(dailyCache?.streak||0);
-        if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
-        await update(ref(db, `${userBasePath}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
+        streak = (dailyCache?.lastKey === yesterday) ? (streak+1) : 1;
+
+        await update(ref(db, `${userBasePath}/daily`), {
+          lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key
+        });
         dailyCache = { lastKey: today, streak };
+
+        // ★ 보장 소진 처리
+        if (firstDailyGuarantee) {
+          firstDailyGuarantee = false;
+          try { await update(ref(db), { [`${userBasePath}/meta/firstDailyGuarantee`]: false }); } catch {}
+        }
+
         updateUI();
         dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
-      }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
+      }catch(e){
+        console.error(e);
+        dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.';
+      }
     };
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
@@ -975,8 +1024,12 @@
     async function fetchDaily(){
       if (!uid) return;
       try{
-        const snap = await get(ref(db, `${userBasePath}/daily`));
-        dailyCache = snap.exists() ? snap.val() : { lastKey:null, streak:0 };
+        const [dSnap, mSnap] = await Promise.all([
+          get(ref(db, `${userBasePath}/daily`)),
+          get(ref(db, `${userBasePath}/meta/firstDailyGuarantee`))
+        ]);
+        dailyCache = dSnap.exists() ? dSnap.val() : { lastKey:null, streak:0 };
+        firstDailyGuarantee = mSnap.exists() ? !!mSnap.val() : firstDailyGuarantee;
       }catch{ dailyCache = { lastKey:null, streak:0 }; }
     }
     async function checkDailyAndMaybeShow(){
@@ -985,7 +1038,8 @@
       const canClaim = dailyCache?.lastKey !== today;
       refreshDailyInfo(canClaim);
       setMode('daily');
-      if (canClaim) openDailyOverlay();
+      // 튜토리얼 중엔 자동 열기 막기
+      if (canClaim && !window.__IN_TUTORIAL) openDailyOverlay();
     }
 
     // ===== 메뉴에 "남은 시간" 표시 =====
@@ -1074,7 +1128,9 @@
       }
     }
 
+    // ★ 튜토리얼 중에는 가드 우회(로그인 후에만 튜토리얼 진입)
     function ensureReady() {
+      if (window.__IN_TUTORIAL) return true;
       if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
@@ -1124,6 +1180,262 @@
       }, 1000);
     }
 
+    // ===== 튜토리얼 시스템 (로그인 이후, 최초 1회만) =====
+    async function maybeStartTutorial(user) {
+      try {
+        const metaRef = ref(db, `${userBasePath}/meta/tutorialDone`);
+        const metaSnap = await get(metaRef);
+        const done = metaSnap.exists() && metaSnap.val() === true;
+        if (done) return;
+
+        // 기존 유저면(데이터가 이미 존재/진행 흔적) 튜토리얼/보장 스킵
+        const gdSnap = await get(ref(db, `${userBasePath}/gameData`));
+        if (gdSnap.exists()) {
+          const g = gdSnap.val() || {};
+          const isExisting = (g._lastUpdated && (g.coins>0 || g.resources>0 || (g.ownedPlanets||[]).length>0));
+          if (isExisting) {
+            await update(ref(db), {
+              [`${userBasePath}/meta/tutorialDone`]: true,
+              [`${userBasePath}/meta/tutorialDoneAt`]: Date.now(),
+              [`${userBasePath}/meta/firstDailyGuarantee`]: false
+            });
+            firstDailyGuarantee = false;
+            return;
+          }
+        }
+
+        // 신규 유저: 출석 첫 1회 EC 보장 ON
+        await update(ref(db), { [`${userBasePath}/meta/firstDailyGuarantee`]: true });
+        firstDailyGuarantee = true;
+
+        await Tutorial.start();
+        await update(ref(db), {
+          [`${userBasePath}/meta/tutorialDone`]: true,
+          [`${userBasePath}/meta/tutorialDoneAt`]: Date.now()
+        });
+      } catch (e) {
+        console.warn('maybeStartTutorial error', e);
+      }
+    }
+
+    const Tutorial = (function(){
+      let overlay, dimTop, dimLeft, dimRight, dimBottom, hi, bubble, textEl, nextBtn, skipBtn;
+      let stepIdx = 0;
+      let steps = [];
+      let prevPlayAllowed = null;
+      let onTargetClick = null;
+
+      function injectStyles(){
+        if (document.getElementById('tut-style')) return;
+        const st = document.createElement('style');
+        st.id = 'tut-style';
+        st.textContent = `
+        #tut-overlay{position:fixed;inset:0;z-index:4000;display:none;}
+        #tut-overlay.show{display:block;}
+        .tut-dim{position:fixed;background:rgba(0,0,0,.55);pointer-events:auto;}
+        #tut-hi{position:fixed;border-radius:12px;outline:2px solid rgba(0,213,255,.9);box-shadow:0 0 0 6px rgba(0,213,255,.18), 0 8px 28px rgba(0,0,0,.45);pointer-events:none;transition:all .18s ease;}
+        #tut-bubble{position:fixed;min-width:260px;max-width:320px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(10,12,18,.72));color:#eaf6ff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(8px);}
+        #tut-bubble:after{content:"";position:absolute;left:20px;top:-8px;border:8px solid transparent;border-bottom-color:rgba(255,255,255,.14);}
+        #tut-text{font-size:14px;line-height:1.42;}
+        #tut-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+        .tut-btn{padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.14);cursor:pointer;font-weight:800;color:#03222b;background:linear-gradient(180deg,#00c0ff,#00a2ff);}
+        .tut-btn.ghost{background:transparent;color:#eaf6ff;}
+        .tut-pulse{animation:tutPulse 1.1s ease-in-out infinite;}
+        @keyframes tutPulse{0%{box-shadow:0 0 0 6px rgba(0,213,255,.18);}50%{box-shadow:0 0 0 10px rgba(0,213,255,.28);}100%{box-shadow:0 0 0 6px rgba(0,213,255,.18);}}
+        `;
+        document.head.appendChild(st);
+      }
+
+      function buildDOM(){
+        if (document.getElementById('tut-overlay')) return;
+        overlay = document.createElement('div'); overlay.id='tut-overlay';
+        dimTop = document.createElement('div'); dimTop.className='tut-dim';
+        dimLeft = document.createElement('div'); dimLeft.className='tut-dim';
+        dimRight = document.createElement('div'); dimRight.className='tut-dim';
+        dimBottom = document.createElement('div'); dimBottom.className='tut-dim';
+        hi = document.createElement('div'); hi.id='tut-hi';
+        bubble = document.createElement('div'); bubble.id='tut-bubble';
+        textEl = document.createElement('div'); textEl.id='tut-text';
+        const actions = document.createElement('div'); actions.id='tut-actions';
+        nextBtn = document.createElement('button'); nextBtn.className='tut-btn'; nextBtn.textContent='다음';
+        skipBtn = document.createElement('button'); skipBtn.className='tut-btn ghost'; skipBtn.textContent='건너뛰기';
+        actions.appendChild(skipBtn); actions.appendChild(nextBtn);
+        bubble.appendChild(textEl); bubble.appendChild(actions);
+        overlay.appendChild(dimTop); overlay.appendChild(dimLeft); overlay.appendChild(dimRight); overlay.appendChild(dimBottom);
+        overlay.appendChild(hi); overlay.appendChild(bubble);
+        document.body.appendChild(overlay);
+      }
+
+      function spotlight(rect){
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const r = rect || {left: vw/2-160, top: vh/2-40, width: 320, height: 80};
+        hi.style.left = r.left+'px';
+        hi.style.top = r.top+'px';
+        hi.style.width = r.width+'px';
+        hi.style.height = r.height+'px';
+
+        // 4면 가림막(구멍 제외)로 클릭 차단
+        dimTop.style.left='0px'; dimTop.style.top='0px'; dimTop.style.width='100%'; dimTop.style.height= Math.max(0, r.top) +'px';
+        dimLeft.style.left='0px'; dimLeft.style.top= r.top+'px'; dimLeft.style.width= Math.max(0, r.left) +'px'; dimLeft.style.height= r.height+'px';
+        dimRight.style.left= (r.left + r.width)+'px'; dimRight.style.top= r.top+'px'; dimRight.style.width= Math.max(0, vw - (r.left + r.width)) +'px'; dimRight.style.height= r.height+'px';
+        dimBottom.style.left='0px'; dimBottom.style.top= (r.top + r.height)+'px'; dimBottom.style.width='100%'; dimBottom.style.height= Math.max(0, vh - (r.top + r.height)) +'px';
+
+        // 말풍선 위치
+        const bx = Math.min(Math.max(r.left, 12), Math.max(12, vw - 332));
+        let by = r.top + r.height + 12;
+        if (by + 120 > vh) { by = Math.max(12, r.top - 12 - 110); }
+        bubble.style.left = bx+'px';
+        bubble.style.top  = by+'px';
+      }
+
+      function rectOf(sel){
+        if (!sel) return null;
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const pad = 8;
+        return { left: Math.max(0, r.left-pad), top: Math.max(0, r.top-pad), width: r.width+pad*2, height: r.height+pad*2, el };
+      }
+
+      function onResize(){
+        const st = steps[stepIdx];
+        const r = rectOf(st.selector);
+        spotlight(r);
+      }
+
+      function setBubbleText(t){ textEl.innerHTML = t || ''; }
+
+      function clearTargetHandler(){
+        if (onTargetClick && onTargetClick.el) {
+          onTargetClick.el.removeEventListener('click', onTargetClick.fn, true);
+        }
+        onTargetClick = null;
+      }
+
+      async function next(){
+        clearTargetHandler();
+        stepIdx++;
+        if (stepIdx >= steps.length) return finish();
+
+        const st = steps[stepIdx];
+
+        // selector가 없으면 중앙 배치
+        let rect = rectOf(st.selector) || { left: window.innerWidth/2-160, top: window.innerHeight/2-40, width: 320, height: 80 };
+        spotlight(rect);
+        setBubbleText(st.text || '');
+
+        try { st.before && st.before(); } catch {}
+
+        if (st.requireAction === 'click' && rect.el) {
+          hi.classList.add('tut-pulse');
+          const fn = async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            clearTargetHandler();
+            hi.classList.remove('tut-pulse');
+
+            // 튜토리얼 중 ensureReady()는 true → 실제 로직 실행 허용
+            rect.el.click?.();
+
+            try { st.after && st.after(); } catch {}
+            await sleep(160);
+            next();
+          };
+          rect.el.addEventListener('click', fn, true);
+          onTargetClick = { el: rect.el, fn };
+          nextBtn.style.display = 'none'; // 요소 클릭으로만 넘김
+        } else {
+          hi.classList.remove('tut-pulse');
+          nextBtn.style.display = st.finish ? 'none' : 'inline-block';
+        }
+      }
+
+      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+      async function start(){
+        injectStyles();
+        buildDOM();
+
+        // 혹시 자동 출석 오버레이가 열렸다면 닫고 시작
+        try { document.getElementById('daily-overlay')?.classList.remove('show'); } catch {}
+
+        prevPlayAllowed = window.__PLAY_ALLOWED;
+        window.__IN_TUTORIAL = true;
+        if (typeof window.__DEFER_INIT === 'function') {
+          try { window.__PLAY_ALLOWED = true; window.__DEFER_INIT(); } catch {}
+        }
+
+        // 시작 보정(막힘 방지용 소액) + UI 반영
+        try {
+          state.coins = Math.max(state.coins||0, 150);
+          state.resources = Math.max(state.resources||0, 20);
+          updateUI(); renderPlanets(); save();
+        } catch {}
+
+        steps = [
+          { text: '환영합니다! 짧은 튜토리얼로 기본 조작을 안내해드릴게요. 화면을 눌러 계속하세요.' },
+
+          // 채굴/변환
+          { selector:'#ore', requireAction:'click', text:'먼저 광석(🪨)을 클릭해 자원을 모아봐요!' },
+          { selector:'#convert-button', requireAction:'click', text:'좋아요! <b>10자원 → 1코인</b>으로 코인 변환을 눌러봅시다.',
+            before: ()=>{ if ((state.resources||0) < 10) { state.resources = 12; updateUI(); } } },
+
+          // 우주인/업그레이드
+          { selector:'#bottom-nav .tab[data-tab="workers"]', requireAction:'click', text:'하단 <b>우주인</b> 탭으로 이동합니다.' },
+          { selector:'#hire-worker', requireAction:'click', text:'<b>알바 고용</b>을 누르면 초당 자원이 늘어요!',
+            after: ()=>{ updateUI(); } },
+          { selector:'#bottom-nav .tab[data-tab="upgrades"]', requireAction:'click', text:'이번엔 <b>업그레이드</b> 탭으로 이동합니다.' },
+          { selector:'#click-upgrade', requireAction:'click', text:'<b>클릭 업그레이드</b>로 클릭당 자원을 올려볼게요.',
+            before: ()=>{ if ((state.coins||0) < 15) { state.coins = 15; updateUI(); } } },
+
+          // 출석 보상(첫 회 EC 100%)
+          { selector:'#side-menu-toggle', requireAction:'click', text:'좌하단 <b>메뉴</b>를 열어볼게요.' },
+          { selector:'.side-item[data-action="attendance"]', requireAction:'click',
+            text:'<b>출석 보상</b>을 눌러 오늘의 슬롯을 엽니다.' },
+          { selector:'#spin-daily', requireAction:'click',
+            text:'첫 출석은 <b>이벤트코인 100% 보장</b>이에요! <b>무료 출석 돌리기</b>를 눌러 받아보세요.',
+            before: ()=>{ setMode('daily'); } },
+
+          // 행성 소개
+          { selector:'#bottom-nav .tab[data-tab="planets"]', requireAction:'click',
+            text:'여기가 <b>행성</b> 탭이에요. 코인으로 <b>달</b>부터 구매할 수 있어요.',
+            after: ()=>{ if ((state.coins||0) < 100) { state.coins = 100; updateUI(); } } },
+
+          // 설정 소개(이동 요구 없음)
+          { selector:'#settings-btn', text:'우측 상단 <b>⚙️ 설정</b>에서 실제 기능(초기화·언어 등)을 관리해요.' },
+
+          { text:'튜토리얼 완료! 이제 마음껏 정복하러 가볼까요? 🎉', finish:true }
+        ];
+
+        overlay.classList.add('show');
+        window.addEventListener('resize', onResize);
+        window.addEventListener('scroll', onResize, true);
+
+        nextBtn.onclick = next;
+        skipBtn.onclick = finish;
+
+        stepIdx = -1;
+        await sleep(50);
+        next();
+      }
+
+      async function finish(){
+        clearTargetHandler();
+        window.removeEventListener('resize', onResize);
+        window.removeEventListener('scroll', onResize, true);
+        overlay?.classList.remove('show');
+
+        window.__IN_TUTORIAL = false;
+        if (prevPlayAllowed !== null) window.__PLAY_ALLOWED = prevPlayAllowed;
+
+        // 튜토리얼 직후: 출석 가능 상태면 안내창 한 번 띄워 재상기
+        try { checkDailyAndMaybeShow(); } catch {}
+        showAuthStatus('튜토리얼 완료! 즐겜 🚀', false);
+      }
+
+      return { start };
+    })();
+
     // ===== 인증 상태 변경 =====
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
@@ -1168,8 +1480,12 @@
               isInitialSync = false;
               showGameUI();
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-              await checkDailyAndMaybeShow();
-              updateAttendanceLabels();
+
+              // 순서: (튜토리얼이 자동 출석보다 우선)
+              await fetchDaily(); updateAttendanceLabels();
+              await maybeStartTutorial(user); // ★ 로그인 후 최초 1회 튜토리얼
+              if (!window.__IN_TUTORIAL) await checkDailyAndMaybeShow();
+
             } else {
               state = { ...defaultData };
               if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
@@ -1183,8 +1499,12 @@
             isInitialSync = false;
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-            await checkDailyAndMaybeShow();
-            updateAttendanceLabels();
+
+            // 순서: (튜토리얼이 자동 출석보다 우선)
+            await fetchDaily(); updateAttendanceLabels();
+            await maybeStartTutorial(user); // ★ 로그인 후 최초 1회 튜토리얼
+            if (!window.__IN_TUTORIAL) await checkDailyAndMaybeShow();
+
             return;
           }
           if (serverLast >= (localLastWrite || 0)) {
