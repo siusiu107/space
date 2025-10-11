@@ -345,6 +345,11 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
+    /* ===== 레거시 자동 이관 플래그 =====
+       false: 과거 users/{uid} 데이터를 새 경로로 자동 복구하지 않음(권장)
+       true : 1회 이관 허용 (관리 목적일 때만 잠깐 켜세요) */
+    const ENABLE_LEGACY_MIGRATION = false;
+
     /* 공통 UI */
     const backBtn     = document.getElementById('back-btn');
     const toast       = document.getElementById('toast');
@@ -429,7 +434,6 @@
     }
 
     async function ensureServerMapping(user) {
-      // tombstone이 있더라도 매핑은 재생성 가능. (데이터만 복구 금지)
       const mapRef = ref(db, `userServerMap/${user.uid}`);
       try {
         const snap = await get(mapRef);
@@ -467,12 +471,9 @@
       return { server, id: idKey };
     }
 
-    // ✅ 무덤표(tombstone) 확인: 있으면 레거시 이관 금지
+    // (옵션) 레거시 → 새 경로 이관 로직 (플래그가 true일 때만 호출)
     async function migrateLegacyIfExists(uid, basePath) {
       try {
-        const tomb = await get(ref(db, `tombstones/${uid}`));
-        if (tomb.exists()) return; // 사용자가 초기화 선택함 → 복구 금지
-
         const oldSnap = await get(ref(db, `users/${uid}`));
         if (!oldSnap.exists()) return;
 
@@ -610,15 +611,9 @@
 
     // 전체 캐시 정리
     function clearClientCaches(){
-      try {
-        localStorage.clear();
-      } catch {}
-      try {
-        sessionStorage.clear();
-      } catch {}
-      try {
-        caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{});
-      } catch {}
+      try { localStorage.clear(); } catch {}
+      try { sessionStorage.clear(); } catch {}
+      try { caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{}); } catch {}
     }
 
     // 사용자: 계정/초기화
@@ -627,13 +622,15 @@
       catch (e) { console.error(e); showToast('로그아웃 실패'); }
     });
 
-    // ✅ 변경된 “전체 삭제 + 자동 로그아웃” (정말 내 데이터만 제거 + 복구 차단)
+    // ✅ 요청사항: users/{server}/{id} 경로만 통째 삭제 + 로그아웃
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
-      const basePath = userBasePath || `users/${uid}`; // 안전장치
+      const basePath = userBasePath; // users/{server}/{id}
+      if (!basePath){ showToast('데이터 경로를 찾지 못했어요'); return; }
+
       const ok = confirm(
         `정말 삭제할까요?\n` +
-        `※ 경고: ${basePath} 경로의 모든 데이터(게임데이터, 출석/이벤트/설정 등)가 완전히 삭제됩니다.\n` +
+        `※ 경고: ${basePath} 경로의 모든 데이터가 완전히 삭제됩니다.\n` +
         `이 작업은 되돌릴 수 없으며, 완료 후 자동으로 로그아웃됩니다.`
       );
       if (!ok) return;
@@ -645,27 +642,16 @@
       showOverlay(true);
 
       try{
-        // 여러 경로를 한 번에 원자적으로 업데이트
-        const updates = {};
-        updates[basePath]                = null;                  // 현재 샤딩 경로 전체 삭제
-        updates[`users/${uid}`]          = null;                  // 레거시 경로 삭제
-        updates[`userServerMap/${uid}`]  = null;                  // 내 매핑 제거(원하면 재생성됨)
-        updates[`tombstones/${uid}`]     = { purgedAt: serverTimestamp() }; // 복구 금지 플래그
+        await remove(ref(db, basePath));   // ← 딱 여기만 삭제
 
-        await update(ref(db), updates);
-
-        // 로컬/세션 캐시 모두 비움
         clearClientCaches();
 
-        showToast('사용자 데이터가 완전히 삭제되었습니다. 로그아웃합니다…');
-        // 자동 로그아웃
+        showToast('데이터 삭제 완료. 로그아웃합니다…');
         try { await signOut(auth); } catch(e){ console.warn('signOut 실패:', e); }
-        // 홈으로 이동
         setTimeout(()=>{ location.href = '/index.html'; }, 600);
       }catch(e){
         console.error(e);
         showToast('삭제 실패. 네트워크/권한을 확인하세요.');
-        // 실패 시 버튼 원복
         resetBtn.disabled = false;
         signoutBtn.disabled = false;
         helpBtn.disabled = false;
@@ -875,11 +861,12 @@
         userServerKey = mapping.server;
         userIdKey     = mapping.id;
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
-
-        // 레거시 데이터가 남아있다면 1회 이관 (단, tombstone 있으면 절대 이관 금지)
-        await migrateLegacyIfExists(uid, userBasePath);
-
         accountPath.textContent = `데이터 경로: ${userBasePath}`;
+
+        // 레거시 데이터 이관 (비활성화가 기본)
+        if (ENABLE_LEGACY_MIGRATION) {
+          await migrateLegacyIfExists(uid, userBasePath);
+        }
       } catch {
         userBasePath = `users/${uid}`; // 안전장치
         accountPath.textContent = `데이터 경로: ${userBasePath} (fallback)`;
