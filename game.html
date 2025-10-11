@@ -755,7 +755,7 @@
     ];
     const TPL_ECOIN = [
       { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.26 },
-      { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'#4DFFB5', w:0.18 }, /* color fix */
       { key:'coin_x8',    type:'coin', coinMul:8.0,  icon:'💰', color:'#32C6FF', w:0.10 },
       { key:'buff_duo',   type:'buffBoth', bval:1.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
       { key:'eco_8',      type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.16 },
@@ -837,7 +837,13 @@
         });
       });
       return new Promise(resolve=>{
-        reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); playSfx('sfx-win'); resolve(); };
+        reel.ontransitionend = ()=>{ 
+          reel.ontransitionend=null; 
+          stopTickLoop(); 
+          playSfx('sfx-win'); 
+          try { window.dispatchEvent(new CustomEvent('slot:stopped', { detail: { mode: currentMode, picked } })); } catch {}
+          resolve(); 
+        };
       });
     }
 
@@ -947,7 +953,7 @@
 
       setMode('daily');
 
-      // ★ 강제 당첨: 최초 1회 EC 보장
+      // 보장 추첨/일반 추첨
       const canClaim = (dailyCache?.lastKey !== today);
       let picked;
       if (firstDailyGuarantee && canClaim) {
@@ -976,7 +982,7 @@
         });
         dailyCache = { lastKey: today, streak };
 
-        // ★ 보장 소진 처리
+        // 보장 소진 처리
         if (firstDailyGuarantee) {
           firstDailyGuarantee = false;
           try { await update(ref(db), { [`${userBasePath}/meta/firstDailyGuarantee`]: false }); } catch {}
@@ -1038,7 +1044,6 @@
       const canClaim = dailyCache?.lastKey !== today;
       refreshDailyInfo(canClaim);
       setMode('daily');
-      // 튜토리얼 중엔 자동 열기 막기
       if (canClaim && !window.__IN_TUTORIAL) openDailyOverlay();
     }
 
@@ -1308,11 +1313,12 @@
       function clearTargetHandler(){
         if (onTargetClick && onTargetClick.el) {
           onTargetClick.el.removeEventListener('click', onTargetClick.fn, true);
+          onTargetClick.el.removeEventListener('click', onTargetClick.fn, false);
         }
         onTargetClick = null;
       }
 
-      // ▶▶▶ 수정된 next() — 클릭 요구 단계에서도 '다음' 버튼 항상 표시
+      // ▶▶▶ 행동-잠금형(next): 클릭 요구 시 '다음' 숨기고 실제 동작 후 진행
       async function next(){
         clearTargetHandler();
         stepIdx++;
@@ -1336,36 +1342,48 @@
         // 공통 진행 함수
         const advance = async () => {
           hi.classList.remove('tut-pulse');
-          // 클릭 요구 스텝이면 실제로 그 요소를 눌러줌
-          if (st.requireAction === 'click' && rect.el) {
-            try { rect.el.click?.(); } catch {}
-          }
           try { st.after && st.after(); } catch {}
           await (new Promise(r=>setTimeout(r,160)));
           next();
         };
 
-        // 항상 "다음" 버튼을 보여주고, finish 스텝이면 숨김
-        nextBtn.style.display = st.finish ? 'none' : 'inline-block';
-        nextBtn.onclick = advance;
+        // 스텝 종료(마지막 멘트)
+        if (st.finish) {
+          nextBtn.style.display = 'none';
+          return; // 사용자가 '건너뛰기'로만 닫을 수 있게 함 (finish에서 처리)
+        }
 
-        // 타겟 직접 클릭으로도 진행 가능(둘 다 지원)
+        // 행동 요구 스텝 처리
         if (st.requireAction === 'click' && rect.el) {
+          // '다음' 버튼 숨김, 타겟 강조
+          nextBtn.style.display = 'none';
           hi.classList.add('tut-pulse');
-          const fn = async (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            clearTargetHandler();
-            await advance();
+
+          // 클릭을 가로채지 않고(중요) 실제 동작이 일어난 뒤 진행
+          const fn = async () => {
+            // 추가 대기 조건(예: 슬롯 스핀 완료) 처리
+            if (st.waitFor === 'slotStopDaily') {
+              const handler = (ev) => {
+                if (ev?.detail?.mode === 'daily') {
+                  window.removeEventListener('slot:stopped', handler);
+                  advance();
+                }
+              };
+              window.addEventListener('slot:stopped', handler, { once:true });
+            } else {
+              setTimeout(advance, 100); // 실제 클릭 처리 후 살짝 대기
+            }
           };
-          rect.el.addEventListener('click', fn, true);
+          rect.el.addEventListener('click', fn, false);
           onTargetClick = { el: rect.el, fn };
+
         } else {
+          // 설명/안내 스텝은 '다음'으로 진행
+          nextBtn.style.display = 'inline-block';
+          nextBtn.onclick = advance;
           hi.classList.remove('tut-pulse');
         }
       }
-
-      function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
       async function start(){
         injectStyles();
@@ -1388,28 +1406,30 @@
         } catch {}
 
         steps = [
-          { text: '환영합니다! 짧은 튜토리얼로 기본 조작을 안내해드릴게요. 화면을 눌러 계속하세요.' },
+          { text: '환영합니다! 짧은 튜토리얼로 기본 조작을 안내해드릴게요. "다음"을 눌러 진행하세요.' },
 
           // 채굴/변환
-          { selector:'#ore', requireAction:'click', text:'먼저 광석(🪨)을 클릭해 자원을 모아봐요!' },
-          { selector:'#convert-button', requireAction:'click', text:'좋아요! <b>10자원 → 1코인</b>으로 코인 변환을 눌러봅시다.',
+          { selector:'#ore', requireAction:'click', text:'먼저 광석(🪨)을 <b>직접 클릭</b>해 자원을 모아봐요!' },
+          { selector:'#convert-button', requireAction:'click', text:'좋아요! 이제 <b>10자원 → 1코인</b> 버튼을 눌러 코인으로 바꿔요.',
             before: ()=>{ if ((state.resources||0) < 10) { state.resources = 12; updateUI(); } } },
 
           // 우주인/업그레이드
-          { selector:'#bottom-nav .tab[data-tab="workers"]', requireAction:'click', text:'하단 <b>우주인</b> 탭으로 이동합니다.' },
-          { selector:'#hire-worker', requireAction:'click', text:'<b>알바 고용</b>을 누르면 초당 자원이 늘어요!',
+          { selector:'#bottom-nav .tab[data-tab="workers"]', requireAction:'click', text:'하단 <b>우주인</b> 탭으로 이동해요.' },
+          { selector:'#hire-worker', requireAction:'click', text:'<b>알바 고용</b>을 직접 눌러 초당 자원을 늘려봅시다.',
+            before: ()=>{ if ((state.coins||0) < getWorkerCost()) { state.coins = getWorkerCost(); updateUI(); } },
             after: ()=>{ updateUI(); } },
           { selector:'#bottom-nav .tab[data-tab="upgrades"]', requireAction:'click', text:'이번엔 <b>업그레이드</b> 탭으로 이동합니다.' },
-          { selector:'#click-upgrade', requireAction:'click', text:'<b>클릭 업그레이드</b>로 클릭당 자원을 올려볼게요.',
+          { selector:'#click-upgrade', requireAction:'click', text:'<b>클릭 업그레이드</b>를 직접 눌러 클릭당 자원을 올려요.',
             before: ()=>{ if ((state.coins||0) < 15) { state.coins = 15; updateUI(); } } },
 
           // 출석 보상(첫 회 EC 100%)
           { selector:'#side-menu-toggle', requireAction:'click', text:'좌하단 <b>메뉴</b>를 열어볼게요.' },
           { selector:'.side-item[data-action="attendance"]', requireAction:'click',
-            text:'<b>출석 보상</b>을 눌러 오늘의 슬롯을 엽니다.' },
+            text:'<b>출석 보상</b>을 눌러 오늘의 슬롯을 열어주세요.' },
           { selector:'#spin-daily', requireAction:'click',
-            text:'첫 출석은 <b>이벤트코인 100% 보장</b>이에요! <b>무료 출석 돌리기</b>를 눌러 받아보세요.',
-            before: ()=>{ setMode('daily'); } },
+            text:'첫 출석은 <b>이벤트코인 100% 보장</b>이에요! <b>무료 출석 돌리기</b>를 직접 눌러 받아보세요.',
+            before: ()=>{ setMode('daily'); },
+            waitFor: 'slotStopDaily' },
 
           // 행성 소개
           { selector:'#bottom-nav .tab[data-tab="planets"]', requireAction:'click',
@@ -1430,8 +1450,7 @@
         skipBtn.onclick = finish;
 
         stepIdx = -1;
-        await sleep(50);
-        next();
+        setTimeout(next, 50);
       }
 
       async function finish(){
