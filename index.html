@@ -242,7 +242,7 @@
     });
   </script>
 
-  <!-- 환경 배지 & 연결정보 로직 -->
+  <!-- 환경 배지 & 연결정보 로직 (+ 서버 샤드 표시 훅 포함) -->
   <script>
     (function () {
       const $badge = document.getElementById('env-badge');
@@ -290,24 +290,35 @@
         const uaDataPlat = (navigator.userAgentData && navigator.userAgentData.platform) ? navigator.userAgentData.platform : '';
         const langs = (navigator.languages && navigator.languages.length ? navigator.languages.join(', ') : navigator.language || '');
         const ref = document.referrer || '';
-        const rows = [
-          ['디바이스', deviceTypeLabel()],
-          ['플랫폼', uaDataPlat || navigator.platform || ''],
-          ['PWA 표시모드', displayMode()],
-          ['온라인', bool(navigator.onLine)],
-          ['언어', langs],
-          ['타임존', tz() || ''],
-          ['뷰포트', `${window.innerWidth} × ${window.innerHeight}`],
-          ['스크린', `${screen.width} × ${screen.height}`],
-          ['DPR', String(window.devicePixelRatio || 1)],
-          ['터치 지원', bool(('ontouchstart' in window) || (navigator.maxTouchPoints > 0))],
-          ['마우스 Hover', bool(h.canHover)],
-          ['포인터(굵음)', bool(h.coarse)],
-          ['포인터(정밀)', bool(h.fine)],
-          ['쿠키 사용', bool(navigator.cookieEnabled)],
-          ['Referrer', ref || '(없음)'],
-          ['User-Agent', ua]
-        ];
+
+        const rows = [];
+
+        // 🔸 로그인/서버 샤드 정보 (Firebase 모듈에서 주입)
+        const authLabel = (window.__AUTH_STATUS || '비로그인');
+        rows.push(['계정 상태', authLabel]);
+        if (window.__SERVER_INFO) {
+          rows.push(['데이터 서버', window.__SERVER_INFO.server || '-']);
+          if (window.__SERVER_INFO.id) rows.push(['저장 ID', window.__SERVER_INFO.id]);
+        }
+
+        // 나머지 환경 정보
+        rows.push(['디바이스', deviceTypeLabel()]);
+        rows.push(['플랫폼', uaDataPlat || navigator.platform || '']);
+        rows.push(['PWA 표시모드', displayMode()]);
+        rows.push(['온라인', bool(navigator.onLine)]);
+        rows.push(['언어', langs]);
+        rows.push(['타임존', tz() || '']);
+        rows.push(['뷰포트', `${window.innerWidth} × ${window.innerHeight}`]);
+        rows.push(['스크린', `${screen.width} × ${screen.height}`]);
+        rows.push(['DPR', String(window.devicePixelRatio || 1)]);
+        rows.push(['터치 지원', bool(('ontouchstart' in window) || (navigator.maxTouchPoints > 0))]);
+        rows.push(['마우스 Hover', bool(h.canHover)]);
+        rows.push(['포인터(굵음)', bool(h.coarse)]);
+        rows.push(['포인터(정밀)', bool(h.fine)]);
+        rows.push(['쿠키 사용', bool(navigator.cookieEnabled)]);
+        rows.push(['Referrer', ref || '(없음)']);
+        rows.push(['User-Agent', ua]);
+
         if (conn) {
           rows.push(['네트워크 유형', conn.type || '(알 수 없음)']);
           rows.push(['효과적 유형', conn.effectiveType || '(알 수 없음)']);
@@ -344,6 +355,16 @@
       if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
         navigator.connection.addEventListener('change', () => { if ($panel.style.display==='block') render(); });
       }
+
+      // ✅ 외부(Firebase 모듈)에서 서버 정보 주입할 수 있도록 훅 제공
+      window.__updateServerInfo = function(info){
+        window.__SERVER_INFO = info || null;
+        if ($panel.style.display==='block') render();
+      };
+      window.__setAuthStatus = function(label){
+        window.__AUTH_STATUS = label || null;
+        if ($panel.style.display==='block') render();
+      };
 
       // 초기 라벨
       document.getElementById('env-badge').textContent = deviceTypeLabel();
@@ -428,6 +449,98 @@
     })();
   </script>
 
+  <!-- ✅ Firebase 로드: 로그인 상태에 따라 "데이터 서버(serverN)" 정보 표시 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // ── 샤딩 유틸 (다른 페이지들과 동일 정책: 15명/서버, idKey 충돌시 uid 일부 붙임)
+    function sanitizeIdKey(raw) {
+      const s = (raw || '').toString().trim().toLowerCase();
+      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+      return base || 'user';
+    }
+    function makeIdKeyFromUser(user) {
+      const email = (user.email || '').toString();
+      if (email.includes('@')) {
+        const local = email.split('@')[0];
+        return sanitizeIdKey(local);
+      }
+      const dn = sanitizeIdKey(user.displayName || '');
+      if (dn && dn !== 'user') return dn;
+      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
+    }
+    async function ensureServerMapping(user) {
+      // 1) 기존 매핑 있으면 사용
+      try {
+        const m = await get(ref(db, `userServerMap/${user.uid}`));
+        if (m.exists()) {
+          const { server, id } = m.val() || {};
+          if (server && id) return { server, id };
+        }
+      } catch {}
+
+      // 2) 없으면 새로 할당
+      let nextIndex = 0;
+      try {
+        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
+        nextIndex = res?.snapshot?.val() || 1;
+      } catch {
+        nextIndex = 1;
+      }
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
+      const server = `server${serverNum}`;
+      let idKey = makeIdKeyFromUser(user);
+
+      // 같은 server 안에서 idKey 충돌 방지
+      try {
+        const exists = await get(ref(db, `users/${server}/${idKey}`));
+        if (exists.exists()) idKey = `${idKey}-${(user.uid||'').slice(0,4)}`;
+      } catch {}
+
+      try {
+        await update(ref(db), { [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() } });
+      } catch {}
+
+      return { server, id: idKey };
+    }
+
+    // 🔐 로그인 상태에 따라 패널 정보 업데이트
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.__setAuthStatus?.('비로그인');
+        window.__updateServerInfo?.({ server: '-', id: '(로그인 필요)' });
+        return;
+      }
+      window.__setAuthStatus?.('로그인');
+
+      try {
+        const info = await ensureServerMapping(user);
+        // 패널에 서버 번호/ID 표시
+        window.__updateServerInfo?.(info); // { server: 'serverN', id: 'idKey' }
+      } catch (e) {
+        console.warn('서버 매핑 조회 실패:', e);
+        window.__updateServerInfo?.({ server: '(조회 실패)', id: '-' });
+      }
+    });
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
@@ -473,3 +586,4 @@
   </script>
 </body>
 </html>
+ㄴ
