@@ -117,7 +117,7 @@
       transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
       display:none;
     }
-    #auth-container.hidden { opacity:0; transform: translate(-50%, -46% ) scale(.98); pointer-events:none; visibility:hidden; }
+    #auth-container.hidden { opacity:0; transform: translate(-50%, -46%) scale(.98); pointer-events:none; visibility:hidden; }
     #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
     #auth-container input { width:100%; padding:12px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.20); color:#fff; outline:none; font-size:14px; }
     #auth-container input:focus { box-shadow:0 8px 20px rgba(0,160,255,0.08); border-color:rgba(0,160,255,0.22); }
@@ -224,7 +224,7 @@
     #side-backdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.25); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 1550; }
     #side-backdrop.show{ opacity:1; pointer-events:auto; }
     #side-menu{
-      position: fixed; top: 0; left: 0; bottom: 0; width: 260px; max-width: 84vw;
+      position: fixed; top: 0; left:  0; bottom: 0; width: 260px; max-width: 84vw;
       transform: translateX(-100%); transition: transform .24s cubic-bezier(.2,.9,.3,1);
       background: rgba(15,18,28,0.60); border-right: 1px solid rgba(255,255,255,0.08);
       backdrop-filter: blur(10px); z-index: 1600; box-shadow: 10px 0 30px rgba(0,0,0,0.28);
@@ -338,15 +338,6 @@
           </div>
         </div>
         <div style="margin:0 auto 12px;"><div class="spinner" aria-hidden="true"></div></div>
-        <div style="width:220px; margin:0 auto 10px; background:rgba(255,255,255,0.04); border-radius:8px; padding:6px;">
-          <div id="overlay-progress" style="height:8px; width:0%; border-radius:6px; background:linear-gradient(90deg,#00c0ff,#0077ff); transition:width .4s ease;"></div>
-        </div>
-        <ol id="overlay-steps" style="list-style:none; padding:0; margin:0; font-size:13px; color:#dbefff; max-width:260px;">
-          <li data-step="1" style="opacity:0.9; margin-bottom:6px;">1. 인증창 열기</li>
-          <li data-step="2" style="opacity:0.6; margin-bottom:6px;">2. 권한 요청</li>
-          <li data-step="3" style="opacity:0.4;">3. 로그인 완료</li>
-        </ol>
-        <div id="login-overlay-detail" style="font-size:12px; color:#9fbfda; margin-top:10px; min-height:20px;">브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다.</div>
       </div>
     </div>
   </div>
@@ -366,6 +357,8 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
+      <!-- ★ 버프 상태 표시 -->
+      <span id="buff-status" style="margin-left:6px; color:#9fdcff;">버프: 없음</span>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
   </div>
@@ -515,9 +508,9 @@
     let isInitialSync = false;
 
     // 새 구조용 전역 경로
-    let userServerKey = null;  // "server1" 등
-    let userIdKey     = null;  // 이메일 local-part 기반
-    let userBasePath  = null;  // `users/${server}/${idKey}`
+    let userServerKey = null;
+    let userIdKey     = null;
+    let userBasePath  = null;
 
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
@@ -531,41 +524,97 @@
 
     let currentAuthMode = 'login';
 
+    /* =======================
+       버프: 저장/적용/표시
+       ======================= */
+    function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
+
+    function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
+
+    function persistBuffs(){
+      ensureFx();
+      try {
+        const now = Date.now();
+        const toSave = window.fx.buffs.filter(b=>b && b.until>now);
+        localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
+      } catch {}
+    }
+
+    function loadBuffs(){
+      ensureFx();
+      try {
+        const raw = localStorage.getItem(buffStorageKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        const now = Date.now();
+        window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
+      } catch { window.fx.buffs = []; }
+    }
+
+    function pruneExpiredBuffs(){
+      ensureFx();
+      const before = window.fx.buffs.length;
+      const now = Date.now();
+      window.fx.buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
+      if (window.fx.buffs.length !== before) persistBuffs();
+    }
+
+    // kind: 'res' | 'coin' | 'all'
+    function activeBuffFactor(kind){
+      ensureFx();
+      const now = Date.now();
+      let factor = 1;
+      (window.fx.buffs||[]).forEach(b=>{
+        if(!b || now>=b.until) return;
+        if (b.type==='all') factor *= (1 + b.value);
+        else if (kind==='res'  && b.type==='res')  factor *= (1 + b.value);
+        else if (kind==='coin' && b.type==='coin') factor *= (1 + b.value);
+      });
+      return factor;
+    }
+
+    // value: 1 => x2, 2 => x3 ...
+    function addTempBuff(type, value, dur){
+      ensureFx();
+      const now=Date.now();
+      window.fx.buffs.push({ type, value, until: now + dur });
+      persistBuffs();
+      renderBuffStatus(); // 즉시 UI 반영
+    }
+
+    function renderBuffStatus(){
+      const el = document.getElementById('buff-status');
+      if(!el){ return; }
+      pruneExpiredBuffs();
+      const now = Date.now();
+      const list = (window.fx?.buffs||[])
+        .filter(b=>b && b.until>now)
+        .sort((a,b)=>a.until-b.until);
+
+      if(list.length===0){ el.textContent = '버프: 없음'; return; }
+
+      function labelOf(b){
+        const name = b.type==='all' ? '전체' : b.type==='res' ? '자원' : '코인';
+        const mult = (1 + b.value);
+        const ms   = Math.max(0, b.until - now);
+        return `${name}×${mult} ${fmtLeft(ms)}`;
+      }
+      // 너무 길면 상위 3개만 표시
+      const pieces = list.slice(0,3).map(labelOf);
+      el.textContent = '버프: ' + pieces.join(' · ');
+    }
+
     // ===== 유틸 =====
     function getWorkerCost()   { return Math.floor(initialWorkerCost   * Math.pow(workerCostGrowth, state.workerCount)); }
     function getWorkerPower()  { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost(){ return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
-
-    // ---- 새: 버프 계층 ----
-    function activeBuffFactor(kind){
-      // kind: 'res' | 'coin' | 'all' | legacy 'click'/'convert'/'worker'
-      const now = Date.now();
-      let bonus = 0;
-      const apply = (b)=>{
-        if(!b || now>=b.until) return;
-        const t = b.type;
-        if (t==='all') bonus += b.value;
-        else if (kind==='res'  && (t==='res' || t==='click')) bonus += b.value;
-        else if (kind==='coin' && (t==='coin' || t==='convert')) bonus += b.value;
-        else if (kind===t) bonus += b.value;
-      };
-      if (window.fx?._tempBuff)  apply(window.fx._tempBuff);
-      if (window.fx?._tempBuff2) apply(window.fx._tempBuff2);
-      return 1 + Math.max(0, bonus); // value=1 => x2
-    }
-    function addTempBuff(type, value, dur){
-      const now=Date.now(); if (!window.fx) window.fx={};
-      const slot = (!window.fx._tempBuff || now>=window.fx._tempBuff.until) ? '_tempBuff' : '_tempBuff2';
-      if(!window.fx[slot]) window.fx[slot]={type,value,until:now+dur};
-      else{ window.fx[slot].type=type; window.fx[slot].value=value; window.fx[slot].until=now+dur; }
-    }
 
     function convertResources(maxCount = null) {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
       if (count > 0) {
         state.resources -= count * 10;
-        const coinMul = activeBuffFactor('coin'); // 코인 배수 버프 반영
+        // 코인 생산 배수 버프 반영
+        const coinMul = activeBuffFactor('coin');
         state.coins += count * coinMul;
       }
     }
@@ -642,6 +691,7 @@
       return { server, id: idKey };
     }
 
+    // 구(old) 경로 → 신(new) 경로 1회 마이그레이션 (존재 시 복사)
     async function migrateLegacyIfExists(uid, basePath) {
       try {
         const oldSnap = await get(ref(db, `users/${uid}`));
@@ -674,31 +724,6 @@
       authErrorEl.textContent = msg || '';
       if (msg) authErrorEl.classList.add('show'); else authErrorEl.classList.remove('show');
       authErrorEl.style.color = isError ? '#ffdede' : '#dfffe8';
-    }
-
-    function showLoginOverlay(show, text = '로그인 중…', opts = {}) {
-      const overlay = document.getElementById('login-overlay');
-      if (!overlay) return;
-      const title = document.getElementById('login-overlay-title');
-      const sub   = document.getElementById('login-overlay-sub');
-      const detail= document.getElementById('login-overlay-detail');
-      const progress = document.getElementById('overlay-progress');
-      const steps = Array.from(document.querySelectorAll('#overlay-steps li'));
-      if (text) title.textContent = text;
-      sub.textContent    = opts.subText || '보안 연결 · 인증 중…';
-      detail.textContent = opts.detail  || '브라우저 팝업 또는 새 창에서 인증창이 열릴 수 있습니다.';
-      steps.forEach(li => { li.removeAttribute('data-active'); li.style.opacity = 0.6; });
-      function activateStep(n){ steps.forEach((li,i)=>{ if(i<n){ li.setAttribute('data-active','true'); li.style.opacity=1; } }); }
-      if (show) {
-        overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
-        activateStep(1); progress.style.width='24%';
-        overlay._t1 && clearTimeout(overlay._t1); overlay._t1=setTimeout(()=>{ activateStep(2); progress.style.width='64%'; },800);
-        overlay._t2 && clearTimeout(overlay._t2); overlay._t2=setTimeout(()=>{ progress.style.width='84%'; },1700);
-      } else {
-        overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true');
-        progress.style.width='0%';
-        overlay._t1 && clearTimeout(overlay._t1); overlay._t2 && clearTimeout(overlay._t2);
-      }
     }
 
     function showGameUI() {
@@ -795,7 +820,7 @@
           return { ...it, label:`이벤트코인 ×${it.val}`, onWin:()=>{ state.eventCoins = (state.eventCoins||0) + it.val; } };
         }
         if (it.type==='buff'){
-          const multText = `x${1+it.bmult}`; // 1=>x2, 2=>x3
+          const multText = `x${1+it.bmult}`;
           const minText  = `${Math.round(it.bdur/60000)}m`;
           let title = it.bkind==='all' ? `모든 생산 ${multText}`
                    : it.bkind==='coin' ? `코인 생산 ${multText}`
@@ -837,7 +862,7 @@
       reel.style.transition = 'none';
     }
     function spinSlot(items, picked){
-      const rowH=56, totalRows = items.length*8;
+      const rowH=56;
       const idx = Math.max(0, items.findIndex(it=>it.key===picked.key));
       const stopRow = (items.length*6) + (idx<0?0:idx);
       const targetY = - stopRow * rowH;
@@ -1024,6 +1049,7 @@
 
     // ===== 게임 UI =====
     function updateUI() {
+      pruneExpiredBuffs();
       document.getElementById('score').innerText  = `자원: ${Math.floor(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${Math.floor(state.coins)}`;
       document.getElementById('ecoins').innerText = `이벤트코인: ${Math.floor(state.eventCoins||0)}`;
@@ -1051,6 +1077,8 @@
       hireConv.innerText = `코인 알바 (${getConversionCost()}코인)`;
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
+
+      renderBuffStatus(); // ★ 상단바 버프 남은 시간 갱신
     }
 
     function renderPlanets() {
@@ -1122,8 +1150,11 @@
         tab.classList.add('active');
       }));
 
+      // 메인 루프
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
+
+        pruneExpiredBuffs();
 
         // 초당 자원: 알바 × 자원버프
         let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res');
@@ -1148,12 +1179,15 @@
       if (user) {
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
         if (isEmailPassword && !user.emailVerified) {
-          try { showLoginOverlay(false); } catch {}
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
         }
 
         uid = user.uid;
+
+        // 버프 로드 (유저별)
+        loadBuffs();
+        renderBuffStatus();
 
         const mapping = await ensureServerMapping(user);
         userServerKey = mapping.server;
@@ -1210,17 +1244,18 @@
         });
 
       } else {
-        try { showLoginOverlay(false); } catch {}
         uid = null; dataRef = null;
         userServerKey = null; userIdKey = null; userBasePath = null;
+
+        // 로그아웃 시 버프표시 리셋(저장은 유저별이라 유지됨)
+        ensureFx(); window.fx.buffs = [];
+        renderBuffStatus();
 
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
-        const lb = document.getElementById('logout-btn');
-        if (lb) lb.style.display = 'none';
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
 
         setAuthMode(currentAuthMode);
@@ -1260,16 +1295,13 @@
       const password = document.getElementById('password').value;
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
       try {
-        showLoginOverlay(true, '로그인 중… 잠시만요');
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const user = cred.user;
         if (user && user.providerData.some(p=>p.providerId==='password') && !user.emailVerified) {
           try { await sendEmailVerification(user); } catch {}
-          showLoginOverlay(false);
           showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
         }
       } catch (err) {
-        showLoginOverlay(false);
         const code = err && err.code || '';
         const msg = (
           code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
@@ -1288,16 +1320,13 @@
       const password = document.getElementById('password').value;
       const passwordConfirm = document.getElementById('password-confirm').value;
       if (!email || !password || !passwordConfirm) { showAuthStatus('모든 필드를 입력하세요.'); return; }
-      if (password !== passwordConfirm) { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
+      if (password !== passwordConfirm) { showAuthStatus('비밀번호가 일치하지 않습니다.'; return; }
       try {
-        showLoginOverlay(true, '계정 생성 중…');
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const user = cred.user;
         try { await sendEmailVerification(user); } catch {}
-        showLoginOverlay(false);
         showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
       } catch (err) {
-        showLoginOverlay(false);
         const code = err && err.code || '';
         const msg = (
           code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
@@ -1313,28 +1342,25 @@
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
       try {
-        showLoginOverlay(true, '구글 인증 시작', { provider:'google', subText:'구글 계정으로 안전하게 연결합니다.' });
         await signInWithPopup(auth, provider);
-        const overlay = document.getElementById('login-overlay');
-        overlay && overlay.classList.remove('show');
       } catch (err) {
         try {
-          showLoginOverlay(true, '리다이렉트 로그인 시도', { provider:'google' });
           await signInWithRedirect(auth, provider);
         } catch (err2) {
-          showLoginOverlay(false);
           showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
         }
       }
     });
 
-    const _lb = document.getElementById('logout-btn');
-    if (_lb) _lb.addEventListener('click', () => signOut(auth));
-
+    // 페이지 로드 시 게임 배선
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
+      renderBuffStatus();
     });
+
+    // 버프 남은 시간 UI 1초마다 갱신 (게임 루프와 별개)
+    setInterval(renderBuffStatus, 1000);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
   </script>
