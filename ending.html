@@ -115,7 +115,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, get, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -136,6 +136,76 @@
     const btn = document.getElementById('back-btn');
 
     btn.addEventListener('click', () => { window.location.href = 'game.html'; });
+
+    // ===== 샤딩 + 아이디키 유틸 =====
+    function sanitizeIdKey(raw) {
+      const s = (raw || '').toString().trim().toLowerCase();
+      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+      return base || 'user';
+    }
+    function makeIdKeyFromUser(user) {
+      const email = (user.email || '').toString();
+      if (email.includes('@')) {
+        const local = email.split('@')[0];
+        return sanitizeIdKey(local);
+      }
+      const name = sanitizeIdKey(user.displayName || '');
+      if (name && name !== 'user') return name;
+      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
+    }
+    async function ensureServerMapping(user) {
+      // 1) 기존 매핑 조회
+      try {
+        const mapSnap = await get(ref(db, `userServerMap/${user.uid}`));
+        if (mapSnap.exists()) {
+          const { server, id } = mapSnap.val() || {};
+          if (server && id) return { server, id };
+        }
+      } catch {}
+
+      // 2) 없으면 신규 배정: meta/nextIndex 트랜잭션 (15명당 server 증가)
+      let nextIndex = 0;
+      try {
+        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
+        nextIndex = res?.snapshot?.val() || 1;
+      } catch { nextIndex = 1; }
+
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
+      const server = `server${serverNum}`;
+      const idBase = makeIdKeyFromUser(user);
+      let idKey = idBase;
+
+      // 키 충돌 시 uid 앞 4글자 접미사
+      try {
+        const exists = await get(ref(db, `users/${server}/${idKey}`));
+        if (exists.exists()) idKey = `${idBase}-${(user.uid||'').slice(0,4)}`;
+      } catch {}
+
+      // 매핑 저장
+      try {
+        await update(ref(db), {
+          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
+        });
+      } catch {}
+
+      return { server, id: idKey };
+    }
+
+    // (선택) 레거시 경로에 데이터 있으면 새 경로로 이관
+    async function migrateLegacyIfExists(uid, basePath) {
+      try {
+        const oldSnap = await get(ref(db, `users/${uid}`));
+        if (!oldSnap.exists()) return;
+        const old = oldSnap.val() || {};
+        const updates = {};
+        if (old.gameData) updates[`${basePath}/gameData`] = old.gameData;
+        if (old.daily)    updates[`${basePath}/daily`]    = old.daily;
+        if (Object.keys(updates).length) {
+          updates[`migrations/${uid}`] = { to: basePath, at: Date.now() };
+          await update(ref(db), updates);
+        }
+      } catch {}
+    }
 
     // 배너를 보여주고 약간의 시간 뒤 안전하게 리다이렉트
     function showBannerAndRedirect(url, text = '로그인후 이용해주세요!') {
@@ -164,8 +234,20 @@
         return;
       }
 
-      // 로그인 되어있음 → 실제 데이터 확인
-      const dataRef = ref(db, `users/${user.uid}/gameData/ownedPlanets`);
+      // 로그인 되어있음 → 샤딩 매핑 확보
+      let basePath = null;
+      try {
+        const { server, id } = await ensureServerMapping(user);
+        basePath = `users/${server}/${id}`;
+        // 레거시가 있으면 1회 이관
+        await migrateLegacyIfExists(user.uid, basePath);
+      } catch {
+        // 안전장치(구조 이전 페이지에서 접근 시)
+        basePath = `users/${user.uid}`;
+      }
+
+      // 실제 데이터 확인 (소유 행성 9개 여부)
+      const dataRef = ref(db, `${basePath}/gameData/ownedPlanets`);
       try{
         const snapshot = await get(dataRef);
         const owned = snapshot.val() || [];
@@ -177,6 +259,7 @@
           msgEl.textContent = '행성을 모두 구매하지 않아 정보를 확인할 수 없습니다.';
         }
       }catch(e){
+        console.error(e);
         titleEl.textContent = '오류 발생';
         msgEl.textContent = '데이터를 불러오는 중 오류가 발생했습니다.';
       }
