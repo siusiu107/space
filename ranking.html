@@ -11,51 +11,62 @@
 
   <style>
     body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
-    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:90%; max-width:500px; text-align:center; display:none; }
+    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:90%; max-width:560px; text-align:center; display:none; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th, td { padding:8px; border-bottom:1px solid #444; font-size:14px; }
-    th { background:rgba(30,30,30,0.9); }
+    th, td { padding:10px 8px; border-bottom:1px solid #444; font-size:14px; }
+    th { background:rgba(30,30,30,0.9); position:sticky; top:0; }
     td { background:rgba(20,20,20,0.7); }
     tr:nth-child(even) td { background:rgba(20,20,20,0.5); }
     .btn { margin:10px 5px 0; padding:8px 16px; background:#00aaff; border:none; border-radius:4px; color:#fff; cursor:pointer; text-decoration:none; display:inline-block; }
-    #nickname-prompt { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; color:#fff; text-align:center; padding-top:20%; }
-    input[type="text"], input[type="checkbox"] { margin:6px; padding:6px; border-radius:4px; border:none; font-size:14px; }
-    #filter-container { margin-top:10px; }
+    #nickname-prompt { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; color:#fff; text-align:center; padding-top:12vh; }
+    #nickname-prompt .panel{ width:min(520px,92vw); margin:0 auto; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:18px; }
+    input[type="text"] { margin:8px 6px; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(0,0,0,0.25); color:#fff; font-size:14px; width:min(320px,80%); }
+    input[type="checkbox"] { margin:0 6px 0 0; }
+    #filter-container { margin-top:10px; font-size:13px; color:#cfe6ff; display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap; }
+    .pill{ padding:6px 10px; border:1px solid rgba(255,255,255,0.18); border-radius:999px; background:rgba(255,255,255,0.08); font-size:12px; }
+    .right{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
   </style>
 </head>
 <body>
   <!-- 닉네임 설정 모달 -->
   <div id="nickname-prompt">
-    <h2>🎉 닉네임을 생성해주세요!</h2>
-    <p>이 닉네임은 랭킹에 표시되며 <strong>한 번 생성하면 변경할 수 없습니다.</strong></p>
-    <input type="text" id="nickname-input" placeholder="닉네임 입력" />
-    <br>
-    <button class="btn" id="submit-nickname">확인</button>
+    <div class="panel">
+      <h2>🎉 닉네임을 생성해주세요!</h2>
+      <p style="opacity:.9;margin-top:6px">이 닉네임은 랭킹에 표시되며 <strong>한 번 생성하면 변경할 수 없습니다.</strong></p>
+      <input type="text" id="nickname-input" placeholder="닉네임 입력" maxlength="20" />
+      <div class="right">
+        <button class="btn" id="submit-nickname">확인</button>
+        <button class="btn" id="skip-nickname" style="background:#555;">나중에</button>
+      </div>
+    </div>
   </div>
 
   <!-- 랭킹 컨테이너 -->
   <div id="ranking-container">
     <h1>💰 코인 랭킹 Top 50</h1>
     <div id="filter-container">
-      <label>
+      <label class="pill" title="닉네임이 없는 유저도 목록에 포함합니다">
         <input type="checkbox" id="toggle-no-nickname" checked>
         닉네임 없는 사용자 표시
       </label>
+      <span class="pill" id="total-count">로딩 중…</span>
     </div>
     <table>
       <thead>
-        <tr><th>순위</th><th>닉네임</th><th>코인</th></tr>
+        <tr><th style="width:72px">순위</th><th>닉네임</th><th style="width:120px">코인</th></tr>
       </thead>
       <tbody id="ranking-body"></tbody>
     </table>
-    <button id="logout-btn" class="btn">로그아웃</button>
-    <a href="game.html" class="btn">게임으로</a>
+    <div class="right">
+      <button id="logout-btn" class="btn">로그아웃</button>
+      <a href="game.html" class="btn">게임으로</a>
+    </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, get, set, update, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -76,10 +87,73 @@
     const nicknamePrompt = document.getElementById('nickname-prompt');
     const nicknameInput = document.getElementById('nickname-input');
     const submitBtn = document.getElementById('submit-nickname');
+    const skipBtn = document.getElementById('skip-nickname');
     const toggleNoNick = document.getElementById('toggle-no-nickname');
+    const totalCountEl = document.getElementById('total-count');
     let rankingList = [];
+    let basePathForMe = null;
 
-    // 배너를 보여주고 약간의 시간 뒤 안전하게 리다이렉트
+    /* ===== 샤딩 & 아이디키 유틸 ===== */
+    function sanitizeIdKey(raw) {
+      const s = (raw || '').toString().trim().toLowerCase();
+      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+      return base || 'user';
+    }
+    function makeIdKeyFromUser(user) {
+      const email = (user.email || '').toString();
+      if (email.includes('@')) {
+        const local = email.split('@')[0];
+        return sanitizeIdKey(local);
+      }
+      const name = sanitizeIdKey(user.displayName || '');
+      if (name && name !== 'user') return name;
+      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
+    }
+    async function ensureServerMapping(user) {
+      try {
+        const mapSnap = await get(ref(db, `userServerMap/${user.uid}`));
+        if (mapSnap.exists()) {
+          const { server, id } = mapSnap.val() || {};
+          if (server && id) return { server, id };
+        }
+      } catch {}
+      let nextIndex = 0;
+      try {
+        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
+        nextIndex = res?.snapshot?.val() || 1;
+      } catch { nextIndex = 1; }
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
+      const server = `server${serverNum}`;
+      const idBase = makeIdKeyFromUser(user);
+      let idKey = idBase;
+      try {
+        const exists = await get(ref(db, `users/${server}/${idKey}`));
+        if (exists.exists()) idKey = `${idBase}-${(user.uid||'').slice(0,4)}`;
+      } catch {}
+      try {
+        await update(ref(db), {
+          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
+        });
+      } catch {}
+      return { server, id: idKey };
+    }
+    async function migrateLegacyIfExists(user, basePath) {
+      try {
+        const oldSnap = await get(ref(db, `users/${user.uid}`));
+        if (!oldSnap.exists()) return;
+        const old = oldSnap.val() || {};
+        const updates = {};
+        if (old.gameData) updates[`${basePath}/gameData`] = old.gameData;
+        if (old.profile)  updates[`${basePath}/profile`]  = old.profile;
+        if (old.daily)    updates[`${basePath}/daily`]    = old.daily;
+        if (Object.keys(updates).length) {
+          updates[`migrations/${user.uid}`] = { to: basePath, at: Date.now() };
+          await update(ref(db), updates);
+        }
+      } catch {}
+    }
+
+    // 배너 표시 후 안전 리다이렉트
     function showBannerAndRedirect(url, text = '로그인후 이용해주세요!') {
       const banner = document.createElement('div');
       banner.textContent = text;
@@ -94,59 +168,89 @@
       });
     }
 
-    // 🔐 로그인 상태 감시
+    // 🔐 로그인 상태
     onAuthStateChanged(auth, async (user) => {
-      // ✅ 비로그인: 안내 배너 → 복귀 주소 저장 → game.html 이동
       if (!user) {
         try { sessionStorage.setItem('pending_redirect', window.location.href); } catch {}
-        const dest = `${location.origin}/game.html`;
-        showBannerAndRedirect(dest, '로그인후 이용해주세요!');
+        showBannerAndRedirect(`${location.origin}/game.html`, '로그인후 이용해주세요!');
         return;
       }
 
-      // 로그인 상태면 닉네임 확인/설정 후 랭킹 로딩
-      const profileRef = ref(db, `users/${user.uid}/profile/nickname`);
-      const snap = await get(profileRef);
-      if (!snap.exists()) {
+      // 내 베이스 경로 확보 + (있다면) 레거시 이관
+      try {
+        const { server, id } = await ensureServerMapping(user);
+        basePathForMe = `users/${server}/${id}`;
+        await migrateLegacyIfExists(user, basePathForMe);
+      } catch {
+        basePathForMe = `users/${user.uid}`; // 안전장치
+      }
+
+      // 닉네임 체크
+      const profileNickRef = ref(db, `${basePathForMe}/profile/nickname`);
+      const nickSnap = await get(profileNickRef);
+
+      const startRanking = async () => {
+        nicknamePrompt.style.display = 'none';
+        rankingContainer.style.display = 'block';
+        await loadRanking();
+        toggleNoNick.addEventListener('change', renderRanking);
+      };
+
+      if (!nickSnap.exists()) {
         nicknamePrompt.style.display = 'block';
         submitBtn.onclick = async () => {
-          const nick = nicknameInput.value.trim();
+          const nick = (nicknameInput.value || '').trim();
           if (!nick) return alert('닉네임을 입력해주세요');
-          await set(profileRef, nick);
-          nicknamePrompt.style.display = 'none';
-          initRanking();
+          await set(profileNickRef, nick);
+          startRanking();
         };
+        skipBtn.onclick = startRanking; // 닉네임 없이도 랭킹 보기
       } else {
-        initRanking();
+        startRanking();
       }
     });
 
-    function initRanking() {
-      nicknamePrompt.style.display = 'none';
-      rankingContainer.style.display = 'block';
-      loadRanking();
-      toggleNoNick.addEventListener('change', renderRanking);
-    }
-
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      signOut(auth).then(() => {
-        alert('로그아웃 되었습니다');
-        window.location.href = 'game.html';
-      });
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await signOut(auth); alert('로그아웃 되었습니다'); } catch {}
+      window.location.href = 'game.html';
     });
 
+    /* ===== 랭킹 로드 (샤딩 경로 + 레거시 모두 집계) ===== */
     async function loadRanking() {
-      const usersRef = ref(db, 'users');
-      const snapshot = await get(usersRef);
       rankingList = [];
-      snapshot.forEach(userSnap => {
-        const profile = userSnap.child('profile').val() || {};
-        const data = userSnap.child('gameData').val() || {};
-        const coins = data.coins || 0;
-        const nickname = profile.nickname || '';
-        rankingList.push({ nickname, coins: Math.floor(coins) });
+      totalCountEl.textContent = '로딩 중…';
+
+      const usersRootSnap = await get(ref(db, 'users'));
+      if (!usersRootSnap.exists()) {
+        totalCountEl.textContent = '0명';
+        renderRanking();
+        return;
+      }
+
+      usersRootSnap.forEach(serverNode => {
+        const serverKey = serverNode.key || '';
+        const isShardedServer = /^server\d+$/i.test(serverKey);
+
+        if (isShardedServer) {
+          // users/serverX/{idKey}/...
+          serverNode.forEach(userNode => {
+            const v = userNode.val() || {};
+            const coins = Math.floor(v?.gameData?.coins || 0);
+            const nickname = (v?.profile?.nickname || '').toString();
+            rankingList.push({ nickname, coins });
+          });
+        } else {
+          // 레거시: users/{uid}/...
+          const v = serverNode.val() || {};
+          const coins = Math.floor(v?.gameData?.coins || 0);
+          const nickname = (v?.profile?.nickname || '').toString();
+          // 레거시 데이터가 너무 오래된 경우 제외하고 싶다면 여기에서 필터링 가능
+          rankingList.push({ nickname, coins });
+        }
       });
+
       rankingList.sort((a, b) => b.coins - a.coins);
+      totalCountEl.textContent = `${rankingList.length}명 집계됨`;
       renderRanking();
     }
 
@@ -158,14 +262,25 @@
         if (!showNoNick && !item.nickname) continue;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${rank}</td>
-          <td>${item.nickname || '닉네임 없음'}</td>
-          <td>${item.coins}</td>
+          <td style="text-align:center">${rank}</td>
+          <td>${item.nickname ? escapeHtml(item.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
+          <td style="text-align:right">${Number(item.coins||0).toLocaleString()}</td>
         `;
         rankingBody.appendChild(tr);
         rank++;
         if (rank > 50) break;
       }
+      if (rank === 1) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3" style="text-align:center; opacity:.8; padding:16px 8px">표시할 항목이 없어요</td>`;
+        rankingBody.appendChild(tr);
+      }
+    }
+
+    function escapeHtml(s) {
+      return (s || '').replace(/[&<>"'`=\/]/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'
+      }[c]));
     }
   </script>
 
