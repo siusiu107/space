@@ -317,13 +317,30 @@
     </div>
   </div>
 
+  <!-- CobrowseIO (원격 지원 SDK) -->
+  <script>
+    (function(w,t,c,p,s,e){
+      p=new Promise(function(r){
+        w[c]={client:function(){
+          if(!s){ s=document.createElement(t);
+            s.src='https://js.cobrowse.io/CobrowseIO.js'; s.async=1; s.crossOrigin='anonymous';
+            e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
+            s.onload=function(){ r(w[c]); };
+          } return p;
+        }}; });
+    })(window,'script','CobrowseIO');
+    window.CobrowseIO = window.CobrowseIO || {};
+    CobrowseIO.license = "eFtcbWqBdRylMQ";
+    CobrowseIO.capabilities = ["cursor","remote-control"];
+  </script>
+
   <!-- Firebase + App Scripts -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
       getDatabase, ref, runTransaction, push, onChildAdded, set, remove,
-      serverTimestamp, update, get, child, onChildChanged, onChildRemoved
+      serverTimestamp, update, get, child, onChildChanged, onChildRemoved, query, orderByChild, equalTo
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     /* 주소 표시 고정 */
@@ -341,12 +358,9 @@
       measurementId: "G-1Y090YJDB6"
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-
-    /* ===== 레거시 자동 이관 플래그 ===== */
-    const ENABLE_LEGACY_MIGRATION = false;
 
     /* 공통 UI */
     const backBtn     = document.getElementById('back-btn');
@@ -469,25 +483,7 @@
       return { server, id: idKey };
     }
 
-    // (옵션) 레거시 → 새 경로 이관 로직 (플래그가 true일 때만 호출)
-    async function migrateLegacyIfExists(uid, basePath) {
-      try {
-        const oldSnap = await get(ref(db, `users/${uid}`));
-        if (!oldSnap.exists()) return;
-
-        const old = oldSnap.val() || {};
-        const updates = {};
-        if (old.gameData) updates[`${basePath}/gameData`] = old.gameData;
-        if (old.daily)    updates[`${basePath}/daily`]    = old.daily;
-
-        if (Object.keys(updates).length) {
-          updates[`migrations/${uid}`] = { to: basePath, at: Date.now() };
-          await update(ref(db), updates);
-        }
-      } catch {}
-    }
-
-    /* ===== 사용자 기능 구현 ===== */
+    /* ===== 사용자: 원격 지원 ===== */
     let userSessionId = null; // 6자리 세션 코드
 
     function appendMsgUser(who, text, ts){
@@ -504,7 +500,11 @@
     tosCancel.onclick = closeTos;
 
     // 사용자: 도움요청 플로우
-    helpBtn.addEventListener('click', () => { openTos(); });
+    const helpBtnHandler = async () => {
+      openTos();
+    };
+    helpBtn.addEventListener('click', helpBtnHandler);
+
     tosAccept.addEventListener('click', async () => {
       closeTos();
       await startRemoteHelpUser();
@@ -536,7 +536,7 @@
           appendMsgUser(m.from==='agent'?'상담사':'나', m.text, m.ts || Date.now());
         });
 
-        // 🧭 원격 명령 구독
+        // 원격 명령 구독
         const userCmdRef = ref(db, `sessions/${userSessionId}/commands`);
         onChildAdded(userCmdRef, (snap) => {
           const cmd = snap.val(); if (!cmd) return;
@@ -614,53 +614,62 @@
       try { caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{}); } catch {}
     }
 
-    // 사용자: 계정/초기화
+    // 사용자: 계정 버튼
     signoutBtn.addEventListener('click', async () => {
       try { await signOut(auth); showToast('로그아웃 되었어요'); setTimeout(()=>location.href='/index.html', 400); }
       catch (e) { console.error(e); showToast('로그아웃 실패'); }
     });
 
-    // ✅ 요청사항: users/{server}/{id} "노드 유지" + 내부 싹 비우고, gameData의 자원/코인 0으로 초기화
+    // ✅ 핵심: id 노드 유지 + 내부 싹 비움 + gameData 재작성 (겹치는 경로 금지)
+    async function wipeUserNodeKeepShell(basePath){
+      const baseRef = ref(db, basePath);
+      const snap = await get(baseRef);
+
+      const updates = {};
+
+      // 1) 자식키 전부 개별 삭제 (gameData는 나중에 다시 쓸 것이므로 건너뜀)
+      if (snap.exists()) {
+        const children = Object.keys(snap.val() || {});
+        for (const key of children) {
+          if (key !== 'gameData') {
+            updates[`${basePath}/${key}`] = null;  // 개별 자식 삭제
+          }
+        }
+      }
+
+      // 2) gameData 최소 상태로 재작성 (나머지는 game.html에서 defaultData로 보완됨)
+      updates[`${basePath}/gameData`] = {
+        resources: 0,
+        coins: 0,
+        _lastUpdated: serverTimestamp()
+      };
+
+      // ⚠️ 상위 basePath 자체를 {} 또는 null로 쓰지 말 것 (겹치는 경로 에러 원인)
+      await update(ref(db), updates);
+    }
+
+    // 삭제 버튼
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
-      const basePath = userBasePath; // users/{server}/{id}
+      const basePath = userBasePath; // "users/{server}/{id}"
       if (!basePath){ showToast('데이터 경로를 찾지 못했어요'); return; }
 
       const ok = confirm(
         `정말 삭제할까요?\n` +
-        `※ 경고: ${basePath} 경로의 내부 데이터가 모두 삭제되고, gameData는 자원/코인이 0으로 초기화됩니다(노드는 유지).\n` +
-        `이 작업은 되돌릴 수 없으며, 완료 후 자동으로 로그아웃됩니다.`
+        `· ${basePath} 내부의 모든 데이터가 삭제됩니다(노드는 유지).\n` +
+        `· gameData는 자원/코인 0으로 초기화됩니다.\n` +
+        `· 완료 후 자동 로그아웃됩니다.`
       );
       if (!ok) return;
 
-      // 중복 클릭 방지
+      // 중복 클릭 방지 + 로딩
       resetBtn.disabled = true;
       signoutBtn.disabled = true;
       helpBtn.disabled = true;
       showOverlay(true);
 
       try{
-        // 먼저 현재 gameData의 키명을 파악(coin/coins, resource/resources)
-        let coinKey = 'coins';
-        let resKey  = 'resources';
-        try {
-          const gdSnap = await get(ref(db, `${basePath}/gameData`));
-          if (gdSnap.exists()) {
-            const gd = gdSnap.val() || {};
-            if ('coin' in gd)      coinKey = 'coin';
-            else if ('coins' in gd)coinKey = 'coins';
-            if ('resource' in gd)      resKey = 'resource';
-            else if ('resources' in gd)resKey = 'resources';
-          }
-        } catch {}
-
-        // id 노드는 유지하고 내부만 비우면서, gameData/{resKey,coinKey}를 0으로 세팅
-        const updates = {};
-        updates[basePath] = {}; // 내부 전부 제거(빈 객체로 덮어쓰기)
-        updates[`${basePath}/gameData/${resKey}`]  = 0;
-        updates[`${basePath}/gameData/${coinKey}`] = 0;
-
-        await update(ref(db), updates);
+        await wipeUserNodeKeepShell(basePath);
 
         clearClientCaches();
 
@@ -678,7 +687,7 @@
       }
     });
 
-    /* ===== 관리자 기능 구현 ===== */
+    /* ===== 관리자 기능 구현 (간단 연결/채팅/명령) ===== */
     let adminSessionId = null;
 
     function appendMsgAdmin(who, text, ts){
@@ -741,7 +750,7 @@
 
       // 채팅 전송 / 종료
       const sendAdminMsg = async () => {
-        if (!adminSessionId) return alert('세션 먼저 연결하세요.');
+        if (!adminSessionId) return alert('먼저 세션을 연결하세요.');
         const text = chatInputAdmin.value.trim(); if (!text) return;
         chatInputAdmin.value = '';
         await push(ref(db, `sessions/${adminSessionId}/chat`), { from:'agent', text, ts: Date.now() });
@@ -752,183 +761,99 @@
 
       endBtnAdmin.onclick = async () => {
         if (!adminSessionId) return;
-        if (!confirm('세션을 종료하고 채팅 내역을 삭제할까요? (로그는 보존됩니다)')) return;
-        await update(ref(db, `sessions/${adminSessionId}/meta`), { status:'ended', endedAt: serverTimestamp() });
-        await push(ref(db, `sessions/${adminSessionId}/logs`), { type:'end', by:'agent', at: serverTimestamp() });
-        await remove(ref(db, `sessions/${adminSessionId}/chat`));
-        statusAdmin.textContent = '세션 종료됨 (채팅 삭제 완료)';
+        const ok = confirm('이 세션을 종료하고 채팅을 삭제할까요?');
+        if (!ok) return;
+        const base = ref(db, `sessions/${adminSessionId}`);
+        await update(child(base, 'meta'), { status:'ended', endedAt: serverTimestamp() });
+        await remove(child(base, 'chat'));
+        await push(child(base, 'logs'), { type:'end', by:'agent', at: serverTimestamp() });
+        statusAdmin.textContent = '세션 종료됨';
       };
-
-      // 요청 목록 워처
-      if (!window.__REQ_BOUND__) { startRequestWatcher(); window.__REQ_BOUND__ = true; }
     }
 
-    // 요청 목록
-    const reqEls = new Map(); // code -> row element
-    function fmt(ts){
-      if (!ts) return '';
-      try {
-        const d = new Date(ts);
-        return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
-      } catch { return ''; }
-    }
-    function makeReqRow(code, meta){
-      const row = document.createElement('div');
-      row.className = 'req-row';
-      row.id = `req-${code}`;
-
-      const left = document.createElement('div');
-      const codeEl = document.createElement('span');
-      codeEl.className = 'req-code';
-      codeEl.textContent = code;
-
-      const badge = document.createElement('span');
-      badge.className = `badge ${meta?.status || 'unknown'}`;
-      badge.textContent = meta?.status || 'unknown';
-
-      const timeEl = document.createElement('span');
-      timeEl.className = 'muted';
-      timeEl.textContent = meta?.createdAt ? `· ${fmt(meta.createdAt)}` : '';
-
-      left.appendChild(codeEl); left.appendChild(badge); left.appendChild(timeEl);
-
-      const actions = document.createElement('div');
-      actions.className = 'req-actions';
-
-      const btnConn = document.createElement('button');
-      btnConn.className = 'btn secondary';
-      btnConn.textContent = '연결';
-      btnConn.onclick = () => { sessAdmin.value = code; connectAdmin.click(); };
-
-      const btnCopy = document.createElement('button');
-      btnCopy.className = 'btn secondary';
-      btnCopy.textContent = '코드 복사';
-      btnCopy.onclick = async () => {
-        try { await navigator.clipboard.writeText(code); showToast('코드를 복사했어요'); } catch {}
-      };
-
-      actions.appendChild(btnConn);
-      actions.appendChild(btnCopy);
-
-      row.appendChild(left);
-      row.appendChild(actions);
-      return row;
-    }
-    function upsertReq(code, meta){
-      if (!meta || meta.status !== 'active'){
-        const exist = reqEls.get(code);
-        if (exist){ exist.remove(); reqEls.delete(code); }
-        if (reqEls.size === 0) reqWrap.style.display = 'none';
-        return;
-      }
-      if (reqEls.has(code)){
-        const row = reqEls.get(code);
-        const badge = row.querySelector('.badge');
-        const timeEl = row.querySelector('.muted');
-        if (badge){ badge.className = `badge ${meta.status}`; badge.textContent = meta.status; }
-        if (timeEl){ timeEl.textContent = meta.createdAt ? `· ${fmt(meta.createdAt)}` : ''; }
-      } else {
-        const row = makeReqRow(code, meta);
-        reqList.appendChild(row);
-        reqEls.set(code, row);
-      }
-      reqWrap.style.display = 'block';
-    }
-    function startRequestWatcher(){
-      const sessionsRef = ref(db, 'sessions');
-      onChildAdded(sessionsRef, async (snap) => {
-        const code = snap.key;
-        let meta = snap.child('meta').val();
-        if (!meta){
-          const metaSnap = await get(child(ref(db, `sessions/${code}`), 'meta'));
-          meta = metaSnap.val();
+    // 활성 세션 목록
+    function bindActiveRequestsList(){
+      const q = query(ref(db, 'sessions'), orderByChild('meta/status'), equalTo('active'));
+      onChildAdded(q, (snap) => {
+        const id = snap.key;
+        const li = document.createElement('div');
+        li.className = 'req-row';
+        li.id = `req-${id}`;
+        li.innerHTML = `
+          <div>
+            <span class="req-code">${id}</span>
+            <span class="badge active">ACTIVE</span>
+            <span class="muted">최근 생성</span>
+          </div>
+          <div class="req-actions">
+            <button class="btn secondary" data-code="${id}">Connect</button>
+          </div>
+        `;
+        reqList.appendChild(li);
+        li.querySelector('button')?.addEventListener('click', () => {
+          sessAdmin.value = id;
+          connectAdmin.click();
+        });
+      });
+      onChildChanged(q, (snap) => {
+        const id = snap.key;
+        const el = document.getElementById(`req-${id}`);
+        if (!el) return;
+        const st = (snap.val()?.meta?.status) || 'active';
+        const badge = el.querySelector('.badge');
+        if (st !== 'active') {
+          badge.textContent = 'ENDED';
+          badge.classList.remove('active'); badge.classList.add('ended');
         }
-        upsertReq(code, meta);
       });
-      onChildChanged(sessionsRef, (snap) => {
-        const code = snap.key;
-        const meta = snap.child('meta').val();
-        upsertReq(code, meta);
-      });
-      onChildRemoved(sessionsRef, (snap) => {
-        const code = snap.key;
-        const exist = reqEls.get(code);
-        if (exist){ exist.remove(); reqEls.delete(code); }
-        if (reqEls.size === 0) reqWrap.style.display = 'none';
+      onChildRemoved(q, (snap) => {
+        const id = snap.key;
+        const el = document.getElementById(`req-${id}`);
+        el?.remove();
       });
     }
 
-    /* ===== 인증 상태: 관리자/사용자 UI 토글 + 매핑 확보 ===== */
+    /* === onAuth === */
     onAuthStateChanged(auth, async (user) => {
-      uid = user ? user.uid : null;
-      const isAdmin = !!(user && user.email === 'siu46852579@gmail.com');
-
       if (!user) {
         userSection.style.display = 'block';
         adminSection.style.display = 'none';
-        accountDesc.textContent = '로그인이 필요합니다.';
+        accountDesc.textContent = '로그아웃됨';
         accountPath.textContent = '';
-        signoutBtn.disabled = true;
         resetBtn.disabled = true;
+        signoutBtn.disabled = true;
         return;
       }
 
-      // ★ 서버/아이디 매핑 확보
-      try {
-        const mapping = await ensureServerMapping(user);
-        userServerKey = mapping.server;
-        userIdKey     = mapping.id;
-        userBasePath  = `users/${userServerKey}/${userIdKey}`;
-        accountPath.textContent = `데이터 경로: ${userBasePath}`;
+      uid = user.uid;
+      const { server, id } = await ensureServerMapping(user);
+      userServerKey = server;
+      userIdKey     = id;
+      userBasePath  = `users/${server}/${id}`;
 
-        if (ENABLE_LEGACY_MIGRATION) {
-          await migrateLegacyIfExists(uid, userBasePath);
-        }
-      } catch {
-        userBasePath = `users/${uid}`; // 안전장치
-        accountPath.textContent = `데이터 경로: ${userBasePath} (fallback)`;
-      }
+      accountDesc.textContent = `${user.email || '(이메일 없음)'} · UID ${uid.slice(0,6)}…`;
+      accountPath.textContent = `경로: users/${server}/${id}`;
 
+      // 역할 표시: 간단하게 이메일에 'admin' 포함되면 관리자 섹션 표시(임시)
+      const isAdmin = (user.email||'').toLowerCase().includes('admin');
+
+      userSection.style.display  = 'block';
+      adminSection.style.display = isAdmin ? 'block' : 'none';
+
+      signoutBtn.disabled = false;
+      resetBtn.disabled   = false;
+
+      // 원격 목록 바인딩 (관리자용)
       if (isAdmin) {
-        userSection.style.display = 'block';
-        adminSection.style.display = 'block';
-
-        helpBtn.disabled = true;
-        signoutBtn.disabled = false;
-        resetBtn.disabled = false;
-
-        accountDesc.textContent = `${user.email} (관리자 로그인됨)`;
-        if (!window.__ADMIN_BOUND__) { bindAdminHandlers(); window.__ADMIN_BOUND__ = true; }
-      } else {
-        userSection.style.display = 'block';
-        adminSection.style.display = 'none';
-
-        if (user && user.emailVerified){
-          accountDesc.textContent = `${user.email} (로그인됨)`;
-          signoutBtn.disabled = false;
-          resetBtn.disabled = false;
-        } else if (user && !user.emailVerified){
-          accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
-          signoutBtn.disabled = false;
-          resetBtn.disabled = true;
-        }
+        reqWrap.style.display = 'block';
+        bindAdminHandlers();
+        bindActiveRequestsList();
       }
+
+      // Cobrowse 프리워밍 (로드만)
+      try { (await window.CobrowseIO.client()); } catch {}
     });
 
-    /* Cobrowse.io SDK 로더 (전역) */
-    (function(w,t,c,p,s,e){
-      p=new Promise(function(r){
-        w[c]={client:function(){
-          if(!s){ s=document.createElement(t);
-            s.src='https://js.cobrowse.io/CobrowseIO.js'; s.async=1; s.crossOrigin='anonymous';
-            e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
-            s.onload=function(){ r(w[c]); };
-          } return p;
-        }}; });
-    })(window,'script','CobrowseIO');
-    window.CobrowseIO = window.CobrowseIO || {};
-    window.CobrowseIO.license = "eFtcbWqBdRylMQ";
-    window.CobrowseIO.capabilities = ["cursor","remote-control"];
   </script>
 </body>
 </html>
