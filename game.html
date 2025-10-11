@@ -1312,6 +1312,7 @@
         onTargetClick = null;
       }
 
+      // ▶▶▶ 수정된 next() — 클릭 요구 단계에서도 '다음' 버튼 항상 표시
       async function next(){
         clearTargetHandler();
         stepIdx++;
@@ -1319,34 +1320,48 @@
 
         const st = steps[stepIdx];
 
-        // selector가 없으면 중앙 배치
-        let rect = rectOf(st.selector) || { left: window.innerWidth/2-160, top: window.innerHeight/2-40, width: 320, height: 80 };
+        // 타겟 영역 계산(없으면 중앙 박스)
+        let rect = rectOf(st.selector) || {
+          left: window.innerWidth/2 - 160,
+          top:  window.innerHeight/2 - 40,
+          width: 320,
+          height: 80
+        };
+
         spotlight(rect);
         setBubbleText(st.text || '');
 
         try { st.before && st.before(); } catch {}
 
+        // 공통 진행 함수
+        const advance = async () => {
+          hi.classList.remove('tut-pulse');
+          // 클릭 요구 스텝이면 실제로 그 요소를 눌러줌
+          if (st.requireAction === 'click' && rect.el) {
+            try { rect.el.click?.(); } catch {}
+          }
+          try { st.after && st.after(); } catch {}
+          await (new Promise(r=>setTimeout(r,160)));
+          next();
+        };
+
+        // 항상 "다음" 버튼을 보여주고, finish 스텝이면 숨김
+        nextBtn.style.display = st.finish ? 'none' : 'inline-block';
+        nextBtn.onclick = advance;
+
+        // 타겟 직접 클릭으로도 진행 가능(둘 다 지원)
         if (st.requireAction === 'click' && rect.el) {
           hi.classList.add('tut-pulse');
           const fn = async (e) => {
             e.stopPropagation();
             e.preventDefault();
             clearTargetHandler();
-            hi.classList.remove('tut-pulse');
-
-            // 튜토리얼 중 ensureReady()는 true → 실제 로직 실행 허용
-            rect.el.click?.();
-
-            try { st.after && st.after(); } catch {}
-            await sleep(160);
-            next();
+            await advance();
           };
           rect.el.addEventListener('click', fn, true);
           onTargetClick = { el: rect.el, fn };
-          nextBtn.style.display = 'none'; // 요소 클릭으로만 넘김
         } else {
           hi.classList.remove('tut-pulse');
-          nextBtn.style.display = st.finish ? 'none' : 'inline-block';
         }
       }
 
