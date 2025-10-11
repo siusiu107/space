@@ -557,7 +557,7 @@
     function save() {
       if (!uid || !dataRef) return;
       if (isInitialSync) return;
-      if (!window.__PLAY_ALLOWED) return;
+      // ⬇️ __PLAY_ALLOWED 의존 제거
       const now = Date.now();
       state._lastUpdated = now;
       localLastWrite = now;
@@ -940,7 +940,7 @@
 
     // ==== 스핀 버튼 ====
     spinDailyBtn.onclick = async ()=>{
-      if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!uid) return;
       const today = kstDayKey();
       const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
@@ -971,8 +971,11 @@
         let streak = Number(dailyCache?.streak||0);
         streak = (dailyCache?.lastKey === yesterday) ? (streak+1) : 1;
 
-        await update(ref(db, `${userBasePath}/daily`), {
-          lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key
+        await update(ref(db), {
+          [`${userBasePath}/daily`]: {
+            ...(dailyCache || {}),
+            lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key
+          }
         });
         dailyCache = { lastKey: today, streak };
 
@@ -990,7 +993,7 @@
       }
     };
     spinPremiumBtn.onclick = async ()=>{
-      if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!uid) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
       setMode('premium');
       const picked = pickWeighted(activeItems);
@@ -1005,7 +1008,7 @@
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
     spinEcoinBtn.onclick = async ()=>{
-      if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!uid) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
       setMode('ecoin');
       const picked = pickWeighted(activeItems);
@@ -1128,13 +1131,13 @@
       }
     }
 
-    // ★ 튜토리얼 중에는 가드 우회(로그인 후에만 튜토리얼 진입)
+    // ★ 클릭 가드 단순화: 로그인 & 동기화 상태만 확인
     function ensureReady() {
       if (window.__IN_TUTORIAL) return true;
-      if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
-      showAuthStatus(''); return true;
+      showAuthStatus('');
+      return true;
     }
 
     function wireGame() {
@@ -1159,8 +1162,9 @@
         tab.classList.add('active');
       }));
 
+      // 초당 생산 타이머 (__PLAY_ALLOWED 제거)
       window.__gameTimer = setInterval(() => {
-        if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
+        if (!uid || isInitialSync) return;
         let workerGain = state.workerCount * getWorkerPower();
         const now = Date.now();
         if (window.fx?._tempBuff && now < window.fx._tempBuff.until && window.fx._tempBuff.type==='worker') workerGain *= (1+window.fx._tempBuff.value);
@@ -1229,17 +1233,17 @@
         if (document.getElementById('tut-style')) return;
         const st = document.createElement('style');
         st.id = 'tut-style';
-        /* ▼▼▼ 여기 수정: pointer-events 처리로 클릭 통과 허용 ▼▼▼ */
         st.textContent = `
-        #tut-overlay{position:fixed;inset:0;z-index:4000;display:none;pointer-events:none;}
+        #tut-overlay{position:fixed;inset:0;z-index:4000;display:none;}
         #tut-overlay.show{display:block;}
-        .tut-dim{position:fixed;background:rgba(0,0,0,.55);pointer-events:auto;z-index:1;}
-        #tut-hi{position:fixed;border-radius:12px;outline:2px solid rgba(0,213,255,.9);box-shadow:0 0 0 6px rgba(0,213,255,.18), 0 8px 28px rgba(0,0,0,.45);pointer-events:none;transition:all .18s ease;z-index:1;}
-        #tut-bubble{position:fixed;min-width:260px;max-width:320px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(10,12,18,.72));color:#eaf6ff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(8px);pointer-events:auto;z-index:2;}
+        /* ⬇️ 가림막이 클릭을 막지 않도록 */
+        .tut-dim{position:fixed;background:rgba(0,0,0,.55);pointer-events:none;}
+        #tut-hi{position:fixed;border-radius:12px;outline:2px solid rgba(0,213,255,.9);box-shadow:0 0 0 6px rgba(0,213,255,.18), 0 8px 28px rgba(0,0,0,.45);pointer-events:none;transition:all .18s ease;}
+        #tut-bubble{position:fixed;min-width:260px;max-width:320px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(10,12,18,.72));color:#eaf6ff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(8px);}
         #tut-bubble:after{content:"";position:absolute;left:20px;top:-8px;border:8px solid transparent;border-bottom-color:rgba(255,255,255,.14);}
         #tut-text{font-size:14px;line-height:1.42;}
         #tut-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
-        .tut-btn{padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.14);cursor:pointer;font-weight:800;color:#03222b;background:linear-gradient(180deg,#00c0ff,#00a2ff);pointer-events:auto;}
+        .tut-btn{padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.14);cursor:pointer;font-weight:800;color:#03222b;background:linear-gradient(180deg,#00c0ff,#00a2ff);}
         .tut-btn.ghost{background:transparent;color:#eaf6ff;}
         .tut-pulse{animation:tutPulse 1.1s ease-in-out infinite;}
         @keyframes tutPulse{0%{box-shadow:0 0 0 6px rgba(0,213,255,.18);}50%{box-shadow:0 0 0 10px rgba(0,213,255,.28);}100%{box-shadow:0 0 0 6px rgba(0,213,255,.18);}}
@@ -1275,7 +1279,7 @@
         hi.style.width = r.width+'px';
         hi.style.height = r.height+'px';
 
-        // 4면 가림막(구멍 제외)로 클릭 차단
+        // 4면 가림막(구멍 제외)
         dimTop.style.left='0px'; dimTop.style.top='0px'; dimTop.style.width='100%'; dimTop.style.height= Math.max(0, r.top) +'px';
         dimLeft.style.left='0px'; dimLeft.style.top= r.top+'px'; dimLeft.style.width= Math.max(0, r.left) +'px'; dimLeft.style.height= r.height+'px';
         dimRight.style.left= (r.left + r.width)+'px'; dimRight.style.top= r.top+'px'; dimRight.style.width= Math.max(0, vw - (r.left + r.width)) +'px'; dimRight.style.height= r.height+'px';
@@ -1375,36 +1379,25 @@
 
         steps = [
           { text: '환영합니다! 짧은 튜토리얼로 기본 조작을 안내해드릴게요. 화면을 눌러 계속하세요.' },
-
-          // 채굴/변환
           { selector:'#ore', requireAction:'click', text:'먼저 광석(🪨)을 클릭해 자원을 모아봐요!' },
           { selector:'#convert-button', requireAction:'click', text:'좋아요! <b>10자원 → 1코인</b>으로 코인 변환을 눌러봅시다.',
             before: ()=>{ if ((state.resources||0) < 10) { state.resources = 12; updateUI(); } } },
-
-          // 우주인/업그레이드
           { selector:'#bottom-nav .tab[data-tab="workers"]', requireAction:'click', text:'하단 <b>우주인</b> 탭으로 이동합니다.' },
           { selector:'#hire-worker', requireAction:'click', text:'<b>알바 고용</b>을 누르면 초당 자원이 늘어요!',
             after: ()=>{ updateUI(); } },
           { selector:'#bottom-nav .tab[data-tab="upgrades"]', requireAction:'click', text:'이번엔 <b>업그레이드</b> 탭으로 이동합니다.' },
           { selector:'#click-upgrade', requireAction:'click', text:'<b>클릭 업그레이드</b>로 클릭당 자원을 올려볼게요.',
             before: ()=>{ if ((state.coins||0) < 15) { state.coins = 15; updateUI(); } } },
-
-          // 출석 보상(첫 회 EC 100%)
           { selector:'#side-menu-toggle', requireAction:'click', text:'좌하단 <b>메뉴</b>를 열어볼게요.' },
           { selector:'.side-item[data-action="attendance"]', requireAction:'click',
             text:'<b>출석 보상</b>을 눌러 오늘의 슬롯을 엽니다.' },
           { selector:'#spin-daily', requireAction:'click',
             text:'첫 출석은 <b>이벤트코인 100% 보장</b>이에요! <b>무료 출석 돌리기</b>를 눌러 받아보세요.',
             before: ()=>{ setMode('daily'); } },
-
-          // 행성 소개
           { selector:'#bottom-nav .tab[data-tab="planets"]', requireAction:'click',
             text:'여기가 <b>행성</b> 탭이에요. 코인으로 <b>달</b>부터 구매할 수 있어요.',
             after: ()=>{ if ((state.coins||0) < 100) { state.coins = 100; updateUI(); } } },
-
-          // 설정 소개(이동 요구 없음)
           { selector:'#settings-btn', text:'우측 상단 <b>⚙️ 설정</b>에서 실제 기능(초기화·언어 등)을 관리해요.' },
-
           { text:'튜토리얼 완료! 이제 마음껏 정복하러 가볼까요? 🎉', finish:true }
         ];
 
@@ -1477,7 +1470,7 @@
           if (!server) {
             if (isInitialSync) {
               state = { ...defaultData };
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+              updateUI(); renderPlanets();
               isInitialSync = false;
               showGameUI();
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
@@ -1489,14 +1482,14 @@
 
             } else {
               state = { ...defaultData };
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+              updateUI(); renderPlanets();
             }
             return;
           }
           const serverLast = server._lastUpdated || 0;
           if (isInitialSync) {
             state = { ...defaultData, ...server };
-            if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+            updateUI(); renderPlanets();
             isInitialSync = false;
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
@@ -1515,7 +1508,7 @@
             try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
             catch { save(); }
           }
-          if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+          updateUI(); renderPlanets();
         });
 
       } else {
@@ -1640,10 +1633,8 @@
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
-    window.addEventListener('load', () => {
-      if (window.__PLAY_ALLOWED) wireGame();
-      else window.__DEFER_INIT = wireGame;
-    });
+    // ⬇️ wireGame은 항상 로드 시 연결
+    window.addEventListener('load', wireGame);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
   </script>
@@ -1838,34 +1829,6 @@
     }
   </script>
 
-  <!-- Popup Enforcement (간소) -->
-  <script>
-    (function(){
-      const gate = document.getElementById('popup-gate');
-      if (!gate) {
-        window.__PLAY_ALLOWED = (function(){
-          function isMobileStrict(){
-            try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
-            const ua = navigator.userAgent || '';
-            if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
-            if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
-            const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-            const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
-            return (coarse && !canHover);
-          }
-          function isPopup(){ try { if (window.opener && !window.opener.closed) return true; } catch {} try { if (['gameWindow','siuGame','popup'].includes(window.name)) return true; } catch {} return false; }
-          return isMobileStrict() || isPopup();
-        })();
-        if (window.__PLAY_ALLOWED){ ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; }); }
-        return;
-      }
-    })();
-  </script>
-
-  <!-- (선택) 안전망 핫픽스: 혹시 다른 스타일이 덮어써도 강제 적용 -->
-  <style>
-    #tut-overlay{ pointer-events:none !important; }
-    #tut-overlay .tut-dim, #tut-bubble{ pointer-events:auto !important; }
-  </style>
+  <!-- (중요) Popup Enforcement 제거됨: __PLAY_ALLOWED 더 이상 사용하지 않음 -->
 </body>
 </html>
