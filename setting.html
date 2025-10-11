@@ -429,7 +429,7 @@
     }
 
     async function ensureServerMapping(user) {
-      // 기존 매핑 확인
+      // tombstone이 있더라도 매핑은 재생성 가능. (데이터만 복구 금지)
       const mapRef = ref(db, `userServerMap/${user.uid}`);
       try {
         const snap = await get(mapRef);
@@ -467,14 +467,20 @@
       return { server, id: idKey };
     }
 
+    // ✅ 무덤표(tombstone) 확인: 있으면 레거시 이관 금지
     async function migrateLegacyIfExists(uid, basePath) {
       try {
+        const tomb = await get(ref(db, `tombstones/${uid}`));
+        if (tomb.exists()) return; // 사용자가 초기화 선택함 → 복구 금지
+
         const oldSnap = await get(ref(db, `users/${uid}`));
         if (!oldSnap.exists()) return;
+
         const old = oldSnap.val() || {};
         const updates = {};
         if (old.gameData) updates[`${basePath}/gameData`] = old.gameData;
         if (old.daily)    updates[`${basePath}/daily`]    = old.daily;
+
         if (Object.keys(updates).length) {
           updates[`migrations/${uid}`] = { to: basePath, at: Date.now() };
           await update(ref(db), updates);
@@ -602,13 +608,26 @@
       }catch(e){ console.error(e); showToast('세션 종료 실패'); }
     });
 
+    // 전체 캐시 정리
+    function clearClientCaches(){
+      try {
+        localStorage.clear();
+      } catch {}
+      try {
+        sessionStorage.clear();
+      } catch {}
+      try {
+        caches?.keys?.().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{});
+      } catch {}
+    }
+
     // 사용자: 계정/초기화
     signoutBtn.addEventListener('click', async () => {
       try { await signOut(auth); showToast('로그아웃 되었어요'); setTimeout(()=>location.href='/index.html', 400); }
       catch (e) { console.error(e); showToast('로그아웃 실패'); }
     });
 
-    // ✅ 변경된 “전체 삭제 + 자동 로그아웃” (샤딩 경로 삭제)
+    // ✅ 변경된 “전체 삭제 + 자동 로그아웃” (정말 내 데이터만 제거 + 복구 차단)
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
       const basePath = userBasePath || `users/${uid}`; // 안전장치
@@ -626,14 +645,17 @@
       showOverlay(true);
 
       try{
-        // 새 구조 전체 제거
-        await remove(ref(db, basePath));
+        // 여러 경로를 한 번에 원자적으로 업데이트
+        const updates = {};
+        updates[basePath]                = null;                  // 현재 샤딩 경로 전체 삭제
+        updates[`users/${uid}`]          = null;                  // 레거시 경로 삭제
+        updates[`userServerMap/${uid}`]  = null;                  // 내 매핑 제거(원하면 재생성됨)
+        updates[`tombstones/${uid}`]     = { purgedAt: serverTimestamp() }; // 복구 금지 플래그
 
-        // 레거시 경로가 남아있다면 같이 제거
-        try { await remove(ref(db, `users/${uid}`)); } catch {}
+        await update(ref(db), updates);
 
-        // 로컬 캐시 정리
-        try { localStorage.removeItem(`lastWrite_${uid}`); } catch {}
+        // 로컬/세션 캐시 모두 비움
+        clearClientCaches();
 
         showToast('사용자 데이터가 완전히 삭제되었습니다. 로그아웃합니다…');
         // 자동 로그아웃
@@ -854,7 +876,7 @@
         userIdKey     = mapping.id;
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
 
-        // 레거시 데이터가 남아있다면 1회 이관
+        // 레거시 데이터가 남아있다면 1회 이관 (단, tombstone 있으면 절대 이관 금지)
         await migrateLegacyIfExists(uid, userBasePath);
 
         accountPath.textContent = `데이터 경로: ${userBasePath}`;
