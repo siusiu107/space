@@ -557,7 +557,6 @@
     function save() {
       if (!uid || !dataRef) return;
       if (isInitialSync) return;
-      // ⬇️ __PLAY_ALLOWED 의존 제거
       const now = Date.now();
       state._lastUpdated = now;
       localLastWrite = now;
@@ -583,7 +582,6 @@
     }
 
     async function ensureServerMapping(user) {
-      // 1) 기존 매핑 확인
       const mapRef = ref(db, `userServerMap/${user.uid}`);
       try {
         const snap = await get(mapRef);
@@ -593,7 +591,6 @@
         }
       } catch {}
 
-      // 2) 신규 배정
       let nextIndex = 0;
       try {
         const tRef = ref(db, 'meta/nextIndex');
@@ -605,13 +602,11 @@
       let server = `server${serverNum}`;
       let idKey  = makeIdKeyFromUser(user);
 
-      // 3) 서버 내 key 충돌 방지
       try {
         const existsSnap = await get(ref(db, `users/${server}/${idKey}`));
         if (existsSnap.exists()) idKey = `${idKey}-${(user.uid||'').slice(0,4)}`;
       } catch {}
 
-      // 4) 매핑 저장
       try {
         await update(ref(db), {
           [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
@@ -621,7 +616,6 @@
       return { server, id: idKey };
     }
 
-    // 구(old) 경로 → 신(new) 경로 1회 마이그레이션 (존재 시 복사)
     async function migrateLegacyIfExists(uid, basePath) {
       try {
         const oldSnap = await get(ref(db, `users/${uid}`));
@@ -749,7 +743,7 @@
       { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
       { key:'coin_x2_6',  type:'coin', coinMul:2.6,  icon:'💰', color:'#32C6FF', w:0.12 },
       { key:'res_1000',   type:'res',  val:1000,     icon:'🪨', color:'#FFEA70', w:0.14 },
-      { key:'buff_click2',type:'buff', btype:'click', bval:1.0, bdur:10*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
+      { key:'buff_click2',type:'buff', btype:'click', bval:1.0,  bdur:10*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
       { key:'buff_conv2', type:'buff', btype:'convert', bval:2.0, bdur:5*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.06 },
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
     ];
@@ -881,7 +875,6 @@
                   : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
                   : '이벤트코인 슬롯 확률(EC -10)';
 
-      // ★ 최초 1회 보장: daily + 오늘 미수령 + 보장 ON → 표기 100%
       const today = kstDayKey();
       const canClaim = (dailyCache?.lastKey !== today);
       if (mode==='daily' && firstDailyGuarantee && canClaim) {
@@ -979,14 +972,13 @@
         });
         dailyCache = { lastKey: today, streak };
 
-        // ★ 보장 소진 처리
         if (firstDailyGuarantee) {
           firstDailyGuarantee = false;
           try { await update(ref(db), { [`${userBasePath}/meta/firstDailyGuarantee`]: false }); } catch {}
         }
 
         updateUI();
-        dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+        dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일<br><b>아래의 ‘닫기’ 버튼을 눌러 창을 닫아주세요.</b>`;
       }catch(e){
         console.error(e);
         dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.';
@@ -1004,7 +996,7 @@
       try{
         const delta = deltaFrom(before);
         await applyPrizeTransaction(delta); updateUI();
-        dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`;
+        dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b><br><b>‘닫기’ 버튼을 눌러 창을 닫아주세요.</b>`;
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
     spinEcoinBtn.onclick = async ()=>{
@@ -1019,7 +1011,7 @@
       try{
         const delta = deltaFrom(before);
         await applyPrizeTransaction(delta); updateUI();
-        dailyInfo.innerHTML=`🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
+        dailyInfo.innerHTML=`🎉 EC 슬롯 당첨: <b>${picked.label}</b><br><b>‘닫기’ 버튼을 눌러 창을 닫아주세요.</b>`;
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
@@ -1041,7 +1033,6 @@
       const canClaim = dailyCache?.lastKey !== today;
       refreshDailyInfo(canClaim);
       setMode('daily');
-      // 튜토리얼 중엔 자동 열기 막기
       if (canClaim && !window.__IN_TUTORIAL) openDailyOverlay();
     }
 
@@ -1131,7 +1122,6 @@
       }
     }
 
-    // ★ 클릭 가드 단순화: 로그인 & 동기화 상태만 확인
     function ensureReady() {
       if (window.__IN_TUTORIAL) return true;
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
@@ -1162,7 +1152,6 @@
         tab.classList.add('active');
       }));
 
-      // 초당 생산 타이머 (__PLAY_ALLOWED 제거)
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync) return;
         let workerGain = state.workerCount * getWorkerPower();
@@ -1184,7 +1173,7 @@
       }, 1000);
     }
 
-    // ===== 튜토리얼 시스템 (로그인 이후, 최초 1회만) =====
+    // ===== 튜토리얼 시스템 =====
     async function maybeStartTutorial(user) {
       try {
         const metaRef = ref(db, `${userBasePath}/meta/tutorialDone`);
@@ -1192,7 +1181,6 @@
         const done = metaSnap.exists() && metaSnap.val() === true;
         if (done) return;
 
-        // 기존 유저면(데이터가 이미 존재/진행 흔적) 튜토리얼/보장 스킵
         const gdSnap = await get(ref(db, `${userBasePath}/gameData`));
         if (gdSnap.exists()) {
           const g = gdSnap.val() || {};
@@ -1208,7 +1196,6 @@
           }
         }
 
-        // 신규 유저: 출석 첫 1회 EC 보장 ON
         await update(ref(db), { [`${userBasePath}/meta/firstDailyGuarantee`]: true });
         firstDailyGuarantee = true;
 
@@ -1236,7 +1223,6 @@
         st.textContent = `
         #tut-overlay{position:fixed;inset:0;z-index:4000;display:none;}
         #tut-overlay.show{display:block;}
-        /* ⬇️ 가림막이 클릭을 막지 않도록 */
         .tut-dim{position:fixed;background:rgba(0,0,0,.55);pointer-events:none;}
         #tut-hi{position:fixed;border-radius:12px;outline:2px solid rgba(0,213,255,.9);box-shadow:0 0 0 6px rgba(0,213,255,.18), 0 8px 28px rgba(0,0,0,.45);pointer-events:none;transition:all .18s ease;}
         #tut-bubble{position:fixed;min-width:260px;max-width:320px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(10,12,18,.72));color:#eaf6ff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(8px);}
@@ -1279,13 +1265,11 @@
         hi.style.width = r.width+'px';
         hi.style.height = r.height+'px';
 
-        // 4면 가림막(구멍 제외)
         dimTop.style.left='0px'; dimTop.style.top='0px'; dimTop.style.width='100%'; dimTop.style.height= Math.max(0, r.top) +'px';
         dimLeft.style.left='0px'; dimLeft.style.top= r.top+'px'; dimLeft.style.width= Math.max(0, r.left) +'px'; dimLeft.style.height= r.height+'px';
         dimRight.style.left= (r.left + r.width)+'px'; dimRight.style.top= r.top+'px'; dimRight.style.width= Math.max(0, vw - (r.left + r.width)) +'px'; dimRight.style.height= r.height+'px';
         dimBottom.style.left='0px'; dimBottom.style.top= (r.top + r.height)+'px'; dimBottom.style.width='100%'; dimBottom.style.height= Math.max(0, vh - (r.top + r.height)) +'px';
 
-        // 말풍선 위치
         const bx = Math.min(Math.max(r.left, 12), Math.max(12, vw - 332));
         let by = r.top + r.height + 12;
         if (by + 120 > vh) { by = Math.max(12, r.top - 12 - 110); }
@@ -1324,7 +1308,6 @@
 
         const st = steps[stepIdx];
 
-        // selector가 없으면 중앙 배치
         let rect = rectOf(st.selector) || { left: window.innerWidth/2-160, top: window.innerHeight/2-40, width: 320, height: 80 };
         spotlight(rect);
         setBubbleText(st.text || '');
@@ -1339,7 +1322,6 @@
             clearTargetHandler();
             hi.classList.remove('tut-pulse');
 
-            // 튜토리얼 중 ensureReady()는 true → 실제 로직 실행 허용
             rect.el.click?.();
 
             try { st.after && st.after(); } catch {}
@@ -1348,7 +1330,7 @@
           };
           rect.el.addEventListener('click', fn, true);
           onTargetClick = { el: rect.el, fn };
-          nextBtn.style.display = 'none'; // 요소 클릭으로만 넘김
+          nextBtn.style.display = 'none';
         } else {
           hi.classList.remove('tut-pulse');
           nextBtn.style.display = st.finish ? 'none' : 'inline-block';
@@ -1361,7 +1343,6 @@
         injectStyles();
         buildDOM();
 
-        // 혹시 자동 출석 오버레이가 열렸다면 닫고 시작
         try { document.getElementById('daily-overlay')?.classList.remove('show'); } catch {}
 
         prevPlayAllowed = window.__PLAY_ALLOWED;
@@ -1370,7 +1351,6 @@
           try { window.__PLAY_ALLOWED = true; window.__DEFER_INIT(); } catch {}
         }
 
-        // 시작 보정(막힘 방지용 소액) + UI 반영
         try {
           state.coins = Math.max(state.coins||0, 150);
           state.resources = Math.max(state.resources||0, 20);
@@ -1394,6 +1374,9 @@
           { selector:'#spin-daily', requireAction:'click',
             text:'첫 출석은 <b>이벤트코인 100% 보장</b>이에요! <b>무료 출석 돌리기</b>를 눌러 받아보세요.',
             before: ()=>{ setMode('daily'); } },
+          /* ✅ 추가된 스텝: 반드시 닫기 버튼을 누르게 함 */
+          { selector:'#daily-close', requireAction:'click',
+            text:'보상을 받았어요. 이제 아래의 <b>닫기</b> 버튼을 눌러 창을 닫아주세요.' },
           { selector:'#bottom-nav .tab[data-tab="planets"]', requireAction:'click',
             text:'여기가 <b>행성</b> 탭이에요. 코인으로 <b>달</b>부터 구매할 수 있어요.',
             after: ()=>{ if ((state.coins||0) < 100) { state.coins = 100; updateUI(); } } },
@@ -1422,7 +1405,6 @@
         window.__IN_TUTORIAL = false;
         if (prevPlayAllowed !== null) window.__PLAY_ALLOWED = prevPlayAllowed;
 
-        // 튜토리얼 직후: 출석 가능 상태면 안내창 한 번 띄워 재상기
         try { checkDailyAndMaybeShow(); } catch {}
         showAuthStatus('튜토리얼 완료! 즐겜 🚀', false);
       }
@@ -1437,7 +1419,6 @@
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        // 이메일/비번 미인증이어도 계속 사용 가능
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
         if (isEmailPassword && !user.emailVerified) {
           try { showLoginOverlay(false); } catch {}
@@ -1447,13 +1428,11 @@
 
         uid = user.uid;
 
-        // ★ 서버/아이디 매핑 확보 및 경로 설정
         const mapping = await ensureServerMapping(user);
         userServerKey = mapping.server;
         userIdKey     = mapping.id;
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
 
-        // 이전 경로( users/<uid> ) 데이터 있으면 복사
         await migrateLegacyIfExists(uid, userBasePath);
 
         dataRef = ref(db, `${userBasePath}/gameData`);
@@ -1475,9 +1454,8 @@
               showGameUI();
               window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
 
-              // 순서: (튜토리얼이 자동 출석보다 우선)
               await fetchDaily(); updateAttendanceLabels();
-              await maybeStartTutorial(user); // ★ 로그인 후 최초 1회 튜토리얼
+              await maybeStartTutorial(user);
               if (!window.__IN_TUTORIAL) await checkDailyAndMaybeShow();
 
             } else {
@@ -1494,9 +1472,8 @@
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
 
-            // 순서: (튜토리얼이 자동 출석보다 우선)
             await fetchDaily(); updateAttendanceLabels();
-            await maybeStartTutorial(user); // ★ 로그인 후 최초 1회 튜토리얼
+            await maybeStartTutorial(user);
             if (!window.__IN_TUTORIAL) await checkDailyAndMaybeShow();
 
             return;
@@ -1633,7 +1610,6 @@
     const _lb = document.getElementById('logout-btn');
     if (_lb) _lb.addEventListener('click', () => signOut(auth));
 
-    // ⬇️ wireGame은 항상 로드 시 연결
     window.addEventListener('load', wireGame);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
