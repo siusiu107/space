@@ -480,11 +480,17 @@
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
 
-  <!-- Firebase + 게임 로직 -->
+  <!-- Firebase + 게임 로직 (★ 샤딩/아이디키 반영) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, onValue, runTransaction, update, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import {
+      getAuth, onAuthStateChanged,
+      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+      sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import {
+      getDatabase, ref, onValue, runTransaction, update, get
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -498,15 +504,20 @@
     };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getDatabase(app);
+    const db   = getDatabase(app);
 
-    // ===== 게임 상태 =====
+    // ===== 공통 상태 =====
     let state = {};
     let uid = null;
     let dataRef = null;
     let dataUnsubscribe = null;
     let localLastWrite = 0;
     let isInitialSync = false;
+
+    // 새 구조용 전역 경로
+    let userServerKey = null;  // "server1" 등
+    let userIdKey     = null;  // 이메일 local-part 기반
+    let userBasePath  = null;  // `users/${server}/${idKey}`
 
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
@@ -520,6 +531,7 @@
 
     let currentAuthMode = 'login';
 
+    // ===== 유틸 =====
     function getWorkerCost()   { return Math.floor(initialWorkerCost   * Math.pow(workerCostGrowth, state.workerCount)); }
     function getWorkerPower()  { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost(){ return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
@@ -530,9 +542,9 @@
       if (count > 0) { state.resources -= count * 10; state.coins += count; }
     }
 
-    async function ensureInitialData(refPath) {
+    async function ensureInitialData(refObj) {
       try {
-        await runTransaction(refPath, current => {
+        await runTransaction(refObj, current => {
           if (current === null) return { ...defaultData, _lastUpdated: Date.now() };
           return current;
         });
@@ -550,6 +562,82 @@
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
     }
 
+    // ===== 새 구조: idKey & server 배정 =====
+    function sanitizeIdKey(raw) {
+      const s = (raw || '').toString().trim().toLowerCase();
+      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+      return base || 'user';
+    }
+    function makeIdKeyFromUser(user) {
+      const email = (user.email || '').toString();
+      if (email.includes('@')) {
+        const local = email.split('@')[0];
+        return sanitizeIdKey(local);
+      }
+      const name = sanitizeIdKey(user.displayName || '');
+      if (name && name !== 'user') return name;
+      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
+    }
+
+    async function ensureServerMapping(user) {
+      // 1) 기존 매핑 확인
+      const mapRef = ref(db, `userServerMap/${user.uid}`);
+      try {
+        const snap = await get(mapRef);
+        if (snap.exists()) {
+          const { server, id } = snap.val() || {};
+          if (server && id) return { server, id };
+        }
+      } catch {}
+
+      // 2) 신규 배정: global 카운터(meta/nextIndex) 트랜잭션
+      let nextIndex = 0;
+      try {
+        const tRef = ref(db, 'meta/nextIndex');
+        const res = await runTransaction(tRef, cur => (cur || 0) + 1);
+        nextIndex = res?.snapshot?.val() || 1;
+      } catch (e) { console.warn('nextIndex txn fail, fallback index=1', e); nextIndex = 1; }
+
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15)); // ★ 15명당 한 서버
+      let server = `server${serverNum}`;
+      let idKey  = makeIdKeyFromUser(user);
+
+      // 3) 서버 내 key 충돌 방지
+      try {
+        const existsSnap = await get(ref(db, `users/${server}/${idKey}`));
+        if (existsSnap.exists()) idKey = `${idKey}-${(user.uid||'').slice(0,4)}`;
+      } catch {}
+
+      // 4) 매핑 저장
+      try {
+        await update(ref(db), {
+          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
+        });
+      } catch (e) { console.error('mapping save error', e); }
+
+      return { server, id: idKey };
+    }
+
+    // 구(old) 경로 → 신(new) 경로 1회 마이그레이션 (존재 시 복사)
+    async function migrateLegacyIfExists(uid, basePath) {
+      try {
+        const oldSnap = await get(ref(db, `users/${uid}`));
+        if (!oldSnap.exists()) return;
+        const old = oldSnap.val() || {};
+        const updates = {};
+        if (old.gameData) updates[`${basePath}/gameData`] = old.gameData;
+        if (old.daily)    updates[`${basePath}/daily`]    = old.daily;
+        if (Object.keys(updates).length) {
+          updates[`migrations/${uid}`] = { to: basePath, at: Date.now() };
+          await update(ref(db), updates);
+          console.info('Migrated legacy user data to', basePath);
+        }
+      } catch (e) {
+        console.warn('legacy check/migrate failed', e);
+      }
+    }
+
+    // ======= UI 엘리먼트 =======
     const authContainer = document.getElementById('auth-container');
     const authErrorEl   = document.getElementById('auth-error');
     const bootOverlay   = document.getElementById('boot-overlay');
@@ -559,7 +647,6 @@
       bootOverlay.style.display = v ? 'flex' : 'none';
       bootOverlay.setAttribute('aria-hidden', v ? 'false' : 'true');
     }
-
     function showAuthStatus(msg, isError = true) {
       authErrorEl.textContent = msg || '';
       if (msg) authErrorEl.classList.add('show'); else authErrorEl.classList.remove('show');
@@ -591,7 +678,6 @@
       }
     }
 
-    /* ========= 수정 1: 팝업 강제 여부와 무관하게 로그인 성공 시 UI를 항상 표시 ========= */
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
@@ -607,9 +693,8 @@
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
     }
-    /* ========================================================================= */
 
-    // ====== 출석(KST) 유틸 & 남은시간 ======
+    // ====== 출석(KST) 유틸 ======
     function kstDate(d=new Date()){
       return new Date(new Date(d).toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
     }
@@ -626,30 +711,26 @@
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
     }
 
-    // === (하향) 코인 보상 스케일러 ===
+    // === 보상 스케일러/템플릿 ===
     function calcBaseCoin(){
-      const rps = state.workerCount * getWorkerPower();     // 초당 자원
-      const cps = state.conversionCount;                    // 초당 코인(알바)
-      const rpc = state.clickPower;                         // 클릭당 자원
+      const rps = state.workerCount * getWorkerPower();
+      const cps = state.conversionCount;
+      const rpc = state.clickPower;
       const planets = (state.ownedPlanets?.length || 0);
       const ship = (state.shipLevel || 1);
       const auto = state.autoConvertBought ? 1 : 0;
-
       const score =
-          20 * Math.log2(1 + rps) +
-          50 * Math.log2(1 + cps) +
-          10 * Math.log2(1 + rpc) +
-          140 * planets +
-          35  * ship +
-          (auto ? 25 : 0);
-
-      // ✔ 전체적으로 약 30% 낮춤
+        20 * Math.log2(1 + rps) +
+        50 * Math.log2(1 + cps) +
+        10 * Math.log2(1 + rpc) +
+        140 * planets +
+        35  * ship +
+        (auto ? 25 : 0);
       const baseRaw = 60 + score;
       const base = Math.round(baseRaw * 0.7);
       return Math.min(Math.max(base, 40), 30000);
     }
 
-    // ====== 슬롯 템플릿 & 머터리얼라이즈 ======
     const TPL_DAILY = [
       { key:'coin_x0_4',  type:'coin', coinMul:0.4,  icon:'🪙', color:'#7AFBFF', w:0.35 },
       { key:'coin_x0_8',  type:'coin', coinMul:0.8,  icon:'💰', color:'#4DFFB5', w:0.25 },
@@ -660,7 +741,6 @@
       { key:'eco_1',      type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.020 },
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.005 }
     ];
-
     const TPL_PREMIUM = [
       { key:'coin_x1_3',  type:'coin', coinMul:1.3,  icon:'💰', color:'#00E5FF', w:0.30 },
       { key:'coin_x1_9',  type:'coin', coinMul:1.9,  icon:'💰', color:'#4DFFB5', w:0.22 },
@@ -670,7 +750,6 @@
       { key:'buff_conv2', type:'buff', btype:'convert', bval:2.0, bdur:5*60*1000, icon:'⚙️', color:'#FFD0A8', w:0.06 },
       { key:'eco_3',      type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
     ];
-
     const TPL_ECOIN = [
       { key:'coin_x3',    type:'coin', coinMul:3.0,  icon:'💰', color:'#00E5FF', w:0.26 },
       { key:'coin_x5',    type:'coin', coinMul:5.0,  icon:'💰', color:'#4DFFB5', w:0.18 },
@@ -680,7 +759,6 @@
       { key:'eco_12',     type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.08 },
       { key:'eco_20',     type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.04 }
     ];
-
     function materializeItems(tpl){
       const base = calcBaseCoin();
       return tpl.map(it=>{
@@ -705,7 +783,6 @@
         return it;
       });
     }
-
     function getItemsForMode(mode){
       const tpl = mode==='daily'   ? TPL_DAILY
                : mode==='premium' ? TPL_PREMIUM
@@ -714,7 +791,6 @@
       return materializeItems(tpl);
     }
 
-    // ==== SFX & 버프 ====
     function playSfx(id){
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
@@ -736,7 +812,6 @@
       else{ window.fx[slot].type=type; window.fx[slot].value=value; window.fx[slot].until=now+dur; }
     }
 
-    // ===== 슬롯(세로 낙하식) =====
     const slotWrap = document.getElementById('slot-wrap');
     const reel = document.getElementById('slot-reel');
     function buildSlot(items){
@@ -748,7 +823,7 @@
     function spinSlot(items, picked){
       const rowH=56, totalRows = items.length*8;
       const idx = items.findIndex(it=>it.key===picked.key);
-      const stopRow = (items.length*6) + idx; // 충분히 굴리기
+      const stopRow = (items.length*6) + idx;
       const targetY = - stopRow * rowH;
       startTickLoop(90);
       playSfx('sfx-start');
@@ -763,16 +838,14 @@
       });
     }
 
-    // ===== 출석 저장/표시 =====
+    // ===== 출석/확률/버튼 =====
     const dailyOverlay = document.getElementById('daily-overlay');
     const dailyInfo    = document.getElementById('daily-info');
     const dailyCloseBtn= document.getElementById('daily-close');
     const probPanel    = document.getElementById('prob-panel');
     const probToggle   = document.getElementById('prob-toggle');
     const rewardList   = document.getElementById('reward-list');
-
     const tabs = Array.from(document.querySelectorAll('.tbtn'));
-
     const spinDailyBtn   = document.getElementById('spin-daily');
     const spinPremiumBtn = document.getElementById('spin-premium');
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
@@ -784,20 +857,16 @@
     function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
     function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
     dailyCloseBtn.onclick = closeDailyOverlay;
-
     probToggle.onclick = ()=>{ probPanel.style.display = (probPanel.style.display==='block'?'none':'block'); };
 
     function setMode(mode){
       currentMode = mode;
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
       activeItems = getItemsForMode(mode);
-
-      // 슬롯만 사용
       slotWrap.style.display     = 'flex';
       document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
       document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
       document.getElementById('spin-ecoin').style.display   = (mode==='ecoin')? 'inline-block':'none';
-
       buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
@@ -815,7 +884,6 @@
     function buildRewardList(items){
       rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
     }
-
     function refreshDailyInfo(canClaim){
       const today = kstDayKey();
       const streak = dailyCache?.streak || 0;
@@ -838,7 +906,6 @@
         return next;
       });
     }
-
     function makeDeltaSnapshot(){
       return { coins: state.coins||0, resources: state.resources||0, eventCoins: state.eventCoins||0 };
     }
@@ -849,66 +916,54 @@
         eventCoins: (state.eventCoins||0) - before.eventCoins
       };
     }
-
     function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
     // ==== 스핀 버튼 ====
-    // 출석(무료)
     spinDailyBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
-
       setMode('daily');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       await spinSlot(activeItems, picked);
       picked.onWin();
-
       try{
         const delta = deltaFrom(before);
         await applyPrizeTransaction(delta);
         let streak = Number(dailyCache?.streak||0);
         if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
-        await update(ref(db, `users/${uid}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
+        await update(ref(db, `${userBasePath}/daily`), { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key });
         dailyCache = { lastKey: today, streak };
         updateUI();
         dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
       }catch(e){ console.error(e); dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.'; }
     };
-
-    // 프리미엄(EC -1)
     spinPremiumBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
-
       setMode('premium');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       state.eventCoins -= 1;
       await spinSlot(activeItems, picked);
       picked.onWin();
-
       try{
         const delta = deltaFrom(before);
         await applyPrizeTransaction(delta); updateUI();
         dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`;
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
-
-    // 이벤트코인(EC -10)
     spinEcoinBtn.onclick = async ()=>{
       if (!uid || !window.__PLAY_ALLOWED) return;
       if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
-
       setMode('ecoin');
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
       state.eventCoins -= 10;
       await spinSlot(activeItems, picked);
       picked.onWin();
-
       try{
         const delta = deltaFrom(before);
         await applyPrizeTransaction(delta); updateUI();
@@ -916,12 +971,11 @@
       }catch(e){ console.error(e); dailyInfo.textContent='지급 오류'; }
     };
 
-    // ===== 데이터 & 출석 캐시 =====
+    // ===== 출석 캐시 =====
     async function fetchDaily(){
       if (!uid) return;
-      const dailyRef = ref(db, `users/${uid}/daily`);
       try{
-        const snap = await get(dailyRef);
+        const snap = await get(ref(db, `${userBasePath}/daily`));
         dailyCache = snap.exists() ? snap.val() : { lastKey:null, streak:0 };
       }catch{ dailyCache = { lastKey:null, streak:0 }; }
     }
@@ -933,7 +987,6 @@
       setMode('daily');
       if (canClaim) openDailyOverlay();
     }
-    function openDailyManual(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
 
     // ===== 메뉴에 "남은 시간" 표시 =====
     const attMenuRight = document.getElementById('attendance-left');
@@ -1028,7 +1081,6 @@
       showAuthStatus(''); return true;
     }
 
-    // ===== 초기화 =====
     function wireGame() {
       document.getElementById('ore').addEventListener('click', e => {
         if (!ensureReady()) return;
@@ -1038,7 +1090,6 @@
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
-
       document.getElementById('convert-button').addEventListener('click', () => { if (!ensureReady()) return; convertResources(1); save(); updateUI(); });
       document.getElementById('auto-convert-buy').addEventListener('click', () => { if (!ensureReady()) return; if (!state.autoConvertBought && state.coins >= 100) { state.coins -= 100; state.autoConvertBought = true; save(); updateUI(); } });
       document.getElementById('hire-worker').addEventListener('click', () => { if (!ensureReady()) return; const cost = getWorkerCost(); if (state.coins >= cost) { state.coins -= cost; state.workerCount++; save(); updateUI(); } });
@@ -1052,7 +1103,6 @@
         tab.classList.add('active');
       }));
 
-      // 1초 루프
       window.__gameTimer = setInterval(() => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
         let workerGain = state.workerCount * getWorkerPower();
@@ -1074,24 +1124,33 @@
       }, 1000);
     }
 
-    /* ========= 수정 2: 이메일/비번 미인증이어도 로그아웃하지 않고 계속 진행 ========= */
+    // ===== 인증 상태 변경 =====
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        // 이메일/비번(providerId === 'password')이며 미인증이면 안내만 하고 계속
+        // 이메일/비번 미인증이어도 계속 사용 가능
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
         if (isEmailPassword && !user.emailVerified) {
           try { showLoginOverlay(false); } catch {}
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
-          // 여기서 signOut 또는 return 하지 않음
         }
 
         uid = user.uid;
-        dataRef = ref(db, `users/${uid}/gameData`);
+
+        // ★ 서버/아이디 매핑 확보 및 경로 설정
+        const mapping = await ensureServerMapping(user);
+        userServerKey = mapping.server;
+        userIdKey     = mapping.id;
+        userBasePath  = `users/${userServerKey}/${userIdKey}`;
+
+        // 이전 경로( users/<uid> ) 데이터 있으면 복사
+        await migrateLegacyIfExists(uid, userBasePath);
+
+        dataRef = ref(db, `${userBasePath}/gameData`);
         isInitialSync = true;
         try {
           const saved = localStorage.getItem(`lastWrite_${uid}`);
@@ -1117,7 +1176,6 @@
             }
             return;
           }
-
           const serverLast = server._lastUpdated || 0;
           if (isInitialSync) {
             state = { ...defaultData, ...server };
@@ -1129,7 +1187,6 @@
             updateAttendanceLabels();
             return;
           }
-
           if (serverLast >= (localLastWrite || 0)) {
             state = { ...defaultData, ...server };
           } else {
@@ -1143,6 +1200,8 @@
       } else {
         try { showLoginOverlay(false); } catch {}
         uid = null; dataRef = null;
+        userServerKey = null; userIdKey = null; userBasePath = null;
+
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
@@ -1155,8 +1214,8 @@
         setAuthMode(currentAuthMode);
       }
     });
-    /* ========================================================================= */
 
+    // ===== 로그인/회원가입 버튼 로직 =====
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
     const signupExtra = document.getElementById('signup-extra');
@@ -1200,7 +1259,7 @@
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
-        const msg = (
+               const msg = (
           code === 'auth/wrong-password' ? '비밀번호가 일치하지 않습니다.' :
           code === 'auth/user-not-found' ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
           code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
@@ -1225,7 +1284,6 @@
         try { await sendEmailVerification(user); } catch {}
         showLoginOverlay(false);
         showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
-        // 회원가입 직후에는 로그인 상태. 원하면 바로 이용 가능.
       } catch (err) {
         showLoginOverlay(false);
         const code = err && err.code || '';
