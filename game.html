@@ -146,8 +146,12 @@
       padding:6px 10px; border-radius:8px;
       font-size:12px; z-index:1000;
       border: 1px solid rgba(255,255,255,0.08);
+
+      /* ⬇ 추가: 모바일 한 줄/말줄임 보장 */
+      white-space: nowrap;
+      overflow: hidden;
     }
-    .bar-group { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; }
+    .bar-group { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow:hidden; }
     .bar-group img { width:16px; height:16px; }
     .bar-group span { white-space: nowrap; }
     #ship-img{ width:16px; height:16px; }
@@ -280,6 +284,19 @@
     #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
+
+    /* ⬇ 추가: 상단 버프 텍스트 한 줄 & 말줄임 */
+    #buff-status{
+      display:inline-block;
+      max-width: clamp(80px, 28vw, 180px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      margin-left: 6px;
+      color:#9fdcff;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
@@ -581,25 +598,32 @@
       renderBuffStatus(); // 즉시 UI 반영
     }
 
+    /* ⬇ 변경: 시간 제거 + 아이콘×배수만 한 줄 표시 */
     function renderBuffStatus(){
       const el = document.getElementById('buff-status');
       if(!el){ return; }
+
       pruneExpiredBuffs();
-      const now = Date.now();
-      const list = (window.fx?.buffs||[])
-        .filter(b=>b && b.until>now)
-        .sort((a,b)=>a.until-b.until);
 
-      if(list.length===0){ el.textContent = '버프: 없음'; return; }
+      // res는 all 포함한 최종 배수, coin도 all 포함
+      const resF  = activeBuffFactor('res');
+      const coinF = activeBuffFactor('coin');
 
-      function labelOf(b){
-        const name = b.type==='all' ? '전체' : b.type==='res' ? '자원' : '코인';
-        const mult = (1 + b.value);
-        const ms   = Math.max(0, b.until - now);
-        return `${name}×${mult} ${fmtLeft(ms)}`;
+      const fmt = (x)=> {
+        if (!x || x <= 1.0+1e-9) return null;
+        const v = Math.round(x*10)/10;
+        return (Math.abs(v - Math.round(v)) < 1e-9) ? `×${Math.round(v)}` : `×${v}`;
+      };
+
+      const parts = [];
+      const rTxt = fmt(resF);  if (rTxt) parts.push(`⚡${rTxt}`);
+      const cTxt = fmt(coinF); if (cTxt) parts.push(`🪙${cTxt}`);
+
+      if (parts.length === 0){
+        el.textContent = '버프: 없음';
+      } else {
+        el.textContent = '버프: ' + parts.join(' · ');
       }
-      const pieces = list.slice(0,3).map(labelOf);
-      el.textContent = '버프: ' + pieces.join(' · ');
     }
 
     // ===== 유틸 =====
@@ -1308,7 +1332,7 @@
       }
     });
 
-    // ✅ 회원가입 리스너: 단 한 번만 정의, 문법 오류/중복 제거
+    // ✅ 회원가입 리스너
     signupBtnEl?.addEventListener('click', async (e) => {
       e.preventDefault();
       showAuthStatus('');
@@ -1342,7 +1366,7 @@
       }
     });
 
-    // 🔧 부팅 오버레이 페일세이프 (옵션이지만 UX 향상)
+    // 🔧 부팅 오버레이 페일세이프
     setTimeout(() => {
       const stillBooting = bootOverlay && getComputedStyle(bootOverlay).display !== 'none';
       const gameHidden = document.getElementById('container')?.style.visibility !== 'visible';
@@ -1375,7 +1399,7 @@
       renderBuffStatus();
     });
 
-    // 버프 남은 시간 UI 1초마다 갱신 (게임 루프와 별개)
+    // 버프 남은 시간 UI → (남은시간 표기 제거했지만 주기적 갱신은 유지)
     setInterval(renderBuffStatus, 1000);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
