@@ -219,32 +219,43 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    /* ====== 숫자 파싱/표시 유틸 ====== */
+    /* ====== 숫자 파싱 v3 (복합 단위/꼬리표 지원) ====== */
     function parseNumericLike(x){
       if (typeof x === 'number' && isFinite(x)) return Math.floor(x);
-      const s = String(x ?? '').trim();
+      let s = String(x ?? '').trim();
       if (!s) return 0;
-      const plain = s.replace(/,/g,'').replace(/\s+/g,'');
-      if (/^-?\d+(\.\d+)?$/.test(plain)) return Math.floor(parseFloat(plain));
-      const units = [
-        ['무량대수', 1e68], ['불가사의', 1e64], ['나유타', 1e60], ['아승기', 1e56],
-        ['항하사', 1e52], ['극', 1e48], ['재', 1e44], ['정', 1e40], ['간', 1e36],
-        ['구', 1e32], ['양', 1e28], ['자', 1e24], ['해', 1e20], ['경', 1e16],
-        ['조', 1e12], ['억', 1e8], ['만', 1e4]
-      ];
-      for (const [k, v] of units){
-        if (s.endsWith(k)){
-          const head = s.slice(0, s.length - k.length).replace(/,/g,'').trim();
-          const num = parseFloat(head);
-          if (!Number.isNaN(num)) return Math.floor(num * v);
-          return 0;
-        }
+
+      // 꼬리표 제거 (EC/코인/coin)
+      s = s.replace(/\s*(?:ec|이벤트코인|coin|coins|코인)\s*$/i, '');
+      // 쉼표/공백 제거
+      s = s.replace(/,/g,'').replace(/\s+/g,'');
+
+      // 복합 단위 합산: 1억5000만, 2.5억3만 등
+      const UNIT = {
+        '무량대수':1e68,'불가사의':1e64,'나유타':1e60,'아승기':1e56,'항하사':1e52,
+        '극':1e48,'재':1e44,'정':1e40,'간':1e36,'구':1e32,'양':1e28,'자':1e24,
+        '해':1e20,'경':1e16,'조':1e12,'억':1e8,'만':1e4
+      };
+      let total = 0, matched = false;
+      const re = /([0-9]+(?:\.[0-9]+)?)(무량대수|불가사의|나유타|아승기|항하사|극|재|정|간|구|양|자|해|경|조|억|만)/g;
+      let m;
+      while ((m = re.exec(s)) !== null){
+        matched = true;
+        const num = parseFloat(m[1]);
+        total += (isNaN(num) ? 0 : num * UNIT[m[2]]);
       }
+      if (matched) return Math.floor(total);
+
+      // 단위가 없으면 그냥 수치로
+      if (/^-?\d+(\.\d+)?$/.test(s)) return Math.floor(parseFloat(s));
+
+      // 마지막 안전망
       const stripped = s.replace(/[^\d.\-]/g,'');
       if (/^-?\d+(\.\d+)?$/.test(stripped)) return Math.floor(parseFloat(stripped));
       return 0;
     }
 
+    /* ====== 숫자 축약 (만~무량대수) ====== */
     function formatLarge(n){
       if (!isFinite(n)) return '0';
       const abs = Math.abs(n);
