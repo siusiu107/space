@@ -591,28 +591,6 @@
     }
 
     /* =======================
-       숫자 한국식 단위 포매터
-       ======================= */
-    function formatKR(num, decimalsMax = 2) {
-      if (num === null || num === undefined) return '0';
-      if (!isFinite(num)) return String(num);
-      const neg = num < 0;
-      let n = Math.abs(num);
-
-      const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극'];
-      let u = 0;
-      while (n >= 10000 && u < units.length - 1) { n /= 10000; u++; }
-
-      if (u === 0) {
-        return (neg ? '-' : '') + Math.floor(n).toLocaleString('ko-KR');
-      }
-      let dec = n >= 100 ? 0 : (n >= 10 ? 1 : 2);
-      dec = Math.min(decimalsMax, dec);
-      const s = n.toFixed(dec).replace(/\.0+$|(\.\d*[1-9])0+$/, '$1');
-      return (neg ? '-' : '') + s + units[u];
-    }
-
-    /* =======================
        버프: 저장/적용/표시
        ======================= */
     function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
@@ -680,6 +658,34 @@
         });
       el.textContent = items.length ? `버프: ${items.join(' · ')}` : '버프: 없음';
       el.title = items.join('\n') || '버프 없음';
+    }
+
+    /* ===== 숫자 한국식 단위 포매터 =====
+       - 만 미만: 정수 반올림 (10.23 → 10)
+       - 만 이상: 소수 2자리까지 반올림, 불필요한 0 제거 (100.30만 → 100.3만)
+    */
+    function formatKR(num, decimalsForUnits = 2) {
+      if (num === null || num === undefined) return '0';
+      if (!isFinite(num)) return String(num);
+
+      const neg = num < 0;
+      let n = Math.abs(num);
+
+      const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극'];
+      let u = 0;
+      while (n >= 10000 && u < units.length - 1) {
+        n /= 10000;
+        u++;
+      }
+
+      if (u === 0) {
+        // 만 미만: 정수로 반올림
+        const rounded = Math.round(n);
+        return (neg ? '-' : '') + rounded.toLocaleString('ko-KR');
+      }
+      // 만 이상: 소수 2자리 반올림 + 0 제거
+      const s = n.toFixed(decimalsForUnits).replace(/\.0+$|(\.\d*[1-9])0+$/, '$1');
+      return (neg ? '-' : '') + s + units[u];
     }
 
     // ===== 유틸 =====
@@ -787,6 +793,23 @@
       }
     }
 
+    // ======= 우주선 이미지 폴백 =======
+    function setShipImage(level) {
+      const img = document.getElementById('ship-img');
+      if (!img) return;
+      let attempted = Math.max(1, level);
+      img.onerror = function onErr() {
+        if (attempted > 1) {
+          attempted -= 1;
+          img.src = `/images/ship-level${attempted}.png`;
+        } else {
+          img.onerror = null;
+          img.src = `/images/ship-level1.png`;
+        }
+      };
+      img.src = `/images/ship-level${attempted}.png`;
+    }
+
     // ======= UI 엘리먼트 =======
     const authContainer = document.getElementById('auth-container');
     const authErrorEl   = document.getElementById('auth-error');
@@ -801,23 +824,6 @@
       authErrorEl.textContent = msg || '';
       if (msg) authErrorEl.classList.add('show'); else authErrorEl.classList.remove('show');
       authErrorEl.style.color = isError ? '#ffdede' : '#dfffe8';
-    }
-
-    // ===== 우주선 이미지 폴백 로더 =====
-    function setShipImage(level){
-      const img = document.getElementById('ship-img');
-      if (!img) return;
-      let attempt = Math.max(1, Number(level) || 1);
-      const tryLoad = ()=>{
-        const path = `/images/ship-level${attempt}.png`;
-        img.onerror = ()=>{
-          attempt -= 1;
-          if (attempt >= 1) { tryLoad(); }
-          else { img.onerror = null; } // 더 이상 폴백 불가
-        };
-        img.src = path;
-      };
-      tryLoad();
     }
 
     function showGameUI() {
@@ -879,7 +885,7 @@
       { key:'coin_x1_8', type:'coin', coinMul:1.8, icon:'💰', color:'#4DFFB5', w:0.18 },
       { key:'res_x2_5m', type:'buff', bkind:'res',  bmult:1.0, bdur:5*60*1000, icon:'⚡', color:'#FFA8FF', w:0.22 },
       { key:'all_x2_3m', type:'buff', bkind:'all',  bmult:1.0, bdur:3*60*1000, icon:'🚀', color:'#8AE1FF', w:0.16 },
-      { key:'coinbuf_x2_3m', type:'buff', bkind:'coin', bmult:1.0, bdur:5*60*1000, icon:'🪙', color:'#FFD0A8', w:0.11 },
+      { key:'coinbuf_x2_3m', type:'buff', bkind:'coin', bmult:1.0, bdur:3*60*1000, icon:'🪙', color:'#FFD0A8', w:0.11 },
       { key:'eco_1',     type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.01 }
     ];
     const TPL_PREMIUM = [
@@ -918,7 +924,7 @@
           const minText  = `${Math.round(it.bdur/60000)}m`;
           let title = it.bkind==='all' ? `모든 생산 ${multText}`
                    : it.bkind==='coin' ? `코인 생산 ${multText}`
-                   :                     `자원 생산 ${multText}`;
+                   : /* res */          `자원 생산 ${multText}`;
           return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
         }
         return it;
@@ -1009,7 +1015,7 @@
       buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
-      updateSpinButtons();
+      updateSpinButtons(); // 잠금/자원 상태 반영
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
@@ -1183,21 +1189,20 @@
     // ===== 게임 UI =====
     function updateUI() {
       pruneExpiredBuffs();
-
       document.getElementById('score').innerText  = `자원: ${formatKR(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${formatKR(state.coins)}`;
       document.getElementById('ecoins').innerText = `이벤트코인: ${formatKR(state.eventCoins||0)}`;
-
       document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${formatKR(state.shipUpgradeCost)}코인)`;
       setShipImage(state.shipLevel);
+      document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
       clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`;
       clickUp.disabled  = state.coins < clickUpgradeCost;
-      document.getElementById('click-power').innerText = state.clickPower;
+      document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
       const autoBtn = document.getElementById('auto-convert-buy');
-      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : '자동변환 구매<br>(100코인)';
+      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : `자동변환 구매<br>(${formatKR(100)}코인)`;
       autoBtn.disabled = state.autoConvertBought || state.coins < 100;
 
       document.getElementById('convert-button').disabled = state.resources < 10;
@@ -1213,7 +1218,7 @@
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
       renderBuffStatus();
-      tryUnlockDaily();
+      tryUnlockDaily(); // 100코인 도달 체크
     }
 
     function renderPlanets() {
@@ -1222,7 +1227,7 @@
         {name:'수성',cost:500,requiredShipLevel:2},
         {name:'금성',cost:2000,requiredShipLevel:3},
         {name:'지구',cost:10000,requiredShipLevel:4},
-        {name:'화성',cost:50000,requiredShipLevel:5},
+        {name:'화성',cost:50000,requiredShipLevel:5}, // ★ 화성
         {name:'목성',cost:250000,requiredShipLevel:6},
         {name:'토성',cost:1000000,requiredShipLevel:7},
         {name:'천왕성',cost:5000000,requiredShipLevel:8},
@@ -1243,6 +1248,7 @@
             state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
 
+            // ★ 화성 구매 시 랭킹 잠금 해제
             if (p.name === '화성' && !rankingUnlocked) {
               rankingUnlocked = true;
               try { await update(ref(db), { [`${userBasePath}/meta/rankingUnlocked`]: true }); } catch{}
@@ -1351,6 +1357,7 @@
 
         await ensureInitialData(dataRef);
 
+        // 랭킹 잠금 상태도 미리 가져오기
         try {
           const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
           rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
@@ -1613,7 +1620,7 @@
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
-      disableMenu: true,
+      disableMenu: true,       /* 오탈자 ture → true 수정 */
       disableSelect: true,
       disableCopy: true,
       disableCut: true,
