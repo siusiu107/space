@@ -147,7 +147,6 @@
       font-size:12px; z-index:1000;
       border: 1px solid rgba(255,255,255,0.08);
 
-      /* ⬇ 추가: 모바일 한 줄/말줄임 보장 */
       white-space: nowrap;
       overflow: hidden;
     }
@@ -285,10 +284,10 @@
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
 
-    /* ⬇ 추가: 상단 버프 텍스트 한 줄 & 말줄임 */
+    /* 상단 버프 텍스트: 모바일 말줄임 + 툴팁 */
     #buff-status{
       display:inline-block;
-      max-width: clamp(80px, 28vw, 180px);
+      max-width: clamp(100px, 34vw, 220px);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -374,8 +373,8 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
-      <!-- ★ 버프 상태 표시 -->
-      <span id="buff-status" style="margin-left:6px; color:#9fdcff;">버프: 없음</span>
+      <!-- ★ 버프 상태 표시: 이름 + 남은 시간 -->
+      <span id="buff-status" title="버프 정보">버프: 없음</span>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
   </div>
@@ -542,10 +541,9 @@
     let currentAuthMode = 'login';
 
     /* =======================
-       버프: 저장/적용/표시
+       버프: 저장/적용/표시(이름+남은시간)
        ======================= */
     function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
-
     function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
 
     function persistBuffs(){
@@ -556,7 +554,6 @@
         localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
       } catch {}
     }
-
     function loadBuffs(){
       ensureFx();
       try {
@@ -566,7 +563,6 @@
         window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
       } catch { window.fx.buffs = []; }
     }
-
     function pruneExpiredBuffs(){
       ensureFx();
       const before = window.fx.buffs.length;
@@ -590,40 +586,73 @@
     }
 
     // value: 1 => x2, 2 => x3 ...
-    function addTempBuff(type, value, dur){
+    function addTempBuff(type, value, dur, name){
       ensureFx();
       const now=Date.now();
-      window.fx.buffs.push({ type, value, until: now + dur });
+      // 기본 이름 생성 (넘겨주지 않으면)
+      const icon = type==='all' ? '🚀' : type==='coin' ? '🪙' : '⚡';
+      const label = name || (
+        type==='all'  ? `모든 생산 ×${1+value}` :
+        type==='coin' ? `코인 ×${1+value}` :
+                        `자원 ×${1+value}`
+      );
+      window.fx.buffs.push({ type, value, until: now + dur, name: label, icon });
       persistBuffs();
       renderBuffStatus(); // 즉시 UI 반영
     }
 
-    /* ⬇ 변경: 시간 제거 + 아이콘×배수만 한 줄 표시 */
+    // mm:ss 포맷
+    function fmtMMSS(ms){
+      if (ms <= 0) return '00:00';
+      const s = Math.floor(ms/1000);
+      const m = Math.floor(s/60);
+      const ss = s%60;
+      return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
+
+    // ★ 상단바 표기: 이름 + 남은시간
     function renderBuffStatus(){
       const el = document.getElementById('buff-status');
       if(!el){ return; }
 
       pruneExpiredBuffs();
+      const now = Date.now();
+      const list = (window.fx.buffs||[])
+        .filter(b => b && b.until>now)
+        .sort((a,b)=>a.until-b.until); // 곧 끝나는 순
 
-      // res는 all 포함한 최종 배수, coin도 all 포함
-      const resF  = activeBuffFactor('res');
-      const coinF = activeBuffFactor('coin');
-
-      const fmt = (x)=> {
-        if (!x || x <= 1.0+1e-9) return null;
-        const v = Math.round(x*10)/10;
-        return (Math.abs(v - Math.round(v)) < 1e-9) ? `×${Math.round(v)}` : `×${v}`;
-      };
-
-      const parts = [];
-      const rTxt = fmt(resF);  if (rTxt) parts.push(`⚡${rTxt}`);
-      const cTxt = fmt(coinF); if (cTxt) parts.push(`🪙${cTxt}`);
-
-      if (parts.length === 0){
+      if (list.length===0){
         el.textContent = '버프: 없음';
-      } else {
-        el.textContent = '버프: ' + parts.join(' · ');
+        el.title = '활성 버프 없음';
+        return;
       }
+
+      // 모바일 가독성: 최대 3개만 본문, 나머지는 "+n"
+      const maxShow = 3;
+      const shown = list.slice(0, maxShow).map(b=>{
+        const left = fmtMMSS(b.until - now);
+        const name = b.name || (
+          b.type==='all'  ? `모든 생산 ×${1+b.value}` :
+          b.type==='coin' ? `코인 ×${1+b.value}` :
+                            `자원 ×${1+b.value}`
+        );
+        const icon = b.icon || (b.type==='all' ? '🚀' : b.type==='coin' ? '🪙' : '⚡');
+        return `${icon} ${name} (${left})`;
+      });
+      const extra = list.length>maxShow ? ` +${list.length-maxShow}` : '';
+      el.textContent = '버프: ' + shown.join(' · ') + extra;
+
+      // 툴팁에 전체 상세
+      const full = list.map(b=>{
+        const icon = b.icon || (b.type==='all' ? '🚀' : b.type==='coin' ? '🪙' : '⚡');
+        const name = b.name || (
+          b.type==='all'  ? `모든 생산 ×${1+b.value}` :
+          b.type==='coin' ? `코인 ×${1+b.value}` :
+                            `자원 ×${1+b.value}`
+        );
+        return `${icon} ${name} — 남은시간 ${fmtMMSS(b.until-now)}`;
+      }).join('\n');
+      el.title = full;
     }
 
     // ===== 유틸 =====
@@ -841,12 +870,16 @@
           return { ...it, label:`이벤트코인 ×${it.val}`, onWin:()=>{ state.eventCoins = (state.eventCoins||0) + it.val; } };
         }
         if (it.type==='buff'){
-          const multText = `x${1+it.bmult}`;
+          const multText = `×${1+it.bmult}`;
           const minText  = `${Math.round(it.bdur/60000)}m`;
           let title = it.bkind==='all' ? `모든 생산 ${multText}`
-                   : it.bkind==='coin' ? `코인 생산 ${multText}`
-                   : /* res */          `자원 생산 ${multText}`;
-          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
+                   : it.bkind==='coin' ? `코인 ${multText}`
+                   : /* res */          `자원 ${multText}`;
+          return {
+            ...it,
+            label:`${title} / ${minText}`,
+            onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur, title); }
+          };
         }
         return it;
       });
@@ -1399,7 +1432,7 @@
       renderBuffStatus();
     });
 
-    // 버프 남은 시간 UI → (남은시간 표기 제거했지만 주기적 갱신은 유지)
+    // 버프 남은 시간 UI 갱신
     setInterval(renderBuffStatus, 1000);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
