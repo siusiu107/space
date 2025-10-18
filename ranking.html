@@ -3,28 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🌌 태양계 정복: 돈 랭킹 🌌</title>
+  <title>🌌 태양계 정복: 랭킹 🌌</title>
   <script>
     try { history.replaceState(null, '', '/랭킹' + (location.hash || '')); }
     catch(e){ console.warn('주소 표시 변경 실패:', e); }
   </script>
 
   <style>
-    body { margin:0; padding:0; font-family:Arial,sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
-    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:20px; border-radius:8px; width:90%; max-width:560px; text-align:center; display:none; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    body { margin:0; padding:0; font-family:Arial,system-ui,-apple-system,'Apple SD Gothic Neo',Segoe UI,Roboto,'Noto Sans KR',sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); padding:18px; border-radius:12px; width:92%; max-width:680px; text-align:center; display:none; box-shadow:0 18px 60px rgba(0,0,0,.45); }
+    h1{ margin:0 0 6px; font-size:22px; }
+    .controls{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 10px; }
+    .pill{ padding:6px 10px; border:1px solid rgba(255,255,255,0.18); border-radius:999px; background:rgba(255,255,255,0.08); font-size:12px; }
+    .sel{ padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(0,0,0,.25); color:#fff; }
+    table { width:100%; border-collapse:collapse; margin-top:6px; }
     th, td { padding:10px 8px; border-bottom:1px solid #444; font-size:14px; }
     th { background:rgba(30,30,30,0.9); position:sticky; top:0; }
     td { background:rgba(20,20,20,0.7); }
     tr:nth-child(even) td { background:rgba(20,20,20,0.5); }
-    .btn { margin:10px 5px 0; padding:8px 16px; background:#00aaff; border:none; border-radius:4px; color:#fff; cursor:pointer; text-decoration:none; display:inline-block; }
+    .btn { margin:10px 5px 0; padding:9px 16px; background:#00aaff; border:none; border-radius:8px; color:#001018; font-weight:800; cursor:pointer; text-decoration:none; display:inline-block; }
+    .btn.gray{ background:#666; color:#fff; }
     #nickname-prompt { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; color:#fff; text-align:center; padding-top:12vh; }
     #nickname-prompt .panel{ width:min(520px,92vw); margin:0 auto; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:18px; }
     input[type="text"] { margin:8px 6px; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(0,0,0,0.25); color:#fff; font-size:14px; width:min(320px,80%); }
     input[type="checkbox"] { margin:0 6px 0 0; }
-    #filter-container { margin-top:10px; font-size:13px; color:#cfe6ff; display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap; }
-    .pill{ padding:6px 10px; border:1px solid rgba(255,255,255,0.18); border-radius:999px; background:rgba(255,255,255,0.08); font-size:12px; }
     .right{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+    .help{ font-size:12px; color:#cfe6ff; opacity:.9; }
   </style>
 </head>
 <body>
@@ -36,29 +40,46 @@
       <input type="text" id="nickname-input" placeholder="닉네임 입력" maxlength="20" />
       <div class="right">
         <button class="btn" id="submit-nickname">확인</button>
-        <button class="btn" id="skip-nickname" style="background:#555;">나중에</button>
+        <button class="btn gray" id="skip-nickname">나중에</button>
       </div>
     </div>
   </div>
 
   <!-- 랭킹 컨테이너 -->
   <div id="ranking-container" aria-hidden="true">
-    <h1>💰 코인 랭킹 Top 50</h1>
-    <div id="filter-container">
+    <h1 id="title">💰 Top 50</h1>
+    <div class="controls">
+      <select id="ranking-type" class="sel" aria-label="랭킹 종류 선택">
+        <option value="coins">코인</option>
+        <option value="shipLevel">우주선 레벨</option>
+        <option value="eventCoins">이벤트코인</option>
+        <option value="planets">보유 행성 수</option>
+        <option value="clickPower">클릭 파워</option>
+        <option value="workerCount">알바 수</option>
+        <option value="conversionCount">코인 알바 수</option>
+      </select>
       <label class="pill" title="닉네임이 없는 유저도 목록에 포함합니다">
         <input type="checkbox" id="toggle-no-nickname" checked>
         닉네임 없는 사용자 표시
       </label>
       <span class="pill" id="total-count">로딩 중…</span>
     </div>
+
     <table>
       <thead>
-        <tr><th style="width:72px">순위</th><th>닉네임</th><th style="width:120px">코인</th></tr>
+        <tr>
+          <th style="width:72px">순위</th>
+          <th>닉네임</th>
+          <th id="col-label" style="width:160px">값</th>
+        </tr>
       </thead>
       <tbody id="ranking-body"></tbody>
     </table>
+
+    <div class="help" id="unit-help" style="margin-top:6px;">※ 큰 숫자는 만/억/조/경/해/자/양/구/간/정/재/극/항하사/아승기/나유타/불가사의/무량대수 단위로 축약됩니다.</div>
+
     <div class="right">
-      <button id="logout-btn" class="btn">로그아웃</button>
+      <button id="logout-btn" class="btn gray">로그아웃</button>
       <a href="game.html" class="btn">게임으로</a>
     </div>
   </div>
@@ -75,7 +96,7 @@
       projectId: "siu-studio",
       storageBucket: "siu-studio.appspot.com",
       messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140e893c31f01", /* ★ appId 오타 수정 */
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
       measurementId: "G-1Y090YJDB6"
     };
     const app = initializeApp(firebaseConfig);
@@ -90,10 +111,38 @@
     const skipBtn = document.getElementById('skip-nickname');
     const toggleNoNick = document.getElementById('toggle-no-nickname');
     const totalCountEl = document.getElementById('total-count');
-    let rankingList = [];
-    let basePathForMe = null;
+    const titleEl = document.getElementById('title');
+    const colLabelEl = document.getElementById('col-label');
+    const unitHelp = document.getElementById('unit-help');
+    const typeSelect = document.getElementById('ranking-type');
 
-    /* ===== 공통 유틸(샤딩 & 아이디키) ===== */
+    let basePathForMe = null;
+    let allUsers = [];
+
+    /* ===== 숫자 축약 (만~무량대수) ===== */
+    function formatLarge(n){
+      if (!isFinite(n)) return '0';
+      const abs = Math.abs(n);
+      const units = [
+        { u:'무량대수', v:1e68 }, { u:'불가사의', v:1e64 }, { u:'나유타', v:1e60 },
+        { u:'아승기', v:1e56 }, { u:'항하사', v:1e52 }, { u:'극', v:1e48 },
+        { u:'재', v:1e44 }, { u:'정', v:1e40 }, { u:'간', v:1e36 },
+        { u:'구', v:1e32 }, { u:'양', v:1e28 }, { u:'자', v:1e24 },
+        { u:'해', v:1e20 }, { u:'경', v:1e16 }, { u:'조', v:1e12 },
+        { u:'억', v:1e8 }, { u:'만', v:1e4 }
+      ];
+      for (const {u, v} of units){
+        if (abs >= v){
+          const val = (n / v);
+          let s = (Math.round(val * 10) / 10).toString();
+          if (s.indexOf('.') > -1) s = s.replace(/\.0$/, '');
+          return s + u;
+        }
+      }
+      return n.toLocaleString();
+    }
+
+    /* ===== 샤딩 유틸 ===== */
     function sanitizeIdKey(raw) {
       const s = (raw || '').toString().trim().toLowerCase();
       const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
@@ -101,13 +150,9 @@
     }
     function makeIdKeyFromUser(user) {
       const email = (user.email || '').toString();
-      if (email.includes('@')) {
-        const local = email.split('@')[0];
-        return sanitizeIdKey(local);
-      }
+      if (email.includes('@')) return sanitizeIdKey(email.split('@')[0]);
       const name = sanitizeIdKey(user.displayName || '');
-      if (name && name !== 'user') return name;
-      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
+      return (name && name !== 'user') ? name : `user_${(user.uid || '').slice(0,6) || '000000'}`;
     }
     async function ensureServerMapping(user) {
       try {
@@ -124,16 +169,13 @@
       } catch { nextIndex = 1; }
       const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
       const server = `server${serverNum}`;
-      const idBase = makeIdKeyFromUser(user);
-      let idKey = idBase;
+      let idKey = makeIdKeyFromUser(user);
       try {
         const exists = await get(ref(db, `users/${server}/${idKey}`));
-        if (exists.exists()) idKey = `${idBase}-${(user.uid||'').slice(0,4)}`;
+        if (exists.exists()) idKey = `${idKey}-${(user.uid||'').slice(0,4)}`;
       } catch {}
       try {
-        await update(ref(db), {
-          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
-        });
+        await update(ref(db), { [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() } });
       } catch {}
       return { server, id: idKey };
     }
@@ -153,43 +195,30 @@
       } catch {}
     }
 
-    // 배너 표시 후 안전 리다이렉트 (직접 주소 접근 차단용)
-    function showBannerAndRedirect(url, text = '로그인후 이용해주세요!') {
+    function showBannerAndRedirect(url, text = '로그인 후 이용해주세요!') {
       const banner = document.createElement('div');
       banner.textContent = text;
       banner.style.cssText =
         'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;' +
         'background:rgba(0,0,0,.85);color:#fff;font-size:20px;z-index:99999;';
       document.body.appendChild(banner);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setTimeout(() => { window.location.replace(url); }, 1200);
-        });
-      });
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => window.location.replace(url), 1200)));
     }
 
-    /* ========= 🔐 접근 가드 로직 =========
-       - 로그인 필수
-       - 내 샤딩 경로 파악
-       - meta/rankingUnlocked === true 인 경우에만 페이지 표시
-       - 아니면 게임으로 강제 이동(주소로 바로 들어와도 못 봄)
-    ===================================== */
+    /* ========= 접근 가드 ========= */
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         try { sessionStorage.setItem('pending_redirect', window.location.href); } catch {}
         showBannerAndRedirect(`${location.origin}/game.html`, '로그인 후 이용해주세요!');
         return;
       }
-
       try {
         const { server, id } = await ensureServerMapping(user);
         basePathForMe = `users/${server}/${id}`;
         await migrateLegacyIfExists(user, basePathForMe);
       } catch {
-        basePathForMe = `users/${user.uid}`; // 안전장치(레거시)
+        basePathForMe = `users/${user.uid}`;
       }
-
-      // ★ 랭킹 잠금해제 여부 확인 (화성 구매 시 game.html에서 true 저장)
       try {
         const unlockedSnap = await get(ref(db, `${basePathForMe}/meta/rankingUnlocked`));
         const unlocked = !!(unlockedSnap.exists() && unlockedSnap.val());
@@ -202,7 +231,6 @@
         return;
       }
 
-      // 여기까지 통과한 유저만 페이지 표시
       const profileNickRef = ref(db, `${basePathForMe}/profile/nickname`);
       const nickSnap = await get(profileNickRef);
 
@@ -210,8 +238,10 @@
         nicknamePrompt.style.display = 'none';
         rankingContainer.style.display = 'block';
         rankingContainer.setAttribute('aria-hidden','false');
-        await loadRanking();
-        toggleNoNick.addEventListener('change', renderRanking);
+        await loadAllUsers();
+        totalCountEl.textContent = `${allUsers.length}명 집계됨`;
+        wireUI();
+        renderRanking();
       };
 
       if (!nickSnap.exists()) {
@@ -222,7 +252,6 @@
           await set(profileNickRef, nick);
           startRanking();
         };
-        // 닉네임 없이도 보기 허용 (필터에서 숨길 수 있음)
         skipBtn.onclick = startRanking;
       } else {
         startRanking();
@@ -234,67 +263,84 @@
       window.location.href = 'game.html';
     });
 
-    /* ===== 랭킹 로드 (샤딩 경로 + 레거시 모두 집계) ===== */
-    async function loadRanking() {
-      rankingList = [];
-      totalCountEl.textContent = '로딩 중…';
-
+    async function loadAllUsers(){
+      allUsers = [];
       const usersRootSnap = await get(ref(db, 'users'));
-      if (!usersRootSnap.exists()) {
-        totalCountEl.textContent = '0명';
-        renderRanking();
-        return;
-      }
-
+      if (!usersRootSnap.exists()) return;
       usersRootSnap.forEach(serverNode => {
         const serverKey = serverNode.key || '';
         const isShardedServer = /^server\d+$/i.test(serverKey);
-
         if (isShardedServer) {
-          // users/serverX/{idKey}/...
-          serverNode.forEach(userNode => {
-            const v = userNode.val() || {};
-            const coins = Math.floor(v?.gameData?.coins || 0);
-            const nickname = (v?.profile?.nickname || '').toString();
-            rankingList.push({ nickname, coins });
-          });
+          serverNode.forEach(userNode => addUserFromNode(userNode.val() || {}));
         } else {
-          // 레거시: users/{uid}/...
-          const v = serverNode.val() || {};
-          const coins = Math.floor(v?.gameData?.coins || 0);
-          const nickname = (v?.profile?.nickname || '').toString();
-          rankingList.push({ nickname, coins });
+          addUserFromNode(serverNode.val() || {});
         }
       });
-
-      rankingList.sort((a, b) => b.coins - a.coins);
-      totalCountEl.textContent = `${rankingList.length}명 집계됨`;
-      renderRanking();
+    }
+    function addUserFromNode(v){
+      const gd = v?.gameData || {};
+      const profile = v?.profile || {};
+      const nickname = (profile?.nickname || '').toString();
+      allUsers.push({
+        nickname,
+        coins: Math.floor(gd.coins || 0),
+        shipLevel: Math.floor(gd.shipLevel || 0),
+        eventCoins: Math.floor(gd.eventCoins || 0),
+        planets: Array.isArray(gd.ownedPlanets) ? gd.ownedPlanets.length : 0,
+        clickPower: Math.floor(gd.clickPower || 0),
+        workerCount: Math.floor(gd.workerCount || 0),
+        conversionCount: Math.floor(gd.conversionCount || 0),
+      });
     }
 
-    function renderRanking() {
+    function getTypeLabel(t){
+      return ({
+        coins:'코인', shipLevel:'우주선 레벨', eventCoins:'이벤트코인',
+        planets:'보유 행성 수', clickPower:'클릭 파워',
+        workerCount:'알바 수', conversionCount:'코인 알바 수'
+      }[t] || '값');
+    }
+    function formatByType(t, v){
+      if (t === 'coins' || t === 'eventCoins') return formatLarge(v);
+      return (v ?? 0).toLocaleString();
+    }
+    function showUnitHelp(t){
+      unitHelp.style.display = (t === 'coins' || t === 'eventCoins') ? 'block' : 'none';
+    }
+    function renderRanking(){
+      const type = typeSelect.value;
+      titleEl.textContent = `🏆 Top 50 — ${getTypeLabel(type)}`;
+      colLabelEl.textContent = getTypeLabel(type);
+      showUnitHelp(type);
+
       const showNoNick = toggleNoNick.checked;
+      const list = [...allUsers]
+        .filter(u => showNoNick ? true : !!u.nickname)
+        .sort((a,b) => (b[type]||0) - (a[type]||0))
+        .slice(0, 50);
+
       rankingBody.innerHTML = '';
-      let rank = 1;
-      for (const item of rankingList) {
-        if (!showNoNick && !item.nickname) continue;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="text-align:center">${rank}</td>
-          <td>${item.nickname ? escapeHtml(item.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
-          <td style="text-align:right">${Number(item.coins||0).toLocaleString()}</td>
-        `;
-        rankingBody.appendChild(tr);
-        rank++;
-        if (rank > 50) break;
-      }
-      if (rank === 1) {
+      if (list.length === 0){
         const tr = document.createElement('tr');
         tr.innerHTML = `<td colspan="3" style="text-align:center; opacity:.8; padding:16px 8px">표시할 항목이 없어요</td>`;
         rankingBody.appendChild(tr);
+        return;
       }
+      list.forEach((u, i) => {
+        const raw = u[type] || 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center">${i+1}</td>
+          <td>${u.nickname ? escapeHtml(u.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
+          <td style="text-align:right" title="${raw.toLocaleString()}">${formatByType(type, raw)}</td>
+        `;
+        rankingBody.appendChild(tr);
+      });
     }
-
+    function wireUI(){
+      typeSelect.addEventListener('change', renderRanking);
+      toggleNoNick.addEventListener('change', renderRanking);
+    }
     function escapeHtml(s) {
       return (s || '').replace(/[&<>"'`=\/]/g, c => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'
@@ -311,17 +357,11 @@
       disableCut: true,
       disablePaste: true,
       clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        window.close();
-        next();
-      },
-      ondevtoolclose() {
-        console.warn('DevTools 닫힘 감지됨');
-      }
+      ondevtoolopen(type, next) { window.close(); next(); },
+      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
   </script>
   <script>
-    // 우클릭 전체 차단(입력 요소는 예외)
     document.addEventListener('contextmenu', function (e) {
       if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
       e.preventDefault();
