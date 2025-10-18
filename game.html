@@ -596,7 +596,7 @@
       renderBuffStatus(); // 즉시 UI 반영
     }
 
-    /* ⬇ 상단 바 버프 간단 표기(배수만) */
+    /* 상단 바 버프 간단 표기 */
     function renderBuffStatus(){
       const el = document.getElementById('buff-status');
       if(!el){ return; }
@@ -710,7 +710,7 @@
       return { server, id: idKey };
     }
 
-    // 구(old) 경로 → 신(new) 경로 1회 마이그레이션 (존재 시 복사)
+    // 구(old) 경로 → 신(new) 경로 1회 마이그레이션
     async function migrateLegacyIfExists(uid, basePath) {
       try {
         const oldSnap = await get(ref(db, `users/${uid}`));
@@ -722,7 +722,6 @@
         if (Object.keys(updates).length) {
           updates[`migrations/${uid}`] = { to: basePath, at: Date.now() };
           await update(ref(db), updates);
-          console.info('Migrated legacy user data to', basePath);
         }
       } catch (e) {
         console.warn('legacy check/migrate failed', e);
@@ -798,34 +797,38 @@
       return Math.min(Math.max(base, 40), 30000);
     }
 
-    // ==== 슬롯 템플릿(배수 기반) ====
+    /* ===== 슬롯 템플릿(배수 기반) =====
+       - Daily(하향): 1.5→1.2, 2.0→1.6
+       - Premium(상향): 2.0→2.2, 3.0→3.3, 5.0→5.5
+       - Ecoin(상향): 3.0→3.3, 5.0→5.5, 8.0→9.0
+    */
     const TPL_DAILY = [
-      { key:'coin_x1_5', type:'coin', coinMul:1.5, icon:'💰', color:'#00E5FF', w:0.30 },
-      { key:'coin_x2',   type:'coin', coinMul:2.0, icon:'💰', color:'#4DFFB5', w:0.16 },
+      { key:'coin_x1_2', type:'coin', coinMul:1.2, icon:'💰', color:'#00E5FF', w:0.30 },
+      { key:'coin_x1_6', type:'coin', coinMul:1.6, icon:'💰', color:'#4DFFB5', w:0.16 },
       { key:'res_x2_5m', type:'buff', bkind:'res',  bmult:1.0, bdur:5*60*1000, icon:'⚡', color:'#FFA8FF', w:0.20 },
       { key:'all_x2_3m', type:'buff', bkind:'all',  bmult:1.0, bdur:3*60*1000, icon:'🚀', color:'#8AE1FF', w:0.14 },
       { key:'coinbuf_x2_3m', type:'buff', bkind:'coin', bmult:1.0, bdur:3*60*1000, icon:'🪙', color:'#FFD0A8', w:0.12 },
-      /* ▼ 이벤트코인 1개 확률 소폭 하향: 0.08 → 0.05 */
+      /* 이벤트코인 1개 확률 소폭 하향 유지 */
       { key:'eco_1',     type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.05 }
     ];
     const TPL_PREMIUM = [
-      { key:'coin_x2',   type:'coin', coinMul:2.0, icon:'💰', color:'#00E5FF', w:0.22 },
-      { key:'coin_x3',   type:'coin', coinMul:3.0, icon:'💰', color:'#4DFFB5', w:0.18 },
-      { key:'coin_x5',   type:'coin', coinMul:5.0, icon:'💰', color:'#32C6FF', w:0.12 },
-      { key:'all_x2_10m',type:'buff', bkind:'all',  bmult:1.0, bdur:10*60*1000, icon:'🚀', color:'#8AE1FF', w:0.20 },
-      { key:'res_x3_7m', type:'buff', bkind:'res',  bmult:2.0, bdur:7*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.16 },
+      { key:'coin_x2_2',   type:'coin', coinMul:2.2, icon:'💰', color:'#00E5FF', w:0.22 },
+      { key:'coin_x3_3',   type:'coin', coinMul:3.3, icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x5_5',   type:'coin', coinMul:5.5, icon:'💰', color:'#32C6FF', w:0.12 },
+      { key:'all_x2_10m',  type:'buff', bkind:'all',  bmult:1.0, bdur:10*60*1000, icon:'🚀', color:'#8AE1FF', w:0.20 },
+      { key:'res_x3_7m',   type:'buff', bkind:'res',  bmult:2.0, bdur:7*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.16 },
       { key:'coinbuf_x3_5m', type:'buff', bkind:'coin', bmult:2.0, bdur:5*60*1000, icon:'🪙', color:'#FFD0A8', w:0.08 },
-      { key:'eco_3',     type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
+      { key:'eco_3',       type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
     ];
     const TPL_ECOIN = [
-      { key:'coin_x3',   type:'coin', coinMul:3.0, icon:'💰', color:'#00E5FF', w:0.22 },
-      { key:'coin_x5',   type:'coin', coinMul:5.0, icon:'💰', color:'#4DFFB5', w:0.18 },
-      { key:'coin_x8',   type:'coin', coinMul:8.0, icon:'💰', color:'#32C6FF', w:0.10 },
-      { key:'all_x3_15m',type:'buff', bkind:'all',  bmult:2.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.20 },
-      { key:'res_x5_12m',type:'buff', bkind:'res',  bmult:4.0, bdur:12*60*1000, icon:'⚡', color:'#FFA8FF', w:0.16 },
-      { key:'eco_8',     type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.10 },
-      { key:'eco_12',    type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.03 },
-      { key:'eco_20',    type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.01 }
+      { key:'coin_x3_3',   type:'coin', coinMul:3.3, icon:'💰', color:'#00E5FF', w:0.22 },
+      { key:'coin_x5_5',   type:'coin', coinMul:5.5, icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x9',     type:'coin', coinMul:9.0, icon:'💰', color:'#32C6FF', w:0.10 },
+      { key:'all_x3_15m',  type:'buff', bkind:'all',  bmult:2.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.20 },
+      { key:'res_x5_12m',  type:'buff', bkind:'res',  bmult:4.0, bdur:12*60*1000, icon:'⚡', color:'#FFA8FF', w:0.16 },
+      { key:'eco_8',       type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.10 },
+      { key:'eco_12',      type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.03 },
+      { key:'eco_20',      type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.01 }
     ];
 
     function materializeItems(tpl){
@@ -932,7 +935,6 @@
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
 
-      // ★ 모드 전환 시 잠금 상태 반영
       if (mode==='daily') {
         spinDailyBtn.disabled = !dailyUnlocked || !canClaimToday();
       }
@@ -1027,7 +1029,6 @@
             [`${userBasePath}/daily/unlocked`]: true
           });
         } catch(e){ console.warn('unlock save error', e); }
-        // 잠금 해제 즉시 UI 반영
         refreshDailyInfo(canClaimToday());
         updateAttendanceLabels();
       }
@@ -1138,7 +1139,6 @@
       const canClaim = (dailyCache?.lastKey !== today);
       refreshDailyInfo(canClaim);
       setMode('daily');
-      // ★ 잠금 상태에선 자동 오픈하지 않음
       if (dailyUnlocked && canClaim) openDailyOverlay();
     }
 
@@ -1367,7 +1367,7 @@
         uid = null; dataRef = null;
         userServerKey = null; userIdKey = null; userBasePath = null;
 
-        // 로그아웃 시 버프표시 리셋(저장은 유저별이라 유지됨)
+        // 로그아웃 시 버프표시 리셋
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
 
@@ -1423,7 +1423,7 @@
         }
       } catch (err) {
         const code = (err && err.code) || '';
-               const msg =
+        const msg =
           code === 'auth/wrong-password'         ? '비밀번호가 일치하지 않습니다.' :
           code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
           code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
