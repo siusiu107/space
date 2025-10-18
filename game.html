@@ -911,6 +911,7 @@
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
 
     let dailyCache = null;
+    let dailyUnlocked = false;  // ★ 출석 보상 영구 해제 여부
     let currentMode = 'daily';
     let activeItems = [];
 
@@ -930,6 +931,11 @@
       buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
+
+      // ★ 모드 전환 시 잠금 상태 반영
+      if (mode==='daily') {
+        spinDailyBtn.disabled = !dailyUnlocked || !canClaimToday();
+      }
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
@@ -944,15 +950,29 @@
     function buildRewardList(items){
       rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
     }
-    function refreshDailyInfo(canClaim){
+
+    function canClaimToday() {
+      const today = kstDayKey();
+      return (dailyCache?.lastKey !== today);
+    }
+
+    function refreshDailyInfo(canClaimRaw){
       const today = kstDayKey();
       const streak = dailyCache?.streak || 0;
       const resetLeft = Math.max(0, nextResetKST()-kstDate());
-      const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
-      dailyInfo.innerHTML = canClaim
-        ? `오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일`
-        : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
-      spinDailyBtn.disabled = !canClaim;
+      const canClaim = canClaimRaw && dailyUnlocked;
+
+      if (!dailyUnlocked){
+        const need = Math.max(0, 100 - Math.floor(state.coins||0));
+        dailyInfo.innerHTML = `🔒 출석 보상은 <b>100코인</b>을 <b>최초 1회</b> 모으면 해제됩니다.<br>현재: ${Math.floor(state.coins||0)}/100`;
+        spinDailyBtn.disabled = true;
+      } else {
+        const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
+        dailyInfo.innerHTML = canClaim
+          ? `오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일`
+          : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
+        spinDailyBtn.disabled = !canClaim;
+      }
     }
 
     async function applyPrizeTransaction(delta){
@@ -997,10 +1017,28 @@
       if (probToggle) probToggle.disabled = v;
     }
 
+    // ★ 최초 100코인 도달 시 출석 해제
+    async function tryUnlockDaily(){
+      if (!uid || dailyUnlocked) return;
+      if ((state.coins || 0) >= 100){
+        dailyUnlocked = true;
+        try {
+          await update(ref(db), {
+            [`${userBasePath}/daily/unlocked`]: true
+          });
+        } catch(e){ console.warn('unlock save error', e); }
+        // 잠금 해제 즉시 UI 반영
+        refreshDailyInfo(canClaimToday());
+        updateAttendanceLabels();
+      }
+    }
+
     // ==== 스핀 버튼 ====
     spinDailyBtn.onclick = async ()=>{
       if (isSpinning) return;
       if (!uid || !window.__PLAY_ALLOWED) return;
+      if (!dailyUnlocked){ refreshDailyInfo(false); return; }
+
       const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
       if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
 
@@ -1019,9 +1057,9 @@
         if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
 
         await update(ref(db), {
-          [`${userBasePath}/daily`]: { lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key }
+          [`${userBasePath}/daily`]: { ...(dailyCache||{}), lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key, unlocked: true }
         });
-        dailyCache = { lastKey: today, streak };
+        dailyCache = { ...(dailyCache||{}), lastKey: today, streak, unlocked: true };
         updateUI();
         dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
       }catch(e){
@@ -1088,15 +1126,20 @@
       try{
         const snap = await get(ref(db, `${userBasePath}/daily`));
         dailyCache = snap.exists() ? snap.val() : { lastKey:null, streak:0 };
-      }catch{ dailyCache = { lastKey:null, streak:0 }; }
+        dailyUnlocked = !!(dailyCache && dailyCache.unlocked);
+      }catch{
+        dailyCache = { lastKey:null, streak:0 };
+        dailyUnlocked = false;
+      }
     }
     async function checkDailyAndMaybeShow(){
       await fetchDaily();
       const today = kstDayKey();
-      const canClaim = dailyCache?.lastKey !== today;
+      const canClaim = (dailyCache?.lastKey !== today);
       refreshDailyInfo(canClaim);
       setMode('daily');
-      if (canClaim) openDailyOverlay();
+      // ★ 잠금 상태에선 자동 오픈하지 않음
+      if (dailyUnlocked && canClaim) openDailyOverlay();
     }
 
     // ===== 메뉴에 "남은 시간" 표시 =====
@@ -1104,6 +1147,11 @@
     const attSideRight = document.getElementById('attendance-left-side');
     function updateAttendanceLabels(){
       if (!uid){ attMenuRight.textContent='-'; attSideRight.textContent='-'; return; }
+      if (!dailyUnlocked){
+        attMenuRight.textContent = '잠금(100 필요)';
+        attSideRight.textContent = '잠금(100 필요)';
+        return;
+      }
       const today = kstDayKey();
       const can = (dailyCache?.lastKey !== today);
       if (can){ attMenuRight.textContent='지금 가능'; attSideRight.textContent='지금 가능'; }
@@ -1147,6 +1195,9 @@
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
       renderBuffStatus();
+
+      // ★ 코인 >=100 달성 시 잠금 해제 시도
+      tryUnlockDaily();
     }
 
     function renderPlanets() {
@@ -1231,6 +1282,9 @@
         if (state.conversionCount > 0) state.coins += convGain;
 
         if (state.autoConvertBought) convertResources();
+
+        // ★ 루프에서도 해제 체크
+        tryUnlockDaily();
 
         save(); updateUI();
       }, 1000);
@@ -1369,7 +1423,7 @@
         }
       } catch (err) {
         const code = (err && err.code) || '';
-        const msg =
+               const msg =
           code === 'auth/wrong-password'         ? '비밀번호가 일치하지 않습니다.' :
           code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
           code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
@@ -1446,7 +1500,7 @@
       renderBuffStatus();
     });
 
-    // 버프 남은 시간 UI → (남은시간 표기 제거했지만 주기적 갱신은 유지)
+    // 버프 남은 시간 UI 주기 갱신
     setInterval(renderBuffStatus, 1000);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
