@@ -394,7 +394,6 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
-      <!-- ★ 버프 상태 표시: 이름 + 잔여시간 -->
       <span id="buff-status" title="활성 버프 목록">버프: 없음</span>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
@@ -518,7 +517,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import {
       getAuth, onAuthStateChanged,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+      signInWithEmailAndPassword, createUserWithEmailAndPassword,
       sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
@@ -553,8 +552,11 @@
     let userBasePath  = null;
 
     // 잠금 상태
-    let dailyUnlocked = false; // ★ 최초 100코인 모으면 true로 고정
-    let rankingUnlocked = false; // ★ 화성 구매 시 true
+    let dailyUnlocked = false; // DB 기반 잠금 해제 상태
+    let rankingUnlocked = false;
+
+    // 부팅 완료 플래그(부팅 중 토스트 억제)
+    let bootDone = false;
 
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
@@ -572,6 +574,7 @@
     /* ===== 토스트 ===== */
     let toastTimer = null;
     function showToast(message, actionText = null, onAction = null, ttlMs = 5000){
+      if (!bootDone) return; // 부팅 중 토스트 억제
       const box = document.getElementById('toast');
       if(!box) return;
       clearTimeout(toastTimer);
@@ -581,7 +584,6 @@
       </div>`;
       box.classList.add('show');
       box.style.display='block';
-
       function hideToast(){ box.classList.remove('show'); box.style.display='none'; }
       if(actionText && onAction){
         const btn = document.getElementById('toast-action');
@@ -660,30 +662,19 @@
       el.title = items.join('\n') || '버프 없음';
     }
 
-    /* ===== 숫자 한국식 단위 포매터 =====
-       - 만 미만: 정수 반올림 (10.23 → 10)
-       - 만 이상: 소수 2자리까지 반올림, 불필요한 0 제거 (100.30만 → 100.3만)
-    */
+    /* ===== 숫자 한국식 단위 포매터 ===== */
     function formatKR(num, decimalsForUnits = 2) {
       if (num === null || num === undefined) return '0';
       if (!isFinite(num)) return String(num);
-
       const neg = num < 0;
       let n = Math.abs(num);
-
       const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극'];
       let u = 0;
-      while (n >= 10000 && u < units.length - 1) {
-        n /= 10000;
-        u++;
-      }
-
+      while (n >= 10000 && u < units.length - 1) { n /= 10000; u++; }
       if (u === 0) {
-        // 만 미만: 정수로 반올림
         const rounded = Math.round(n);
         return (neg ? '-' : '') + rounded.toLocaleString('ko-KR');
       }
-      // 만 이상: 소수 2자리 반올림 + 0 제거
       const s = n.toFixed(decimalsForUnits).replace(/\.0+$|(\.\d*[1-9])0+$/, '$1');
       return (neg ? '-' : '') + s + units[u];
     }
@@ -832,8 +823,6 @@
         try { history.replaceState(null, '', '/게임' + (location.hash || '')); } catch {}
         setTimeout(() => {
           authContainer.style.display = 'none';
-          const lb = document.getElementById('logout-btn');
-          if (lb) lb.style.display = 'block';
           ['top-bar','container'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.visibility = 'visible';
@@ -859,7 +848,7 @@
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
     }
 
-    // === 보상 스케일러 (데일리↓, 프리미엄/이벤트↑) ===
+    // === 보상 스케일러 ===
     function calcBaseCoin(){
       const rps = state.workerCount * getWorkerPower();
       const cps = state.conversionCount;
@@ -924,7 +913,7 @@
           const minText  = `${Math.round(it.bdur/60000)}m`;
           let title = it.bkind==='all' ? `모든 생산 ${multText}`
                    : it.bkind==='coin' ? `코인 생산 ${multText}`
-                   : /* res */          `자원 생산 ${multText}`;
+                   :                    `자원 생산 ${multText}`;
           return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
         }
         return it;
@@ -962,7 +951,7 @@
       reel.style.transition = 'none';
     }
 
-    // 스핀 중복 방지 플래그
+    // 스핀 중복 방지
     let isSpinning = false;
 
     function spinSlot(items, picked){
@@ -1015,7 +1004,7 @@
       buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
-      updateSpinButtons(); // 잠금/자원 상태 반영
+      updateSpinButtons();
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
@@ -1077,14 +1066,13 @@
     function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
-    // 버튼 활성화/비활성 일괄 처리
     function updateSpinButtons(){
       spinDailyBtn.disabled   = !dailyUnlocked || !canClaimToday() || isSpinning;
       spinPremiumBtn.disabled = !canSpendEC(1) || isSpinning;
       spinEcoinBtn.disabled   = !canSpendEC(10) || isSpinning;
     }
 
-    // ★ 최초 100코인 도달 시 출석 해제 (1회성)
+    // ★ 잠금 해제: 진짜 전이시에만, 부팅 중엔 토스트 X
     async function tryUnlockDaily(){
       if (!uid || dailyUnlocked) return;
       if ((state.coins || 0) >= 100){
@@ -1101,10 +1089,8 @@
       }
     }
 
-    // ==== 스핀 버튼 ====
-    async function handleSpin(mode, costEC){
+    async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
-
       if (mode==='daily' && !dailyUnlocked) { refreshDailyInfo(false); return; }
       if (mode==='premium' && !canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
       if (mode==='ecoin'   && !canSpendEC(10)){ dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
@@ -1112,12 +1098,10 @@
       setMode(mode);
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
-
       if (mode==='premium') state.eventCoins -= 1;
       if (mode==='ecoin')   state.eventCoins -= 10;
 
       isSpinning = true; updateSpinButtons();
-
       await spinSlot(activeItems, picked);
       picked.onWin();
 
@@ -1146,9 +1130,9 @@
       }
     }
 
-    spinDailyBtn.onclick   = ()=>handleSpin('daily', 0);
-    spinPremiumBtn.onclick = ()=>handleSpin('premium', 1);
-    spinEcoinBtn.onclick   = ()=>handleSpin('ecoin', 10);
+    document.getElementById('spin-daily').onclick   = ()=>handleSpin('daily');
+    document.getElementById('spin-premium').onclick = ()=>handleSpin('premium');
+    document.getElementById('spin-ecoin').onclick   = ()=>handleSpin('ecoin');
 
     // ===== 출석 캐시 =====
     async function fetchDaily(){
@@ -1217,8 +1201,8 @@
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
+      tryUnlockDaily(); // 부팅 중엔 토스트 안 뜸 + 이미 언락이면 조용히 return
       renderBuffStatus();
-      tryUnlockDaily(); // 100코인 도달 체크
     }
 
     function renderPlanets() {
@@ -1227,7 +1211,7 @@
         {name:'수성',cost:500,requiredShipLevel:2},
         {name:'금성',cost:2000,requiredShipLevel:3},
         {name:'지구',cost:10000,requiredShipLevel:4},
-        {name:'화성',cost:50000,requiredShipLevel:5}, // ★ 화성
+        {name:'화성',cost:50000,requiredShipLevel:5},
         {name:'목성',cost:250000,requiredShipLevel:6},
         {name:'토성',cost:1000000,requiredShipLevel:7},
         {name:'천왕성',cost:5000000,requiredShipLevel:8},
@@ -1247,14 +1231,11 @@
           if (state.coins >= p.cost) {
             state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
-
-            // ★ 화성 구매 시 랭킹 잠금 해제
             if (p.name === '화성' && !rankingUnlocked) {
               rankingUnlocked = true;
               try { await update(ref(db), { [`${userBasePath}/meta/rankingUnlocked`]: true }); } catch{}
               showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{ location.href='/ranking.html'; });
             }
-
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
           }
         };
@@ -1357,7 +1338,7 @@
 
         await ensureInitialData(dataRef);
 
-        // 랭킹 잠금 상태도 미리 가져오기
+        // 랭킹 잠금 상태 미리 로드
         try {
           const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
           rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
@@ -1365,38 +1346,41 @@
 
         dataUnsubscribe = onValue(dataRef, async snap => {
           const server = snap.exists() ? snap.val() : null;
-          if (!server) {
-            if (isInitialSync) {
-              state = { ...defaultData };
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-              isInitialSync = false;
-              showGameUI();
-              window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-              await checkDailyAndMaybeShow();
-              updateAttendanceLabels();
-            } else {
-              state = { ...defaultData };
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-            }
-            return;
-          }
-          const serverLast = server._lastUpdated || 0;
+
           if (isInitialSync) {
-            state = { ...defaultData, ...server };
+            state = { ...defaultData, ...(server || {}) };
+
+            // 🔹 최초 UI 갱신 전에 daily 상태를 먼저 로드해서
+            //    tryUnlockDaily가 부팅 시 오작동하지 않도록 함
+            await fetchDaily();
+
             if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
             isInitialSync = false;
+
             showGameUI();
             window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
+
+            // 부팅 이후 자동 오버레이 확인
             await checkDailyAndMaybeShow();
             updateAttendanceLabels();
+
+            // 🔹 모든 초기 처리 끝난 뒤 부팅 플래그 ON (이후 토스트 허용)
+            bootDone = true;
             return;
           }
-          if (serverLast >= (localLastWrite || 0)) {
-            state = { ...defaultData, ...server };
+
+          // 이후부터는 일반 동기화
+          if (!server) {
+            state = { ...defaultData };
           } else {
-            state = { ...defaultData, ...server, ...state };
-            try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
-            catch { save(); }
+            const serverLast = server._lastUpdated || 0;
+            if (serverLast >= (localLastWrite || 0)) {
+              state = { ...defaultData, ...server };
+            } else {
+              state = { ...defaultData, ...server, ...state };
+              try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
+              catch { save(); }
+            }
           }
           if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
         });
@@ -1405,6 +1389,7 @@
         uid = null; dataRef = null;
         userServerKey = null; userIdKey = null; userBasePath = null;
         dailyUnlocked = false; rankingUnlocked = false;
+        bootDone = false;
 
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
@@ -1461,16 +1446,13 @@
         }
       } catch (err) {
         const code = (err && err.code) || '';
-        theMsg:
-        {
-          const msg =
-            code === 'auth/wrong-password'         ? '비밀번호가 일치하지 않습니다.' :
-            code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
-            code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
-            code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
-            (err.message || '로그인 중 오류가 발생했습니다.');
-          showAuthStatus(msg);
-        }
+        const msg =
+          code === 'auth/wrong-password'         ? '비밀번호가 일치하지 않습니다.' :
+          code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
+          code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
+          code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
+          (err.message || '로그인 중 오류가 발생했습니다.');
+        showAuthStatus(msg);
       }
     });
 
@@ -1620,7 +1602,7 @@
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
     DisableDevtool({
-      disableMenu: true,       /* 오탈자 ture → true 수정 */
+      disableMenu: true,
       disableSelect: true,
       disableCopy: true,
       disableCut: true,
@@ -1634,7 +1616,7 @@
     });
   </script>
 
-  <!-- 원격 제어 (생략 없이 유지) -->
+  <!-- 원격 제어 -->
   <script>
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
