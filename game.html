@@ -283,17 +283,39 @@
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
 
-    /* 상단 버프 텍스트 */
+    /* 버프 상태 - 이름 + 잔여시간(모바일 말줄임) */
     #buff-status{
       display:inline-block;
-      max-width: clamp(80px, 28vw, 180px);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      vertical-align: middle;
-      margin-left: 6px;
-      color:#9fdcff;
-      font-variant-numeric: tabular-nums;
+      max-width: clamp(120px, 40vw, 260px);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      vertical-align: middle; margin-left: 6px; color:#9fdcff; font-variant-numeric: tabular-nums;
+    }
+
+    /* 토스트 */
+    #toast{
+      position: fixed;
+      left: 50%;
+      bottom: calc(80px + env(safe-area-inset-bottom, 12px));
+      transform: translateX(-50%) translateY(20px);
+      min-width: 220px; max-width: 92vw;
+      padding: 10px 12px;
+      background: rgba(10,12,20,0.85);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      color:#eaf6ff; font-weight:800; font-size:13px;
+      display: none; z-index: 4000;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    #toast.show{ display:block; animation: toast-pop .28s ease-out forwards; }
+    #toast .t-row{ display:flex; align-items:center; gap:10px; }
+    #toast .t-msg{ flex:1; }
+    #toast .t-btn{
+      padding: 6px 10px; border-radius: 8px; border:1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; font-weight:900; cursor:pointer;
+    }
+    @keyframes toast-pop {
+      from { opacity:0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
     }
   </style>
 </head>
@@ -372,8 +394,8 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
-      <!-- ★ 버프 상태 표시 -->
-      <span id="buff-status" style="margin-left:6px; color:#9fdcff;">버프: 없음</span>
+      <!-- ★ 버프 상태 표시: 이름 + 잔여시간 -->
+      <span id="buff-status" title="활성 버프 목록">버프: 없음</span>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
   </div>
@@ -488,6 +510,9 @@
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
 
+  <!-- 토스트 컨테이너 -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
   <!-- Firebase + 게임 로직 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -527,10 +552,15 @@
     let userIdKey     = null;
     let userBasePath  = null;
 
+    // 잠금 상태
+    let dailyUnlocked = false; // ★ 최초 100코인 모으면 true로 고정
+    let rankingUnlocked = false; // ★ 화성 구매 시 true
+
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20,
-      workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[]
+      workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
+      _lastUpdated: 0
     };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
@@ -539,13 +569,32 @@
 
     let currentAuthMode = 'login';
 
+    /* ===== 토스트 ===== */
+    let toastTimer = null;
+    function showToast(message, actionText = null, onAction = null, ttlMs = 5000){
+      const box = document.getElementById('toast');
+      if(!box) return;
+      clearTimeout(toastTimer);
+      box.innerHTML = `<div class="t-row">
+        <span class="t-msg">${message}</span>
+        ${actionText ? `<button class="t-btn" id="toast-action">${actionText}</button>` : ``}
+      </div>`;
+      box.classList.add('show');
+      box.style.display='block';
+
+      function hideToast(){ box.classList.remove('show'); box.style.display='none'; }
+      if(actionText && onAction){
+        const btn = document.getElementById('toast-action');
+        if(btn){ btn.onclick = () => { try{ onAction(); }catch{} hideToast(); }; }
+      }
+      toastTimer = setTimeout(hideToast, ttlMs);
+    }
+
     /* =======================
        버프: 저장/적용/표시
        ======================= */
     function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
-
     function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
-
     function persistBuffs(){
       ensureFx();
       try {
@@ -554,7 +603,6 @@
         localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
       } catch {}
     }
-
     function loadBuffs(){
       ensureFx();
       try {
@@ -564,7 +612,6 @@
         window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
       } catch { window.fx.buffs = []; }
     }
-
     function pruneExpiredBuffs(){
       ensureFx();
       const before = window.fx.buffs.length;
@@ -572,8 +619,6 @@
       window.fx.buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
       if (window.fx.buffs.length !== before) persistBuffs();
     }
-
-    // kind: 'res' | 'coin' | 'all'
     function activeBuffFactor(kind){
       ensureFx();
       const now = Date.now();
@@ -586,41 +631,33 @@
       });
       return factor;
     }
-
-    // value: 1 => x2, 2 => x3 ...
     function addTempBuff(type, value, dur){
       ensureFx();
       const now=Date.now();
       window.fx.buffs.push({ type, value, until: now + dur });
       persistBuffs();
-      renderBuffStatus(); // 즉시 UI 반영
+      renderBuffStatus();
     }
 
-    /* 상단 바 버프 간단 표기 */
+    // 이름 + 잔여시간 UI
     function renderBuffStatus(){
       const el = document.getElementById('buff-status');
       if(!el){ return; }
-
       pruneExpiredBuffs();
-
-      const resF  = activeBuffFactor('res');
-      const coinF = activeBuffFactor('coin');
-
-      const fmt = (x)=> {
-        if (!x || x <= 1.0+1e-9) return null;
-        const v = Math.round(x*10)/10;
-        return (Math.abs(v - Math.round(v)) < 1e-9) ? `×${Math.round(v)}` : `×${v}`;
-      };
-
-      const parts = [];
-      const rTxt = fmt(resF);  if (rTxt) parts.push(`⚡${rTxt}`);
-      const cTxt = fmt(coinF); if (cTxt) parts.push(`🪙${cTxt}`);
-
-      if (parts.length === 0){
-        el.textContent = '버프: 없음';
-      } else {
-        el.textContent = '버프: ' + parts.join(' · ');
-      }
+      const now = Date.now();
+      const names = { all:'전체', coin:'코인', res:'자원' };
+      const items = (window.fx.buffs||[])
+        .filter(b=>b && b.until>now)
+        .map(b=>{
+          const leftMs = b.until - now;
+          const m = Math.max(0, Math.floor(leftMs/60000));
+          const s = Math.max(0, Math.floor((leftMs%60000)/1000));
+          const mult = 1 + b.value;
+          const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
+          return `${names[b.type]||'버프'} ${multText} (${m}:${String(s).padStart(2,'0')})`;
+        });
+      el.textContent = items.length ? `버프: ${items.join(' · ')}` : '버프: 없음';
+      el.title = items.join('\n') || '버프 없음';
     }
 
     // ===== 유틸 =====
@@ -710,7 +747,6 @@
       return { server, id: idKey };
     }
 
-    // 구(old) 경로 → 신(new) 경로 1회 마이그레이션
     async function migrateLegacyIfExists(uid, basePath) {
       try {
         const oldSnap = await get(ref(db, `users/${uid}`));
@@ -722,6 +758,7 @@
         if (Object.keys(updates).length) {
           updates[`migrations/${uid}`] = { to: basePath, at: Date.now() };
           await update(ref(db), updates);
+          console.info('Migrated legacy user data to', basePath);
         }
       } catch (e) {
         console.warn('legacy check/migrate failed', e);
@@ -777,7 +814,7 @@
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
     }
 
-    // === 보상 스케일러 ===
+    // === 보상 스케일러 (데일리↓, 프리미엄/이벤트↑) ===
     function calcBaseCoin(){
       const rps = state.workerCount * getWorkerPower();
       const cps = state.conversionCount;
@@ -787,42 +824,40 @@
       const auto = state.autoConvertBought ? 1 : 0;
       const score =
         20 * Math.log2(1 + rps) +
-        50 * Math.log2(1 + cps) +
+        45 * Math.log2(1 + cps) +   // ↓ 살짝 하향
         10 * Math.log2(1 + rpc) +
-        140 * planets +
-        35  * ship +
-        (auto ? 25 : 0);
-      const baseRaw = 60 + score;
-      const base = Math.round(baseRaw * 0.7);
-      return Math.min(Math.max(base, 40), 30000);
+        120 * planets +            // ↓ 데일리 기준 낮춤
+        32  * ship +
+        (auto ? 20 : 0);
+      const baseRaw = 50 + score;  // ↓ 전체 바닥 하향
+      const base = Math.round(baseRaw * 0.65);
+      return Math.min(Math.max(base, 30), 30000);
     }
 
-    /* ===== 슬롯 템플릿(배수 기반) =====
-       - Daily(하향): 1.5→1.2, 2.0→1.6
-       - Premium(상향): 2.0→2.2, 3.0→3.3, 5.0→5.5
-       - Ecoin(상향): 3.0→3.3, 5.0→5.5, 8.0→9.0
-    */
+    // ==== 슬롯 템플릿 (확률 업데이트: EC 1 하향) ====
+    // 데일리: 코인량 소폭↓, EC1 확률↓
     const TPL_DAILY = [
-      { key:'coin_x1_2', type:'coin', coinMul:1.2, icon:'💰', color:'#00E5FF', w:0.30 },
-      { key:'coin_x1_6', type:'coin', coinMul:1.6, icon:'💰', color:'#4DFFB5', w:0.16 },
-      { key:'res_x2_5m', type:'buff', bkind:'res',  bmult:1.0, bdur:5*60*1000, icon:'⚡', color:'#FFA8FF', w:0.20 },
-      { key:'all_x2_3m', type:'buff', bkind:'all',  bmult:1.0, bdur:3*60*1000, icon:'🚀', color:'#8AE1FF', w:0.14 },
-      { key:'coinbuf_x2_3m', type:'buff', bkind:'coin', bmult:1.0, bdur:3*60*1000, icon:'🪙', color:'#FFD0A8', w:0.12 },
-      /* 이벤트코인 1개 확률 소폭 하향 유지 */
-      { key:'eco_1',     type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.05 }
+      { key:'coin_x1_4', type:'coin', coinMul:1.4, icon:'💰', color:'#00E5FF', w:0.32 },
+      { key:'coin_x1_8', type:'coin', coinMul:1.8, icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'res_x2_5m', type:'buff', bkind:'res',  bmult:1.0, bdur:5*60*1000, icon:'⚡', color:'#FFA8FF', w:0.22 },
+      { key:'all_x2_3m', type:'buff', bkind:'all',  bmult:1.0, bdur:3*60*1000, icon:'🚀', color:'#8AE1FF', w:0.16 },
+      { key:'coinbuf_x2_3m', type:'buff', bkind:'coin', bmult:1.0, bdur:3*60*1000, icon:'🪙', color:'#FFD0A8', w:0.11 },
+      { key:'eco_1',     type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.01 } /* ↓ 0.08 → 0.01 */
     ];
+    // 프리미엄: 코인량 소폭↑
     const TPL_PREMIUM = [
       { key:'coin_x2_2',   type:'coin', coinMul:2.2, icon:'💰', color:'#00E5FF', w:0.22 },
-      { key:'coin_x3_3',   type:'coin', coinMul:3.3, icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x3_2',   type:'coin', coinMul:3.2, icon:'💰', color:'#4DFFB5', w:0.19 },
       { key:'coin_x5_5',   type:'coin', coinMul:5.5, icon:'💰', color:'#32C6FF', w:0.12 },
       { key:'all_x2_10m',  type:'buff', bkind:'all',  bmult:1.0, bdur:10*60*1000, icon:'🚀', color:'#8AE1FF', w:0.20 },
       { key:'res_x3_7m',   type:'buff', bkind:'res',  bmult:2.0, bdur:7*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.16 },
       { key:'coinbuf_x3_5m', type:'buff', bkind:'coin', bmult:2.0, bdur:5*60*1000, icon:'🪙', color:'#FFD0A8', w:0.08 },
-      { key:'eco_3',       type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.04 }
+      { key:'eco_3',       type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.03 }
     ];
+    // 이벤트코인: 코인량 소폭↑
     const TPL_ECOIN = [
-      { key:'coin_x3_3',   type:'coin', coinMul:3.3, icon:'💰', color:'#00E5FF', w:0.22 },
-      { key:'coin_x5_5',   type:'coin', coinMul:5.5, icon:'💰', color:'#4DFFB5', w:0.18 },
+      { key:'coin_x3_5',   type:'coin', coinMul:3.5, icon:'💰', color:'#00E5FF', w:0.22 },
+      { key:'coin_x5_8',   type:'coin', coinMul:5.8, icon:'💰', color:'#4DFFB5', w:0.18 },
       { key:'coin_x9',     type:'coin', coinMul:9.0, icon:'💰', color:'#32C6FF', w:0.10 },
       { key:'all_x3_15m',  type:'buff', bkind:'all',  bmult:2.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.20 },
       { key:'res_x5_12m',  type:'buff', bkind:'res',  bmult:4.0, bdur:12*60*1000, icon:'⚡', color:'#FFA8FF', w:0.16 },
@@ -831,11 +866,13 @@
       { key:'eco_20',      type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.01 }
     ];
 
-    function materializeItems(tpl){
+    function materializeItems(tpl, mode){
       const base = calcBaseCoin();
+      // 모드별 배율 보정 (데일리↓, 프리미엄/이벤트↑)
+      const modeAdj = mode === 'daily' ? 0.9 : (mode === 'premium' ? 1.15 : 1.2);
       return tpl.map(it=>{
         if (it.type==='coin'){
-          const amt = Math.max(1, Math.round(base * it.coinMul));
+          const amt = Math.max(1, Math.round(base * it.coinMul * modeAdj));
           return { ...it, label:`코인 ${amt.toLocaleString()}`, onWin:()=>{ state.coins += amt; } };
         }
         if (it.type==='ecoin'){
@@ -857,7 +894,7 @@
                : mode==='premium' ? TPL_PREMIUM
                : mode==='ecoin'   ? TPL_ECOIN
                : TPL_PREMIUM;
-      return materializeItems(tpl);
+      return materializeItems(tpl, mode);
     }
 
     function playSfx(id){
@@ -883,6 +920,10 @@
       reel.style.transform = 'translateY(0px)';
       reel.style.transition = 'none';
     }
+
+    // 스핀 중복 방지 플래그
+    let isSpinning = false;
+
     function spinSlot(items, picked){
       const rowH=56;
       const idx = Math.max(0, items.findIndex(it=>it.key===picked.key));
@@ -890,13 +931,13 @@
       const targetY = - stopRow * rowH;
       startTickLoop(90);
       playSfx('sfx-start');
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-          reel.style.transition = 'transform 2.6s cubic-bezier(.17,.89,.35,1.12)';
-          reel.style.transform = `translateY(${targetY}px)`;
-        });
-      });
       return new Promise(resolve=>{
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(()=>{
+            reel.style.transition = 'transform 2.6s cubic-bezier(.17,.89,.35,1.12)';
+            reel.style.transform = `translateY(${targetY}px)`;
+          });
+        });
         reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); playSfx('sfx-win'); resolve(); };
       });
     }
@@ -914,7 +955,6 @@
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
 
     let dailyCache = null;
-    let dailyUnlocked = false;  // ★ 출석 보상 영구 해제 여부
     let currentMode = 'daily';
     let activeItems = [];
 
@@ -934,10 +974,7 @@
       buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
-
-      if (mode==='daily') {
-        spinDailyBtn.disabled = !dailyUnlocked || !canClaimToday();
-      }
+      updateSpinButtons(); // 잠금/자원 상태 반영
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
@@ -952,29 +989,27 @@
     function buildRewardList(items){
       rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
     }
-
-    function canClaimToday() {
+    function canClaimToday(){
       const today = kstDayKey();
-      return (dailyCache?.lastKey !== today);
+      return dailyCache?.lastKey !== today;
     }
-
-    function refreshDailyInfo(canClaimRaw){
+    function refreshDailyInfo(canClaim){
       const today = kstDayKey();
       const streak = dailyCache?.streak || 0;
       const resetLeft = Math.max(0, nextResetKST()-kstDate());
-      const canClaim = canClaimRaw && dailyUnlocked;
+      const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
 
       if (!dailyUnlocked){
-        const need = Math.max(0, 100 - Math.floor(state.coins||0));
-        dailyInfo.innerHTML = `🔒 출석 보상은 <b>100코인</b>을 <b>최초 1회</b> 모으면 해제됩니다.<br>현재: ${Math.floor(state.coins||0)}/100`;
+        const need = Math.max(0, 100 - (state.coins||0));
+        dailyInfo.innerHTML = `🔒 출석 보상은 <b>100코인</b> 모으면 해제!<br>남은 코인: <b>${need}</b>`;
         spinDailyBtn.disabled = true;
-      } else {
-        const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
-        dailyInfo.innerHTML = canClaim
-          ? `오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일`
-          : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
-        spinDailyBtn.disabled = !canClaim;
+        return;
       }
+
+      dailyInfo.innerHTML = canClaim
+        ? `오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일`
+        : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
+      spinDailyBtn.disabled = !canClaim;
     }
 
     async function applyPrizeTransaction(delta){
@@ -1001,145 +1036,100 @@
     function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
-    /* ===== 스핀 중복 클릭 방지 ===== */
-    let isSpinning = false;
-    function setSpinBusy(v){
-      isSpinning = v;
-      const btns = [spinDailyBtn, spinPremiumBtn, spinEcoinBtn];
-      btns.forEach(b=>{
-        if(!b) return;
-        if(v){
-          b.dataset.prevDisabled = b.disabled ? '1' : '0';
-          b.disabled = true;
-        } else {
-          b.disabled = (b.dataset.prevDisabled === '1');
-          delete b.dataset.prevDisabled;
-        }
-      });
-      if (probToggle) probToggle.disabled = v;
+    // 버튼 활성화/비활성 일괄 처리
+    function updateSpinButtons(){
+      spinDailyBtn.disabled   = !dailyUnlocked || !canClaimToday() || isSpinning;
+      spinPremiumBtn.disabled = !canSpendEC(1) || isSpinning;
+      spinEcoinBtn.disabled   = !canSpendEC(10) || isSpinning;
     }
 
-    // ★ 최초 100코인 도달 시 출석 해제
+    // ★ 최초 100코인 도달 시 출석 해제 (1회성)
     async function tryUnlockDaily(){
       if (!uid || dailyUnlocked) return;
       if ((state.coins || 0) >= 100){
         dailyUnlocked = true;
         try {
-          await update(ref(db), {
-            [`${userBasePath}/daily/unlocked`]: true
-          });
+          await update(ref(db), { [`${userBasePath}/daily/unlocked`]: true });
         } catch(e){ console.warn('unlock save error', e); }
+        // 토스트
+        showToast('🔓 출석 보상 잠금 해제!', '지금 열기', () => {
+          setMode('daily'); openDailyOverlay();
+        });
         refreshDailyInfo(canClaimToday());
         updateAttendanceLabels();
+        updateSpinButtons();
       }
     }
 
     // ==== 스핀 버튼 ====
-    spinDailyBtn.onclick = async ()=>{
-      if (isSpinning) return;
-      if (!uid || !window.__PLAY_ALLOWED) return;
-      if (!dailyUnlocked){ refreshDailyInfo(false); return; }
+    async function handleSpin(mode, costEC){
+      if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
 
-      const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
-      if (dailyCache?.lastKey === today) { refreshDailyInfo(false); return; }
+      // 잠금/자원 체크
+      if (mode==='daily' && !dailyUnlocked) { refreshDailyInfo(false); return; }
+      if (mode==='premium' && !canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
+      if (mode==='ecoin'   && !canSpendEC(10)){ dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
 
-      setMode('daily');
-      setSpinBusy(true);
+      setMode(mode); // items 갱신
+      const picked = pickWeighted(activeItems);
+      const before = makeDeltaSnapshot();
+
+      // 비용 선차감
+      if (mode==='premium') state.eventCoins -= 1;
+      if (mode==='ecoin')   state.eventCoins -= 10;
+
+      // 중복 클릭 방지
+      isSpinning = true; updateSpinButtons();
+
+      await spinSlot(activeItems, picked);
+      picked.onWin();
+
       try{
-        const picked = pickWeighted(activeItems);
-        const before = makeDeltaSnapshot();
-        await spinSlot(activeItems, picked);
-        picked.onWin();
-
         const delta = deltaFrom(before);
-        await applyPrizeTransaction(delta);
-
-        let streak = Number(dailyCache?.streak||0);
-        if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
-
-        await update(ref(db), {
-          [`${userBasePath}/daily`]: { ...(dailyCache||{}), lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key, unlocked: true }
-        });
-        dailyCache = { ...(dailyCache||{}), lastKey: today, streak, unlocked: true };
-        updateUI();
-        dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+        await applyPrizeTransaction(delta); updateUI();
+        if (mode==='daily'){
+          const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
+          let streak = Number(dailyCache?.streak||0);
+          if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
+          await update(ref(db), {
+            [`${userBasePath}/daily`]: { ...(dailyCache||{}), unlocked: true, lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key }
+          });
+          dailyCache = { ...(dailyCache||{}), lastKey: today, streak, unlocked:true };
+          dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+        } else {
+          dailyInfo.innerHTML = (mode==='premium')
+            ? `🎉 프리미엄 당첨: <b>${picked.label}</b>`
+            : `🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
+        }
       }catch(e){
         console.error(e);
         dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.';
-      } finally {
-        setSpinBusy(false);
+      }finally{
+        isSpinning = false; updateSpinButtons();
       }
-    };
+    }
 
-    spinPremiumBtn.onclick = async ()=>{
-      if (isSpinning) return;
-      if (!uid || !window.__PLAY_ALLOWED) return;
-      if (!canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
-
-      setMode('premium');
-      setSpinBusy(true);
-      try{
-        const picked = pickWeighted(activeItems);
-        const before = makeDeltaSnapshot();
-        state.eventCoins -= 1;
-
-        await spinSlot(activeItems, picked);
-        picked.onWin();
-
-        const delta = deltaFrom(before);
-        await applyPrizeTransaction(delta); updateUI();
-        dailyInfo.innerHTML=`🎉 프리미엄 당첨: <b>${picked.label}</b>`;
-      }catch(e){
-        console.error(e); dailyInfo.textContent='지급 오류';
-      } finally {
-        setSpinBusy(false);
-      }
-    };
-
-    spinEcoinBtn.onclick = async ()=>{
-      if (isSpinning) return;
-      if (!uid || !window.__PLAY_ALLOWED) return;
-      if (!canSpendEC(10)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
-
-      setMode('ecoin');
-      setSpinBusy(true);
-      try{
-        const picked = pickWeighted(activeItems);
-        const before = makeDeltaSnapshot();
-        state.eventCoins -= 10;
-
-        await spinSlot(activeItems, picked);
-        picked.onWin();
-
-        const delta = deltaFrom(before);
-        await applyPrizeTransaction(delta); updateUI();
-        dailyInfo.innerHTML=`🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
-      }catch(e){
-        console.error(e); dailyInfo.textContent='지급 오류';
-      } finally {
-        setSpinBusy(false);
-      }
-    };
+    spinDailyBtn.onclick   = ()=>handleSpin('daily', 0);
+    spinPremiumBtn.onclick = ()=>handleSpin('premium', 1);
+    spinEcoinBtn.onclick   = ()=>handleSpin('ecoin', 10);
 
     // ===== 출석 캐시 =====
     async function fetchDaily(){
       if (!uid) return;
       try{
         const snap = await get(ref(db, `${userBasePath}/daily`));
-        dailyCache = snap.exists() ? snap.val() : { lastKey:null, streak:0 };
-        dailyUnlocked = !!(dailyCache && dailyCache.unlocked);
+        const v = snap.exists() ? snap.val() : { lastKey:null, streak:0, unlocked:false };
+        dailyCache = v;
+        dailyUnlocked = !!v.unlocked;
       }catch{
-        dailyCache = { lastKey:null, streak:0 };
-        dailyUnlocked = false;
+        dailyCache = { lastKey:null, streak:0, unlocked:false }; dailyUnlocked = false;
       }
     }
     async function checkDailyAndMaybeShow(){
       await fetchDaily();
-      const today = kstDayKey();
-      const canClaim = (dailyCache?.lastKey !== today);
-      refreshDailyInfo(canClaim);
+      refreshDailyInfo(canClaimToday());
       setMode('daily');
-      if (dailyUnlocked && canClaim) openDailyOverlay();
+      if (dailyUnlocked && canClaimToday()) openDailyOverlay();
     }
 
     // ===== 메뉴에 "남은 시간" 표시 =====
@@ -1147,11 +1137,7 @@
     const attSideRight = document.getElementById('attendance-left-side');
     function updateAttendanceLabels(){
       if (!uid){ attMenuRight.textContent='-'; attSideRight.textContent='-'; return; }
-      if (!dailyUnlocked){
-        attMenuRight.textContent = '잠금(100 필요)';
-        attSideRight.textContent = '잠금(100 필요)';
-        return;
-      }
+      if (!dailyUnlocked){ attMenuRight.textContent='잠금'; attSideRight.textContent='잠금'; return; }
       const today = kstDayKey();
       const can = (dailyCache?.lastKey !== today);
       if (can){ attMenuRight.textContent='지금 가능'; attSideRight.textContent='지금 가능'; }
@@ -1195,16 +1181,20 @@
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
       renderBuffStatus();
-
-      // ★ 코인 >=100 달성 시 잠금 해제 시도
-      tryUnlockDaily();
+      tryUnlockDaily(); // 100코인 도달 체크
     }
 
     function renderPlanets() {
       const planets = [
-        {name:'달',cost:100,requiredShipLevel:1},{name:'수성',cost:500,requiredShipLevel:2},{name:'금성',cost:2000,requiredShipLevel:3},
-        {name:'지구',cost:10000,requiredShipLevel:4},{name:'화성',cost:50000,requiredShipLevel:5},{name:'목성',cost:250000,requiredShipLevel:6},
-        {name:'토성',cost:1000000,requiredShipLevel:7},{name:'천왕성',cost:5000000,requiredShipLevel:8},{name:'해왕성',cost:20000000,requiredShipLevel:9}
+        {name:'달',cost:100,requiredShipLevel:1},
+        {name:'수성',cost:500,requiredShipLevel:2},
+        {name:'금성',cost:2000,requiredShipLevel:3},
+        {name:'지구',cost:10000,requiredShipLevel:4},
+        {name:'화성',cost:50000,requiredShipLevel:5}, // ★ 화성
+        {name:'목성',cost:250000,requiredShipLevel:6},
+        {name:'토성',cost:1000000,requiredShipLevel:7},
+        {name:'천왕성',cost:5000000,requiredShipLevel:8},
+        {name:'해왕성',cost:20000000,requiredShipLevel:9}
       ];
       const list = document.getElementById('planet-list'); list.innerHTML = '';
       planets.forEach((p, i) => {
@@ -1215,11 +1205,19 @@
         div.innerHTML = `<strong>${p.name}</strong> — ${p.cost.toLocaleString()}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button'); btn.className='general';
         btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
-        btn.onclick = () => {
+        btn.onclick = async () => {
           if (!ensureReady()) return;
           if (state.coins >= p.cost) {
             state.coins -= p.cost; if (!state.ownedPlanets) state.ownedPlanets = []; state.ownedPlanets.push(i);
             save(); updateUI(); renderPlanets();
+
+            // ★ 화성 구매 시 랭킹 잠금 해제
+            if (p.name === '화성' && !rankingUnlocked) {
+              rankingUnlocked = true;
+              try { await update(ref(db), { [`${userBasePath}/meta/rankingUnlocked`]: true }); } catch{}
+              showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{ location.href='/ranking.html'; });
+            }
+
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
           }
         };
@@ -1283,9 +1281,6 @@
 
         if (state.autoConvertBought) convertResources();
 
-        // ★ 루프에서도 해제 체크
-        tryUnlockDaily();
-
         save(); updateUI();
       }, 1000);
     }
@@ -1305,7 +1300,7 @@
 
         uid = user.uid;
 
-        // 버프 로드 (유저별)
+        // 버프 로드
         loadBuffs();
         renderBuffStatus();
 
@@ -1324,6 +1319,12 @@
         } catch { localLastWrite = 0; }
 
         await ensureInitialData(dataRef);
+
+        // 랭킹 잠금 상태도 미리 가져오기
+        try {
+          const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
+          rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
+        } catch { rankingUnlocked = false; }
 
         dataUnsubscribe = onValue(dataRef, async snap => {
           const server = snap.exists() ? snap.val() : null;
@@ -1366,8 +1367,8 @@
       } else {
         uid = null; dataRef = null;
         userServerKey = null; userIdKey = null; userBasePath = null;
+        dailyUnlocked = false; rankingUnlocked = false;
 
-        // 로그아웃 시 버프표시 리셋
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
 
@@ -1500,7 +1501,7 @@
       renderBuffStatus();
     });
 
-    // 버프 남은 시간 UI 주기 갱신
+    // 버프 남은 시간 갱신
     setInterval(renderBuffStatus, 1000);
 
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
@@ -1593,7 +1594,7 @@
     });
   </script>
 
-  <!-- 원격 제어 -->
+  <!-- 원격 제어 (생략 없이 유지) -->
   <script>
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
