@@ -4,39 +4,62 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌌 태양계 정복: 랭킹 🌌</title>
+
   <script>
     try { history.replaceState(null, '', '/랭킹' + (location.hash || '')); }
     catch(e){ console.warn('주소 표시 변경 실패:', e); }
   </script>
 
   <style>
+    :root{
+      --bg: rgba(0,0,0,.80);
+      --glass: rgba(255,255,255,.06);
+      --stroke: rgba(255,255,255,.14);
+      --muted: rgba(255,255,255,.65);
+      --accent: #00aaff;
+      --accent-2:#66d1ff;
+      --ok:#20df9e;
+      --warn:#ffd36e;
+      --err:#ff7b7b;
+    }
+    *{ box-sizing:border-box }
     body { margin:0; padding:0; font-family:Arial,system-ui,-apple-system,'Apple SD Gothic Neo',Segoe UI,Roboto,'Noto Sans KR',sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
-    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.80); padding:18px; border-radius:12px; width:94%; max-width:980px; text-align:center; display:none; box-shadow:0 18px 60px rgba(0,0,0,.45); }
-    h1{ margin:0 0 6px; font-size:22px; }
+    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--bg); padding:18px; border-radius:16px; width:94%; max-width:980px; text-align:center; display:none; box-shadow:0 18px 60px rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); }
+    h1{ margin:0 0 8px; font-size:22px; letter-spacing:.2px }
     .controls{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 10px; }
     .pill{ padding:6px 10px; border:1px solid rgba(255,255,255,0.18); border-radius:999px; background:rgba(255,255,255,0.08); font-size:12px; }
-    .sel, .btn { padding:9px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(0,0,0,.25); color:#fff; }
-    .btn { cursor:pointer; font-weight:800; }
-    .btn.primary{ background:#00aaff; color:#001018; border:none; }
+    .sel, .btn, .ipt { padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(0,0,0,.25); color:#fff; }
+    .ipt{ width:100%; }
+    .btn { cursor:pointer; font-weight:800; transition: transform .04s ease }
+    .btn:active{ transform: translateY(1px) }
+    .btn.primary{ background:var(--accent); color:#001018; border:none; }
     .btn.gray{ background:#666; color:#fff; border:none; }
-    table { width:100%; border-collapse:collapse; margin-top:6px; }
-    th, td { padding:10px 8px; border-bottom:1px solid #444; font-size:14px; }
-    th { background:rgba(30,30,30,0.9); position:sticky; top:0; }
+    .btn[disabled]{ opacity:.5; cursor:not-allowed; filter:saturate(.6) }
+    table { width:100%; border-collapse:collapse; margin-top:6px; overflow:hidden; border-radius:10px }
+    th, td { padding:10px 8px; border-bottom:1px solid #3a3a3a; font-size:14px; }
+    th { background:rgba(30,30,30,0.9); position:sticky; top:0; z-index:1 }
     td { background:rgba(20,20,20,0.7); }
     tr:nth-child(even) td { background:rgba(20,20,20,0.55); }
     .help{ font-size:12px; color:#cfe6ff; opacity:.9; }
 
-    /* 닉네임 최초 생성 모달 */
+    /* 최초 닉네임 생성 모달 */
     #nickname-prompt { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; color:#fff; text-align:center; padding-top:10vh; }
-    #nickname-prompt .panel{ width:min(520px,92vw); margin:0 auto; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:18px; }
-    #nickname-input, #country-input, #new-nick-input { margin:8px 0; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(0,0,0,0.25); color:#fff; font-size:14px; width:100%; box-sizing:border-box; }
+    #nickname-prompt .panel{ width:min(520px,92vw); margin:0 auto; background:var(--glass); border:1px solid var(--stroke); border-radius:14px; padding:18px; backdrop-filter: blur(8px); }
+    #nickname-input { margin:8px 0 4px; }
 
     /* 설정 패널 */
     #settings-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9999; }
-    #settings-card { width:min(720px,95vw); margin:8vh auto 0; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:16px; }
-    .set-row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; }
-    .toggle{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(255,255,255,.16); border-radius:10px; background:rgba(0,0,0,.25); }
-    .divider{ height:1px; background:rgba(255,255,255,.12); margin:10px 0; }
+    #settings-card { width:min(720px,95vw); margin:8vh auto 0; background:var(--glass); border:1px solid var(--stroke); border-radius:16px; padding:16px; backdrop-filter: blur(10px); }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px; }
+    .row-3{ display:grid; grid-template-columns: 1fr 1fr auto; gap:12px; margin-top:10px; }
+    .toggle{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--stroke); border-radius:12px; background:rgba(0,0,0,.22); }
+    .label{ font-size:12px; color:var(--muted); margin-bottom:4px; text-align:left }
+    .kv{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--stroke); border-radius:12px; background:rgba(0,0,0,.22); justify-content:space-between }
+    .badge{ padding:4px 8px; border-radius:999px; font-size:11px; font-weight:800; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06) }
+    .badge.ok{ border-color: rgba(32,223,158,.5); color:#0fffc8; }
+    .badge.warn{ border-color: rgba(255,211,110,.6); color:#ffd36e; }
+    .badge.err{ border-color: rgba(255,123,123,.6); color:#ffadad; }
+    .divider{ height:1px; background:rgba(255,255,255,.12); margin:12px 0; }
     .right{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
 
     /* 토스트 */
@@ -46,7 +69,7 @@
 
     @media (max-width:720px){
       #ranking-container{ padding:14px; }
-      .set-row{ grid-template-columns: 1fr; }
+      .row,.row-3{ grid-template-columns: 1fr; }
       th:nth-child(4), td:nth-child(4){ display:none; } /* 좁은 화면에서 ID 칼럼 숨김 */
     }
   </style>
@@ -57,8 +80,8 @@
     <div class="panel">
       <h2>🎉 닉네임을 생성해주세요!</h2>
       <p style="opacity:.9;margin-top:6px">같은 닉네임은 사용할 수 없습니다.</p>
-      <input type="text" id="nickname-input" placeholder="닉네임(최대 20자)" maxlength="20" />
-      <div class="right">
+      <input class="ipt" type="text" id="nickname-input" placeholder="닉네임(최대 20자)" maxlength="20" />
+      <div class="right" style="margin-top:8px">
         <button class="btn primary" id="submit-nickname">확인</button>
         <button class="btn gray" id="skip-nickname">나중에</button>
       </div>
@@ -72,10 +95,10 @@
       <h2 style="margin:0 0 6px;">⚙️ 공개 설정 & 닉네임 변경</h2>
       <div class="help">닉네임 변경 비용: 1회차 30EC → 2회차 50EC → 3회차 100EC → 4회차 1000EC → 이후 2000EC</div>
 
-      <div class="set-row">
+      <div class="row">
         <div>
-          <label>국적</label>
-          <input type="text" id="country-input" placeholder="예: KR, US, JP 또는 자유입력" maxlength="32" />
+          <div class="label">국적</div>
+          <input class="ipt" type="text" id="country-input" placeholder="예: KR, US, JP 또는 자유입력" maxlength="32" />
         </div>
         <div class="toggle">
           <input type="checkbox" id="show-country" />
@@ -83,7 +106,7 @@
         </div>
       </div>
 
-      <div class="set-row">
+      <div class="row">
         <div class="toggle">
           <input type="checkbox" id="show-id" />
           <label for="show-id" style="user-select:none">아이디 공개</label>
@@ -96,32 +119,35 @@
 
       <div class="divider"></div>
 
-      <div class="set-row">
+      <div class="row">
         <div>
-          <label>현재 닉네임</label>
-          <div id="current-nick" class="pill" style="display:inline-block; min-width:120px;">-</div>
+          <div class="label">현재 닉네임</div>
+          <div id="current-nick" class="kv"><span>-</span><span class="badge">현재</span></div>
         </div>
         <div>
-          <label>이벤트코인(EC)</label>
-          <div id="my-ec" class="pill" style="display:inline-block; min-width:120px;">-</div>
-        </div>
-      </div>
-
-      <div class="set-row">
-        <div>
-          <label>새 닉네임</label>
-          <input type="text" id="new-nick-input" placeholder="새 닉네임(최대 20자)" maxlength="20" />
-        </div>
-        <div>
-          <label>필요 EC</label>
-          <div id="nick-cost" class="pill" style="display:inline-block; min-width:120px;">-</div>
+          <div class="label">이벤트코인(EC)</div>
+          <div id="my-ec" class="kv"><span>-</span><span class="badge">보유</span></div>
         </div>
       </div>
 
-      <div class="right" style="margin-top:10px;">
+      <div class="row-3">
+        <div>
+          <div class="label">새 닉네임</div>
+          <input class="ipt" type="text" id="new-nick-input" placeholder="새 닉네임(최대 20자)" maxlength="20" />
+        </div>
+        <div>
+          <div class="label">필요 EC</div>
+          <div id="nick-cost" class="kv"><span>-</span><span class="badge">비용</span></div>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <div id="nick-check-badge" class="badge warn" style="width:100%; text-align:center">입력 대기</div>
+        </div>
+      </div>
+
+      <div class="right" style="margin-top:12px;">
         <button class="btn gray" id="close-settings">닫기</button>
         <button class="btn" id="save-privacy">공개 설정 저장</button>
-        <button class="btn primary" id="change-nick">닉네임 변경</button>
+        <button class="btn primary" id="change-nick" disabled>닉네임 변경</button>
       </div>
 
       <p id="settings-error" class="help" style="display:none; color:#ffdede; margin-top:8px;"></p>
@@ -177,7 +203,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, get, set, update, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, get, set, update, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -271,12 +297,14 @@
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.classList.add('show');
-      setTimeout(()=> t.classList.remove('show'), 1600);
+      setTimeout(()=> t.classList.remove('show'), 1700);
     }
 
     /* ====== 접근 가드 + 내 경로 ====== */
     let basePathForMe = null;
     let myIdKey = null;
+    let allUsers = []; // items: { nickname, lowerNick, ..., idKeyShown }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         try { sessionStorage.setItem('pending_redirect', window.location.href); } catch {}
@@ -323,46 +351,72 @@
 
     /* ====== 닉네임 인덱스(전역 유니크) ======
        meta/nicknameIndex/{lower} = { ownerPath: basePath, at }
+       └ 보안 규칙로 인해 쓰기 불가일 수 있어 fallback 포함
     ======================================== */
     async function reserveNickname(lower, ownerPath){
-      const idxRef = ref(db, `meta/nicknameIndex/${lower}`);
-      const res = await runTransaction(idxRef, cur => {
-        if (!cur || !cur.ownerPath) return { ownerPath, at: Date.now() };
-        if (cur.ownerPath === ownerPath) return cur; // 내 소유면 통과
-        return cur; // 이미 점유 → 변경 없음(실패)
-      });
-      const ok = !!res?.committed && res?.snapshot?.val()?.ownerPath === ownerPath;
-      return ok;
+      try {
+        const idxRef = ref(db, `meta/nicknameIndex/${lower}`);
+        const res = await runTransaction(idxRef, cur => {
+          if (!cur || !cur.ownerPath) return { ownerPath, at: Date.now() };
+          if (cur.ownerPath === ownerPath) return cur; // 내 소유면 통과
+          return cur; // 이미 점유 → 변경 없음(실패)
+        });
+        const ok = !!res?.committed && res?.snapshot?.val()?.ownerPath === ownerPath;
+        return { ok, mode:'index' };
+      } catch (e) {
+        console.warn('reserveNickname error:', e?.code || e);
+        return { ok:false, error:e, mode:'error' };
+      }
     }
     async function releaseNickname(lower, ownerPath){
-      const idxRef = ref(db, `meta/nicknameIndex/${lower}`);
-      await runTransaction(idxRef, cur => {
-        if (cur && cur.ownerPath === ownerPath) return null;
-        return cur;
-      });
+      try{
+        const idxRef = ref(db, `meta/nicknameIndex/${lower}`);
+        await runTransaction(idxRef, cur => {
+          if (cur && cur.ownerPath === ownerPath) return null;
+          return cur;
+        });
+      } catch(e){
+        console.warn('releaseNickname error:', e?.code || e);
+      }
     }
     function nickToLower(n){ return (n||'').trim().toLowerCase(); }
 
     /* ====== 최초 닉네임 생성 ====== */
     function showNickPrompt(){
-      document.getElementById('nickname-prompt').style.display = 'block';
+      const wrap = document.getElementById('nickname-prompt');
+      wrap.style.display = 'block';
       const input = document.getElementById('nickname-input');
       const err = document.getElementById('nick-error');
       document.getElementById('submit-nickname').onclick = async () => {
+        err.style.display='none';
         const nick = (input.value||'').trim();
         if (!nick) { err.textContent='닉네임을 입력해주세요.'; err.style.display='block'; return; }
         if (nick.length > 20){ err.textContent='닉네임은 최대 20자입니다.'; err.style.display='block'; return; }
         const lower = nickToLower(nick);
-        const ok = await reserveNickname(lower, basePathForMe);
-        if (!ok){ err.textContent='이미 사용 중인 닉네임입니다.'; err.style.display='block'; return; }
+
+        // 우선 인덱스 예약 시도
+        const r = await reserveNickname(lower, basePathForMe);
+        if (!r.ok){
+          // fallback: 현재 로드된 allUsers 중복 검사
+          await loadAllUsers();
+          if (allUsers.some(u => u.lowerNick === lower)){
+            err.textContent='이미 사용 중인 닉네임입니다.'; err.style.display='block'; return;
+          }
+        }
         // 저장
-        await update(ref(db), { [`${basePathForMe}/profile/nickname`]: nick, [`${basePathForMe}/profile/nickChangeCount`]: 0 });
-        document.getElementById('nickname-prompt').style.display='none';
-        toast('닉네임 설정 완료!');
-        startRanking();
+        try{
+          await update(ref(db), { [`${basePathForMe}/profile/nickname`]: nick, [`${basePathForMe}/profile/nickChangeCount`]: 0 });
+          wrap.style.display='none';
+          toast('닉네임 설정 완료!');
+          startRanking();
+        }catch(e){
+          // 예약 롤백
+          if (r.ok) await releaseNickname(lower, basePathForMe);
+          err.textContent='닉네임 저장에 실패했습니다. 잠시 후 다시 시도해주세요.'; err.style.display='block';
+        }
       };
       document.getElementById('skip-nickname').onclick = () => {
-        document.getElementById('nickname-prompt').style.display='none';
+        wrap.style.display='none';
         startRanking(); // 닉네임 없이도 보기
       };
     }
@@ -376,8 +430,6 @@
     const colLabelEl = document.getElementById('col-label');
     const unitHelp = document.getElementById('unit-help');
     const typeSelect = document.getElementById('ranking-type');
-
-    let allUsers = []; // items: { nickname, lowerNick, coins,..., country, showCountry, showId, hideRanking, idKeyShown }
 
     async function startRanking(){
       rankingContainer.style.display = 'block';
@@ -448,8 +500,8 @@
 
       const showNoNick = toggleNoNick.checked;
       const list = allUsers
-        .filter(u => !u.hideRanking)              // 숨김 제외
-        .filter(u => showNoNick ? true : !!u.nickname) // 닉네임 필터
+        .filter(u => !u.hideRanking)
+        .filter(u => showNoNick ? true : !!u.nickname)
         .sort((a,b) => (b[type]||0) - (a[type]||0))
         .slice(0, 50);
 
@@ -483,14 +535,49 @@
         try { await signOut(auth); toast('로그아웃 되었습니다'); } catch {}
         window.location.href = 'game.html';
       });
-      document.getElementById('open-settings').addEventListener('click', () => {
+      document.getElementById('open-settings').addEventListener('click', async () => {
         document.getElementById('settings-modal').style.display='block';
+        await loadMyProfileIntoSettings();
       });
       document.getElementById('close-settings').addEventListener('click', () => {
         document.getElementById('settings-modal').style.display='none';
       });
       document.getElementById('save-privacy').addEventListener('click', savePrivacy);
       document.getElementById('change-nick').addEventListener('click', changeNicknameFlow);
+
+      // 새 닉네임 실시간 가용성 체크
+      const newNickIpt = document.getElementById('new-nick-input');
+      let nickChkTimer = null;
+      newNickIpt.addEventListener('input', () => {
+        const badge = document.getElementById('nick-check-badge');
+        const btn = document.getElementById('change-nick');
+        badge.className = 'badge warn'; badge.textContent = '확인 중…';
+        btn.disabled = true;
+        clearTimeout(nickChkTimer);
+        const val = newNickIpt.value.trim();
+        if (!val){ badge.className='badge warn'; badge.textContent='입력 대기'; return; }
+        if (val.length > 20){ badge.className='badge err'; badge.textContent='20자 초과'; return; }
+        nickChkTimer = setTimeout(async () => {
+          const lower = nickToLower(val);
+          // 1) 전역 인덱스 조회
+          let duplicated = false;
+          try{
+            const idx = await get(ref(db, `meta/nicknameIndex/${lower}`));
+            duplicated = idx.exists();
+          }catch(e){
+            // 2) fallback: 이미 로드된 allUsers 검색
+            if (!allUsers.length) await loadAllUsers();
+            duplicated = allUsers.some(u => u.lowerNick === lower);
+          }
+          if (duplicated){
+            badge.className='badge err'; badge.textContent='중복';
+            btn.disabled = true;
+          }else{
+            badge.className='badge ok'; badge.textContent='가용';
+            btn.disabled = false;
+          }
+        }, 260);
+      });
     }
 
     function escapeHtml(s) {
@@ -510,11 +597,11 @@
       document.getElementById('show-country').checked = !!prof.showCountry;
       document.getElementById('show-id').checked = !!prof.showId;
       document.getElementById('hide-ranking').checked = !!prof.hideFromRanking;
-      document.getElementById('current-nick').textContent = prof.nickname || '(없음)';
-      document.getElementById('my-ec').textContent = `${formatLarge(gd.eventCoins||0)} EC`;
+      document.getElementById('current-nick').firstElementChild.textContent = prof.nickname || '(없음)';
+      document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge(gd.eventCoins||0)} EC`;
 
       const cnt = Number(prof.nickChangeCount||0);
-      document.getElementById('nick-cost').textContent = calcNickCost(cnt) + ' EC';
+      document.getElementById('nick-cost').firstElementChild.textContent = calcNickCost(cnt) + ' EC';
     }
 
     function calcNickCost(changeCount){
@@ -537,81 +624,100 @@
         [`${basePathForMe}/profile/showId`]: showId,
         [`${basePathForMe}/profile/hideFromRanking`]: hideFromRanking
       });
-      document.getElementById('settings-ok').textContent = '저장되었습니다.';
-      document.getElementById('settings-ok').style.display = 'block';
-      setTimeout(()=> document.getElementById('settings-ok').style.display='none', 1400);
+      const okEl = document.getElementById('settings-ok');
+      okEl.textContent = '저장되었습니다.';
+      okEl.style.display = 'block';
+      setTimeout(()=> okEl.style.display='none', 1400);
       // 리스트 반영
       await loadAllUsers(); renderRanking();
     }
 
-    /* ====== 닉네임 변경 (EC 차감 + 유니크 예약) ====== */
+    /* ====== 닉네임 변경 (EC 차감 + 유니크 예약 + 롤백 보장) ====== */
     async function changeNicknameFlow(){
       const errEl = document.getElementById('settings-error');
       const okEl  = document.getElementById('settings-ok');
+      const btn   = document.getElementById('change-nick');
       errEl.style.display='none'; okEl.style.display='none';
 
       const newNick = (document.getElementById('new-nick-input').value||'').trim();
       if (!newNick){ errEl.textContent='새 닉네임을 입력해주세요.'; errEl.style.display='block'; return; }
       if (newNick.length > 20){ errEl.textContent='닉네임은 최대 20자입니다.'; errEl.style.display='block'; return; }
 
-      // 프로필, EC 동기 로드
-      const [profSnap, ecSnap] = await Promise.all([
-        get(ref(db, `${basePathForMe}/profile`)),
-        get(ref(db, `${basePathForMe}/gameData/eventCoins`))
-      ]);
-      const prof = profSnap.exists() ? profSnap.val() : {};
-      const currentNick = (prof.nickname||'').toString();
-      const lowerNew = nickToLower(newNick);
-      const lowerCur = nickToLower(currentNick);
-      if (lowerNew === lowerCur){ errEl.textContent='현재 닉네임과 동일합니다.'; errEl.style.display='block'; return; }
+      btn.disabled = true;
 
-      const changeCount = Number(prof.nickChangeCount||0);
-      const cost = calcNickCost(changeCount);
-      const curEC = Number(ecSnap.exists() ? ecSnap.val() : 0);
-      if (curEC < cost){ errEl.textContent=`이벤트코인이 부족합니다. (필요: ${cost}EC)`; errEl.style.display='block'; return; }
+      try{
+        // 프로필, EC 동기 로드
+        const [profSnap, ecSnap] = await Promise.all([
+          get(ref(db, `${basePathForMe}/profile`)),
+          get(ref(db, `${basePathForMe}/gameData/eventCoins`))
+        ]);
+        const prof = profSnap.exists() ? profSnap.val() : {};
+        const currentNick = (prof.nickname||'').toString();
+        const lowerNew = nickToLower(newNick);
+        const lowerCur = nickToLower(currentNick);
+        if (lowerNew === lowerCur){ throw new Error('현재 닉네임과 동일합니다.'); }
 
-      // 1) 새 닉네임 예약 시도
-      const reserved = await reserveNickname(lowerNew, basePathForMe);
-      if (!reserved){ errEl.textContent='이미 사용 중인 닉네임입니다.'; errEl.style.display='block'; return; }
+        const changeCount = Number(prof.nickChangeCount||0);
+        const cost = calcNickCost(changeCount);
+        const curEC = Number(ecSnap.exists() ? ecSnap.val() : 0);
+        if (curEC < cost){ throw new Error(`이벤트코인이 부족합니다. (필요: ${cost}EC)`); }
 
-      // 2) EC 차감 트랜잭션
-      const ecRef = ref(db, `${basePathForMe}/gameData/eventCoins`);
-      const deduct = await runTransaction(ecRef, cur => {
-        const have = Number(cur||0);
-        if (have < cost) return; // abort
-        return have - cost;
-      });
-      if (!deduct.committed){
-        // 예약 돌려놓기
-        await releaseNickname(lowerNew, basePathForMe);
-        errEl.textContent='결제(EC 차감)에 실패했습니다. 보유 EC를 확인해주세요.'; errEl.style.display='block';
-        return;
+        // 1) 새 닉네임 예약 시도 (권한 문제 시 Fallback)
+        const r = await reserveNickname(lowerNew, basePathForMe);
+        if (!r.ok){
+          // 전역 인덱스 쓰기 불가 → fallback: 로컬 목록으로 중복 검사
+          if (!allUsers.length) await loadAllUsers();
+          if (allUsers.some(u => u.lowerNick === lowerNew)){
+            throw new Error('이미 사용 중인 닉네임입니다.');
+          }
+        }
+
+        // 2) EC 차감 트랜잭션
+        const ecRef = ref(db, `${basePathForMe}/gameData/eventCoins`);
+        const deduct = await runTransaction(ecRef, cur => {
+          const have = Number(cur||0);
+          if (have < cost) return; // abort
+          return have - cost;
+        });
+        if (!deduct.committed){
+          if (r.ok) await releaseNickname(lowerNew, basePathForMe);
+          throw new Error('결제(EC 차감)에 실패했습니다. 보유 EC를 확인해주세요.');
+        }
+
+        // 3) 프로필 업데이트 + 기존 닉네임 인덱스 해제
+        const updates = {};
+        updates[`${basePathForMe}/profile/nickname`] = newNick;
+        updates[`${basePathForMe}/profile/nickChangeCount`] = changeCount + 1;
+        await update(ref(db), updates);
+        if (lowerCur) await releaseNickname(lowerCur, basePathForMe);
+
+        // UI 반영
+        document.getElementById('current-nick').firstElementChild.textContent = newNick;
+        document.getElementById('new-nick-input').value = '';
+        document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge((deduct.snapshot.val()||0))} EC`;
+        document.getElementById('nick-cost').firstElementChild.textContent = calcNickCost(changeCount+1) + ' EC';
+        const badge = document.getElementById('nick-check-badge');
+        badge.className='badge warn'; badge.textContent='입력 대기';
+
+        okEl.textContent = `닉네임이 '${newNick}'(으)로 변경되었습니다.`;
+        okEl.style.display='block';
+        setTimeout(()=> okEl.style.display='none', 1600);
+
+        // 리스트 재로드
+        await loadAllUsers(); renderRanking();
+      }catch(e){
+        document.getElementById('settings-error').textContent = (e && e.message) ? e.message : '닉네임 변경에 실패했어요.';
+        document.getElementById('settings-error').style.display='block';
+      }finally{
+        btn.disabled = false;
       }
-
-      // 3) 프로필 업데이트 + 기존 닉네임 인덱스 해제
-      const updates = {};
-      updates[`${basePathForMe}/profile/nickname`] = newNick;
-      updates[`${basePathForMe}/profile/nickChangeCount`] = changeCount + 1;
-      await update(ref(db), updates);
-      if (lowerCur) await releaseNickname(lowerCur, basePathForMe);
-
-      // UI 반영
-      document.getElementById('current-nick').textContent = newNick;
-      document.getElementById('new-nick-input').value = '';
-      document.getElementById('my-ec').textContent = `${formatLarge((deduct.snapshot.val()||0))} EC`;
-      document.getElementById('nick-cost').textContent = calcNickCost(changeCount+1) + ' EC';
-      okEl.textContent = `닉네임이 '${newNick}'(으)로 변경되었습니다.`;
-      okEl.style.display='block';
-      setTimeout(()=> okEl.style.display='none', 1600);
-
-      // 리스트 재로드
-      await loadAllUsers(); renderRanking();
     }
 
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
+    // 개발자도구 감지(강제 창닫기 제거: 의도치 않은 종료 방지)
     DisableDevtool({
       disableMenu: true,
       disableSelect: true,
@@ -619,11 +725,10 @@
       disableCut: true,
       disablePaste: true,
       clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) { window.close(); next(); },
+      ondevtoolopen(type, next) { console.warn('DevTools 열림 감지:', type); next(); },
       ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
     });
-  </script>
-  <script>
+
     // 우클릭 전체 차단(입력 요소는 예외)
     document.addEventListener('contextmenu', function (e) {
       if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
