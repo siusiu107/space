@@ -23,7 +23,7 @@
       --err:#ff7b7b;
     }
     *{ box-sizing:border-box }
-    body { margin:0; padding:0; font-family:Arial,system-ui,-apple-system,'Apple SD Gothic Neo',Segoe UI,Roboto,'Noto Sans KR',sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    body { margin:0; padding:0; font-family:Arial,system-ui,-apple-system,'Apple SD Gothic Neo',Segoe UI,Roboto,'Noto Sans KR',sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat fixed; color:#fff; }
     #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--bg); padding:18px; border-radius:16px; width:94%; max-width:980px; text-align:center; display:none; box-shadow:0 18px 60px rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); }
     h1{ margin:0 0 8px; font-size:22px; letter-spacing:.2px }
     .controls{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 10px; }
@@ -203,7 +203,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, get, set, update, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, get, update, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -219,7 +219,32 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    /* ====== 숫자 축약 (만~무량대수) ====== */
+    /* ====== 숫자 파싱/표시 유틸 ====== */
+    function parseNumericLike(x){
+      if (typeof x === 'number' && isFinite(x)) return Math.floor(x);
+      const s = String(x ?? '').trim();
+      if (!s) return 0;
+      const plain = s.replace(/,/g,'').replace(/\s+/g,'');
+      if (/^-?\d+(\.\d+)?$/.test(plain)) return Math.floor(parseFloat(plain));
+      const units = [
+        ['무량대수', 1e68], ['불가사의', 1e64], ['나유타', 1e60], ['아승기', 1e56],
+        ['항하사', 1e52], ['극', 1e48], ['재', 1e44], ['정', 1e40], ['간', 1e36],
+        ['구', 1e32], ['양', 1e28], ['자', 1e24], ['해', 1e20], ['경', 1e16],
+        ['조', 1e12], ['억', 1e8], ['만', 1e4]
+      ];
+      for (const [k, v] of units){
+        if (s.endsWith(k)){
+          const head = s.slice(0, s.length - k.length).replace(/,/g,'').trim();
+          const num = parseFloat(head);
+          if (!Number.isNaN(num)) return Math.floor(num * v);
+          return 0;
+        }
+      }
+      const stripped = s.replace(/[^\d.\-]/g,'');
+      if (/^-?\d+(\.\d+)?$/.test(stripped)) return Math.floor(parseFloat(stripped));
+      return 0;
+    }
+
     function formatLarge(n){
       if (!isFinite(n)) return '0';
       const abs = Math.abs(n);
@@ -303,7 +328,8 @@
     /* ====== 접근 가드 + 내 경로 ====== */
     let basePathForMe = null;
     let myIdKey = null;
-    let allUsers = []; // items: { nickname, lowerNick, ..., idKeyShown }
+    let myCurrentNickLower = '';
+    let allUsers = []; // items: { nickname, lowerNick, ... }
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -334,6 +360,7 @@
       }
       // 닉네임 확인
       const nickSnap = await get(ref(db, `${basePathForMe}/profile/nickname`));
+      myCurrentNickLower = nickSnap.exists() ? nickToLower(nickSnap.val()) : '';
       if (!nickSnap.exists()) {
         showNickPrompt();
       } else {
@@ -405,12 +432,15 @@
         }
         // 저장
         try{
-          await update(ref(db), { [`${basePathForMe}/profile/nickname`]: nick, [`${basePathForMe}/profile/nickChangeCount`]: 0 });
+          await update(ref(db), {
+            [`${basePathForMe}/profile/nickname`]: nick,
+            [`${basePathForMe}/profile/nickChangeCount`]: 0
+          });
+          myCurrentNickLower = lower;
           wrap.style.display='none';
           toast('닉네임 설정 완료!');
           startRanking();
         }catch(e){
-          // 예약 롤백
           if (r.ok) await releaseNickname(lower, basePathForMe);
           err.textContent='닉네임 저장에 실패했습니다. 잠시 후 다시 시도해주세요.'; err.style.display='block';
         }
@@ -421,7 +451,7 @@
       };
     }
 
-    /* ====== 랭킹 데이터 수집 ====== */
+    /* ====== 랭킹 데이터 수집/표시 ====== */
     const rankingContainer = document.getElementById('ranking-container');
     const rankingBody = document.getElementById('ranking-body');
     const toggleNoNick = document.getElementById('toggle-no-nickname');
@@ -438,7 +468,7 @@
       totalCountEl.textContent = `${allUsers.filter(u=>!u.hideRanking).length}명 집계됨`;
       wireUI();
       renderRanking();
-      await loadMyProfileIntoSettings(); // 설정 패널 내용 채우기
+      await loadMyProfileIntoSettings();
     }
 
     async function loadAllUsers(){
@@ -464,13 +494,13 @@
       allUsers.push({
         nickname,
         lowerNick: nickToLower(nickname),
-        coins: Math.floor(gd.coins || 0),
-        shipLevel: Math.floor(gd.shipLevel || 0),
-        eventCoins: Math.floor(gd.eventCoins || 0),
+        coins: parseNumericLike(gd.coins),
+        shipLevel: parseNumericLike(gd.shipLevel),
+        eventCoins: parseNumericLike(gd.eventCoins),
         planets: Array.isArray(gd.ownedPlanets) ? gd.ownedPlanets.length : 0,
-        clickPower: Math.floor(gd.clickPower || 0),
-        workerCount: Math.floor(gd.workerCount || 0),
-        conversionCount: Math.floor(gd.conversionCount || 0),
+        clickPower: parseNumericLike(gd.clickPower),
+        workerCount: parseNumericLike(gd.workerCount),
+        conversionCount: parseNumericLike(gd.conversionCount),
         country: (profile?.country || '').toString(),
         showCountry: !!profile?.showCountry,
         showId: !!profile?.showId,
@@ -529,6 +559,10 @@
     }
 
     function wireUI(){
+      const changeBtn = document.getElementById('change-nick');
+      const newNickIpt = document.getElementById('new-nick-input');
+      const badge = document.getElementById('nick-check-badge');
+
       typeSelect.addEventListener('change', renderRanking);
       toggleNoNick.addEventListener('change', renderRanking);
       document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -546,24 +580,26 @@
       document.getElementById('change-nick').addEventListener('click', changeNicknameFlow);
 
       // 새 닉네임 실시간 가용성 체크
-      const newNickIpt = document.getElementById('new-nick-input');
       let nickChkTimer = null;
       newNickIpt.addEventListener('input', () => {
-        const badge = document.getElementById('nick-check-badge');
-        const btn = document.getElementById('change-nick');
         badge.className = 'badge warn'; badge.textContent = '확인 중…';
-        btn.disabled = true;
+        changeBtn.disabled = true;
         clearTimeout(nickChkTimer);
         const val = newNickIpt.value.trim();
         if (!val){ badge.className='badge warn'; badge.textContent='입력 대기'; return; }
         if (val.length > 20){ badge.className='badge err'; badge.textContent='20자 초과'; return; }
+
         nickChkTimer = setTimeout(async () => {
           const lower = nickToLower(val);
+          if (lower === myCurrentNickLower){
+            badge.className='badge warn'; badge.textContent='현재와 동일';
+            changeBtn.disabled = true; return;
+          }
           // 1) 전역 인덱스 조회
           let duplicated = false;
           try{
             const idx = await get(ref(db, `meta/nicknameIndex/${lower}`));
-            duplicated = idx.exists();
+            duplicated = idx.exists() && idx.val()?.ownerPath !== basePathForMe;
           }catch(e){
             // 2) fallback: 이미 로드된 allUsers 검색
             if (!allUsers.length) await loadAllUsers();
@@ -571,10 +607,10 @@
           }
           if (duplicated){
             badge.className='badge err'; badge.textContent='중복';
-            btn.disabled = true;
+            changeBtn.disabled = true;
           }else{
             badge.className='badge ok'; badge.textContent='가용';
-            btn.disabled = false;
+            changeBtn.disabled = false;
           }
         }, 260);
       });
@@ -593,15 +629,24 @@
       const prof = profSnap.exists() ? profSnap.val() : {};
       const gd   = gdSnap.exists() ? gdSnap.val() : {};
 
+      const curNick = (prof.nickname || '');
+      myCurrentNickLower = nickToLower(curNick);
+
       document.getElementById('country-input').value = prof.country || '';
       document.getElementById('show-country').checked = !!prof.showCountry;
       document.getElementById('show-id').checked = !!prof.showId;
       document.getElementById('hide-ranking').checked = !!prof.hideFromRanking;
-      document.getElementById('current-nick').firstElementChild.textContent = prof.nickname || '(없음)';
-      document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge(gd.eventCoins||0)} EC`;
+      document.getElementById('current-nick').firstElementChild.textContent = curNick || '(없음)';
+      document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge(parseNumericLike(gd.eventCoins))} EC`;
 
       const cnt = Number(prof.nickChangeCount||0);
       document.getElementById('nick-cost').firstElementChild.textContent = calcNickCost(cnt) + ' EC';
+
+      // 입력 배지 초기화
+      document.getElementById('nick-check-badge').className='badge warn';
+      document.getElementById('nick-check-badge').textContent='입력 대기';
+      document.getElementById('change-nick').disabled = true;
+      document.getElementById('new-nick-input').value = '';
     }
 
     function calcNickCost(changeCount){
@@ -659,29 +704,38 @@
 
         const changeCount = Number(prof.nickChangeCount||0);
         const cost = calcNickCost(changeCount);
-        const curEC = Number(ecSnap.exists() ? ecSnap.val() : 0);
-        if (curEC < cost){ throw new Error(`이벤트코인이 부족합니다. (필요: ${cost}EC)`); }
+        const curEC = parseNumericLike(ecSnap.exists() ? ecSnap.val() : 0);
+        if (curEC < cost){ throw new Error(`이벤트코인이 부족합니다. (보유: ${curEC.toLocaleString()} EC / 필요: ${cost} EC)`); }
 
         // 1) 새 닉네임 예약 시도 (권한 문제 시 Fallback)
         const r = await reserveNickname(lowerNew, basePathForMe);
         if (!r.ok){
-          // 전역 인덱스 쓰기 불가 → fallback: 로컬 목록으로 중복 검사
           if (!allUsers.length) await loadAllUsers();
           if (allUsers.some(u => u.lowerNick === lowerNew)){
             throw new Error('이미 사용 중인 닉네임입니다.');
           }
         }
 
-        // 2) EC 차감 트랜잭션
+        // 2) EC 차감 트랜잭션 (문자열/단위 저장도 안전 처리 + 권한 오류 구분)
         const ecRef = ref(db, `${basePathForMe}/gameData/eventCoins`);
-        const deduct = await runTransaction(ecRef, cur => {
-          const have = Number(cur||0);
-          if (have < cost) return; // abort
-          return have - cost;
-        });
+        let deduct;
+        try{
+          deduct = await runTransaction(ecRef, cur => {
+            const have = parseNumericLike(cur);
+            if (have < cost) return;            // abort → committed=false
+            return have - cost;
+          });
+        }catch(trxErr){
+          const code = (trxErr && trxErr.code) ? String(trxErr.code) : '';
+          if (code.includes('permission') || code.includes('denied')){
+            throw new Error('권한 문제로 EC 차감에 실패했습니다. (RTDB 보안 규칙 확인 필요)');
+          }
+          throw new Error('네트워크/트랜잭션 오류로 EC 차감에 실패했습니다.');
+        }
         if (!deduct.committed){
-          if (r.ok) await releaseNickname(lowerNew, basePathForMe);
-          throw new Error('결제(EC 차감)에 실패했습니다. 보유 EC를 확인해주세요.');
+          const haveNowSnap = await get(ecRef);
+          const haveNow = parseNumericLike(haveNowSnap.exists() ? haveNowSnap.val() : 0);
+          throw new Error(`이벤트코인이 부족합니다. (보유: ${haveNow.toLocaleString()} EC / 필요: ${cost} EC)`);
         }
 
         // 3) 프로필 업데이트 + 기존 닉네임 인덱스 해제
@@ -694,10 +748,12 @@
         // UI 반영
         document.getElementById('current-nick').firstElementChild.textContent = newNick;
         document.getElementById('new-nick-input').value = '';
-        document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge((deduct.snapshot.val()||0))} EC`;
+        const remainEC = parseNumericLike(deduct.snapshot.val()||0);
+        document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge(remainEC)} EC`;
         document.getElementById('nick-cost').firstElementChild.textContent = calcNickCost(changeCount+1) + ' EC';
         const badge = document.getElementById('nick-check-badge');
         badge.className='badge warn'; badge.textContent='입력 대기';
+        myCurrentNickLower = lowerNew;
 
         okEl.textContent = `닉네임이 '${newNick}'(으)로 변경되었습니다.`;
         okEl.style.display='block';
@@ -712,12 +768,11 @@
         btn.disabled = false;
       }
     }
-
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
-    // 개발자도구 감지(강제 창닫기 제거: 의도치 않은 종료 방지)
+    // 개발자도구 감지(강제 창닫기 제거)
     DisableDevtool({
       disableMenu: true,
       disableSelect: true,
