@@ -661,7 +661,12 @@
         showTop.forEach((u, i) => {
           const raw = u[type] || 0;
           const cn = (u.showCountry && u.country) ? escapeHtml(u.country) : (u.country ? '<span style="opacity:.6">비공개</span>' : '—');
-          const idtxt = u.showId ? escapeHtml(u.idKeyShown||'') : '<span style="opacity:.6">비공개</span>';
+
+          // ✅ 변경: ID 표시 시 _dot_/_at_ 복원
+          const idtxt = u.showId
+            ? escapeHtml(decodeIdKeyForDisplay(u.idKeyShown||''))
+            : '<span style="opacity:.6">비공개</span>';
+
           const tr = document.createElement('tr');
 
           // 메달 표기 / 상위 강조
@@ -708,7 +713,12 @@
             tr.className = 'me-row';
             const raw = me[type] || 0;
             const cn = (me.showCountry && me.country) ? escapeHtml(me.country) : (me.country ? '<span style="opacity:.6">비공개</span>' : '—');
-            const idtxt = me.showId ? escapeHtml(me.idKeyShown||'') : '<span style="opacity:.6">비공개</span>';
+
+            // ✅ 변경: 내 행의 ID도 복원 표시
+            const idtxt = me.showId
+              ? escapeHtml(decodeIdKeyForDisplay(me.idKeyShown||''))
+              : '<span style="opacity:.6">비공개</span>';
+
             tr.innerHTML = `
               <td style="text-align:center"><div class="rank-cell"><span class="me-chip">내 순위</span>${meRank.toLocaleString()}</div></td>
               <td>${me.nickname ? escapeHtml(me.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
@@ -718,9 +728,6 @@
             `;
             tr.dataset.idkey = me.idKeyShown || '';
             rankingBody.appendChild(tr);
-          } else {
-            // 포함되어 있으면 고정 카드만 갱신
-            // nothing extra
           }
         } else {
           myCard.style.display = 'none';
@@ -794,6 +801,13 @@
       return (s || '').replace(/[&<>"'`=\/]/g, c => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'
       }[c]));
+    }
+
+    // ✅ 추가: 인코딩된 ID 키를 사람이 읽기 좋게 복원
+    function decodeIdKeyForDisplay(id) {
+      return String(id || '')
+        .replace(/_at_/gi, '@')
+        .replace(/_dot_/gi, '.');
     }
 
     /* ====== 설정 패널 데이터 로드/저장 ====== */
@@ -897,7 +911,7 @@
           const have = parseNumericLike(cur);
           if (!isFinite(have)) return cur;
           if (have >= cost) return Math.floor(have - cost);
-          return have; // 부족: 원래 값 유지(커밋은 가능)
+          return have; // 부족: 원래 값 유지
         });
 
         const after = parseNumericLike(trx?.snapshot?.val() ?? 0);
