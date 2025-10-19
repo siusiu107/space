@@ -317,6 +317,30 @@
       from { opacity:0; transform: translateX(-50%) translateY(20px); }
       to   { opacity:1; transform: translateX(-50%) translateY(0); }
     }
+
+    /* ===== 마이그레이션 오버레이 ===== */
+    #migrate-overlay{
+      position: fixed; inset:0; z-index:3600; display:none; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,.60), rgba(2,6,12,.80)); backdrop-filter: blur(4px);
+    }
+    #migrate-overlay.show{ display:flex; }
+    #migrate-card{
+      width:min(560px, 94vw); border-radius:16px; border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.66));
+      padding:16px; box-shadow: 0 22px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+      color:#eaf6ff;
+    }
+    #migrate-card h3{ margin:0 0 8px; font-size:18px; }
+    #migrate-desc{ font-size:13px; color:#cfe6ff; line-height:1.5; }
+    .warnbox{
+      margin:10px 0; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,211,110,.45);
+      background: rgba(255,211,110,.10); color:#ffe3a3; font-weight:700;
+    }
+    #migrate-progress{ margin-top:10px; font-size:13px; color:#a6e7ff; min-height:20px; }
+    #migrate-actions{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
+    #migrate-start{ padding:10px 14px; border-radius:10px; border:none; font-weight:900; cursor:pointer;
+      background: linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; }
+    #migrate-start[disabled]{ opacity:.6; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -437,38 +461,6 @@
     </nav>
   </div>
 
-  <!-- ✅ 강제 마이그레이션 오버레이 (추가) -->
-  <div id="migrate-overlay" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:5000; background:linear-gradient(180deg, rgba(2,6,12,.55), rgba(2,6,12,.75)); backdrop-filter: blur(4px);">
-    <div role="dialog" aria-modal="true" aria-labelledby="migrate-title"
-         style="width:min(560px,94vw); margin:auto; border-radius:14px; border:1px solid rgba(255,255,255,.12);
-                background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.55));
-                padding:16px; color:#eaf6ff; box-shadow:0 16px 44px rgba(0,0,0,.5);">
-      <div id="migrate-title" style="font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;">
-        🔄 데이터 저장 방식 변경 안내 & 강제 마이그레이션
-      </div>
-      <div style="margin:8px 0 6px; font-size:13px; color:#cfe6ff; line-height:1.6;">
-        게임 내 데이터 저장 구조가 변경되었습니다.<br>
-        지금 보유하신 <b>모든 데이터(사용자 노드 전체)</b>를 새 위치로 <b>복사 후 이전 위치를 삭제</b>합니다.
-      </div>
-      <div style="margin:8px 0; font-size:12px; color:#ffd7a8; background:rgba(255,180,0,.08); border:1px solid rgba(255,180,0,.25); padding:10px; border-radius:10px;">
-        ⚠️ <b>주의</b><br>
-        • 진행 중 창을 닫거나 종료하면 데이터 이전 중 문제가 발생할 수 있습니다.<br>
-        • 마이그레이션 후에는 <b>원래 위치의 데이터가 삭제</b>됩니다.<br>
-        • 복사 대상: 해당 사용자 아래의 <b>모든 하위 경로</b>(gameData 포함 전체)
-      </div>
-      <div id="migrate-detail" style="font-size:12px; color:#9fdcff; margin:8px 0;"></div>
-      <div id="migrate-progress" style="display:none; margin:10px 0 6px; font-size:13px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div class="spinner" aria-hidden="true"></div>
-          <div id="migrate-step">준비 중…</div>
-        </div>
-      </div>
-      <div style="display:flex; gap:8px; justify-content:center; margin-top:10px;">
-        <button id="migrate-start" class="spinbtn" style="background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; border:1px solid rgba(255,255,255,.14); font-weight:900; padding:10px 14px; border-radius:10px;">마이그레이션 시작</button>
-      </div>
-    </div>
-  </div>
-
   <!-- 커스텀 메뉴 -->
   <div id="custom-menu">
     <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
@@ -536,6 +528,22 @@
     </div>
   </div>
 
+  <!-- 🔶 마이그레이션 오버레이 -->
+  <div id="migrate-overlay" aria-hidden="true">
+    <div id="migrate-card" role="dialog" aria-modal="true" aria-labelledby="migrate-title">
+      <h3 id="migrate-title">데이터 저장 방식 변경 안내</h3>
+      <div id="migrate-desc">
+        게임 내 데이터 저장 방식이 변경되어 <b>데이터 마이그레이션</b>이 필요합니다.<br/>
+        아래 버튼을 누르면 <b>기존 위치의 모든 데이터(하위 키 전체)</b>를 새 위치로 이동하고, <b>원본은 삭제</b>됩니다.
+      </div>
+      <div class="warnbox">⚠️ 진행 중 창을 닫거나 종료하면 <b>데이터 이전 중 문제</b>가 발생할 수 있습니다. 가능하면 완료까지 기다려 주세요.</div>
+      <div id="migrate-progress">대기 중…</div>
+      <div id="migrate-actions">
+        <button id="migrate-start">마이그레이션 시작</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 사운드 -->
   <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
@@ -580,7 +588,7 @@
 
     // 새 구조용 전역 경로
     let userServerKey = null;
-    let userIdKey     = null;
+    let userIdKey     = null; // 🔑 경로용(인코딩된 키)
     let userBasePath  = null;
 
     // 잠금 상태
@@ -606,7 +614,7 @@
     /* ===== 토스트 ===== */
     let toastTimer = null;
     function showToast(message, actionText = null, onAction = null, ttlMs = 5000){
-      if (!bootDone) return; // 부팅 중 토스트 억제
+      if (!bootDone) return;
       const box = document.getElementById('toast');
       if(!box) return;
       clearTimeout(toastTimer);
@@ -744,6 +752,255 @@
       localLastWrite = now;
       try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch {}
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
+    }
+
+    /* ========= 새 키 규칙 =========
+       - 표시용 이메일: user.email (그대로 저장)
+       - 경로 키: 안전 인코딩 (Realtime DB 키 금지문자 대체)
+    ================================= */
+    function encodeEmailToKey(email){
+      const s = String(email||'').trim().toLowerCase();
+      // 금지문자: . # $ [ ] / \ ? % * @ 등 → 대체
+      return s
+        .replace(/\s+/g,'')
+        .replace(/@/g,'_at_')
+        .replace(/\./g,'_dot_')
+        .replace(/[#$\[\]\/\\?%*]/g,'-')
+        .replace(/[^a-z0-9_\-]/g, '-')
+        .replace(/-+/g,'-')
+        .replace(/^[-_]+|[-_]+$/g,'') || 'user';
+    }
+    function fallbackIdFromDisplayName(name){
+      return (String(name||'').trim().toLowerCase() || 'user')
+        .replace(/[^a-z0-9_\-]/g,'-')
+        .replace(/-+/g,'-')
+        .replace(/^[-_]+|[-_]+$/g,'') || 'user';
+    }
+    function fallbackIdFromUid(uid){
+      return `user_${String(uid||'').slice(0,8) || '00000000'}`;
+    }
+    function makeIdKeyFromUser(user){
+      if (user?.email) return encodeEmailToKey(user.email);
+      if (user?.displayName) return fallbackIdFromDisplayName(user.displayName);
+      return fallbackIdFromUid(user?.uid);
+    }
+
+    // 신규 계정(생성 직후) 판별
+    function isNewlyCreatedAccount(user, minutes = 5) {
+      try {
+        const ct = Date.parse(user?.metadata?.creationTime || '') || 0;
+        const lt = Date.parse(user?.metadata?.lastSignInTime || '') || 0;
+        if (!ct || !lt) return false;
+        return Math.abs(lt - ct) <= minutes * 60 * 1000;
+      } catch { return false; }
+    }
+
+    // 서버 배정 (meta/nextIndex 기반)
+    async function allocateServerForUser(){
+      try{
+        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
+        const idx = res?.snapshot?.val() || 1;
+        const serverNum = Math.max(1, Math.ceil(idx / 15));
+        return `server${serverNum}`;
+      }catch{
+        return 'server1';
+      }
+    }
+
+    // 마이그레이션 필요성/경로 결정
+    async function planMigrationForUser(user){
+      const uid = user.uid;
+      const desiredId = makeIdKeyFromUser(user);
+      const desiredServer = await allocateServerForUser();
+
+      // 현재 매핑 조회
+      let mapping = null;
+      try {
+        const m = await get(ref(db, `userServerMap/${uid}`));
+        mapping = m.exists() ? (m.val() || null) : null;
+      } catch {}
+
+      // 레거시(users/uid) 존재 여부
+      const legacySnap = await get(ref(db, `users/${uid}`));
+      const legacyExists = legacySnap.exists();
+
+      // 매핑이 있으면 매핑 서버/ID, 없으면 레거시를 소스로 본다
+      let srcBasePath = null;
+      let server = desiredServer;
+
+      if (mapping && mapping.server && mapping.id) {
+        srcBasePath = `users/${mapping.server}/${mapping.id}`;
+        server = mapping.server;
+      } else if (legacyExists) {
+        srcBasePath = `users/${uid}`;
+      }
+
+      const destBasePath = `users/${server}/${desiredId}`;
+      const destSnap = await get(ref(db, destBasePath));
+      const destExists = destSnap.exists();
+
+      // 신규 가입 + 저장소가 모두 비어있으면(레거시/목표/매핑 없음) → 오버레이 없이 패스
+      if (isNewlyCreatedAccount(user) && !legacyExists && !mapping && !destExists) {
+        return {
+          need: false,
+          server,
+          oldMapping: null,
+          srcBasePath: null,
+          destBasePath,
+          reason: 'fresh-signup'
+        };
+      }
+
+      // 매핑은 있는데 id가 원하는 형태와 다름 → 소스에 실제 데이터가 있을 때만 마이그레이션
+      if (mapping && mapping.server && mapping.id && mapping.id !== desiredId) {
+        try {
+          const srcSnap = await get(ref(db, srcBasePath));
+          if (!srcSnap.exists()){
+            return {
+              need:false,
+              server: mapping.server,
+              oldMapping: mapping,
+              srcBasePath: null,
+              destBasePath,
+              reason: 'rename-mapping-only'
+            };
+          }
+        } catch {}
+        return {
+          need:true,
+          server: mapping.server,
+          oldMapping: mapping,
+          srcBasePath,
+          destBasePath,
+          reason: 'rename-to-email-id'
+        };
+      }
+
+      // 매핑 없음 + 레거시가 있으면 → 마이그레이션
+      if (!mapping && legacyExists) {
+        return {
+          need:true,
+          server,
+          oldMapping: null,
+          srcBasePath: `users/${uid}`,
+          destBasePath,
+          reason: 'legacy-flat'
+        };
+      }
+
+      // 그 외: 이미 정상 경로거나 목적지 있음 → 매핑만 보장
+      return {
+        need:false,
+        server,
+        oldMapping: mapping || null,
+        srcBasePath: null,
+        destBasePath,
+        reason: 'fresh-or-already-ok'
+      };
+    }
+
+    // 마이그레이션 오버레이 UI
+    function showMigrateOverlay(show=true, msg='대기 중…'){
+      const ov = document.getElementById('migrate-overlay');
+      const pr = document.getElementById('migrate-progress');
+      if (pr) pr.textContent = msg || '';
+      if (ov){
+        ov.classList.toggle('show', !!show);
+        ov.setAttribute('aria-hidden', show ? 'false':'true');
+      }
+    }
+    function setMigrateProgress(msg){ const pr=document.getElementById('migrate-progress'); if(pr) pr.textContent = msg||''; }
+    function disableMigrateStart(dis=true){ const btn=document.getElementById('migrate-start'); if(btn) btn.disabled=!!dis; }
+
+    // 전체 복사 → 원본 삭제
+    async function performMigration(srcBasePath, destBasePath, user){
+      setMigrateProgress('1/3 기존 데이터 읽는 중…');
+      const srcRef = ref(db, srcBasePath);
+      const destRef = ref(db, destBasePath);
+
+      const snap = await get(srcRef);
+      if (!snap.exists()){
+        // 소스가 비어있으면 그냥 종료
+        setMigrateProgress('소스에 데이터가 없어 건너뜁니다.');
+      } else {
+        const payload = snap.val() || {};
+        setMigrateProgress('2/3 새 위치로 복사 중…');
+        await update(ref(db), { [destBasePath]: payload });
+
+        setMigrateProgress('3/3 원본 삭제 중…');
+        await update(ref(db), { [srcBasePath]: null });
+      }
+
+      // 매핑 업데이트(표시용 이메일 포함)
+      const displayEmail = String(user?.email || '').trim();
+      await update(ref(db), {
+        [`userServerMap/${user.uid}`]: {
+          server: userServerKey,
+          id: userIdKey,
+          displayId: displayEmail || null,
+          migratedAt: Date.now()
+        }
+      });
+
+      setMigrateProgress('✅ 마이그레이션 완료! 잠시 후 게임으로 이동합니다…');
+    }
+
+    // 이후 게임 데이터 바인딩 공통
+    async function proceedWithDataBinding(){
+      // 랭킹 잠금 상태 미리 로드
+      try {
+        const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
+        rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
+      } catch { rankingUnlocked = false; }
+
+      dataRef = ref(db, `${userBasePath}/gameData`);
+      isInitialSync = true;
+      try {
+        const saved = localStorage.getItem(`lastWrite_${uid}`);
+        localLastWrite = saved ? parseInt(saved, 10) : 0;
+      } catch { localLastWrite = 0; }
+
+      await ensureInitialData(dataRef);
+
+      dataUnsubscribe = onValue(dataRef, async snap => {
+        const server = snap.exists() ? snap.val() : null;
+
+        if (isInitialSync) {
+          state = { ...defaultData, ...(server || {}) };
+
+          // 부팅 초기: 출석 상태 선로드
+          await fetchDaily();
+
+          if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+          isInitialSync = false;
+
+          showGameUI();
+          window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
+
+          // 부팅 이후 자동 오버레이 확인
+          await checkDailyAndMaybeShow();
+          updateAttendanceLabels();
+
+          // 이후 토스트 허용
+          bootDone = true;
+          return;
+        }
+
+        // 일반 동기화
+        if (!server) {
+          state = { ...defaultData };
+        } else {
+          const serverLast = server._lastUpdated || 0;
+          if (serverLast >= (localLastWrite || 0)) {
+            state = { ...defaultData, ...server };
+          } else {
+            state = { ...defaultData, ...server, ...state };
+            try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
+            catch { save(); }
+          }
+        }
+        if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+      });
     }
 
     // ======= 우주선 이미지 폴백 =======
@@ -1163,7 +1420,7 @@
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
-      tryUnlockDaily(); // 부팅 중엔 토스트 안 뜸 + 이미 언락이면 조용히 return
+      tryUnlockDaily();
       renderBuffStatus();
     }
 
@@ -1265,158 +1522,6 @@
       }, 1000);
     }
 
-    /* ============================
-       ✅ 이메일 전체 기반 idKey 생성
-       ============================ */
-    function sanitizeIdKey(raw) {
-      const s = (raw || '').toString().trim().toLowerCase();
-      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
-      return base || 'user';
-    }
-    function makeIdKeyFromUser(user) {
-      // 전체 이메일(아이디 + 도메인)을 id로 사용
-      const email = (user.email || '').toString().trim();
-      if (email) {
-        const full = email.toLowerCase()
-          .replace(/\s+/g, '')
-          .replace(/@/g, '_at_')
-          .replace(/\./g, '_');
-        return sanitizeIdKey(full);
-      }
-      // 이메일이 없으면 기존 fallback
-      const name = sanitizeIdKey(user.displayName || '');
-      if (name && name !== 'user') return name;
-      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
-    }
-
-    /* ======================================
-       ✅ 강제 마이그레이션(전체 복사 후 원본 삭제)
-       ====================================== */
-    async function allocateServerForUser() {
-      let nextIndex = 0;
-      try {
-        const tRef = ref(db, 'meta/nextIndex');
-        const res = await runTransaction(tRef, cur => (cur || 0) + 1);
-        nextIndex = res?.snapshot?.val() || 1;
-      } catch (e) { console.warn('nextIndex txn fail, fallback index=1', e); nextIndex = 1; }
-      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
-      return `server${serverNum}`;
-    }
-
-    async function copyAllThenDelete(srcPath, destPath, setStep = ()=>{}) {
-      setStep('원본 읽는 중…');
-      const srcSnap = await get(ref(db, srcPath));
-      const exists = srcSnap.exists();
-      const srcVal = exists ? srcSnap.val() : null;
-
-      setStep(exists ? '새 위치로 복사 중…' : '복사할 데이터 없음, 정리 중…');
-
-      if (exists) {
-        await update(ref(db), { [destPath]: srcVal });
-      }
-
-      if (exists) {
-        const verify = await get(ref(db, destPath));
-        if (!verify.exists()) {
-          throw new Error('검증 실패: 새 위치에 데이터가 확인되지 않습니다.');
-        }
-      }
-
-      setStep('원본 삭제 중…');
-      await update(ref(db), { [srcPath]: null });
-    }
-
-    async function planMigrationForUser(user) {
-      const uid = user.uid;
-      const desiredId = makeIdKeyFromUser(user);
-
-      let mapping = null;
-      try {
-        const m = await get(ref(db, `userServerMap/${uid}`));
-        mapping = m.exists() ? (m.val() || null) : null;
-      } catch {}
-
-      // case A: 매핑 없음 & legacy(users/uid) 존재 → 새 서버/경로로
-      const legacySnap = await get(ref(db, `users/${uid}`));
-      if (!mapping && legacySnap.exists()) {
-        const server = await allocateServerForUser();
-        return {
-          need: true,
-          server,
-          oldMapping: null,
-          srcBasePath: `users/${uid}`,
-          destBasePath: `users/${server}/${desiredId}`,
-          reason: 'legacy-flat'
-        };
-      }
-
-      // case B: 매핑 있으나 id가 이메일 전체 기반과 다름 → 같은 서버에서 rename
-      if (mapping && mapping.server && mapping.id && mapping.id !== desiredId) {
-        return {
-          need: true,
-          server: mapping.server,
-          oldMapping: mapping,
-          srcBasePath: `users/${mapping.server}/${mapping.id}`,
-          destBasePath: `users/${mapping.server}/${desiredId}`,
-          reason: 'rename-to-email-id'
-        };
-      }
-
-      // case C: 신규/정상
-      const server = mapping?.server || await allocateServerForUser();
-      const id = mapping?.id || desiredId;
-
-      return {
-        need: false,
-        server,
-        oldMapping: mapping || null,
-        srcBasePath: null,
-        destBasePath: `users/${server}/${id}`,
-        reason: 'fresh-or-already-ok',
-      };
-    }
-
-    function showMigrateOverlay(detailHtml){
-      const ov = document.getElementById('migrate-overlay');
-      document.getElementById('migrate-detail').innerHTML = detailHtml || '';
-      document.getElementById('migrate-progress').style.display = 'none';
-      document.getElementById('migrate-step').textContent = '준비 중…';
-      document.getElementById('migrate-start').disabled = false;
-      ov.style.display='flex'; ov.setAttribute('aria-hidden','false');
-      // 게임 UI 차단
-      ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='hidden'; });
-      if (authContainer) { authContainer.style.display = 'none'; }
-    }
-    function setMigrateStep(msg){
-      const p = document.getElementById('migrate-progress');
-      p.style.display = 'block';
-      document.getElementById('migrate-step').textContent = msg || '';
-    }
-    function hideMigrateOverlay(){
-      const ov = document.getElementById('migrate-overlay');
-      ov.style.display='none'; ov.setAttribute('aria-hidden','true');
-      // 게임 UI 다시
-      ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; });
-    }
-
-    async function forceMigrateAllUnderUser(user, plan) {
-      const uid = user.uid;
-      const desiredId = makeIdKeyFromUser(user);
-      const server = plan.server;
-
-      await copyAllThenDelete(plan.srcBasePath, plan.destBasePath, setMigrateStep);
-
-      setMigrateStep('매핑 저장 중…');
-      await update(ref(db), {
-        [`userServerMap/${uid}`]: {
-          server, id: desiredId, migratedAt: Date.now(), reason: plan.reason
-        },
-        [`migrations/${uid}`]: {
-          to: plan.destBasePath, from: plan.srcBasePath, at: Date.now(), reason: plan.reason
-        }
-      });
-    }
-
     // ===== 인증 상태 변경 =====
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
@@ -1436,104 +1541,83 @@
         loadBuffs();
         renderBuffStatus();
 
-        // ✅ 강제 마이그레이션 플로우 (이메일 전체 id 사용 + 전체 복사 + 원본 삭제)
-        const plan = await planMigrationForUser(user);
-
-        if (plan.need) {
-          const detail = `
-            <div>원본 위치: <code>${plan.srcBasePath}</code></div>
-            <div>대상 위치: <code>${plan.destBasePath}</code></div>
-            <div style="margin-top:6px;">사유: ${
-              plan.reason==='legacy-flat' ? '이전(옛) 저장 방식(UID 루트)에서 새 구조로 이전' :
-              plan.reason==='rename-to-email-id' ? '저장 id를 이메일 전체 기반으로 재배정' :
-              plan.reason
-            }</div>
-          `;
-          showMigrateOverlay(detail);
-
-          const startBtn = document.getElementById('migrate-start');
-          startBtn.onclick = async () => {
-            startBtn.disabled = true;
-            try {
-              await forceMigrateAllUnderUser(user, plan);
-              setMigrateStep('완료!');
-              setTimeout(()=>hideMigrateOverlay(), 500);
-            } catch (e) {
-              console.error(e);
-              setMigrateStep('오류 발생: ' + (e?.message || e));
-              startBtn.disabled = false; // 재시도 허용
-              return;
-            }
-
-            // 마이그레이션 후 경로 설정 및 데이터 바인딩
-            userServerKey = plan.server;
-            userIdKey     = makeIdKeyFromUser(user);
-            userBasePath  = `users/${userServerKey}/${userIdKey}`;
-            proceedWithDataBinding(); // 아래 정의
-          };
-
-          // 무조건 진행 요구 → 1초 뒤 자동 시작
-          setTimeout(()=> { try { startBtn.click(); } catch {} }, 1000);
-        } else {
-          // 마이그레이션 불필요 → 바로 진행
-          userServerKey = plan.server;
+        // 1) 마이그레이션 플랜 계산
+        let plan = null;
+        try {
+          plan = await planMigrationForUser(user);
+        } catch(e){
+          console.error('planMigration error', e);
+          // 플랜 계산 실패 시 최소한의 매핑/경로 설정
+          const fallbackServer = await allocateServerForUser();
+          userServerKey = fallbackServer;
           userIdKey     = makeIdKeyFromUser(user);
           userBasePath  = `users/${userServerKey}/${userIdKey}`;
-          proceedWithDataBinding();
+          // 매핑만 보장 후 진행
+          try {
+            await update(ref(db), {
+              [`userServerMap/${uid}`]: {
+                server: userServerKey,
+                id: userIdKey,
+                displayId: String(user?.email||'') || null,
+                assignedAt: Date.now(),
+                reason: 'plan-error-fallback'
+              }
+            });
+          } catch {}
+          await proceedWithDataBinding();
+          return;
         }
 
-        // 데이터 바인딩 로직을 함수로 분리
-        async function proceedWithDataBinding() {
-          dataRef = ref(db, `${userBasePath}/gameData`);
-          isInitialSync = true;
-          try {
-            const saved = localStorage.getItem(`lastWrite_${uid}`);
-            localLastWrite = saved ? parseInt(saved, 10) : 0;
-          } catch { localLastWrite = 0; }
+        // 2) 플랜 적용
+        userServerKey = plan.server;
+        userIdKey     = makeIdKeyFromUser(user);
+        userBasePath  = `users/${userServerKey}/${userIdKey}`;
 
-          await ensureInitialData(dataRef);
-
-          // 랭킹 잠금 상태 미리 로드
-          try {
-            const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
-            rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
-          } catch { rankingUnlocked = false; }
-
-          dataUnsubscribe = onValue(dataRef, async snap => {
-            const server = snap.exists() ? snap.val() : null;
-
-            if (isInitialSync) {
-              state = { ...defaultData, ...(server || {}) };
-
-              await fetchDaily(); // 부팅 시 tryUnlockDaily 오작동 방지
-              if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-              isInitialSync = false;
-
-              showGameUI();
-              window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
-
-              await checkDailyAndMaybeShow();
-              updateAttendanceLabels();
-
-              bootDone = true;
-              return;
-            }
-
-            // 일반 동기화
-            if (!server) {
-              state = { ...defaultData };
-            } else {
-              const serverLast = server._lastUpdated || 0;
-              if (serverLast >= (localLastWrite || 0)) {
-                state = { ...defaultData, ...server };
-              } else {
-                state = { ...defaultData, ...server, ...state };
-                try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
-                catch { save(); }
+        if (plan.need) {
+          // 🔒 반드시 마이그레이션 (게임 UI 잠금)
+          showMigrateOverlay(true, '대기 중…');
+          disableMigrateStart(false);
+          const startBtn = document.getElementById('migrate-start');
+          if (startBtn){
+            startBtn.onclick = async ()=>{
+              disableMigrateStart(true);
+              try{
+                await performMigration(plan.srcBasePath, plan.destBasePath, user);
+                // 성공 후 매핑 추가로 한번 더 보장
+                try {
+                  await update(ref(db), {
+                    [`userServerMap/${uid}`]: {
+                      server: userServerKey,
+                      id: userIdKey,
+                      displayId: String(user?.email||'') || null,
+                      migratedAt: Date.now(),
+                      reason: plan.reason
+                    }
+                  });
+                } catch {}
+                // 오버레이 닫고 진행
+                setTimeout(()=>{ showMigrateOverlay(false); proceedWithDataBinding(); }, 600);
+              }catch(e){
+                console.error('migration failed', e);
+                setMigrateProgress('❌ 마이그레이션 중 오류가 발생했습니다. 새로고침 후 다시 시도해주세요.');
+                disableMigrateStart(false);
               }
-            }
-            if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
-          });
+            };
+          }
+        } else {
+          // 🔕 오버레이 없이 조용히 매핑만 보장
+          try {
+            await update(ref(db), {
+              [`userServerMap/${uid}`]: {
+                server: userServerKey,
+                id: userIdKey,
+                displayId: String(user?.email||'') || null,
+                assignedAt: Date.now(),
+                reason: plan.reason || 'auto-assign'
+              }
+            });
+          } catch {}
+          await proceedWithDataBinding();
         }
 
       } else {
