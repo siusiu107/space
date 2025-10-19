@@ -12,34 +12,114 @@
 
   <style>
     :root{
-      --bg: rgba(0,0,0,.80);
+      --bg: rgba(6,10,20,.85);
       --glass: rgba(255,255,255,.06);
       --stroke: rgba(255,255,255,.14);
-      --muted: rgba(255,255,255,.65);
-      --accent: #00aaff;
-      --accent-2:#66d1ff;
+      --muted: rgba(219,236,255,.75);
+      --accent: #00b7ff;
+      --accent-2:#67d5ff;
       --ok:#20df9e;
       --warn:#ffd36e;
       --err:#ff7b7b;
+
+      --gold1:#FFD36E; --gold2:#FFB347; --gold3:#FFE29A;
+      --silver1:#E6E9F0; --silver2:#C9D6FF;
+      --bronze1:#D1913C; --bronze2:#FFD194;
+      --me:#73ffcf;
     }
     *{ box-sizing:border-box }
-    body { margin:0; padding:0; font-family:Arial,system-ui,-apple-system,'Apple SD Gothic Neo',Segoe UI,Roboto,'Noto Sans KR',sans-serif; background:url('images/space-bg.jpg') center/cover no-repeat fixed; color:#fff; }
-    #ranking-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--bg); padding:18px; border-radius:16px; width:94%; max-width:980px; text-align:center; display:none; box-shadow:0 18px 60px rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(6px); }
-    h1{ margin:0 0 8px; font-size:22px; letter-spacing:.2px }
-    .controls{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 10px; }
+    body {
+      margin:0; padding:0;
+      font-family: Inter, Arial, system-ui, -apple-system, 'Apple SD Gothic Neo', Segoe UI, Roboto, 'Noto Sans KR', sans-serif;
+      background:#0b1220 url('images/space-bg.jpg') center/cover no-repeat fixed; color:#fff;
+    }
+
+    /* ── 래퍼 ─────────────────────────────────────────────────────────── */
+    #ranking-container {
+      position:relative; margin:12vh auto 10vh; background:var(--bg);
+      padding:20px; border-radius:18px; width:min(1024px,94vw);
+      display:none; box-shadow:0 18px 60px rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.08); backdrop-filter: blur(10px);
+    }
+    h1{ margin:0 0 10px; font-size:24px; letter-spacing:.2px }
+
+    .controls{
+      display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 12px;
+    }
     .pill{ padding:6px 10px; border:1px solid rgba(255,255,255,0.18); border-radius:999px; background:rgba(255,255,255,0.08); font-size:12px; }
     .sel, .btn, .ipt { padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(0,0,0,.25); color:#fff; }
     .ipt{ width:100%; }
-    .btn { cursor:pointer; font-weight:800; transition: transform .04s ease }
+    .btn { cursor:pointer; font-weight:800; transition: transform .04s ease, box-shadow .2s ease }
     .btn:active{ transform: translateY(1px) }
-    .btn.primary{ background:var(--accent); color:#001018; border:none; }
+    .btn.primary{
+      background:linear-gradient(180deg,var(--accent),#0085ff); color:#001018; border:none;
+      box-shadow:0 6px 22px rgba(0,133,255,.35);
+    }
     .btn.gray{ background:#666; color:#fff; border:none; }
-    .btn[disabled]{ opacity:.5; cursor:not-allowed; filter:saturate(.6) }
-    table { width:100%; border-collapse:collapse; margin-top:6px; overflow:hidden; border-radius:10px }
-    th, td { padding:10px 8px; border-bottom:1px solid #3a3a3a; font-size:14px; }
-    th { background:rgba(30,30,30,0.9); position:sticky; top:0; z-index:1 }
-    td { background:rgba(20,20,20,0.7); }
-    tr:nth-child(even) td { background:rgba(20,20,20,0.55); }
+    .btn[disabled]{ opacity:.55; cursor:not-allowed; filter:saturate(.6) }
+
+    /* ── 테이블 ──────────────────────────────────────────────────────── */
+    .table-wrap{ position:relative; border-radius:12px; overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:11px 10px; border-bottom:1px solid #2e3544; font-size:14px; }
+    thead th {
+      background:linear-gradient(180deg, rgba(22,28,44,.95), rgba(18,22,35,.95));
+      position:sticky; top:0; z-index:1;
+    }
+    tbody td { background:rgba(14,18,30,.70); }
+    tbody tr:nth-child(even) td { background:rgba(16,20,34,.58); }
+
+    .rank-cell{
+      display:flex; align-items:center; justify-content:center; gap:8px; font-weight:900;
+    }
+    .medal{
+      width:26px; height:26px; border-radius:50%;
+      display:inline-flex; align-items:center; justify-content:center;
+      color:#0e1524; font-weight:900; font-size:12px;
+      border:1px solid rgba(255,255,255,.35);
+      box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.45);
+      transform: translateZ(0);
+    }
+    .m1{ background:conic-gradient(from 20deg, var(--gold3), var(--gold1), var(--gold2), var(--gold3)); }
+    .m2{ background:conic-gradient(from 20deg, var(--silver2), var(--silver1), #bfc9ff, var(--silver2)); }
+    .m3{ background:conic-gradient(from 20deg, var(--bronze2), var(--bronze1), #ffcc8a, var(--bronze2)); }
+    .top-row td{ font-weight:800; }
+    .top-1 td{ box-shadow:inset 0 0 0 1px rgba(255,211,110,.25); }
+    .top-2 td{ box-shadow:inset 0 0 0 1px rgba(230,233,240,.18); }
+    .top-3 td{ box-shadow:inset 0 0 0 1px rgba(255,209,148,.15); }
+
+    /* 내 순위 하이라이트 */
+    .me-row td{ background:rgba(17,190,140,.08) !important; }
+    .me-chip{
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(115,255,207,.55); background:rgba(115,255,207,.14); color:#dff;
+      font-size:12px; font-weight:800;
+    }
+
+    /* 아래 고정 내 순위 카드 */
+    #my-rank-card{
+      position:sticky; bottom:-1px; margin-top:12px; z-index:2;
+      background:linear-gradient(180deg, rgba(15,22,34,.0), rgba(15,22,34,.85) 20%, rgba(15,22,34,.95) 60%);
+      padding-top:16px;
+    }
+    #my-rank-inner{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      border:1px solid rgba(115,255,207,.35); background:rgba(7,20,18,.55);
+      padding:10px 12px; border-radius:12px;
+      box-shadow:0 12px 28px rgba(0,0,0,.35);
+    }
+    #my-rank-main{
+      display:flex; align-items:center; gap:12px; font-weight:900;
+    }
+    .my-rank-num{
+      min-width:42px; height:42px; border-radius:50%;
+      display:inline-flex; align-items:center; justify-content:center;
+      background:radial-gradient(60% 60% at 50% 40%, rgba(115,255,207,.85), rgba(0,210,167,.85));
+      color:#001b16; font-size:16px; border:1px solid rgba(115,255,207,.85);
+      box-shadow:0 8px 22px rgba(0,210,167,.42), inset 0 2px 0 rgba(255,255,255,.55);
+    }
+    .my-rank-meta{ font-size:12px; color:var(--muted); }
+
     .help{ font-size:12px; color:#cfe6ff; opacity:.9; }
 
     /* 최초 닉네임 생성 모달 */
@@ -68,9 +148,10 @@
     @keyframes fadeSlide{ from{ opacity:0; transform:translate(-50%,8px);} to{ opacity:1; transform:translate(-50%,0);} }
 
     @media (max-width:720px){
-      #ranking-container{ padding:14px; }
+      #ranking-container{ padding:16px; margin:10vh auto; }
       .row,.row-3{ grid-template-columns: 1fr; }
-      th:nth-child(4), td:nth-child(4){ display:none; } /* 좁은 화면에서 ID 칼럼 숨김 */
+      th:nth-child(4), td:nth-child(4){ display:none; } /* 좁은 화면: ID 칼럼 숨김 */
+      .my-rank-num{ min-width:36px; height:36px; font-size:14px; }
     }
   </style>
 </head>
@@ -176,24 +257,42 @@
       <button id="open-settings" class="btn">설정</button>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th style="width:64px">순위</th>
-          <th>닉네임</th>
-          <th style="width:120px">국적</th>
-          <th style="width:160px">ID</th>
-          <th id="col-label" style="width:160px">값</th>
-        </tr>
-      </thead>
-      <tbody id="ranking-body"></tbody>
-    </table>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:82px">순위</th>
+            <th>닉네임</th>
+            <th style="width:120px">국적</th>
+            <th style="width:160px">ID</th>
+            <th id="col-label" style="width:160px">값</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body"></tbody>
+      </table>
+    </div>
 
     <div class="help" id="unit-help" style="margin-top:6px;">※ 큰 숫자는 만/억/조/경/해/자/양/구/간/정/재/극/항하사/아승기/나유타/불가사의/무량대수 단위로 축약됩니다.</div>
 
     <div class="right" style="margin-top:10px;">
       <button id="logout-btn" class="btn gray">로그아웃</button>
       <a href="game.html" class="btn primary">게임으로</a>
+    </div>
+
+    <!-- 고정 내 순위 카드 -->
+    <div id="my-rank-card" aria-live="polite" style="display:none;">
+      <div id="my-rank-inner">
+        <div id="my-rank-main">
+          <div class="my-rank-num" id="my-rank-num">-</div>
+          <div>
+            <div><span class="me-chip">내 순위</span> <strong id="my-rank-nick">-</strong></div>
+            <div class="my-rank-meta" id="my-rank-detail">—</div>
+          </div>
+        </div>
+        <div class="right">
+          <button class="btn" id="scroll-to-me">내 위치 보기</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -224,13 +323,9 @@
       if (typeof x === 'number' && isFinite(x)) return Math.floor(x);
       let s = String(x ?? '').trim();
       if (!s) return 0;
-
-      // 꼬리표 제거 (EC/코인/coin)
       s = s.replace(/\s*(?:ec|이벤트코인|coin|coins|코인)\s*$/i, '');
-      // 쉼표/공백 제거
       s = s.replace(/,/g,'').replace(/\s+/g,'');
 
-      // 복합 단위 합산: 1억5000만, 2.5억3만 등
       const UNIT = {
         '무량대수':1e68,'불가사의':1e64,'나유타':1e60,'아승기':1e56,'항하사':1e52,
         '극':1e48,'재':1e44,'정':1e40,'간':1e36,'구':1e32,'양':1e28,'자':1e24,
@@ -246,10 +341,7 @@
       }
       if (matched) return Math.floor(total);
 
-      // 단위가 없으면 그냥 수치로
       if (/^-?\d+(\.\d+)?$/.test(s)) return Math.floor(parseFloat(s));
-
-      // 마지막 안전망
       const stripped = s.replace(/[^\d.\-]/g,'');
       if (/^-?\d+(\.\d+)?$/.test(stripped)) return Math.floor(parseFloat(stripped));
       return 0;
@@ -387,17 +479,14 @@
       requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>window.location.replace(url),1200)));
     }
 
-    /* ====== 닉네임 인덱스(전역 유니크) ======
-       meta/nicknameIndex/{lower} = { ownerPath: basePath, at }
-       └ 보안 규칙로 인해 쓰기 불가일 수 있어 fallback 포함
-    ======================================== */
+    /* ====== 닉네임 인덱스 ====== */
     async function reserveNickname(lower, ownerPath){
       try {
         const idxRef = ref(db, `meta/nicknameIndex/${lower}`);
         const res = await runTransaction(idxRef, cur => {
           if (!cur || !cur.ownerPath) return { ownerPath, at: Date.now() };
-          if (cur.ownerPath === ownerPath) return cur; // 내 소유면 통과
-          return cur; // 이미 점유 → 변경 없음(실패)
+          if (cur.ownerPath === ownerPath) return cur;
+          return cur;
         });
         const ok = !!res?.committed && res?.snapshot?.val()?.ownerPath === ownerPath;
         return { ok, mode:'index' };
@@ -432,16 +521,13 @@
         if (nick.length > 20){ err.textContent='닉네임은 최대 20자입니다.'; err.style.display='block'; return; }
         const lower = nickToLower(nick);
 
-        // 우선 인덱스 예약 시도
         const r = await reserveNickname(lower, basePathForMe);
         if (!r.ok){
-          // fallback: 현재 로드된 allUsers 중복 검사
           await loadAllUsers();
           if (allUsers.some(u => u.lowerNick === lower)){
             err.textContent='이미 사용 중인 닉네임입니다.'; err.style.display='block'; return;
           }
         }
-        // 저장
         try{
           await update(ref(db), {
             [`${basePathForMe}/profile/nickname`]: nick,
@@ -458,7 +544,7 @@
       };
       document.getElementById('skip-nickname').onclick = () => {
         wrap.style.display='none';
-        startRanking(); // 닉네임 없이도 보기
+        startRanking();
       };
     }
 
@@ -471,6 +557,11 @@
     const colLabelEl = document.getElementById('col-label');
     const unitHelp = document.getElementById('unit-help');
     const typeSelect = document.getElementById('ranking-type');
+
+    const myCard = document.getElementById('my-rank-card');
+    const myRankNumEl = document.getElementById('my-rank-num');
+    const myRankNickEl = document.getElementById('my-rank-nick');
+    const myRankDetailEl = document.getElementById('my-rank-detail');
 
     async function startRanking(){
       rankingContainer.style.display = 'block';
@@ -508,7 +599,7 @@
         coins: parseNumericLike(gd.coins),
         shipLevel: parseNumericLike(gd.shipLevel),
         eventCoins: parseNumericLike(gd.eventCoins),
-        planets: Array.isArray(gd.ownedPlanets) ? gd.ownedPlanets.length : 0,
+        planets: Array.isArray(gd.ownedPlanets) ? gd.ownedPlanets.length : (gd.ownedPlanets && typeof gd.ownedPlanets==='object' ? Object.keys(gd.ownedPlanets).length : 0),
         clickPower: parseNumericLike(gd.clickPower),
         workerCount: parseNumericLike(gd.workerCount),
         conversionCount: parseNumericLike(gd.conversionCount),
@@ -533,40 +624,108 @@
     }
     function showUnitHelp(t){ unitHelp.style.display = (t === 'coins' || t === 'eventCoins') ? 'block' : 'none'; }
 
-    function renderRanking(){
+    function computeListsForType(){
       const type = typeSelect.value;
+      const showNoNick = toggleNoNick.checked;
+
+      // 테이블용(숨김 제외), 내 계정은 숨김이어도 순위 계산에는 포함시키되 표에는 반영하지 않음
+      const tableList = allUsers
+        .filter(u => !u.hideRanking)
+        .filter(u => showNoNick ? true : !!u.nickname)
+        .sort((a,b) => (b[type]||0) - (a[type]||0));
+
+      // 내 순위 계산용(숨김이어도 나 자신은 포함)
+      const rankList = allUsers
+        .filter(u => (!u.hideRanking) || (u.idKeyShown === myIdKey))
+        .filter(u => showNoNick ? true : !!u.nickname)
+        .sort((a,b) => (b[type]||0) - (a[type]||0));
+
+      const meIndex = rankList.findIndex(u => u.idKeyShown === myIdKey);
+      return { type, tableList, rankList, meIndex };
+    }
+
+    function renderRanking(){
+      const { type, tableList, rankList, meIndex } = computeListsForType();
       titleEl.textContent = `🏆 Top 50 — ${getTypeLabel(type)}`;
       colLabelEl.textContent = getTypeLabel(type);
       showUnitHelp(type);
 
-      const showNoNick = toggleNoNick.checked;
-      const list = allUsers
-        .filter(u => !u.hideRanking)
-        .filter(u => showNoNick ? true : !!u.nickname)
-        .sort((a,b) => (b[type]||0) - (a[type]||0))
-        .slice(0, 50);
-
       rankingBody.innerHTML = '';
-      if (list.length === 0){
+      const showTop = tableList.slice(0, 50);
+
+      if (showTop.length === 0){
         const tr = document.createElement('tr');
         tr.innerHTML = `<td colspan="5" style="text-align:center; opacity:.8; padding:16px 8px">표시할 항목이 없어요</td>`;
         rankingBody.appendChild(tr);
-        return;
+      } else {
+        showTop.forEach((u, i) => {
+          const raw = u[type] || 0;
+          const cn = (u.showCountry && u.country) ? escapeHtml(u.country) : (u.country ? '<span style="opacity:.6">비공개</span>' : '—');
+          const idtxt = u.showId ? escapeHtml(u.idKeyShown||'') : '<span style="opacity:.6">비공개</span>';
+          const tr = document.createElement('tr');
+
+          // 메달 표기 / 상위 강조
+          let rankCell = `${i+1}`;
+          let rowClass = '';
+          if (i === 0){ rankCell = `<span class="medal m1">1</span>`; rowClass = 'top-row top-1'; }
+          else if (i === 1){ rankCell = `<span class="medal m2">2</span>`; rowClass = 'top-row top-2'; }
+          else if (i === 2){ rankCell = `<span class="medal m3">3</span>`; rowClass = 'top-row top-3'; }
+
+          // 내 계정이 Top 50에 들어와 있으면 행 하이라이트
+          if (u.idKeyShown === myIdKey) rowClass += (rowClass ? ' ' : '') + 'me-row';
+
+          tr.className = rowClass.trim();
+          tr.innerHTML = `
+            <td style="text-align:center"><div class="rank-cell">${rankCell}</div></td>
+            <td>${u.nickname ? escapeHtml(u.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
+            <td style="text-align:center">${cn}</td>
+            <td style="text-align:center">${idtxt}</td>
+            <td style="text-align:right" title="${raw.toLocaleString()}">${formatByType(type, raw)}</td>
+          `;
+          tr.dataset.idkey = u.idKeyShown || '';
+          rankingBody.appendChild(tr);
+        });
+
+        // 내가 50등 밖이면 내 순위를 추가로 보여주기 위한 구분선 + 내 행
+        if (meIndex >= 0) {
+          const meRank = meIndex + 1;
+          const me = rankList[meIndex];
+
+          // 고정 카드 업데이트
+          myCard.style.display = 'block';
+          myRankNumEl.textContent = meRank.toLocaleString();
+          myRankNickEl.textContent = me.nickname || '(닉네임 없음)';
+          myRankDetailEl.textContent = `${getTypeLabel(type)}: ${formatByType(type, me[type]||0)}  ·  ${me.country ? (me.showCountry ? me.country : '국적 비공개') : '국적 없음'}`;
+
+          // 테이블에 이미 포함되지 않았으면 아래에 "..." 구분 후 내 행 추가
+          const included = showTop.some(u => u.idKeyShown === myIdKey);
+          if (!included){
+            const sep = document.createElement('tr');
+            sep.innerHTML = `<td colspan="5" style="text-align:center; padding:8px; opacity:.65;">⋯</td>`;
+            rankingBody.appendChild(sep);
+
+            const tr = document.createElement('tr');
+            tr.className = 'me-row';
+            const raw = me[type] || 0;
+            const cn = (me.showCountry && me.country) ? escapeHtml(me.country) : (me.country ? '<span style="opacity:.6">비공개</span>' : '—');
+            const idtxt = me.showId ? escapeHtml(me.idKeyShown||'') : '<span style="opacity:.6">비공개</span>';
+            tr.innerHTML = `
+              <td style="text-align:center"><div class="rank-cell"><span class="me-chip">내 순위</span>${meRank.toLocaleString()}</div></td>
+              <td>${me.nickname ? escapeHtml(me.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
+              <td style="text-align:center">${cn}</td>
+              <td style="text-align:center">${idtxt}</td>
+              <td style="text-align:right" title="${raw.toLocaleString()}">${formatByType(type, raw)}</td>
+            `;
+            tr.dataset.idkey = me.idKeyShown || '';
+            rankingBody.appendChild(tr);
+          } else {
+            // 포함되어 있으면 고정 카드만 갱신
+            // nothing extra
+          }
+        } else {
+          myCard.style.display = 'none';
+        }
       }
-      list.forEach((u, i) => {
-        const raw = u[type] || 0;
-        const cn = (u.showCountry && u.country) ? escapeHtml(u.country) : (u.country ? '<span style="opacity:.6">비공개</span>' : '—');
-        const idtxt = u.showId ? escapeHtml(u.idKeyShown||'') : '<span style="opacity:.6">비공개</span>';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="text-align:center">${i+1}</td>
-          <td>${u.nickname ? escapeHtml(u.nickname) : '<span style="opacity:.7">닉네임 없음</span>'}</td>
-          <td style="text-align:center">${cn}</td>
-          <td style="text-align:center">${idtxt}</td>
-          <td style="text-align:right" title="${raw.toLocaleString()}">${formatByType(type, raw)}</td>
-        `;
-        rankingBody.appendChild(tr);
-      });
     }
 
     function wireUI(){
@@ -590,6 +749,12 @@
       document.getElementById('save-privacy').addEventListener('click', savePrivacy);
       document.getElementById('change-nick').addEventListener('click', changeNicknameFlow);
 
+      // 내 위치로 스크롤
+      document.getElementById('scroll-to-me').addEventListener('click', () => {
+        const meRow = [...document.querySelectorAll('#ranking-body tr')].find(tr => tr.dataset.idkey === (myIdKey||''));
+        if (meRow) meRow.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+
       // 새 닉네임 실시간 가용성 체크
       let nickChkTimer = null;
       newNickIpt.addEventListener('input', () => {
@@ -606,13 +771,11 @@
             badge.className='badge warn'; badge.textContent='현재와 동일';
             changeBtn.disabled = true; return;
           }
-          // 1) 전역 인덱스 조회
           let duplicated = false;
           try{
             const idx = await get(ref(db, `meta/nicknameIndex/${lower}`));
             duplicated = idx.exists() && idx.val()?.ownerPath !== basePathForMe;
           }catch(e){
-            // 2) fallback: 이미 로드된 allUsers 검색
             if (!allUsers.length) await loadAllUsers();
             duplicated = allUsers.some(u => u.lowerNick === lower);
           }
@@ -653,7 +816,6 @@
       const cnt = Number(prof.nickChangeCount||0);
       document.getElementById('nick-cost').firstElementChild.textContent = calcNickCost(cnt) + ' EC';
 
-      // 입력 배지 초기화
       document.getElementById('nick-check-badge').className='badge warn';
       document.getElementById('nick-check-badge').textContent='입력 대기';
       document.getElementById('change-nick').disabled = true;
@@ -684,72 +846,68 @@
       okEl.textContent = '저장되었습니다.';
       okEl.style.display = 'block';
       setTimeout(()=> okEl.style.display='none', 1400);
-      // 리스트 반영
+
       await loadAllUsers(); renderRanking();
     }
 
-    /* ====== 닉네임 변경 (EC 차감 + 유니크 예약 + 롤백 보장) ====== */
+    /* ====== 닉네임 변경 (EC 차감 버그 픽스 버전) ====== */
     async function changeNicknameFlow(){
       const errEl = document.getElementById('settings-error');
       const okEl  = document.getElementById('settings-ok');
       const btn   = document.getElementById('change-nick');
       errEl.style.display='none'; okEl.style.display='none';
-
-      const newNick = (document.getElementById('new-nick-input').value||'').trim();
-      if (!newNick){ errEl.textContent='새 닉네임을 입력해주세요.'; errEl.style.display='block'; return; }
-      if (newNick.length > 20){ errEl.textContent='닉네임은 최대 20자입니다.'; errEl.style.display='block'; return; }
-
       btn.disabled = true;
 
+      const newNick = (document.getElementById('new-nick-input').value||'').trim();
+      if (!newNick){ errEl.textContent='새 닉네임을 입력해주세요.'; errEl.style.display='block'; btn.disabled=false; return; }
+      if (newNick.length > 20){ errEl.textContent='닉네임은 최대 20자입니다.'; errEl.style.display='block'; btn.disabled=false; return; }
+
+      let reservedNew = null;
       try{
-        // 프로필, EC 동기 로드
-        const [profSnap, ecSnap] = await Promise.all([
+        const [profSnap, beforeSnap] = await Promise.all([
           get(ref(db, `${basePathForMe}/profile`)),
           get(ref(db, `${basePathForMe}/gameData/eventCoins`))
         ]);
         const prof = profSnap.exists() ? profSnap.val() : {};
         const currentNick = (prof.nickname||'').toString();
+
         const lowerNew = nickToLower(newNick);
         const lowerCur = nickToLower(currentNick);
-        if (lowerNew === lowerCur){ throw new Error('현재 닉네임과 동일합니다.'); }
+        if (lowerNew === lowerCur) throw new Error('현재 닉네임과 동일합니다.');
 
         const changeCount = Number(prof.nickChangeCount||0);
         const cost = calcNickCost(changeCount);
-        const curEC = parseNumericLike(ecSnap.exists() ? ecSnap.val() : 0);
-        if (curEC < cost){ throw new Error(`이벤트코인이 부족합니다. (보유: ${curEC.toLocaleString()} EC / 필요: ${cost} EC)`); }
 
-        // 1) 새 닉네임 예약 시도 (권한 문제 시 Fallback)
+        // 새 닉네임 전역 예약
         const r = await reserveNickname(lowerNew, basePathForMe);
         if (!r.ok){
           if (!allUsers.length) await loadAllUsers();
           if (allUsers.some(u => u.lowerNick === lowerNew)){
             throw new Error('이미 사용 중인 닉네임입니다.');
           }
+        } else {
+          reservedNew = lowerNew;
         }
 
-        // 2) EC 차감 트랜잭션 (문자열/단위 저장도 안전 처리 + 권한 오류 구분)
+        const before = parseNumericLike(beforeSnap.exists() ? beforeSnap.val() : 0);
+
+        // undefined를 반환하지 않는 안전 트랜잭션
         const ecRef = ref(db, `${basePathForMe}/gameData/eventCoins`);
-        let deduct;
-        try{
-          deduct = await runTransaction(ecRef, cur => {
-            const have = parseNumericLike(cur);
-            if (have < cost) return;            // abort → committed=false
-            return have - cost;
-          });
-        }catch(trxErr){
-          const code = (trxErr && trxErr.code) ? String(trxErr.code) : '';
-          if (code.includes('permission') || code.includes('denied')){
-            throw new Error('권한 문제로 EC 차감에 실패했습니다. (RTDB 보안 규칙 확인 필요)');
-          }
-          throw new Error('네트워크/트랜잭션 오류로 EC 차감에 실패했습니다.');
-        }
-        if (!deduct.committed){
-          const haveNowSnap = await get(ecRef);
-          const haveNow = parseNumericLike(haveNowSnap.exists() ? haveNowSnap.val() : 0);
-          throw new Error(`이벤트코인이 부족합니다. (보유: ${haveNow.toLocaleString()} EC / 필요: ${cost} EC)`);
+        const trx = await runTransaction(ecRef, cur => {
+          const have = parseNumericLike(cur);
+          if (!isFinite(have)) return cur;
+          if (have >= cost) return Math.floor(have - cost);
+          return have; // 부족: 원래 값 유지(커밋은 가능)
+        });
+
+        const after = parseNumericLike(trx?.snapshot?.val() ?? 0);
+        const deducted = (before - after) >= cost;
+        if (!deducted){
+          if (reservedNew) await releaseNickname(reservedNew, basePathForMe);
+          throw new Error(`이벤트코인이 부족합니다. (보유: ${after.toLocaleString()} EC / 필요: ${cost} EC)`);
         }
 
-        // 3) 프로필 업데이트 + 기존 닉네임 인덱스 해제
+        // 프로필 업데이트 + 기존 닉네임 인덱스 해제
         const updates = {};
         updates[`${basePathForMe}/profile/nickname`] = newNick;
         updates[`${basePathForMe}/profile/nickChangeCount`] = changeCount + 1;
@@ -759,8 +917,7 @@
         // UI 반영
         document.getElementById('current-nick').firstElementChild.textContent = newNick;
         document.getElementById('new-nick-input').value = '';
-        const remainEC = parseNumericLike(deduct.snapshot.val()||0);
-        document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge(remainEC)} EC`;
+        document.getElementById('my-ec').firstElementChild.textContent = `${formatLarge(after)} EC`;
         document.getElementById('nick-cost').firstElementChild.textContent = calcNickCost(changeCount+1) + ' EC';
         const badge = document.getElementById('nick-check-badge');
         badge.className='badge warn'; badge.textContent='입력 대기';
@@ -770,11 +927,10 @@
         okEl.style.display='block';
         setTimeout(()=> okEl.style.display='none', 1600);
 
-        // 리스트 재로드
         await loadAllUsers(); renderRanking();
       }catch(e){
-        document.getElementById('settings-error').textContent = (e && e.message) ? e.message : '닉네임 변경에 실패했어요.';
-        document.getElementById('settings-error').style.display='block';
+        errEl.textContent = (e && e.message) ? e.message : '닉네임 변경에 실패했어요.';
+        errEl.style.display='block';
       }finally{
         btn.disabled = false;
       }
