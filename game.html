@@ -117,7 +117,7 @@
       transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
       display:none;
     }
-    #auth-container.hidden { opacity:0; transform: translate(-50%, -46%) scale(.98); pointer-events:none; visibility:hidden; }
+    #auth-container.hidden { opacity:0; transform: translate(-50%,-46%) scale(.98); pointer-events:none; visibility:hidden; }
     #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
     #auth-container input { width:100%; padding:12px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.20); color:#fff; outline:none; font-size:14px; }
     #auth-container input:focus { box-shadow:0 8px 20px rgba(0,160,255,0.08); border-color:rgba(0,160,255,0.22); }
@@ -317,6 +317,27 @@
       from { opacity:0; transform: translateX(-50%) translateY(20px); }
       to   { opacity:1; transform: translateX(-50%) translateY(0); }
     }
+
+    /* ===== 마이그레이션 오버레이 ===== */
+    #migrate-overlay{
+      position:fixed; inset:0; z-index:3600; display:none; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,.50), rgba(2,6,12,.80)); backdrop-filter: blur(4px);
+    }
+    #migrate-overlay.show{ display:flex; }
+    #migrate-card{
+      width:min(520px, 94vw); border-radius:14px; border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.60));
+      padding:14px; box-shadow: 0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      color:#eaf6ff;
+    }
+    #migrate-title{ margin:0 0 8px; font-size:18px; display:flex; align-items:center; gap:8px; font-weight:900; }
+    #migrate-body{ font-size:13px; color:#cfe6ff; line-height:1.6; }
+    #migrate-warn{ margin-top:8px; padding:8px; border-radius:10px; border:1px solid rgba(255,205,120,.45); background:rgba(255,205,120,.12); color:#ffe9b0; font-weight:800; }
+    #migrate-actions{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
+    .mbtn{ padding:10px 14px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,.14); font-weight:900; }
+    .mbtn.primary{ background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; }
+    .mbtn.gray{ background:rgba(255,255,255,.06); color:#eaf6ff; }
+    #migrate-progress{ display:none; margin-top:10px; text-align:center; }
   </style>
 </head>
 <body>
@@ -500,6 +521,26 @@
 
       <div id="daily-actions">
         <button id="daily-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 마이그레이션 오버레이 -->
+  <div id="migrate-overlay" aria-hidden="true">
+    <div id="migrate-card" role="dialog" aria-modal="true" aria-labelledby="migrate-title">
+      <div id="migrate-title">⚙️ 데이터 저장 방식 변경 안내</div>
+      <div id="migrate-body">
+        게임 내 데이터 저장 방식이 <b>이메일 전체(@example.com 포함)</b> 기반으로 변경되었습니다.<br/>
+        현재 계정의 데이터를 새 방식으로 <b>이전(마이그레이션)</b>합니다.
+        <div id="migrate-warn">주의: 마이그레이션 진행 중 창을 닫으면 데이터 이전 중 문제가 발생할 수 있습니다.</div>
+      </div>
+      <div id="migrate-actions">
+        <button id="migrate-later" class="mbtn gray">나중에</button>
+        <button id="migrate-start" class="mbtn primary">지금 시작</button>
+      </div>
+      <div id="migrate-progress">
+        <div class="spinner" aria-hidden="true" style="margin:10px auto;"></div>
+        <div id="migrate-progress-text" style="font-size:13px;color:#cfe6ff;">데이터 이전 중… 창을 닫지 마세요.</div>
       </div>
     </div>
   </div>
@@ -714,21 +755,39 @@
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
     }
 
-    // ===== 새 구조: idKey & server 배정 =====
+    // ===== 새/구 키 생성 규칙 =====
+    // (Realtime Database 키 금지문자: . # $ / [ ])
+    function emailToKey(email){
+      const s = (email||'').toString().trim().toLowerCase();
+      if (!s) return 'user';
+      return s.replace(/[.#$/\[\]\/]/g, '_'); // @는 유지, . 등 금지문자 -> _
+    }
+    // 구방식: 로컬파트만
+    function legacyLocalToKey(local){
+      const s = (local||'').toString().trim().toLowerCase();
+      return (s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '')) || 'user';
+    }
+
+    // (유지) 과거 호환용
     function sanitizeIdKey(raw) {
       const s = (raw || '').toString().trim().toLowerCase();
-      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
-      return base || 'user';
+      return s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'user';
     }
+    // 새 규칙: 이메일 전체
     function makeIdKeyFromUser(user) {
-      const email = (user.email || '').toString();
-      if (email.includes('@')) {
-        const local = email.split('@')[0];
-        return sanitizeIdKey(local);
-      }
-      const name = sanitizeIdKey(user.displayName || '');
+      const email = (user?.email || '').toString();
+      if (email.includes('@')) return emailToKey(email);
+      const name = sanitizeIdKey(user?.displayName || '');
       if (name && name !== 'user') return name;
-      return `user_${(user.uid || '').slice(0,6) || '000000'}`;
+      return `user_${(user?.uid || '').slice(0,6) || '000000'}`;
+    }
+    // 구 규칙 키(감지용)
+    function legacyIdKeyFromUser(user){
+      const email = (user?.email || '').toString();
+      if (email.includes('@')) return legacyLocalToKey(email.split('@')[0]);
+      const name = sanitizeIdKey(user?.displayName || '');
+      if (name && name !== 'user') return name;
+      return `user_${(user?.uid || '').slice(0,6) || '000000'}`;
     }
 
     async function ensureServerMapping(user) {
@@ -741,6 +800,7 @@
         }
       } catch {}
 
+      // 신규: 이메일 전체 키로 생성
       let nextIndex = 0;
       try {
         const tRef = ref(db, 'meta/nextIndex');
@@ -750,7 +810,7 @@
 
       const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
       let server = `server${serverNum}`;
-      let idKey  = makeIdKeyFromUser(user);
+      let idKey  = makeIdKeyFromUser(user); // 이메일 전체 기반
 
       try {
         const existsSnap = await get(ref(db, `users/${server}/${idKey}`));
@@ -784,7 +844,7 @@
       }
     }
 
-    // ======= 우주선 이미지 폴백 =======
+    // ======= 우주선 이미지 폴백 ======= (생략 없이 유지)
     function setShipImage(level) {
       const img = document.getElementById('ship-img');
       if (!img) return;
@@ -868,7 +928,7 @@
       return Math.min(Math.max(base, 30), 30000);
     }
 
-    // ==== 슬롯 템플릿 ====
+    // ==== 슬롯 템플릿 ==== (유지)
     const TPL_DAILY = [
       { key:'coin_x1_4', type:'coin', coinMul:1.4, icon:'💰', color:'#00E5FF', w:0.32 },
       { key:'coin_x1_8', type:'coin', coinMul:1.8, icon:'💰', color:'#4DFFB5', w:0.18 },
@@ -972,7 +1032,7 @@
       });
     }
 
-    // ===== 출석/확률/버튼 =====
+    // ===== 출석/확률/버튼 ===== (유지)
     const dailyOverlay = document.getElementById('daily-overlay');
     const dailyInfo    = document.getElementById('daily-info');
     const dailyCloseBtn= document.getElementById('daily-close');
@@ -1201,7 +1261,7 @@
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
-      tryUnlockDaily(); // 부팅 중엔 토스트 안 뜸 + 이미 언락이면 조용히 return
+      tryUnlockDaily();
       renderBuffStatus();
     }
 
@@ -1303,6 +1363,76 @@
       }, 1000);
     }
 
+    /* ========= 마이그레이션: 구(id=로컬파트) → 신(id=이메일전체) ========= */
+    function isLegacyMappingId(currentId, user){
+      if (!user?.email) return false;
+      const legacy = legacyIdKeyFromUser(user);
+      // 구키 또는 구키-접미 형태로 저장된 경우
+      return (currentId === legacy) || (currentId?.startsWith(legacy + '-'));
+    }
+
+    function showMigrateOverlay(){
+      const ov = document.getElementById('migrate-overlay');
+      ov.classList.add('show');
+      ov.setAttribute('aria-hidden','false');
+      // 버튼 핸들러
+      const later = document.getElementById('migrate-later');
+      const start = document.getElementById('migrate-start');
+      const progress = document.getElementById('migrate-progress');
+      const actions  = document.getElementById('migrate-actions');
+      later.onclick = () => { ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); };
+      start.onclick = async () => {
+        // 진행 시작
+        actions.style.display='none';
+        progress.style.display='block';
+        await doMigrationFlow().catch(err=>{
+          document.getElementById('migrate-progress-text').textContent = '오류가 발생했습니다: ' + (err?.message || err);
+          console.error(err);
+        });
+      };
+    }
+
+    async function doMigrationFlow(){
+      // 전제: userServerMap는 구키를 가리키고 있음
+      const user = auth.currentUser;
+      if (!user || !user.email) throw new Error('사용자 이메일을 확인할 수 없습니다.');
+      const newIdKeyCandidate = emailToKey(user.email);
+      let targetIdKey = newIdKeyCandidate;
+
+      // 충돌 시 접미사 부여
+      const existsSnap = await get(ref(db, `users/${userServerKey}/${targetIdKey}`));
+      if (existsSnap.exists()) targetIdKey = `${newIdKeyCandidate}-${(uid||'').slice(0,4)}`;
+
+      const oldBase = `users/${userServerKey}/${userIdKey}`;
+      const newBase = `users/${userServerKey}/${targetIdKey}`;
+
+      // 읽기
+      const [gdSnap, dailySnap, metaSnap, profSnap] = await Promise.all([
+        get(ref(db, `${oldBase}/gameData`)),
+        get(ref(db, `${oldBase}/daily`)),
+        get(ref(db, `${oldBase}/meta`)),
+        get(ref(db, `${oldBase}/profile`)),
+      ]);
+
+      const updates = {};
+      if (gdSnap.exists())    updates[`${newBase}/gameData`] = gdSnap.val();
+      if (dailySnap.exists()) updates[`${newBase}/daily`]    = dailySnap.val();
+      if (metaSnap.exists())  updates[`${newBase}/meta`]     = metaSnap.val();
+      if (profSnap.exists())  updates[`${newBase}/profile`]  = { ...profSnap.val(), loginEmail: user.email };
+
+      // 마이그레이션 메타 + 맵 변경 + 구경로 표식
+      updates[`migrations/emailId/${uid}`] = { from: oldBase, to: newBase, at: Date.now() };
+      updates[`userServerMap/${uid}/id`] = targetIdKey;
+      updates[`${oldBase}/meta/migratedTo`] = { path: newBase, at: Date.now(), reason:'email-id' };
+
+      await update(ref(db), updates);
+
+      // 로컬 상태 전환 후 새로고침(가장 안전)
+      try { localStorage.setItem('migrated_to', newBase); } catch {}
+      setTimeout(()=>{ location.reload(); }, 500);
+    }
+    /* ======================================================= */
+
     // ===== 인증 상태 변경 =====
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
@@ -1327,7 +1457,13 @@
         userIdKey     = mapping.id;
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
 
+        // 구(UID 루트) → 현 구조 마이그레이션(기존 로직 유지)
         await migrateLegacyIfExists(uid, userBasePath);
+
+        // ★ 이메일 전체 키로의 추가 마이그레이션 안내
+        const expectedEmailKey = user.email ? emailToKey(user.email) : null;
+        const needEmailKeyMigration =
+          (user.email && isLegacyMappingId(userIdKey, user) && userIdKey !== expectedEmailKey);
 
         dataRef = ref(db, `${userBasePath}/gameData`);
         isInitialSync = true;
@@ -1350,8 +1486,7 @@
           if (isInitialSync) {
             state = { ...defaultData, ...(server || {}) };
 
-            // 🔹 최초 UI 갱신 전에 daily 상태를 먼저 로드해서
-            //    tryUnlockDaily가 부팅 시 오작동하지 않도록 함
+            // 초기: 출석 캐시 선로딩
             await fetchDaily();
 
             if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
@@ -1364,7 +1499,9 @@
             await checkDailyAndMaybeShow();
             updateAttendanceLabels();
 
-            // 🔹 모든 초기 처리 끝난 뒤 부팅 플래그 ON (이후 토스트 허용)
+            // 이메일 전체 키 마이그레이션 안내 표시 (필요 시)
+            if (needEmailKeyMigration) showMigrateOverlay();
+
             bootDone = true;
             return;
           }
