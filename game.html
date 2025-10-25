@@ -1445,6 +1445,20 @@
       } catch { return null; }
     }
 
+    /* ✅ 추가: 밴 래치/오버레이 일괄 해제 유틸 */
+    function clearSupportCtx(){
+      try { localStorage.removeItem(SUPPORT_CTX_KEY); } catch {}
+    }
+    function hideAllOverlays(){
+      try{ showBanOverlay(false); }catch{}
+      try{ showTosOverlay(false); }catch{}
+      try{ showMigrateOverlay(false); }catch{}
+      try{
+        const ov = document.getElementById('daily-overlay');
+        if (ov){ ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); }
+      }catch{}
+    }
+
     // === 합법 증감 장부(증가·지출·규모 반영) ===
     let audit = {
       last: null,
@@ -1590,8 +1604,8 @@
       // 규모 로그 가중(증가량이 클수록 급격히 가중)
       const mag = Math.log10(1
         + unknownRes
-        + (unknownCoin * 10)     // 코인은 가치가 크니 가중
-        + (unknownEco  * 20)     // EC는 희소하니 더 가중
+        + (unknownCoin * 10)
+        + (unknownEco  * 20)
         + spikeRes
         + (spikeCoin * 10)
       );
@@ -1615,14 +1629,12 @@
       let score = (baseUnknown + baseSpike) * (1 + 0.6*mag + 0.8*ratioBoost);
 
       if (score > UNKNOWN_THRESH){
-        // 점수→의심도 증가치(상·하한 클램프)
         const add = Math.min(24, Math.max(2, Math.ceil(score)));
         adjustSuspicion(add);
         security.fairSeconds = 0;
         securityDirty = true;
       } else {
         security.fairSeconds = (security.fairSeconds||0) + dtSec;
-        // 매우 느린 복구
         if (security.fairSeconds >= 90 && security.suspicion > 0){
           adjustSuspicion(-1);
           security.fairSeconds = 0;
@@ -1910,8 +1922,10 @@
       showAuthStatus(''); document.getElementById('verify-info').textContent = '';
       try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
     }
-    tabLogin.addEventListener('click',  () => setAuthMode('login'));
-    tabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+    /* ✅ 탭 전환 시 모든 오버레이 닫기 */
+    tabLogin.addEventListener('click',  () => { hideAllOverlays(); setAuthMode('login');  showAuthStatus(''); });
+    tabSignup.addEventListener('click', () => { hideAllOverlays(); setAuthMode('signup'); showAuthStatus(''); });
 
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
@@ -2096,13 +2110,19 @@
       });
     }
 
-    // 인증 상태 변경
+    // ✅ onAuthStateChanged 시작 시 모든 오버레이 닫기
     onAuthStateChanged(auth, async user => {
+      hideAllOverlays();
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
+        /* ✅ 새 세션은 클린 상태로 */
+        clearSupportCtx();
+        hideAllOverlays();
+        security.banned = false; // 서버 로딩 전 UI 오탐 방지
+
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
         // 🔒 이메일 미인증이면 즉시 로그아웃 + 안내
         if (isEmailPassword && !user.emailVerified) {
@@ -2209,26 +2229,27 @@
         userServerKey = null; userIdKey = null; userBasePath = null;
         dailyUnlocked = false; rankingUnlocked = false;
         bootDone = false;
+
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
+
+        /* ✅ 로그아웃 시 보안 상태 완전 리셋 & 밴 래치 제거 */
+        security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
+        securityDirty = false;
+        renderSecurityBadge();
+
+        clearSupportCtx();
+        hideAllOverlays();
+
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
-
-        // 보안 초기화
-        security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
-        renderSecurityBadge();
 
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
         setAuthMode(currentAuthMode);
 
-        const persisted = readSupportCtx();
-        if (persisted?.banned) {
-          security.banned = true;
-          security.suspicion = (typeof persisted.suspicion === 'number') ? persisted.suspicion : security.suspicion;
-          showBanOverlay(true);
-        }
+        /* ❌ (삭제됨) persisted 밴 상태 복원 로직 */
       }
     });
 
@@ -2369,7 +2390,7 @@
             e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
             s.onload=function(){ r(w[c]); };
           } return p;
-        }};
+        }}; 
       });
     })(window,'script','CobrowseIO');
     window.CobrowseIO = window.CobrowseIO || {};
