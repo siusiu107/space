@@ -5,11 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 최초 접속 시 /login으로 한번만 라우팅 -->
+  <!-- ★ UPDATED: 최초 접속 시 /login으로 1회만 라우팅 (이미 /login 또는 /signup이면 유지) -->
   <script>
     try {
       if (!sessionStorage.getItem('pmode_init')) {
-        history.replaceState(null, '', '/login' + (location.hash || ''));
+        const p = location.pathname || '';
+        const isAuthPath = /\/(login|signup)(\/)?$/.test(p);
+        if (!isAuthPath) {
+          history.replaceState(null, '', '/login' + (location.hash || ''));
+        }
         sessionStorage.setItem('pmode_init', '1');
       }
     } catch (e) {}
@@ -354,7 +358,7 @@
     .overlay-card h3{ margin:0 0 8px; font-size:18px; }
     .overlay-actions{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
     #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,.10);
-      border-radius:10px; background: rgba(0,0,0,.2); font-size:13px; color:#cfe6ff; }
+      border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
   </style>
 </head>
@@ -1094,7 +1098,7 @@
 
     let dailyCache = null;
     let currentMode = 'daily';
-    let activeItems = []
+    let activeItems = [];
 
     function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
     function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
@@ -1340,7 +1344,7 @@
     const SEC_WARN_LEVEL = 20;  // 경고
     const SEC_BAN_LEVEL  = 30;  // 정지
 
-    // 감지 파라미터
+    // 감지 파라미터(더 깐깐하게)
     const EPS               = 1e-6;
     const UNKNOWN_THRESH    = 0.05;
     const HUMAN_MAX_CPS     = 12;
@@ -1348,14 +1352,6 @@
     const RES_WEIGHT        = 0.8;
     const COIN_WEIGHT       = 1.0;
     const ECO_WEIGHT        = 1.2;
-
-    /* === ⬇️ 추가: 강화 임계값 & 감쇠 설정 === */
-    const ABS_COIN_BAN_JUMP = 1_000_000_000;  // 코인 10억 점프 → 즉시 BAN
-    const ABS_RES_BAN_JUMP  = 1_000_000_000;  // 자원 10억 점프 → 즉시 BAN
-    const ABS_ECO_BAN_JUMP  = 10_000;         // 이벤트코인 1만 점프 → 즉시 BAN
-    const REL_BAN_FACTOR    = 500;            // 기대치의 500배 스파이크 → 즉시 BAN
-    const SUSP_DECAY_INTERVAL_SEC = 600;      // 의심도 감소 간격(초) 10분
-    const SUSP_DECAY_STEP         = 1;        // 감소량(거의 안 내려감)
 
     // 의심도 배지 렌더(화면에선 숨김 상태)
     function renderSecurityBadge(){
@@ -1456,7 +1452,7 @@
       } catch (e) { console.warn('ban endpoint failed', e); }
     }
 
-    // 기대치(보수적)
+    // 허용 한계(보수적)
     function expectedResGain(dtSec){
       const resBuff = activeBuffFactor('res');
       const workerGain = (state.workerCount * getWorkerPower()) * resBuff * dtSec;
@@ -1469,21 +1465,6 @@
       return convGain + 2;
     }
 
-    // 즉시 BAN 트리거
-    function triggerImmediateBan(reason){
-      if (security.banned) return;
-      security.suspicion = Math.max(security.suspicion, SEC_BAN_LEVEL);
-      security.banned = true;
-      securityDirty = true;
-
-      requestAccountDisable(`auto-ban:${reason}`).finally(async ()=>{
-        showBanOverlay(true);
-        showToast('⛔ 비정상 증가가 감지되어 계정이 정지되었습니다.');
-        try { await saveSecurity(); } catch {}
-        try { await auth.signOut(); } catch {}
-      });
-    }
-
     // 의심도 조정 + 경고/정지 트리거
     function adjustSuspicion(delta){
       const prev = security.suspicion;
@@ -1491,10 +1472,9 @@
 
       if (!security.banned && security.suspicion > SEC_WARN_LEVEL){
         const now = Date.now();
-        // 경고는 5분에 한 번만
-        if (!security.lastWarnAt || now - security.lastWarnAt > 5*60*1000){
+        if (!security.lastWarnAt || now - security.lastWarnAt > 60000){
           security.lastWarnAt = now;
-          showToast('⚠️ 비정상 증가 탐지됨. 계속되면 계정이 정지됩니다.');
+          showToast('⚠️ 의심도가 20을 초과했습니다. 비정상 증가가 탐지되면 정지될 수 있어요.');
           securityDirty = true;
         }
       }
@@ -1515,76 +1495,55 @@
       renderSecurityBadge();
     }
 
-    /* === ⬇️ 교체: 가중 의심도 & 느린 감쇠 & 즉시 BAN === */
+    // 더 깐깐한 감지
     function auditCheck(){
       if (!audit.last){ auditInit(); return; }
-
       const now = Date.now();
       let dtMs = now - (audit.lastAt || now);
       if (dtMs < 0) dtMs = 0;
       if (dtMs > MAX_TICK_GAP_MS) dtMs = MAX_TICK_GAP_MS;
       const dtSec = dtMs / 1000;
 
-      const cur = {
-        res:  state.resources   || 0,
-        coins:state.coins       || 0,
-        eco:  state.eventCoins  || 0
-      };
-
+      const cur = { res: state.resources||0, coins: state.coins||0, eco: state.eventCoins||0 };
       const dr = cur.res   - audit.last.res;
       const dc = cur.coins - audit.last.coins;
       const de = cur.eco   - audit.last.eco;
 
-      const legitR = audit.rec.res  || 0;
-      const legitC = audit.rec.coin || 0;
-      const legitE = audit.rec.eco  || 0;
+      const resMax  = expectedResGain(dtSec);
+      const coinMax = expectedCoinGain(dtSec);
 
-      const resMax  = Math.max(1, expectedResGain(dtSec));
-      const coinMax = Math.max(1, expectedCoinGain(dtSec));
-
-      // 절대치 점프 즉시 BAN
-      if (dc >= ABS_COIN_BAN_JUMP){ triggerImmediateBan('abs-coin-jump'); return; }
-      if (dr >= ABS_RES_BAN_JUMP) { triggerImmediateBan('abs-res-jump');  return; }
-      if (de >= ABS_ECO_BAN_JUMP) { triggerImmediateBan('abs-eco-jump');  return; }
-
-      const unkRes  = Math.max(0, dr - legitR);
-      const unkCoin = Math.max(0, dc - legitC);
-      const unkEco  = Math.max(0, de - legitE);
+      const unkRes  = Math.max(0, dr - audit.rec.res);
+      const unkCoin = Math.max(0, dc - audit.rec.coin);
+      const unkEco  = Math.max(0, de - audit.rec.eco);
 
       const spikeRes  = Math.max(0, dr - resMax);
       const spikeCoin = Math.max(0, dc - coinMax);
 
-      // 상대 폭주 즉시 BAN
-      const resDen  = Math.max(5, resMax);
-      const coinDen = Math.max(5, coinMax);
-      const relRes  = Math.max(unkRes,  spikeRes)  / resDen;
-      const relCoin = Math.max(unkCoin, spikeCoin) / coinDen;
+      const unknownScore =
+        (unkRes  > EPS ? unkRes  * RES_WEIGHT  : 0) +
+        (unkCoin > EPS ? unkCoin * COIN_WEIGHT : 0) +
+        (unkEco  > EPS ? unkEco  * ECO_WEIGHT  : 0) +
+        (spikeRes  > EPS ? spikeRes  * 1.5 : 0) +
+        (spikeCoin > EPS ? spikeCoin * 1.5 : 0);
 
-      if (relRes  >= REL_BAN_FACTOR){ triggerImmediateBan('rel-res-spike');  return; }
-      if (relCoin >= REL_BAN_FACTOR){ triggerImmediateBan('rel-coin-spike'); return; }
-
-      // 가중 의심도 (로그 스케일)
-      const severityRaw =
-          (unkRes   / resDen)  * 0.6  +
-          (spikeRes / resDen)  * 0.8  +
-          (unkCoin  / coinDen) * 1.2  +
-          (spikeCoin/ coinDen) * 1.6  +
-          (unkEco)             * 0.2;
-
-      const SEV_EPS = 0.15;
-      if (severityRaw > SEV_EPS){
-        const add = Math.min(40, Math.max(2, Math.ceil(Math.log10(severityRaw + 1) * 12)));
+      if (unknownScore > UNKNOWN_THRESH){
+        const add = Math.min(12, Math.max(2, Math.ceil(unknownScore)));
         adjustSuspicion(add);
         security.fairSeconds = 0;
         securityDirty = true;
       } else {
-        // 매우 느린 감쇠
-        security.fairSeconds = (security.fairSeconds || 0) + dtSec;
-        if (security.fairSeconds >= SUSP_DECAY_INTERVAL_SEC && security.suspicion > 0){
-          adjustSuspicion(-SUSP_DECAY_STEP);
+        security.fairSeconds = (security.fairSeconds||0) + dtSec;
+        // ★ 의심도 천천히(거의 안) 내려가게: 누적 45초 공정일 때 -1
+        if (security.fairSeconds >= 45 && security.suspicion > 0){
+          adjustSuspicion(-1);
           security.fairSeconds = 0;
-          securityDirty = true;
         }
+        securityDirty = true;
+      }
+
+      // ★ 초대형 스파이크 즉시 밴 (예: 초 단위로 10^9 이상 증가)
+      if (dc >= 1_000_000_000 || dr >= 1_000_000_000) {
+        adjustSuspicion(SEC_BAN_LEVEL);
       }
 
       auditResetCycle();
@@ -1767,6 +1726,9 @@
     /* ======================
        인증/부팅 흐름
        ====================== */
+    // ★ UPDATED: URL ↔ 탭 동기화를 위해 현재 모드 전역 보관
+    let currentAuthMode = 'login';
+
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
     const signupExtra = document.getElementById('signup-extra');
@@ -1783,10 +1745,17 @@
         signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
       }
       showAuthStatus(''); document.getElementById('verify-info').textContent = '';
+      // ★ UPDATED: 탭 전환 시 URL을 /login 또는 /signup 으로 맞춘다
       try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
     }
     tabLogin.addEventListener('click',  () => setAuthMode('login'));
     tabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+    // ★ UPDATED: 브라우저 뒤로/앞으로 가기 시 URL을 읽어 탭도 동기화
+    window.addEventListener('popstate', () => {
+      const p = location.pathname || '';
+      setAuthMode(/\/signup\/?$/.test(p) ? 'signup' : 'login');
+    });
 
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
@@ -1820,12 +1789,21 @@
       } catch (err) {
         if (!handleAuthError(err)) {
           const code = (err && err.code) || '';
-          const msg =
-            code === 'auth/wrong-password'         ? '비밀번호가 일치하지 않습니다.' :
-            code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
-            code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
-            code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
-            (err.message || '로그인 중 오류가 발생했습니다.');
+          let msg;
+
+          // ★ UPDATED: 명시한 에러 메시지 정책
+          if (code === 'auth/invalid-login-credentials' ||
+              code === 'auth/wrong-password' ||
+              code === 'auth/user-not-found') {
+            msg = '아이디 또는 비밀번호가 일치하지 않습니다.';
+          } else if (code === 'auth/invalid-email') {
+            msg = '이메일 형식이 올바르지 않습니다.';
+          } else if (code === 'auth/network-request-failed') {
+            msg = '네트워크가 불안정합니다.';
+          } else {
+            msg = '로그인 중 문제가 발생하였습니다. 나중에 다시 시도하세요.';
+          }
+
           showAuthStatus(msg);
         }
       }
@@ -2069,7 +2047,10 @@
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
-        setAuthMode(currentAuthMode);
+
+        // ★ UPDATED: URL을 보고 초기 탭 동기화
+        const p = location.pathname || '';
+        setAuthMode(/\/signup\/?$/.test(p) ? 'signup' : 'login');
       }
     });
 
