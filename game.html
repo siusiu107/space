@@ -1094,7 +1094,7 @@
 
     let dailyCache = null;
     let currentMode = 'daily';
-    let activeItems = [];
+    let activeItems = []
 
     function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
     function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
@@ -1340,7 +1340,7 @@
     const SEC_WARN_LEVEL = 20;  // 경고
     const SEC_BAN_LEVEL  = 30;  // 정지
 
-    // 감지 파라미터(더 깐깐하게)
+    // 감지 파라미터
     const EPS               = 1e-6;
     const UNKNOWN_THRESH    = 0.05;
     const HUMAN_MAX_CPS     = 12;
@@ -1348,6 +1348,14 @@
     const RES_WEIGHT        = 0.8;
     const COIN_WEIGHT       = 1.0;
     const ECO_WEIGHT        = 1.2;
+
+    /* === ⬇️ 추가: 강화 임계값 & 감쇠 설정 === */
+    const ABS_COIN_BAN_JUMP = 1_000_000_000;  // 코인 10억 점프 → 즉시 BAN
+    const ABS_RES_BAN_JUMP  = 1_000_000_000;  // 자원 10억 점프 → 즉시 BAN
+    const ABS_ECO_BAN_JUMP  = 10_000;         // 이벤트코인 1만 점프 → 즉시 BAN
+    const REL_BAN_FACTOR    = 500;            // 기대치의 500배 스파이크 → 즉시 BAN
+    const SUSP_DECAY_INTERVAL_SEC = 600;      // 의심도 감소 간격(초) 10분
+    const SUSP_DECAY_STEP         = 1;        // 감소량(거의 안 내려감)
 
     // 의심도 배지 렌더(화면에선 숨김 상태)
     function renderSecurityBadge(){
@@ -1448,7 +1456,7 @@
       } catch (e) { console.warn('ban endpoint failed', e); }
     }
 
-    // 허용 한계(보수적)
+    // 기대치(보수적)
     function expectedResGain(dtSec){
       const resBuff = activeBuffFactor('res');
       const workerGain = (state.workerCount * getWorkerPower()) * resBuff * dtSec;
@@ -1461,6 +1469,21 @@
       return convGain + 2;
     }
 
+    // 즉시 BAN 트리거
+    function triggerImmediateBan(reason){
+      if (security.banned) return;
+      security.suspicion = Math.max(security.suspicion, SEC_BAN_LEVEL);
+      security.banned = true;
+      securityDirty = true;
+
+      requestAccountDisable(`auto-ban:${reason}`).finally(async ()=>{
+        showBanOverlay(true);
+        showToast('⛔ 비정상 증가가 감지되어 계정이 정지되었습니다.');
+        try { await saveSecurity(); } catch {}
+        try { await auth.signOut(); } catch {}
+      });
+    }
+
     // 의심도 조정 + 경고/정지 트리거
     function adjustSuspicion(delta){
       const prev = security.suspicion;
@@ -1468,9 +1491,10 @@
 
       if (!security.banned && security.suspicion > SEC_WARN_LEVEL){
         const now = Date.now();
-        if (!security.lastWarnAt || now - security.lastWarnAt > 60000){
+        // 경고는 5분에 한 번만
+        if (!security.lastWarnAt || now - security.lastWarnAt > 5*60*1000){
           security.lastWarnAt = now;
-          showToast('⚠️ 의심도가 20을 초과했습니다. 비정상 증가가 탐지되면 정지될 수 있어요.');
+          showToast('⚠️ 비정상 증가 탐지됨. 계속되면 계정이 정지됩니다.');
           securityDirty = true;
         }
       }
@@ -1491,49 +1515,76 @@
       renderSecurityBadge();
     }
 
-    // 더 깐깐한 감지
+    /* === ⬇️ 교체: 가중 의심도 & 느린 감쇠 & 즉시 BAN === */
     function auditCheck(){
       if (!audit.last){ auditInit(); return; }
+
       const now = Date.now();
       let dtMs = now - (audit.lastAt || now);
       if (dtMs < 0) dtMs = 0;
       if (dtMs > MAX_TICK_GAP_MS) dtMs = MAX_TICK_GAP_MS;
       const dtSec = dtMs / 1000;
 
-      const cur = { res: state.resources||0, coins: state.coins||0, eco: state.eventCoins||0 };
+      const cur = {
+        res:  state.resources   || 0,
+        coins:state.coins       || 0,
+        eco:  state.eventCoins  || 0
+      };
+
       const dr = cur.res   - audit.last.res;
       const dc = cur.coins - audit.last.coins;
       const de = cur.eco   - audit.last.eco;
 
-      const resMax  = expectedResGain(dtSec);
-      const coinMax = expectedCoinGain(dtSec);
+      const legitR = audit.rec.res  || 0;
+      const legitC = audit.rec.coin || 0;
+      const legitE = audit.rec.eco  || 0;
 
-      const unkRes  = Math.max(0, dr - audit.rec.res);
-      const unkCoin = Math.max(0, dc - audit.rec.coin);
-      const unkEco  = Math.max(0, de - audit.rec.eco);
+      const resMax  = Math.max(1, expectedResGain(dtSec));
+      const coinMax = Math.max(1, expectedCoinGain(dtSec));
+
+      // 절대치 점프 즉시 BAN
+      if (dc >= ABS_COIN_BAN_JUMP){ triggerImmediateBan('abs-coin-jump'); return; }
+      if (dr >= ABS_RES_BAN_JUMP) { triggerImmediateBan('abs-res-jump');  return; }
+      if (de >= ABS_ECO_BAN_JUMP) { triggerImmediateBan('abs-eco-jump');  return; }
+
+      const unkRes  = Math.max(0, dr - legitR);
+      const unkCoin = Math.max(0, dc - legitC);
+      const unkEco  = Math.max(0, de - legitE);
 
       const spikeRes  = Math.max(0, dr - resMax);
       const spikeCoin = Math.max(0, dc - coinMax);
 
-      const unknownScore =
-        (unkRes  > EPS ? unkRes  * RES_WEIGHT  : 0) +
-        (unkCoin > EPS ? unkCoin * COIN_WEIGHT : 0) +
-        (unkEco  > EPS ? unkEco  * ECO_WEIGHT  : 0) +
-        (spikeRes  > EPS ? spikeRes  * 1.5 : 0) +
-        (spikeCoin > EPS ? spikeCoin * 1.5 : 0);
+      // 상대 폭주 즉시 BAN
+      const resDen  = Math.max(5, resMax);
+      const coinDen = Math.max(5, coinMax);
+      const relRes  = Math.max(unkRes,  spikeRes)  / resDen;
+      const relCoin = Math.max(unkCoin, spikeCoin) / coinDen;
 
-      if (unknownScore > UNKNOWN_THRESH){
-        const add = Math.min(12, Math.max(2, Math.ceil(unknownScore)));
+      if (relRes  >= REL_BAN_FACTOR){ triggerImmediateBan('rel-res-spike');  return; }
+      if (relCoin >= REL_BAN_FACTOR){ triggerImmediateBan('rel-coin-spike'); return; }
+
+      // 가중 의심도 (로그 스케일)
+      const severityRaw =
+          (unkRes   / resDen)  * 0.6  +
+          (spikeRes / resDen)  * 0.8  +
+          (unkCoin  / coinDen) * 1.2  +
+          (spikeCoin/ coinDen) * 1.6  +
+          (unkEco)             * 0.2;
+
+      const SEV_EPS = 0.15;
+      if (severityRaw > SEV_EPS){
+        const add = Math.min(40, Math.max(2, Math.ceil(Math.log10(severityRaw + 1) * 12)));
         adjustSuspicion(add);
         security.fairSeconds = 0;
         securityDirty = true;
       } else {
-        security.fairSeconds = (security.fairSeconds||0) + dtSec;
-        if (security.fairSeconds >= 8 && security.suspicion > 0){
-          adjustSuspicion(-1);
+        // 매우 느린 감쇠
+        security.fairSeconds = (security.fairSeconds || 0) + dtSec;
+        if (security.fairSeconds >= SUSP_DECAY_INTERVAL_SEC && security.suspicion > 0){
+          adjustSuspicion(-SUSP_DECAY_STEP);
           security.fairSeconds = 0;
+          securityDirty = true;
         }
-        securityDirty = true;
       }
 
       auditResetCycle();
