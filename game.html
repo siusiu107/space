@@ -413,6 +413,12 @@
     <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
     <p id="verify-info" class="auth-status" role="status" aria-live="polite" style="color:#dfffe8"></p>
 
+    <!-- ✅ 인증 메일 재전송 UI (추가) -->
+    <div id="resend-row" style="display:none; gap:8px; justify-content:center; margin-top:6px; width:100%; align-items:center;">
+      <button id="resend-verify-btn" class="ghost-btn" style="flex:1; max-width:320px;">인증 메일 재전송</button>
+      <span id="resend-countdown" style="font-size:12px; color:#cfe6ff; display:none;"></span>
+    </div>
+
     <div id="login-overlay" class="login-overlay" aria-hidden="true">
       <div class="login-card" role="status" aria-live="polite" aria-atomic="true" style="text-align:center;color:#e6f7ff;">
         <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
@@ -1037,7 +1043,7 @@
           let title = it.bkind==='all' ? `모든 생산 ${multText}`
                    : it.bkind==='coin' ? `코인 생산 ${multText}`
                    :                    `자원 생산 ${multText}`;
-          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
+          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bdur ? it.bmult : 0, it.bdur || 0); addTempBuff(it.bkind, it.bmult, it.bdur); } };
         }
         return it;
       });
@@ -1329,6 +1335,19 @@
       authErrorEl.style.color = isError ? '#ffdede' : '#dfffe8';
     }
 
+    function showVerifyInfo(msg) {
+      const el = document.getElementById('verify-info');
+      if (!el) return;
+      el.textContent = msg || '';
+      if (msg) el.classList.add('show'); else el.classList.remove('show');
+    }
+
+    function showResendRow(show=true){
+      const row = document.getElementById('resend-row');
+      if (!row) return;
+      row.style.display = show ? 'flex' : 'none';
+    }
+
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
@@ -1362,12 +1381,11 @@
     const COIN_WEIGHT       = 1.0;
     const ECO_WEIGHT        = 1.2;
 
-    // ★ 즉시 밴 급증 한계 (요청 반영: 10억 코인 등)
+    // ★ 즉시 밴 급증 한계
     const BAN_SPIKE_COINS = 1_000_000_000; // 10억
-    const BAN_SPIKE_RES   = 100_000_000;   // 자원 급증 한계 (임의값)
-    const BAN_SPIKE_ECO   = 50_000;        // 이벤트코인 급증 한계 (임의값)
+    const BAN_SPIKE_RES   = 100_000_000;
+    const BAN_SPIKE_ECO   = 50_000;
 
-    // 의심도 배지 렌더(화면에선 숨김 상태)
     function renderSecurityBadge(){
       const el = document.getElementById('suspicion-badge');
       if (!el) return;
@@ -1462,7 +1480,7 @@
       audit.lastAt = Date.now();
     }
 
-    // === Vercel BAN 엔드포인트 자동 로더 (RTDB meta/banEndpoint 사용) ===
+    // === Vercel BAN 엔드포인트 자동 로더 ===
     let __BAN_ENDPOINT = null;
     async function __getBanEndpoint() {
       if (__BAN_ENDPOINT) return __BAN_ENDPOINT;
@@ -1489,7 +1507,6 @@
       } catch (e) { console.warn('ban endpoint failed', e); }
     }
 
-    // 허용 한계(보수적)
     function expectedResGain(dtSec){
       const resBuff = activeBuffFactor('res');
       const workerGain = (state.workerCount * getWorkerPower()) * resBuff * dtSec;
@@ -1502,7 +1519,6 @@
       return convGain + 2;
     }
 
-    // 의심도 조정 + 경고/정지 트리거
     function adjustSuspicion(delta){
       const prev = security.suspicion;
       security.suspicion = Math.max(0, Math.min(1000, prev + delta));
@@ -1523,7 +1539,6 @@
           showBanOverlay(true);
           showToast('⛔ 의심도 30 이상으로 계정이 정지되었습니다.');
           try { await saveSecurity(); } catch {}
-          // ★ 로그아웃 전 지원 컨텍스트 보존
           saveSupportCtx({ banned: true });
           try { await auth.signOut(); } catch {}
         });
@@ -1534,7 +1549,6 @@
       renderSecurityBadge();
     }
 
-    // 더 깐깐한 감지 + 즉시밴 급증 처리 + 느린 복구
     function auditCheck(){
       if (!audit.last){ auditInit(); return; }
       const now = Date.now();
@@ -1548,9 +1562,8 @@
       const dc = cur.coins - audit.last.coins;
       const de = cur.eco   - audit.last.eco;
 
-      // ★ 즉시 밴 급증 확인
       if (dc >= BAN_SPIKE_COINS || dr >= BAN_SPIKE_RES || de >= BAN_SPIKE_ECO) {
-        adjustSuspicion(SEC_BAN_LEVEL + 1); // 바로 밴 트리거
+        adjustSuspicion(SEC_BAN_LEVEL + 1);
         auditResetCycle();
         return;
       }
@@ -1573,14 +1586,12 @@
         (spikeCoin > EPS ? spikeCoin * 1.5 : 0);
 
       if (unknownScore > UNKNOWN_THRESH){
-        // 크기 비례 가중치
         const add = Math.min(12, Math.max(2, Math.ceil(unknownScore)));
         adjustSuspicion(add);
         security.fairSeconds = 0;
         securityDirty = true;
       } else {
         security.fairSeconds = (security.fairSeconds||0) + dtSec;
-        // ★ 매우 느린 복구(거의 안내려감): 90초마다 -1
         if (security.fairSeconds >= 90 && security.suspicion > 0){
           adjustSuspicion(-1);
           security.fairSeconds = 0;
@@ -1670,7 +1681,6 @@
       tryUnlockDaily();
       renderBuffStatus();
 
-      // ★ 캐시 저장 → 다음 방문 즉시 렌더
       try {
         if (uid) {
           const cachePick = {
@@ -1770,7 +1780,6 @@
       document.getElementById('hire-conversion').addEventListener('click', () => { if (!ensureReady()) return; const cost = getConversionCost(); if (state.coins >= cost) { state.coins -= cost; state.conversionCount++; save(); updateUI(); } });
       document.getElementById('upgrade-ship').addEventListener('click', () => { if (!ensureReady()) return; if (state.coins >= state.shipUpgradeCost) { state.coins -= state.shipUpgradeCost; state.shipLevel++; state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30); save(); updateUI(); renderPlanets(); } });
 
-      // 클릭 업그레이드
       document.getElementById('click-upgrade').addEventListener('click', () => {
         if (!ensureReady()) return;
         if (state.coins >= clickUpgradeCost){
@@ -1787,7 +1796,6 @@
         tab.classList.add('active');
       }));
 
-      // 메인 루프
       window.__gameTimer = setInterval(async () => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
 
@@ -1805,6 +1813,63 @@
 
         save(); updateUI();
       }, 1000);
+    }
+
+    /* ======================
+       🔐 이메일 인증 강제 + 재전송(3분 쿨다운)
+       ====================== */
+    const VERIFY_KEY = 'verify_last_sent_at';
+    const RESEND_COOLDOWN_MS = 3 * 60 * 1000; // 3분
+
+    function getVerifyCooldownLeftMs(){
+      try {
+        const t = parseInt(localStorage.getItem(VERIFY_KEY) || '0', 10);
+        return Math.max(0, (t + RESEND_COOLDOWN_MS) - Date.now());
+      } catch { return 0; }
+    }
+    function markVerifySentNow(){
+      try { localStorage.setItem(VERIFY_KEY, String(Date.now())); } catch {}
+    }
+    function updateResendUI(){
+      const btn = document.getElementById('resend-verify-btn');
+      const cd  = document.getElementById('resend-countdown');
+      if (!btn || !cd) return;
+      const left = getVerifyCooldownLeftMs();
+      showResendRow(true);
+      if (left > 0) {
+        btn.disabled = true;
+        btn.style.display='inline-block';
+        cd.style.display='inline';
+        const sec = Math.ceil(left/1000);
+        cd.textContent = `(${sec}초 후 가능)`;
+      } else {
+        btn.disabled = false;
+        btn.style.display='inline-block';
+        cd.style.display='none';
+      }
+    }
+    setInterval(()=>{
+      const cd = document.getElementById('resend-countdown');
+      if (cd && cd.style.display !== 'none') updateResendUI();
+    }, 1000);
+
+    async function sendVerificationSmart(user){
+      const left = getVerifyCooldownLeftMs();
+      if (left > 0) {
+        showVerifyInfo('인증 메일 재전송 대기 중입니다.');
+        updateResendUI();
+        return false;
+      }
+      try {
+        await sendEmailVerification(user);
+        markVerifySentNow();
+        showVerifyInfo('인증 메일을 보냈습니다. 메일함(스팸함 포함)을 확인 후 인증 완료하고 다시 로그인해 주세요.');
+        updateResendUI();
+        return true;
+      } catch (e){
+        showAuthStatus('인증 메일 전송 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.');
+        return false;
+      }
     }
 
     /* ======================
@@ -1826,8 +1891,8 @@
         tabLogin.classList.add('active'); tabSignup.classList.remove('active');
         signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
       }
-      showAuthStatus(''); document.getElementById('verify-info').textContent = '';
-      // ★ 탭 전환 시 URL 갱신 (/login, /signup)
+      showAuthStatus(''); showVerifyInfo('');
+      showResendRow(false);
       try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
     }
     tabLogin.addEventListener('click',  () => setAuthMode('login'));
@@ -1843,7 +1908,6 @@
       const code = err?.code || '';
       if (code === 'auth/user-disabled') {
         security.banned = true;
-        // ★ 로그인 실패로 인한 정지 케이스도 컨텍스트 보존
         saveSupportCtx({ banned: true });
         showBanOverlay(true);
         showAuthStatus('⛔ 계정이 정지되어 로그인할 수 없습니다.', true);
@@ -1852,18 +1916,29 @@
       return false;
     }
 
+    // ✅ 로그인: 미인증이면 즉시 차단 + 인증메일 발송 + 재전송 UI 노출
     loginBtn.addEventListener('click', async () => {
       showAuthStatus('');
+      showVerifyInfo('');
+      showResendRow(false);
+
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
       try {
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const user = cred.user;
-        if (user && user.providerData.some(p=>p.providerId==='password') && !user.emailVerified) {
-          try { await sendEmailVerification(user); } catch {}
-          showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
+
+        const isEmailPassword = (user?.providerData || []).some(p => p.providerId === 'password');
+        if (isEmailPassword && !user.emailVerified) {
+          await sendVerificationSmart(user);
+          await auth.signOut();
+          showAuthStatus('이메일 인증이 완료되어야 로그인할 수 있습니다. 메일 인증 후 다시 로그인해 주세요.', true);
+          updateResendUI();
+          return;
         }
+        // 인증된 계정은 onAuthStateChanged에서 계속 처리
+
       } catch (err) {
         if (!handleAuthError(err)) {
           const code = (err && err.code) || '';
@@ -1879,10 +1954,13 @@
       }
     });
 
-    // 회원가입 (TOS 필수)
+    // ✅ 회원가입: TOS 체크 유지 (변경 없음)
     signupBtnEl?.addEventListener('click', async (e) => {
       e.preventDefault();
       showAuthStatus('');
+      showVerifyInfo('');
+      showResendRow(false);
+
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const passwordConfirm = document.getElementById('password-confirm').value;
@@ -1903,8 +1981,11 @@
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const user = cred.user;
-        try { await sendEmailVerification(user); } catch {}
-        showAuthStatus('회원가입이 완료되었습니다. 인증 메일을 보냈습니다. 메일 확인 후 로그인하세요.', false);
+        try { await sendEmailVerification(user); markVerifySentNow(); } catch {}
+        await auth.signOut();
+        showAuthStatus('회원가입이 완료되었습니다. 이메일 인증 후 로그인해 주세요.', false);
+        showVerifyInfo('인증 메일을 보냈습니다. 메일함(스팸함 포함)을 확인하세요.');
+        updateResendUI();
       } catch (err) {
         if (!handleAuthError(err)) {
           const code = (err && err.code) || '';
@@ -1915,6 +1996,50 @@
             '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.';
           showAuthStatus(msg);
         }
+      }
+    });
+
+    // ✅ 재전송 버튼: 3분 쿨다운, 입력된 이메일/비번로 임시 로그인→전송→로그아웃
+    const resendBtn = document.getElementById('resend-verify-btn');
+    resendBtn?.addEventListener('click', async ()=>{
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { showAuthStatus('재전송하려면 이메일과 비밀번호를 입력하세요.'); return; }
+
+      const left = getVerifyCooldownLeftMs();
+      if (left > 0) { updateResendUI(); return; }
+
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const user = cred.user;
+        const isEmailPassword = (user?.providerData || []).some(p => p.providerId === 'password');
+
+        if (!isEmailPassword) {
+          showAuthStatus('해당 계정은 이메일/비밀번호 방식이 아닙니다. Google 로그인은 별도 인증이 필요 없습니다.', true);
+          await auth.signOut();
+          return;
+        }
+        if (user.emailVerified) {
+          showAuthStatus('이미 이메일 인증이 완료된 계정입니다. 로그인해 주세요.', false);
+          await auth.signOut();
+          return;
+        }
+
+        const sent = await sendVerificationSmart(user);
+        await auth.signOut();
+        if (sent) showAuthStatus('인증 메일을 재전송했습니다. 메일함을 확인해 주세요.', false);
+      } catch (err){
+        if (!handleAuthError(err)) {
+          const code = err?.code || '';
+          const msg =
+            (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')
+              ? '비밀번호가 올바르지 않습니다.' :
+            code === 'auth/user-not-found' ? '등록된 계정이 없습니다.' :
+            '재전송 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.';
+          showAuthStatus(msg);
+        }
+      } finally {
+        updateResendUI();
       }
     });
 
@@ -1937,12 +2062,9 @@
     });
     document.getElementById('ban-copy-info')?.addEventListener('click', copySupportInfo);
 
-    // 세션 중간 정지 빠른 감지(30초마다 토큰 강제 갱신)
     setInterval(async () => {
       try {
-        if (auth?.currentUser) {
-          await auth.currentUser.getIdToken(true);
-        }
+        if (auth?.currentUser) { await auth.currentUser.getIdToken(true); }
       } catch (err) {
         if (handleAuthError(err)) {
           try { await auth.signOut(); } catch {}
@@ -1950,7 +2072,6 @@
       }
     }, 30000);
 
-    // 데이터 바인딩
     async function proceedWithDataBinding(){
       try {
         const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
@@ -1967,7 +2088,6 @@
       await ensureInitialData(dataRef);
       await loadSecurity();
 
-      // ★ 최신 컨텍스트 보존
       saveSupportCtx({ banned: false });
 
       dataUnsubscribe = onValue(dataRef, async snap => {
@@ -1981,7 +2101,6 @@
           isInitialSync = false;
           showGameUI();
 
-          // ★ 최초 정상 진입 시: 다음부터 부팅오버레이 스킵
           try { localStorage.setItem('boot_seen', '1'); } catch {}
 
           window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
@@ -2012,23 +2131,31 @@
       });
     }
 
-    // 인증 상태 변경
     onAuthStateChanged(auth, async user => {
       setBootVisible(false);
       showAuthStatus('');
+      showVerifyInfo('');
+      showResendRow(false);
+
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
         const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
+
+        // 🔐 이메일/비번 계정은 emailVerified가 아니면 절대 진입 불가
         if (isEmailPassword && !user.emailVerified) {
-          try { await sendEmailVerification(user); } catch {}
-          showAuthStatus('이메일 인증 메일을 보냈습니다. 인증 전에도 게임은 이용할 수 있어요.', false);
+          await sendVerificationSmart(user); // 쿨다운 내부 처리
+          try { await auth.signOut(); } catch {}
+          showAuthStatus('이메일 인증이 완료되어야 로그인할 수 있습니다. 인증 후 다시 로그인해 주세요.', true);
+          updateResendUI();
+          return; // 🚫 아래 게임 초기화 진행 금지
         }
+
         uid = user.uid;
         loadBuffs();
         renderBuffStatus();
 
-        // ★ 캐시된 게임 데이터로 즉시 렌더 (부팅오버레이 없이 빠르게)
+        // 캐시 즉시 렌더
         try {
           const cacheRaw = localStorage.getItem(`gd_cache_${uid}`);
           if (cacheRaw) {
@@ -2061,7 +2188,6 @@
               }
             });
           } catch {}
-          // ★ 최신 컨텍스트 보존
           saveSupportCtx({ banned: false });
           await proceedWithDataBinding();
           return;
@@ -2070,7 +2196,6 @@
         userIdKey     = makeIdKeyFromUser(user);
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
 
-        // ★ 경로 확정 즉시 컨텍스트 보존
         saveSupportCtx({ banned: false });
 
         if (plan.need) {
@@ -2093,7 +2218,6 @@
                     }
                   });
                 } catch {}
-                // ★ 컨텍스트 보존
                 saveSupportCtx({ banned: false });
                 setTimeout(()=>{ showMigrateOverlay(false); proceedWithDataBinding(); }, 600);
               }catch(e){
@@ -2115,7 +2239,6 @@
               }
             });
           } catch {}
-          // ★ 컨텍스트 보존
           saveSupportCtx({ banned: false });
           await proceedWithDataBinding();
         }
@@ -2130,7 +2253,6 @@
         state = { ...defaultData };
         localLastWrite = 0; isInitialSync = false;
 
-        // 보안 초기화
         security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
         renderSecurityBadge();
 
@@ -2139,12 +2261,17 @@
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
         setAuthMode(currentAuthMode);
 
-        // ★ 로그아웃 상태에서도 최근 정지 컨텍스트가 있으면 오버레이 표시
         const persisted = readSupportCtx();
         if (persisted?.banned) {
           security.banned = true;
           security.suspicion = (typeof persisted.suspicion === 'number') ? persisted.suspicion : security.suspicion;
           showBanOverlay(true);
+        }
+
+        // ⏱️ 페이지 로드시 쿨다운 남아있으면 재전송 UI 활성화
+        if (getVerifyCooldownLeftMs() > 0) {
+          showVerifyInfo('인증 메일 재전송 대기 중입니다.');
+          updateResendUI();
         }
       }
     });
@@ -2163,6 +2290,8 @@
 
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
+      showVerifyInfo('');
+      showResendRow(false);
       const provider = new GoogleAuthProvider();
       try {
         await signInWithPopup(auth, provider);
@@ -2182,6 +2311,12 @@
       else window.__DEFER_INIT = wireGame;
       renderBuffStatus();
       renderSecurityBadge();
+
+      // ⏱️ 새로고침 시에도 남은 쿨다운 있으면 재전송 UI
+      if (getVerifyCooldownLeftMs() > 0) {
+        showResendRow(true);
+        updateResendUI();
+      }
     });
 
     setInterval(renderBuffStatus, 1000);
