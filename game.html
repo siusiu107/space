@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 최초 1회만 /login 으로 라우팅 -->
+  <!-- 최초 접속 시 /login으로 한번만 라우팅 -->
   <script>
     try {
       if (!sessionStorage.getItem('pmode_init')) {
@@ -80,11 +80,15 @@
   </script>
 
   <style>
-    :root{ --glass-bg: rgba(10,12,20,0.40); --glass-brd: rgba(255,255,255,0.08); --accent: #00d4ff; }
+    :root{
+      --glass-bg: rgba(10,12,20,0.40);
+      --glass-brd: rgba(255,255,255,0.08);
+      --accent: #00d4ff;
+    }
     body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
     img { display:block; }
 
-    /* 부팅/스피너: 최초 1회만 */
+    /* 부팅/스피너 */
     #top-bar, #container { visibility: hidden; }
     .spinner { width:46px; height:46px; border-radius:50%; border:4px solid rgba(255,255,255,0.12); border-top-color: #00d4ff; animation:spin 1s linear infinite; margin:0 auto 10px; }
     @keyframes spin { to { transform:rotate(360deg); } }
@@ -157,7 +161,7 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
-    /* 의심도 배지(숨김) */
+    /* 의심도 배지: 요구사항대로 완전 숨김 */
     #suspicion-badge{ display:none !important; }
 
     /* 본문 */
@@ -238,6 +242,7 @@
     .side-item:hover{ filter: brightness(1.08); }
     .side-item .icon{ width:18px; text-align:center; }
     .side-right { opacity:.9; color:#9fdcff; font-variant-numeric: tabular-nums; }
+    @media (max-width: 420px){ #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; } #side-menu{ width: 240px; } }
 
     /* ===== 출석 & 슬롯 오버레이 ===== */
     #daily-overlay{
@@ -259,7 +264,7 @@
     .tbtn{ padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#eaf6ff; cursor:pointer; font-weight:800; }
     .tbtn.active{ background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#001820; border-color:transparent; }
 
-    /* 슬롯형 */
+    /* 슬롯형 (세로 낙하) */
     #slot-wrap{ display:flex; flex-direction:column; align-items:center; gap:10px; }
     .slot-window{ width:320px; height:56px; overflow:hidden; border-radius:10px;
       background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.12); }
@@ -280,23 +285,26 @@
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
 
-    /* 버프 상태 */
+    /* 버프 상태 이름+잔여 */
     #buff-status{
-      display:inline-block; max-width: clamp(120px, 40vw, 260px);
+      display:inline-block;
+      max-width: clamp(120px, 40vw, 260px);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       vertical-align: middle; margin-left: 6px; color:#9fdcff; font-variant-numeric: tabular-nums;
     }
 
     /* 토스트 */
     #toast{
-      position: fixed; left: 50%;
+      position: fixed;
+      left: 50%;
       bottom: calc(80px + env(safe-area-inset-bottom, 12px));
       transform: translateX(-50%) translateY(20px);
       min-width: 220px; max-width: 92vw;
       padding: 10px 12px;
       background: rgba(10,12,20,0.85);
       border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 12px; color:#eaf6ff; font-weight:800; font-size:13px;
+      border-radius: 12px;
+      color:#eaf6ff; font-weight:800; font-size:13px;
       display: none; z-index: 4000;
       box-shadow: 0 10px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
     }
@@ -312,7 +320,31 @@
       to   { opacity:1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* 마이그레이션/약관/정지 오버레이 */
+    /* 마이그레이션 오버레이 */
+    #migrate-overlay{
+      position: fixed; inset:0; z-index:3600; display:none; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,.60), rgba(2,6,12,.80)); backdrop-filter: blur(4px);
+    }
+    #migrate-overlay.show{ display:flex; }
+    #migrate-card{
+      width:min(560px, 94vw); border-radius:16px; border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.66));
+      padding:16px; box-shadow: 0 22px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+      color:#eaf6ff;
+    }
+    #migrate-card h3{ margin:0 0 8px; font-size:18px; }
+    #migrate-desc{ font-size:13px; color:#cfe6ff; line-height:1.5; }
+    .warnbox{
+      margin:10px 0; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,211,110,.45);
+      background: rgba(255,211,110,.10); color:#ffe3a3; font-weight:700;
+    }
+    #migrate-progress{ margin-top:10px; font-size:13px; color:#a6e7ff; min-height:20px; }
+    #migrate-actions{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
+    #migrate-start{ padding:10px 14px; border-radius:10px; border:none; font-weight:900; cursor:pointer;
+      background: linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; }
+    #migrate-start[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    /* 이용약관 & 정지 오버레이 */
     .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center;
       background: linear-gradient(180deg, rgba(2,6,12,.60), rgba(2,6,12,.80)); backdrop-filter: blur(4px); z-index:3650; }
     .overlay.show{ display:flex; }
@@ -322,27 +354,12 @@
     .overlay-card h3{ margin:0 0 8px; font-size:18px; }
     .overlay-actions{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
     #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,.10);
-      border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
+      border-radius:10px; background: rgba(0,0,0,.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
-
-    /* ✅ 지원 정보 미리보기(로그아웃에서도) */
-    #support-preview{
-      display:none; margin-top:10px; padding:10px; border-radius:10px;
-      border:1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(10,12,18,.35));
-      color:#cfe6ff; font-size:12px; text-align:left;
-    }
-    #support-preview .row{ display:flex; gap:8px; justify-content:space-between; }
-    #support-preview pre{
-      margin:6px 0 0; white-space:pre-wrap; word-break:break-all;
-      color:#eaf6ff; background:rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.06); border-radius:8px; padding:8px;
-    }
-    #support-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
   </style>
 </head>
 <body>
-  <!-- 부팅 오버레이 (최초 1회만) -->
+  <!-- 부팅 중 오버레이 (최초 1회만) -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
@@ -368,10 +385,15 @@
     <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" />
     <div id="signup-extra" style="display:none; margin-top:6px;">
       <input type="password" id="password-confirm" placeholder="비밀번호 확인" autocomplete="new-password" />
-      <label style="display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:center;">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
         <input type="checkbox" id="tos-checkbox" /> <span>이용약관에 동의합니다</span>
-        <button id="tos-open" class="ghost-btn" style="padding:6px 8px; min-width:110px;">약관 보기</button>
       </label>
+      <div style="margin-top:6px; font-size:12px; color:#cfe6ff; text-align:left; line-height:1.45;">
+        <b>이용약관 안내:</b><br/>
+        · 치팅/핵 사용, 버그 악용, 계정 양도/대여는 금지됩니다.<br/>
+        · <u>자원·코인 비정상 급증(예: 한 번에 10억 코인)</u> 탐지 시 경고 또는 즉시 정지될 수 있습니다.<br/>
+        · 자세한 내용은 아래 ‘이용약관 동의’ 모달에서 확인하세요.
+      </div>
     </div>
 
     <button id="login-btn" class="primary-btn">로그인</button>
@@ -390,18 +412,6 @@
 
     <p id="auth-error" class="auth-status" role="status" aria-live="polite"></p>
     <p id="verify-info" class="auth-status" role="status" aria-live="polite" style="color:#dfffe8"></p>
-
-    <div id="support-preview">
-      <div style="font-weight:800; color:#eaf6ff; margin-bottom:6px;">🆘 지원 정보 미리보기 (로그아웃 상태)</div>
-      <div class="row"><span>서버</span><span id="sp-server">-</span></div>
-      <div class="row"><span>아이디키</span><span id="sp-idkey">-</span></div>
-      <div class="row"><span>Realtime DB 경로</span><span id="sp-path">-</span></div>
-      <pre id="sp-blob"></pre>
-      <div id="support-actions">
-        <button id="sp-email" class="ghost-btn" style="flex:1">📧 오탐인가요? 메일 보내기</button>
-        <button id="sp-copy"  class="ghost-btn" style="flex:1">📋 정보 복사</button>
-      </div>
-    </div>
 
     <div id="login-overlay" class="login-overlay" aria-hidden="true">
       <div class="login-card" role="status" aria-live="polite" aria-atomic="true" style="text-align:center;color:#e6f7ff;">
@@ -566,7 +576,7 @@
         <ul>
           <li>클라이언트·콘솔 조작 등으로 자원/코인을 비정상적으로 증가시키는 행위 금지</li>
           <li>버그 악용 금지, 계정 양도/대여 금지</li>
-          <li>운영 정책 위반 시 경고·정지 등 제재</li>
+          <li><b>비정상 급증</b> 예시: 한 번에 <b>10억 코인</b> 이상 증가 → 즉시 정지 가능</li>
         </ul>
         <p>동의 후 플레이를 계속할 수 있습니다.</p>
       </div>
@@ -579,7 +589,7 @@
     </div>
   </div>
 
-  <!-- ⛔ 정지 오버레이 -->
+  <!-- ⛔ 정지 오버레이 (오탐 대응 버튼 포함) -->
   <div id="ban-overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="ban-title">
       <h3 id="ban-title">⛔ 계정 정지됨</h3>
@@ -587,10 +597,14 @@
         <p>이용약관 위반 의심에 따라 플레이가 제한되었습니다.</p>
         <p>의심도: <b id="ban-sus-value">0</b></p>
         <p style="color:#ffd36e">※ 정지 중에는 자원/코인이 증가하지 않습니다.</p>
+        <div style="margin-top:8px; font-size:13px; color:#cfe6ff;">
+          오탐으로 판단되면 아래 버튼으로 <b>지원팀에 즉시 메일</b>을 보내거나, <b>정보 복사</b> 후 수동 메일 전송이 가능합니다.
+        </div>
       </div>
-      <div class="overlay-actions">
-        <button id="ban-appeal" class="spinbtn">📧 오탐인가요? 메일 보내기</button>
-        <button id="ban-ok" class="spinbtn">알겠어요</button>
+      <div class="overlay-actions" style="flex-wrap:wrap;">
+        <button id="ban-appeal-email" class="spinbtn">📧 오탐 메일 보내기</button>
+        <button id="ban-copy-info" class="spinbtn">📋 정보 복사</button>
+        <button id="ban-ok" class="spinbtn">닫기</button>
       </div>
     </div>
   </div>
@@ -600,7 +614,7 @@
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
 
-  <!-- 토스트 -->
+  <!-- 토스트 컨테이너 -->
   <div id="toast" role="status" aria-live="polite"></div>
 
   <!-- Firebase + 게임 로직 -->
@@ -612,12 +626,9 @@
       sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
-      getDatabase, ref, onValue, runTransaction, update, get, query, orderByChild, equalTo, onChildAdded
+      getDatabase, ref, onValue, runTransaction, update, get
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    /* ======================
-       기본 설정
-       ====================== */
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -628,15 +639,15 @@
       appId: "1:830887143444:web:70b45fc12140e893c31f01",
       measurementId: "G-1Y090YJDB6"
     };
-    const SUPPORT_EMAIL = "support@siustudio.kro.kr";
-
-    const app  = initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
     /* ======================
        공통 상태 / 경로
        ====================== */
+    const SUPPORT_EMAIL = 'support@siustudio.kro.kr';
+
     let state = {};
     let uid = null;
     let dataRef = null;
@@ -645,28 +656,12 @@
     let isInitialSync = false;
 
     let userServerKey = null;
-    let userIdKey     = null;
+    let userIdKey     = null; // 🔑 경로용(인코딩된 키)
     let userBasePath  = null;
 
     let dailyUnlocked = false;
     let rankingUnlocked = false;
     let bootDone = false;
-
-    /* ======================
-       로컬 지원컨텍스트 저장/복구
-       ====================== */
-    function supportCtxKey(){ return 'siu_support_ctx'; }
-    function readSupportCtx(){
-      try{ const raw = localStorage.getItem(supportCtxKey()); return raw ? JSON.parse(raw) : null; }
-      catch{ return null; }
-    }
-    function writeSupportCtx(patch){
-      try{
-        const cur = readSupportCtx() || {};
-        const next = { ...cur, ...(patch||{}), updatedAt: Date.now() };
-        localStorage.setItem(supportCtxKey(), JSON.stringify(next));
-      }catch{}
-    }
 
     /* ======================
        토스트 / UI 유틸
@@ -997,7 +992,6 @@
       return Math.min(Math.max(base, 30), 30000);
     }
 
-    // 슬롯 보상 템플릿
     const TPL_DAILY = [
       { key:'coin_x1_4', type:'coin', coinMul:1.4, icon:'💰', color:'#00E5FF', w:0.32 },
       { key:'coin_x1_8', type:'coin', coinMul:1.8, icon:'💰', color:'#4DFFB5', w:0.18 },
@@ -1043,7 +1037,7 @@
           let title = it.bkind==='all' ? `모든 생산 ${multText}`
                    : it.bkind==='coin' ? `코인 생산 ${multText}`
                    :                    `자원 생산 ${multText}`;
-          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bdur===0?0:it.bmult, it.bdur); } };
+          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
         }
         return it;
       });
@@ -1316,7 +1310,7 @@
     const authErrorEl   = document.getElementById('auth-error');
     const bootOverlay   = document.getElementById('boot-overlay');
 
-    // 부팅 오버레이: 첫 성공 진입 후엔 스킵
+    // ★ 부팅 오버레이는 '처음 1회'만
     function setBootVisible(v){
       if (!bootOverlay) return;
       const seen = localStorage.getItem('boot_seen') === '1';
@@ -1359,7 +1353,7 @@
     const SEC_WARN_LEVEL = 20;  // 경고
     const SEC_BAN_LEVEL  = 30;  // 정지
 
-    // 감지 파라미터
+    // 감지 파라미터(더 깐깐하게)
     const EPS               = 1e-6;
     const UNKNOWN_THRESH    = 0.05;
     const HUMAN_MAX_CPS     = 12;
@@ -1368,7 +1362,12 @@
     const COIN_WEIGHT       = 1.0;
     const ECO_WEIGHT        = 1.2;
 
-    // 의심도 배지 렌더(숨김)
+    // ★ 즉시 밴 급증 한계 (요청 반영: 10억 코인 등)
+    const BAN_SPIKE_COINS = 1_000_000_000; // 10억
+    const BAN_SPIKE_RES   = 100_000_000;   // 자원 급증 한계 (임의값)
+    const BAN_SPIKE_ECO   = 50_000;        // 이벤트코인 급증 한계 (임의값)
+
+    // 의심도 배지 렌더(화면에선 숨김 상태)
     function renderSecurityBadge(){
       const el = document.getElementById('suspicion-badge');
       if (!el) return;
@@ -1384,7 +1383,7 @@
     function showBanOverlay(show=true){
       const ov = document.getElementById('ban-overlay');
       if (ov){
-        document.getElementById('ban-sus-value').textContent = Math.round(security.suspicion);
+        document.getElementById('ban-sus-value').textContent = Math.round(security.suspicion || 0);
         ov.classList.toggle('show', !!show); ov.setAttribute('aria-hidden', show?'false':'true');
       }
     }
@@ -1419,10 +1418,33 @@
       securityDirty = false;
     }
 
-    // 합법 증가 장부
+    // ★ NEW: 지원 컨텍스트 저장/복구
+    const SUPPORT_CTX_KEY = 'siu_support_ctx';
+    function saveSupportCtx(extra = {}) {
+      const ctx = {
+        server: userServerKey || null,
+        idKey: userIdKey || null,
+        basePath: userBasePath || null,
+        uid: uid || null,
+        suspicion: (security && typeof security.suspicion === 'number') ? security.suspicion : null,
+        banned: !!(security && security.banned),
+        ts: Date.now(),
+        ...extra
+      };
+      try { localStorage.setItem(SUPPORT_CTX_KEY, JSON.stringify(ctx)); } catch {}
+      return ctx;
+    }
+    function readSupportCtx() {
+      try {
+        const raw = localStorage.getItem(SUPPORT_CTX_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    // 합법 증가 장부 + 시간
     let audit = {
-      last: null,                 // {res, coins, eco}
-      rec:  { res:0, coin:0, eco:0 }, // 이번 틱 합법 증가 합계
+      last: null,
+      rec:  { res:0, coin:0, eco:0 },
       lastAt: 0
     };
     function auditInit(){
@@ -1467,11 +1489,11 @@
       } catch (e) { console.warn('ban endpoint failed', e); }
     }
 
-    // 허용 한계(보수적) + 급증 판정
+    // 허용 한계(보수적)
     function expectedResGain(dtSec){
       const resBuff = activeBuffFactor('res');
       const workerGain = (state.workerCount * getWorkerPower()) * resBuff * dtSec;
-      const clickGain  = (state.clickPower || 1) * HUMAN_MAX_CPS * resBuff * dtSec;
+      const clickGain  = (state.clickPower || 1) * 12 * resBuff * dtSec; // HUMAN_MAX_CPS=12
       return workerGain + clickGain + 0.5;
     }
     function expectedCoinGain(dtSec){
@@ -1480,7 +1502,7 @@
       return convGain + 2;
     }
 
-    // 비정상 정도에 비례한 의심도 조정
+    // 의심도 조정 + 경고/정지 트리거
     function adjustSuspicion(delta){
       const prev = security.suspicion;
       security.suspicion = Math.max(0, Math.min(1000, prev + delta));
@@ -1497,16 +1519,12 @@
       if (security.suspicion >= SEC_BAN_LEVEL && !security.banned){
         security.banned = true;
         securityDirty = true;
-        // 로컬 지원컨텍스트 저장
-        writeSupportCtx({
-          banned:true,
-          suspicion: Math.round(security.suspicion),
-          server: userServerKey, idKey: userIdKey, path: userBasePath, uid
-        });
         requestAccountDisable('auto-ban:suspicion>=30').finally(async ()=>{
           showBanOverlay(true);
           showToast('⛔ 의심도 30 이상으로 계정이 정지되었습니다.');
           try { await saveSecurity(); } catch {}
+          // ★ 로그아웃 전 지원 컨텍스트 보존
+          saveSupportCtx({ banned: true });
           try { await auth.signOut(); } catch {}
         });
       }
@@ -1516,6 +1534,7 @@
       renderSecurityBadge();
     }
 
+    // 더 깐깐한 감지 + 즉시밴 급증 처리 + 느린 복구
     function auditCheck(){
       if (!audit.last){ auditInit(); return; }
       const now = Date.now();
@@ -1529,6 +1548,13 @@
       const dc = cur.coins - audit.last.coins;
       const de = cur.eco   - audit.last.eco;
 
+      // ★ 즉시 밴 급증 확인
+      if (dc >= BAN_SPIKE_COINS || dr >= BAN_SPIKE_RES || de >= BAN_SPIKE_ECO) {
+        adjustSuspicion(SEC_BAN_LEVEL + 1); // 바로 밴 트리거
+        auditResetCycle();
+        return;
+      }
+
       const resMax  = expectedResGain(dtSec);
       const coinMax = expectedCoinGain(dtSec);
 
@@ -1539,7 +1565,6 @@
       const spikeRes  = Math.max(0, dr - resMax);
       const spikeCoin = Math.max(0, dc - coinMax);
 
-      // 비정상 점수 (클수록 의심도 많이 상승)
       const unknownScore =
         (unkRes  > EPS ? unkRes  * RES_WEIGHT  : 0) +
         (unkCoin > EPS ? unkCoin * COIN_WEIGHT : 0) +
@@ -1547,24 +1572,16 @@
         (spikeRes  > EPS ? spikeRes  * 1.5 : 0) +
         (spikeCoin > EPS ? spikeCoin * 1.5 : 0);
 
-      // 초대형 급증 즉시 밴 (예: 1e9 코인 단발/틱)
-      const INSTANT_BAN_THRESHOLD = 1e9;
-      if (dc >= INSTANT_BAN_THRESHOLD || dr >= INSTANT_BAN_THRESHOLD*10) {
-        security.suspicion = Math.max(security.suspicion, SEC_BAN_LEVEL + 999);
-        adjustSuspicion(0); // 즉시 밴 트리거
-        return auditResetCycle();
-      }
-
       if (unknownScore > UNKNOWN_THRESH){
-        // 의심도 상승: 비정상 증가량에 비례 (상한 12/틱)
+        // 크기 비례 가중치
         const add = Math.min(12, Math.max(2, Math.ceil(unknownScore)));
         adjustSuspicion(add);
         security.fairSeconds = 0;
         securityDirty = true;
       } else {
-        // 아주 느리게 감소 (거의 안 내려가게)
         security.fairSeconds = (security.fairSeconds||0) + dtSec;
-        if (security.fairSeconds >= 8 && security.suspicion > 0){
+        // ★ 매우 느린 복구(거의 안내려감): 90초마다 -1
+        if (security.fairSeconds >= 90 && security.suspicion > 0){
           adjustSuspicion(-1);
           security.fairSeconds = 0;
         }
@@ -1572,6 +1589,48 @@
       }
 
       auditResetCycle();
+    }
+
+    /* ======================
+       지원(오탐) 메일/복사
+       ====================== */
+    function buildSupportInfoText(){
+      const persisted = readSupportCtx();
+      const server = userServerKey || persisted?.server || '(알 수 없음)';
+      const idKey  = userIdKey     || persisted?.idKey  || '(알 수 없음)';
+      const path   = userBasePath  || persisted?.basePath || '(알 수 없음)';
+      const nowKST = kstDate().toLocaleString('ko-KR');
+      const uidStr = uid || persisted?.uid || '(미로그인)';
+      const sus    = (typeof security?.suspicion === 'number') ? security.suspicion
+                : (typeof persisted?.suspicion === 'number') ? persisted.suspicion : null;
+      return [
+        `서버: ${server}`,
+        `아이디키: ${idKey}`,
+        `Realtime DB 경로: ${path}`,
+        `UID: ${uidStr}`,
+        `현재 의심도: ${sus === null ? '(알 수 없음)' : sus}`,
+        `발생 시각(KST): ${nowKST}`
+      ].join('\n');
+    }
+    function buildSupportMail(){
+      const persisted = readSupportCtx();
+      const s = userServerKey || persisted?.server || 'server?';
+      const i = userIdKey     || persisted?.idKey  || 'id?';
+      const subject = `[Appeal] 오탐 검토 요청 - ${s} / ${i}`;
+      const header  = '안녕하세요, 오탐으로 의심되어 검토를 요청드립니다.\n';
+      const info    = buildSupportInfoText();
+      const footer  = '\n\n상세 상황:\n(여기에 상황을 자세히 적어주세요)\n';
+      const body    = `${header}\n${info}${footer}`;
+      const mailto  = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      return { subject, body, mailto };
+    }
+    async function copySupportInfo(){
+      try {
+        await navigator.clipboard.writeText(buildSupportInfoText());
+        showToast('복사 완료! 메일에 붙여넣어 보낼 수 있어요.', null, null, 2500);
+      } catch {
+        showToast('클립보드 복사에 실패했습니다.', null, null, 2500);
+      }
     }
 
     /* ======================
@@ -1611,7 +1670,7 @@
       tryUnlockDaily();
       renderBuffStatus();
 
-      // 캐시 저장 → 다음 방문 즉시 렌더
+      // ★ 캐시 저장 → 다음 방문 즉시 렌더
       try {
         if (uid) {
           const cachePick = {
@@ -1751,39 +1810,28 @@
     /* ======================
        인증/부팅 흐름
        ====================== */
-    const tabLogin     = document.getElementById('auth-tab-login');
-    const tabSignup    = document.getElementById('auth-tab-signup');
-    const signupExtra  = document.getElementById('signup-extra');
-    const loginBtn     = document.getElementById('login-btn');
-    const signupBtnEl  = document.getElementById('signup-btn');
+    const tabLogin  = document.getElementById('auth-tab-login');
+    const tabSignup = document.getElementById('auth-tab-signup');
+    const signupExtra = document.getElementById('signup-extra');
+    const loginBtn  = document.getElementById('login-btn');
+    const signupBtnEl = document.getElementById('signup-btn');
 
-    // 마지막 이메일 기억/복원
-    const emailInputEl = document.getElementById('email');
-    try {
-      const lastEmail = localStorage.getItem('login_email');
-      if (lastEmail && emailInputEl) emailInputEl.value = lastEmail;
-    } catch {}
-    emailInputEl?.addEventListener('input', () => {
-      try { localStorage.setItem('login_email', (emailInputEl.value||'').trim()); } catch {}
-      updateSupportPreviewFromInput();
-    });
-
+    let currentAuthMode = 'login';
     function setAuthMode(mode) {
-      const m = (mode === 'signup') ? 'signup' : 'login';
-      if (m === 'signup') {
+      currentAuthMode = (mode === 'signup') ? 'signup' : 'login';
+      if (mode === 'signup') {
         tabLogin.classList.remove('active'); tabSignup.classList.add('active');
         signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtnEl.style.display='block';
-        try { history.replaceState(null, '', '/signup' + (location.hash || '')); } catch {}
       } else {
         tabLogin.classList.add('active'); tabSignup.classList.remove('active');
         signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
-        try { history.replaceState(null, '', '/login' + (location.hash || '')); } catch {}
       }
       showAuthStatus(''); document.getElementById('verify-info').textContent = '';
+      // ★ 탭 전환 시 URL 갱신 (/login, /signup)
+      try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
     }
     tabLogin.addEventListener('click',  () => setAuthMode('login'));
     tabSignup.addEventListener('click', () => setAuthMode('signup'));
-    document.getElementById('tos-open').addEventListener('click', () => showTosOverlay(true));
 
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
@@ -1795,6 +1843,8 @@
       const code = err?.code || '';
       if (code === 'auth/user-disabled') {
         security.banned = true;
+        // ★ 로그인 실패로 인한 정지 케이스도 컨텍스트 보존
+        saveSupportCtx({ banned: true });
         showBanOverlay(true);
         showAuthStatus('⛔ 계정이 정지되어 로그인할 수 없습니다.', true);
         return true;
@@ -1802,7 +1852,6 @@
       return false;
     }
 
-    // 로그인 클릭
     loginBtn.addEventListener('click', async () => {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
@@ -1819,12 +1868,12 @@
         if (!handleAuthError(err)) {
           const code = (err && err.code) || '';
           const msg =
-            (code === 'auth/invalid-login-credentials' ||
-             code === 'auth/wrong-password' ||
-             code === 'auth/user-not-found')           ? '아이디 또는 비밀번호가 일치하지 않습니다.' :
-            (code === 'auth/invalid-email')            ? '이메일 형식이 올바르지 않습니다.' :
-            (code === 'auth/network-request-failed')   ? '네트워크가 불안정합니다.' :
-                                                         '로그인 중 문제가 발생하였습니다. 나중에 다시 시도하세요.';
+            (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')
+              ? '아이디 또는 비밀번호가 일치하지 않습니다.' :
+            code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
+            code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
+            code === 'auth/network-request-failed' ? '네트워크가 불안정합니다.' :
+            '로그인 중 문제가 발생하였습니다. 나중에 다시 시도하세요';
           showAuthStatus(msg);
         }
       }
@@ -1863,7 +1912,7 @@
             code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
             code === 'auth/invalid-email'       ? '이메일 형식이 올바르지 않습니다.' :
             code === 'auth/weak-password'       ? '비밀번호가 너무 약합니다.' :
-                                                  '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.';
+            '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.';
           showAuthStatus(msg);
         }
       }
@@ -1879,29 +1928,14 @@
       showTosOverlay(false);
       showToast('✅ 이용약관에 동의되었습니다. 공정한 플레이를 부탁드려요!', null, null, 3500);
     });
-    // 정지 오탐 메일
-    document.getElementById('ban-appeal')?.addEventListener('click', ()=>{
-      const ctx = readSupportCtx() || {};
-      const server = ctx.server || userServerKey || '(미확인)';
-      const idKey  = ctx.idKey  || userIdKey     || '(미확인)';
-      const path   = ctx.path   || userBasePath  || `users/${server}/${idKey}`;
-      const subject = `[Appeal] 오탐 검토 요청 - ${server} / ${idKey}`;
-      const body = [
-        '안녕하세요, 오탐으로 의심되어 검토를 요청드립니다.',
-        '',
-        `서버: ${server}`,
-        `아이디키: ${idKey}`,
-        `Realtime DB 경로: ${path}`,
-        `UID: ${uid || '(로그인 필요)'}`,
-        `의심도: ${Math.round(security.suspicion || ctx.suspicion || 0)}`,
-        `발생 시각(KST): ${kstDate().toLocaleString('ko-KR')}`,
-        '',
-        '상세 상황:',
-        '(여기에 상황을 자세히 적어주세요)'
-      ].join('\n');
-      location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    });
+
+    // 정지 오버레이 버튼들
     document.getElementById('ban-ok')?.addEventListener('click', ()=> showBanOverlay(false));
+    document.getElementById('ban-appeal-email')?.addEventListener('click', ()=>{
+      const { mailto } = buildSupportMail();
+      location.href = mailto;
+    });
+    document.getElementById('ban-copy-info')?.addEventListener('click', copySupportInfo);
 
     // 세션 중간 정지 빠른 감지(30초마다 토큰 강제 갱신)
     setInterval(async () => {
@@ -1933,6 +1967,9 @@
       await ensureInitialData(dataRef);
       await loadSecurity();
 
+      // ★ 최신 컨텍스트 보존
+      saveSupportCtx({ banned: false });
+
       dataUnsubscribe = onValue(dataRef, async snap => {
         const server = snap.exists() ? snap.val() : null;
 
@@ -1944,7 +1981,7 @@
           isInitialSync = false;
           showGameUI();
 
-          // 최초 정상 진입: 이후 부팅오버레이 스킵
+          // ★ 최초 정상 진입 시: 다음부터 부팅오버레이 스킵
           try { localStorage.setItem('boot_seen', '1'); } catch {}
 
           window.notifyAuthSuccessAndExit && window.notifyAuthSuccessAndExit();
@@ -1956,9 +1993,6 @@
 
           if (!security.tosAccepted){ showTosOverlay(true); }
           if (security.banned){ showBanOverlay(true); }
-
-          // 로컬 지원컨텍스트 갱신
-          writeSupportCtx({ server: userServerKey, idKey: userIdKey, path: userBasePath, uid, banned: security.banned, suspicion: Math.round(security.suspicion) });
           return;
         }
 
@@ -1994,7 +2028,7 @@
         loadBuffs();
         renderBuffStatus();
 
-        // 캐시된 게임 데이터 즉시 렌더
+        // ★ 캐시된 게임 데이터로 즉시 렌더 (부팅오버레이 없이 빠르게)
         try {
           const cacheRaw = localStorage.getItem(`gd_cache_${uid}`);
           if (cacheRaw) {
@@ -2027,14 +2061,18 @@
               }
             });
           } catch {}
-          // 로컬 지원컨텍스트 기록
-          writeSupportCtx({ server: userServerKey, idKey: userIdKey, path: userBasePath, uid });
+          // ★ 최신 컨텍스트 보존
+          saveSupportCtx({ banned: false });
           await proceedWithDataBinding();
           return;
         }
         userServerKey = plan.server;
         userIdKey     = makeIdKeyFromUser(user);
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
+
+        // ★ 경로 확정 즉시 컨텍스트 보존
+        saveSupportCtx({ banned: false });
+
         if (plan.need) {
           showMigrateOverlay(true, '대기 중…');
           disableMigrateStart(false);
@@ -2055,8 +2093,8 @@
                     }
                   });
                 } catch {}
-                // 로컬 지원컨텍스트 기록
-                writeSupportCtx({ server: userServerKey, idKey: userIdKey, path: `users/${userServerKey}/${userIdKey}`, uid });
+                // ★ 컨텍스트 보존
+                saveSupportCtx({ banned: false });
                 setTimeout(()=>{ showMigrateOverlay(false); proceedWithDataBinding(); }, 600);
               }catch(e){
                 console.error('migration failed', e);
@@ -2077,8 +2115,8 @@
               }
             });
           } catch {}
-          // 로컬 지원컨텍스트 기록
-          writeSupportCtx({ server: userServerKey, idKey: userIdKey, path: `users/${userServerKey}/${userIdKey}`, uid });
+          // ★ 컨텍스트 보존
+          saveSupportCtx({ banned: false });
           await proceedWithDataBinding();
         }
 
@@ -2099,7 +2137,7 @@
         authContainer.style.display = 'block';
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
-        setAuthMode('login');
+        setAuthMode(currentAuthMode);
 
         // ★ 로그아웃 상태에서도 최근 정지 컨텍스트가 있으면 오버레이 표시
         const persisted = readSupportCtx();
@@ -2108,8 +2146,6 @@
           security.suspicion = (typeof persisted.suspicion === 'number') ? persisted.suspicion : security.suspicion;
           showBanOverlay(true);
         }
-        // 이메일 입력 기반 지원 미리보기 업데이트
-        updateSupportPreviewFromInput();
       }
     });
 
@@ -2125,7 +2161,6 @@
       }
     }, 4000);
 
-    // 구글 로그인
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       const provider = new GoogleAuthProvider();
@@ -2147,75 +2182,13 @@
       else window.__DEFER_INIT = wireGame;
       renderBuffStatus();
       renderSecurityBadge();
-      // 로그아웃 상태일 수도 있으니 지원 미리보기 갱신
-      updateSupportPreviewFromInput();
     });
 
     setInterval(renderBuffStatus, 1000);
-
-    /* ======================
-       로그아웃 상태 지원 미리보기
-       ====================== */
-    function idKeyFromEmailInput(){
-      const email = (document.getElementById('email')?.value || '').trim().toLowerCase();
-      if (!email) return null;
-      return encodeEmailToKey(email);
-    }
-    function updateSupportPreviewFromInput(){
-      const cont = document.getElementById('support-preview');
-      if (!cont) return;
-      const idKey = idKeyFromEmailInput();
-      if (!idKey){ cont.style.display='none'; return; }
-
-      const persisted = readSupportCtx();
-      const server = persisted?.server || '(미확인)';
-      const basePath = `users/${server}/${idKey}`;
-
-      document.getElementById('sp-server').textContent = server;
-      document.getElementById('sp-idkey').textContent  = idKey;
-      document.getElementById('sp-path').textContent   = `${basePath}/gameData`;
-
-      const blob = [
-        `서버: ${server}`,
-        `아이디키: ${idKey}`,
-        `Realtime DB 경로: ${basePath}`,
-        `UID: (로그인 필요)`,
-        `현재 의심도: ${typeof persisted?.suspicion === 'number' ? persisted.suspicion : '(알 수 없음)'}`,
-        `발생 시각(KST): ${kstDate().toLocaleString('ko-KR')}`
-      ].join('\n');
-      document.getElementById('sp-blob').textContent = blob;
-
-      cont.style.display = 'block';
-    }
-    document.getElementById('sp-email')?.addEventListener('click', () => {
-      const idKey = idKeyFromEmailInput();
-      if (!idKey){ showToast('이메일을 먼저 입력하세요.'); return; }
-      const persisted = readSupportCtx();
-      const server = persisted?.server || 'server?';
-      const subject = `[Appeal] 오탐 검토 요청 - ${server} / ${idKey}`;
-      const body = [
-        '안녕하세요, 오탐으로 의심되어 검토를 요청드립니다.',
-        '',
-        `서버: ${server}`,
-        `아이디키: ${idKey}`,
-        `Realtime DB 경로: users/${server}/${idKey}`,
-        'UID: (로그인 필요)',
-        `발생 시각(KST): ${kstDate().toLocaleString('ko-KR')}`,
-        '',
-        '상세 상황:',
-        '(여기에 상황을 자세히 적어주세요)'
-      ].join('\n');
-      location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    });
-    document.getElementById('sp-copy')?.addEventListener('click', async () => {
-      const txt = document.getElementById('sp-blob')?.textContent || '';
-      if (!txt){ showToast('복사할 정보가 없습니다.'); return; }
-      try { await navigator.clipboard.writeText(txt); showToast('복사 완료! 메일에 붙여넣기 하세요.'); }
-      catch { showToast('복사에 실패했습니다.'); }
-    });
+    window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
   </script>
 
-  <!-- 우클릭 메뉴 -->
+  <!-- 우클릭 커스텀 메뉴 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
@@ -2303,7 +2276,7 @@
     });
   </script>
 
-  <!-- 원격 지원 (선택) -->
+  <!-- 원격 지원 -->
   <script>
     (function(w,t,c,p,s,e){
       p=new Promise(function(r){
@@ -2322,7 +2295,7 @@
     CobrowseIO.client().then(function(){ CobrowseIO.start(); });
   </script>
 
-  <!-- Firebase 커맨드(세션 제어) - 선택 -->
+  <!-- Firebase 커맨드(세션 제어) -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
