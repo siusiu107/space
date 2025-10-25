@@ -353,8 +353,8 @@
       padding:16px; box-shadow: 0 22px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08); color:#eaf6ff; }
     .overlay-card h3{ margin:0 0 8px; font-size:18px; }
     .overlay-actions{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
-    #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,.10);
-      border-radius:10px; background: rgba(0,0,0,.2); font-size:13px; color:#cfe6ff; }
+    #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,0.10);
+      border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
   </style>
 </head>
@@ -393,6 +393,12 @@
         · 치팅/핵 사용, 버그 악용, 계정 양도/대여는 금지됩니다.<br/>
         · <u>자원·코인 비정상 급증(예: 한 번에 10억 코인)</u> 탐지 시 경고 또는 즉시 정지될 수 있습니다.<br/>
         · 자세한 내용은 아래 ‘이용약관 동의’ 모달에서 확인하세요.
+      </div>
+      <!-- 🔗 이용약관 자세히 보기 (inframe /privacy) -->
+      <div style="margin-top:8px; text-align:left;">
+        <a href="#" id="tos-more-link" style="font-size:12px; color:#9fdcff; text-decoration:underline;">
+          이용약관 자세히 보기
+        </a>
       </div>
     </div>
 
@@ -585,6 +591,27 @@
       </label>
       <div class="overlay-actions">
         <button id="tos-accept" class="spinbtn spin-free" disabled>동의하고 시작</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧩 정책(inframe) 오버레이 (/privacy 표시) -->
+  <div id="policy-overlay" class="overlay" aria-hidden="true">
+    <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="policy-title">
+      <h3 id="policy-title">이용약관 · 개인정보 처리방침</h3>
+      <div style="height:70vh; max-height:80vh; margin-top:6px;">
+        <iframe
+          id="policy-frame"
+          title="정책 문서"
+          src="/privacy"
+          loading="lazy"
+          style="width:100%; height:100%; border:0; border-radius:10px; background:#fff;"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          referrerpolicy="no-referrer"
+        ></iframe>
+      </div>
+      <div class="overlay-actions">
+        <button id="policy-close" class="spinbtn">닫기</button>
       </div>
     </div>
   </div>
@@ -1457,6 +1484,11 @@
         const ov = document.getElementById('daily-overlay');
         if (ov){ ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); }
       }catch{}
+      /* ✅ 정책(inframe) 오버레이도 함께 닫기 */
+      try{
+        const pov = document.getElementById('policy-overlay');
+        if (pov){ pov.classList.remove('show'); pov.setAttribute('aria-hidden','true'); }
+      }catch{}
     }
 
     // === 합법 증감 장부(증가·지출·규모 반영) ===
@@ -1785,7 +1817,7 @@
     }
 
     function spawnParticles(x,y) {
-      for (let i=0;i<15;i++){
+      for (let i=15;i>0;i--){
         const span = document.createElement('span');
         span.className='particle';
         span.style.setProperty('--dx',(Math.random()-0.5)*100+'px');
@@ -2505,6 +2537,36 @@
         if (window.__PLAY_ALLOWED){ ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; }); }
         return;
       }
+    })();
+  </script>
+
+  <!-- 📎 정책(inframe) 오버레이 열기/닫기 -->
+  <script>
+    (function () {
+      const more   = document.getElementById('tos-more-link');
+      const ov     = document.getElementById('policy-overlay');
+      const frame  = document.getElementById('policy-frame');
+      const closeB = document.getElementById('policy-close');
+
+      function openPolicy() {
+        if (!ov) return;
+        if (frame && !frame.dataset._loadedOnce) {
+          frame.src = '/privacy' + (location.search || '') + (location.hash || '');
+          frame.dataset._loadedOnce = '1';
+        }
+        ov.classList.add('show');
+        ov.setAttribute('aria-hidden', 'false');
+      }
+      function closePolicy() {
+        if (!ov) return;
+        ov.classList.remove('show');
+        ov.setAttribute('aria-hidden', 'true');
+      }
+
+      more    && more.addEventListener('click', (e) => { e.preventDefault(); openPolicy(); });
+      closeB  && closeB.addEventListener('click', closePolicy);
+      ov      && ov.addEventListener('click', (e) => { if (e.target === ov) closePolicy(); });
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePolicy(); });
     })();
   </script>
 </body>
