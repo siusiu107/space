@@ -109,7 +109,7 @@
     }
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    /* 푸터 */
+    /* 푸터 (기본) */
     footer{ margin:12px 0 24px; text-align:center; color:var(--muted); font-size:12px; }
 
     /* 채팅 공통 */
@@ -156,6 +156,31 @@
     .badge.ended{ background:rgba(255,80,80,0.12); }
     .muted{ color:var(--muted); font-size:12px; }
     .req-actions{ display:flex; gap:6px; }
+
+    /* --- footer & small button & policy modal (ADD) --- */
+    footer{
+      display:flex; gap:10px; align-items:center; justify-content:center;
+      flex-wrap:wrap;
+    }
+    footer .copy{ opacity:.9; }
+    .btn.tiny{ padding:6px 8px; font-size:12px; border-radius:8px; }
+
+    #policy{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2100;
+      background: rgba(0,0,0,0.5);
+    }
+    #policy .panel{
+      width:min(860px, 94vw); max-height:86vh; overflow:hidden;
+      background: var(--glass-bg); border:1px solid var(--stroke);
+      border-radius:16px; padding:12px;
+    }
+    #policy .panel .head{
+      display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;
+    }
+    #policy iframe{
+      width:100%; height:70vh; border:1px solid var(--stroke);
+      border-radius:12px; background:#000;
+    }
   </style>
 </head>
 <body>
@@ -287,7 +312,11 @@
       </div>
     </div>
 
-    <footer>태양계 정복: 우주 생존 클릭커 · v0.1.0</footer>
+    <footer>
+      <span>태양계 정복: 우주 생존 클릭커 · v0.1.0</span>
+      <span class="copy">ⓒ 2025. siustudio All rights reserved.</span>
+      <button id="btn-policy" class="btn secondary tiny" aria-haspopup="dialog" aria-controls="policy">이용약관</button>
+    </footer>
   </div>
 
   <!-- 토스트 -->
@@ -314,6 +343,21 @@
         <button id="tos-cancel" class="btn secondary">취소</button>
         <button id="tos-accept" class="btn">동의하고 진행</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 사이트 이용약관(Privacy) 모달 : /privacy를 iframe으로 표시 -->
+  <div id="policy" aria-modal="true" role="dialog">
+    <div class="panel">
+      <div class="head">
+        <h3 style="margin:0">이용약관</h3>
+        <div style="display:flex; gap:6px">
+          <a href="/privacy" target="_blank" rel="noopener" class="btn secondary tiny" title="새 탭에서 열기">새 탭</a>
+          <button id="policy-close" class="btn secondary tiny">닫기</button>
+        </div>
+      </div>
+      <iframe id="policy-iframe" src="/privacy" title="이용약관" loading="lazy"></iframe>
+      <p class="muted" style="font-size:12px;margin-top:8px">동일 도메인 정책에 따라 /privacy 페이지가 프레임 내에 표시됩니다.</p>
     </div>
   </div>
 
@@ -903,6 +947,21 @@
     window.CobrowseIO = window.CobrowseIO || {};
     window.CobrowseIO.license = "eFtcbWqBdRylMQ";
     window.CobrowseIO.capabilities = ["cursor","remote-control"];
+
+    /* --- policy modal open/close (ADD) --- */
+    const btnPolicy   = document.getElementById('btn-policy');
+    const policyModal = document.getElementById('policy');
+    const policyClose = document.getElementById('policy-close');
+
+    function openPolicy(){ policyModal.style.display = 'flex'; }
+    function closePolicy(){ policyModal.style.display = 'none'; }
+
+    btnPolicy?.addEventListener('click', openPolicy);
+    policyClose?.addEventListener('click', closePolicy);
+    // 오버레이 클릭 시 닫기
+    policyModal?.addEventListener('click', (e)=>{ if(e.target === policyModal) closePolicy(); });
+    // ESC 키 닫기
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && policyModal.style.display === 'flex') closePolicy(); });
   </script>
 </body>
 </html>
