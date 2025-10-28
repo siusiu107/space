@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>인증 처리 중…</title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:#0b1220;color:#e9f3ff;display:grid;place-items:center;height:100vh}
+    .card{background:#111a2c;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;max-width:520px}
+    .muted{color:#b8c7e6;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 style="margin:0 0 8px">이메일 링크 확인 중…</h1>
+    <p class="muted">잠시만 기다려 주세요.</p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      projectId: "siu-studio",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    function setEnvUnlock(uid, minutes=10){
+      localStorage.setItem(`envUnlockUntil_${uid||'anon'}`, Date.now() + minutes*60*1000);
+    }
+
+    (async () => {
+      try {
+        if (!isSignInWithEmailLink(auth, window.location.href)) {
+          document.body.querySelector('.muted').textContent = '잘못된 링크이거나 만료되었습니다.';
+          return;
+        }
+        let email = localStorage.getItem('emailForSignIn');
+        if (!email) {
+          email = prompt('가입 이메일을 입력하세요');
+          if (!email) throw new Error('이메일이 필요합니다.');
+        }
+        const result = await signInWithEmailLink(auth, email, window.location.href);
+        localStorage.removeItem('emailForSignIn');
+
+        const uid = result?.user?.uid || 'anon';
+        setEnvUnlock(uid, 10);
+
+        // 메인으로 복귀 (현재 위치 기준)
+        const back = new URL('./', location.href).href; // 같은 디렉터리의 루트
+        location.replace(back);
+      } catch (e) {
+        console.error(e);
+        document.body.querySelector('.muted').textContent = '인증에 실패했습니다. 다시 시도해 주세요.';
+      }
+    })();
+  </script>
+</body>
+</html>
