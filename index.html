@@ -1,129 +1,635 @@
 <!DOCTYPE html>
 <html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>태양계정복 - 메인 메뉴</title>
-    <meta name="description" content="태양계정복 - 우주 생존 클릭커. 직관적인 조작과 화려한 그래픽의 HTML 게임입니다. 지금 팝업으로 게임을 실행하세요.">
-    <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="./">
-    <!-- Open Graph -->
-    <meta property="og:title" content="태양계정복 - SIU Studio">
-    <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="space-bg.jpg">
-    <meta property="og:image:alt" content="태양계정복 썸네일">
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="태양계정복 - SIU Studio">
-    <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
-    <meta name="twitter:image" content="space-bg.jpg">
-    <!-- Icons -->
-    <link rel="icon" href="space-bg.jpg" type="image/jpeg">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
-    <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
-    <!-- PWA -->
-    <link rel="manifest" href="/site.webmanifest">
-    <meta name="msapplication-TileColor" content="#2d89ef">
-    <meta name="theme-color" content="#ffffff">
-    <script>
-        try { history.replaceState(null, '', '/main' + (location.hash || '')); } catch(e){ console.warn('주소 표시 변경 실패:', e); }
-    </script>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; } body, html { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; } .container { display: flex; flex-direction: row; height: 100vh; } .sidebar { width: 250px; background: rgba(10, 10, 30, 0.8); display: flex; flex-direction: column; align-items: center; padding-top: 40px; gap: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 3; } .sidebar button { width: 80%; padding: 12px 0; text-align: center; text-decoration: none; color: #fff; background: rgba(255,255,255,0.1); border: none; border-radius: 30px; cursor: pointer; transition: background 0.3s, transform 0.2s; } .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; } .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; } .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); } .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; } .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; } .overlay a.start-btn { display: inline-block; padding: 16px 32px; font-size: 20px; background: linear-gradient(45deg, #f4b400, #ffea00); color: #000; text-decoration: none; border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7); transition: box-shadow 0.3s, transform 0.2s; } .overlay a.start-btn:hover { box-shadow: 0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); } .panel { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); background: rgba(20,20,40,0.9); padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; display: none; z-index: 2; box-shadow: 0 0 20px rgba(0,0,0,0.7); } .panel.active { display: block; } .panel h2 { font-size: 24px; margin-bottom: 10px; color: #f4b400; } .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; } .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; } .panel ul li { margin-bottom: 8px; font-size: 14px; } .panel .close-btn { display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff; border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s; } .panel .close-btn:hover { background: #e53935; } /* ✅ 환경 배지 & 연결정보 패널 (기본: PC 레이아웃) */ #env-badge { position: fixed; top: 8px; right: 8px; padding: 6px 10px; border-radius: 999px; background: rgba(20,20,40,0.85); color: #fff; border: 1px solid rgba(244,180,0,0.4); font-size: 12px; letter-spacing: .4px; z-index: 10001; cursor: pointer; user-select: none; backdrop-filter: blur(4px); } #env-badge::after { content: 'ⓘ'; margin-left: 6px; opacity: .7; font-weight: 700; } #env-panel { position: fixed; top: 40px; right: 8px; width: 340px; max-width: calc(100vw - 16px); max-height: 80vh; overflow: auto; background: rgba(10,10,25,0.98); color: #fff; border: 1px solid rgba(255,255,255,.08); box-shadow: 0 8px 24px rgba(0,0,0,.55); border-radius: 12px; padding: 12px; display: none; z-index: 10002; backdrop-filter: blur(6px); -webkit-overflow-scrolling: touch; } #env-panel h3 { margin: 2px 0 8px; font-size: 14px; color: #f4b400; } #env-panel dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-size: 12px; word-break: break-all; } #env-panel dt { color: #aab; } #env-panel dd { color: #eef; margin: 0; } #env-panel .muted { opacity: .8; font-size: 11px; } #env-panel .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; } #env-close { background: transparent; border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; } #env-close:hover { background: rgba(255,255,255,.08); } /* Responsive (모바일 더 작게) */ @media (max-width: 768px) { .container { flex-direction: column; } .sidebar { width: 100%; flex-direction: row; justify-content: space-around; padding: 8px 6px; gap: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); } .sidebar button { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; } .overlay h1 { font-size: 28px; } .overlay a.start-btn { padding: 9px 16px; font-size: 15px; border-radius: 18px; } /* ✅ 배지 더 작게 + 우하단 */ #env-badge { top: auto; right: 6px; bottom: calc(6px + env(safe-area-inset-bottom, 0px)); padding: 4px 7px; font-size: 10px; border-radius: 12px; } /* ✅ 패널 더 작게 */ #env-panel { top: auto; bottom: calc(42px + env(safe-area-inset-bottom, 0px)); right: 6px; width: 240px; max-width: calc(100vw - 12px); max-height: 55vh; padding: 8px; border-radius: 10px; } #env-panel h3 { font-size: 12px; } #env-panel dl { grid-template-columns: 90px 1fr; gap: 3px 6px; font-size: 10px; } #env-panel .muted { font-size: 9px; } /* ✅ 라이센스/컨택 패널도 소형화 */ .panel { width: 92%; max-width: 420px; padding: 20px; } .panel h2 { font-size: 20px; } .panel p, .panel ul li { font-size: 12px; } .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; } }
-    </style>
+  <title>태양계정복 - 메인 메뉴</title>
+  <meta name="description" content="태양계정복 - 우주 생존 클릭커. 직관적인 조작과 화려한 그래픽의 HTML 게임입니다. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="./">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="태양계정복 - SIU Studio">
+  <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="space-bg.jpg">
+  <meta property="og:image:alt" content="태양계정복 썸네일">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="태양계정복 - SIU Studio">
+  <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="twitter:image" content="space-bg.jpg">
+
+  <!-- Icons -->
+  <link rel="icon" href="space-bg.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileColor" content="#2d89ef">
+  <meta name="theme-color" content="#ffffff">
+
+  <script>
+    try {
+      history.replaceState(null, '', '/main' + (location.hash || ''));
+    } catch (e) {
+      console.warn('주소 표시 변경 실패:', e);
+    }
+  </script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
+
+    .container { display: flex; flex-direction: row; height: 100vh; }
+
+    .sidebar {
+      width: 250px;
+      background: rgba(10, 10, 30, 0.8);
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 40px; gap: 20px;
+      box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 3;
+    }
+    .sidebar button {
+      width: 80%; padding: 12px 0; text-align: center;
+      color: #fff; background: rgba(255,255,255,0.1);
+      border: none; border-radius: 30px; cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
+
+    .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
+    .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
+
+    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
+    .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; }
+    .overlay a.start-btn {
+      display: inline-block; padding: 16px 32px; font-size: 20px;
+      background: linear-gradient(45deg, #f4b400, #ffea00); color: #000; text-decoration: none;
+      border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7);
+      transition: box-shadow 0.3s, transform 0.2s;
+    }
+    .overlay a.start-btn:hover { box-shadow: 0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); }
+
+    .panel {
+      position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
+      background: rgba(20,20,40,0.9); padding: 30px; border-radius: 10px;
+      width: 90%; max-width: 500px; display: none; z-index: 2;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    }
+    .panel.active { display: block; }
+    .panel h2 { font-size: 24px; margin-bottom: 10px; color: #f4b400; }
+    .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
+    .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
+    .panel ul li { margin-bottom: 8px; font-size: 14px; }
+    .panel .close-btn {
+      display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff;
+      border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s;
+    }
+    .panel .close-btn:hover { background: #e53935; }
+
+    /* 환경 배지 & 연결정보 패널 (기본: PC 레이아웃) */
+    #env-badge {
+      position: fixed; top: 8px; right: 8px; padding: 6px 10px; border-radius: 999px;
+      background: rgba(20,20,40,0.85); color: #fff; border: 1px solid rgba(244,180,0,0.4);
+      font-size: 12px; letter-spacing: .4px; z-index: 10001; cursor: pointer;
+      user-select: none; backdrop-filter: blur(4px);
+    }
+    #env-badge::after { content: 'ⓘ'; margin-left: 6px; opacity: .7; font-weight: 700; }
+
+    #env-panel {
+      position: fixed; top: 40px; right: 8px; width: 340px;
+      max-width: calc(100vw - 16px); max-height: 80vh; overflow: auto;
+      background: rgba(10,10,25,0.98); color: #fff; border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 8px 24px rgba(0,0,0,.55); border-radius: 12px; padding: 12px; display: none;
+      z-index: 10002; backdrop-filter: blur(6px); -webkit-overflow-scrolling: touch;
+    }
+    #env-panel h3 { margin: 2px 0 8px; font-size: 14px; color: #f4b400; }
+    #env-panel dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-size: 12px; word-break: break-all; }
+    #env-panel dt { color: #aab; }
+    #env-panel dd { color: #eef; margin: 0; }
+    #env-panel .muted { opacity: .8; font-size: 11px; }
+
+    #env-panel .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    #env-close { background: transparent; border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    #env-close:hover { background: rgba(255,255,255,.08); }
+
+    /* Responsive (모바일 더 작게) */
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+
+      .sidebar {
+        width: 100%; flex-direction: row; justify-content: space-around;
+        padding: 8px 6px; gap: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      }
+      .sidebar button { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
+
+      .overlay h1 { font-size: 28px; }
+      .overlay a.start-btn { padding: 9px 16px; font-size: 15px; border-radius: 18px; }
+
+      /* 배지 더 작게 + 우하단 */
+      #env-badge {
+        top: auto; right: 6px; bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        padding: 4px 7px; font-size: 10px; border-radius: 12px;
+      }
+
+      /* 패널 더 작게 */
+      #env-panel {
+        top: auto; bottom: calc(42px + env(safe-area-inset-bottom, 0px)); right: 6px;
+        width: 240px; max-width: calc(100vw - 12px); max-height: 55vh;
+        padding: 8px; border-radius: 10px;
+      }
+      #env-panel h3 { font-size: 12px; }
+      #env-panel dl { grid-template-columns: 90px 1fr; gap: 3px 6px; font-size: 10px; }
+      #env-panel .muted { font-size: 9px; }
+
+      /* 라이센스/컨택 패널도 소형화 */
+      .panel { width: 92%; max-width: 420px; padding: 20px; }
+      .panel h2 { font-size: 20px; }
+      .panel p, .panel ul li { font-size: 12px; }
+      .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; }
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <nav class="sidebar">
-            <button id="show-license">라이센스 정보</button>
-            <button id="show-contact">Contact Us</button>
-        </nav>
-        <div class="content">
-            <div class="overlay">
-                <h1>태양계정복</h1>
-                <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 --><a href="game.html" id="start-btn" class="start-btn">게임 시작</a> </div>
-            <!-- 팝업 차단 안내 토스트 -->
-            <div id="popup-hint" style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;">
-            팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요. </div>
-            <div class="panel" id="license-panel" aria-modal="true" role="dialog">
-                <h2>라이센스 정보</h2>
-                <p>© 2025 SIU Studio. All rights reserved.</p>
-                <p>본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:</p>
-                <ul>
-                    <li>복사(Copying)</li>
-                    <li>수정(Modification)</li>
-                    <li>리버스 엔지니어링(Reverse Engineering)</li>
-                    <li>재배포(Redistribution)</li>
-                    <li>상업적 이용(Commercial Use)</li>
-                </ul>
-                <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
-                <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
-                <button class="close-btn" data-target="license-panel">닫기</button>
-            </div>
-            <div class="panel" id="contact-panel" aria-modal="true" role="dialog">
-                <h2>Contact Us</h2>
-                <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
-                <p><a href="mailto:support@siustudio.kro.kr" style="color: #f4b400; text-decoration: none;">support@siustudio.kro.kr</a></p>
-                <button class="close-btn" data-target="contact-panel">닫기</button>
-            </div>
-        </div>
-    </div>
-    <!-- 환경 배지 & 연결정보 패널 -->
-    <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
-    <div id="env-panel" role="dialog" aria-modal="true" aria-labelledby="env-title">
-        <div class="row">
-            <h3 id="env-title">연결 정보</h3>
-            <button id="env-close" aria-label="닫기">✕</button>
-        </div>
-        <dl id="env-list">
-            <!-- JS에서 채웁니다 -->
-        </dl>
-        <p class="muted" style="margin-top:8px;">* 일부 값은 브라우저/OS 정책으로 비공개이거나 근사치일 수 있습니다.</p>
-    </div>
-    <!-- 패널 토글 -->
-    <script>
-        const $licenseBtn = document.getElementById('show-license'); const $contactBtn = document.getElementById('show-contact'); const $licensePanel = document.getElementById('license-panel'); const $contactPanel = document.getElementById('contact-panel'); const $envPanel = document.getElementById('env-panel'); function closeEnvPanel(){ $envPanel.style.display = 'none'; } document.querySelectorAll('.close-btn').forEach(btn => { btn.addEventListener('click', () => { document.getElementById(btn.getAttribute('data-target')).classList.remove('active'); }); }); // 열기 시 서로 겹치지 않도록 $licenseBtn.addEventListener('click', () => { closeEnvPanel(); $contactPanel.classList.remove('active'); $licensePanel.classList.add('active'); }); $contactBtn.addEventListener('click', () => { closeEnvPanel(); $licensePanel.classList.remove('active'); $contactPanel.classList.add('active'); });
-    </script>
-    <!-- 환경 배지 & 연결정보 로직 (+ 서버 샤드 표시 훅 포함) -->
-    <script>
-        (function () { const $badge = document.getElementById('env-badge'); const $panel = document.getElementById('env-panel'); const $list = document.getElementById('env-list'); const $close = document.getElementById('env-close'); function isMobileLike() { const ua = navigator.userAgent || ''; const uaDataMobile = (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') ? navigator.userAgentData.mobile : null; const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); const smallScreen = Math.max(screen.width, screen.height) < 1024; const mobUA = /(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua); if (uaDataMobile !== null) return uaDataMobile; if (mobUA) return true; return touch && smallScreen; } function bool(v){ return v ? '예' : '아니오'; } function getConn() { const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection; if (!c) return null; return { type: c.type, effectiveType: c.effectiveType, downlinkMbps: c.downlink, rttMs: c.rtt, saveData: !!c.saveData }; } function tz(){ try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(_) { return ''; } } function hoverPointer() { const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches; const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches; const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches; return { canHover, coarse, fine }; } function displayMode() { if (!window.matchMedia) return 'browser'; if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone'; if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui'; if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen'; return 'browser'; } function deviceTypeLabel(){ return isMobileLike() ? '모바일' : 'PC'; } function gather() { const h = hoverPointer(); const conn = getConn(); const ua = navigator.userAgent || ''; const uaDataPlat = (navigator.userAgentData && navigator.userAgentData.platform) ? navigator.userAgentData.platform : ''; const langs = (navigator.languages && navigator.languages.length ? navigator.languages.join(', ') : navigator.language || ''); const ref = document.referrer || ''; const rows = []; // 🔸 로그인/서버 샤드 정보 (Firebase 모듈에서 주입) const authLabel = (window.__AUTH_STATUS || '비로그인'); rows.push(['계정 상태', authLabel]); if (window.__SERVER_INFO) { rows.push(['데이터 서버', window.__SERVER_INFO.server || '-']); if (window.__SERVER_INFO.id) rows.push(['저장 ID', window.__SERVER_INFO.id]); } // 나머지 환경 정보 rows.push(['디바이스', deviceTypeLabel()]); rows.push(['플랫폼', uaDataPlat || navigator.platform || '']); rows.push(['PWA 표시모드', displayMode()]); rows.push(['온라인', bool(navigator.onLine)]); rows.push(['언어', langs]); rows.push(['타임존', tz() || '']); rows.push(['뷰포트', ${window.innerWidth} × ${window.innerHeight}]); rows.push(['스크린', ${screen.width} × ${screen.height}]); rows.push(['DPR', String(window.devicePixelRatio || 1)]); rows.push(['터치 지원', bool(('ontouchstart' in window) || (navigator.maxTouchPoints > 0))]); rows.push(['마우스 Hover', bool(h.canHover)]); rows.push(['포인터(굵음)', bool(h.coarse)]); rows.push(['포인터(정밀)', bool(h.fine)]); rows.push(['쿠키 사용', bool(navigator.cookieEnabled)]); rows.push(['Referrer', ref || '(없음)']); rows.push(['User-Agent', ua]); if (conn) { rows.push(['네트워크 유형', conn.type || '(알 수 없음)']); rows.push(['효과적 유형', conn.effectiveType || '(알 수 없음)']); rows.push(['추정 다운링크(Mbps)', typeof conn.downlinkMbps === 'number' ? String(conn.downlinkMbps) : '(알 수 없음)']); rows.push(['RTT(ms)', typeof conn.rttMs === 'number' ? String(conn.rttMs) : '(알 수 없음)']); rows.push(['데이터 절약모드', bool(conn.saveData)]); } else { rows.push(['네트워크', '(API 미지원)']); } return rows; } function render() { const rows = gather(); document.getElementById('env-badge').textContent = deviceTypeLabel(); $list.innerHTML = rows.map(([k,v]) => <dt>${k}</dt><dd>${(v===undefined||v===null||v==='')?'-':String(v)}</dd>).join(''); } function openPanel(){ // 다른 패널 닫고 열기 document.getElementById('license-panel').classList.remove('active'); document.getElementById('contact-panel').classList.remove('active'); render(); $panel.style.display = 'block'; } function closePanel(){ $panel.style.display = 'none'; } document.getElementById('env-badge').addEventListener('click', () => ($panel.style.display === 'block' ? closePanel() : openPanel())); document.getElementById('env-close').addEventListener('click', closePanel); document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); }); document.addEventListener('click', e => { if ($panel.style.display==='block' && !e.target.closest('#env-panel, #env-badge')) closePanel(); }); ['resize', 'orientationchange', 'online', 'offline'].forEach(evt => window.addEventListener(evt, () => { if ($panel.style.display==='block') render(); })); if (navigator.connection && typeof navigator.connection.addEventListener === 'function') { navigator.connection.addEventListener('change', () => { if ($panel.style.display==='block') render(); }); } // ✅ 외부(Firebase 모듈)에서 서버 정보 주입할 수 있도록 훅 제공 window.__updateServerInfo = function(info){ window.__SERVER_INFO = info || null; if ($panel.style.display==='block') render(); }; window.__setAuthStatus = function(label){ window.__AUTH_STATUS = label || null; if ($panel.style.display==='block') render(); }; // 초기 라벨 document.getElementById('env-badge').textContent = deviceTypeLabel(); })();
-    </script>
-    <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 -->
-    <script>
-        (function () { const POPUP_NAME = 'gameWindow'; const GAME_URL = 'game.html'; const W = 1024, H = 768; // ✅ 토스트는 "사용자 제스처 순간의 open 실패"일 때만 노출 let lastAttemptFromUser = false; let suppressNextHint = false; function showPopupHint(msg){ if (!lastAttemptFromUser || suppressNextHint) return; var el = document.getElementById('popup-hint'); if(!el) return; el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.'; el.style.display = 'block'; clearTimeout(showPopupHint._t); showPopupHint._t = setTimeout(function(){ el.style.display='none'; }, 4000); } function isDesktop() { const ua = navigator.userAgent || ''; if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') { return navigator.userAgentData.mobile === false; } if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false; const finePointer = window.matchMedia?.('(pointer: fine)')?.matches; const canHover = window.matchMedia?.('(hover: hover)')?.matches; if (finePointer && canHover) return true; return Math.max(screen.width, screen.height) >= 1024; } function openGamePopup(url) { const left = Math.max(0, Math.round((screen.width - W) / 2)); const top = Math.max(0, Math.round((screen.height - H) / 2)); const opts = [ width=${W}, height=${H}, left=${left}, top=${top}, 'resizable=yes','scrollbars=yes','status=no','toolbar=no','menubar=no','noopener','noreferrer' ].join(','); let win = null; try { win = window.open(url, POPUP_NAME, opts); } catch(e) { win = null; } return win; } function shouldUsePopup(){ return isDesktop(); } const startBtn = document.getElementById('start-btn'); if (!startBtn) return; startBtn.addEventListener('click', function (e) { if (!shouldUsePopup()) return; // 모바일: 기본 이동 e.preventDefault(); // PC: 현재 탭 유지 lastAttemptFromUser = true; suppressNextHint = false; const p = openGamePopup(GAME_URL); if (!p || p.closed) { showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.'); } else { try { p.focus(); } catch {} } // 제스처 종료: 동일 tick 이후로 플래그 해제 setTimeout(()=>{ lastAttemptFromUser = false; }, 0); }); // ✅ 팝업이 정상 종료/요청 종료될 때는 "차단" 토스트를 억제 window.addEventListener('message', (e)=>{ const t = e.data && e.data.type; if (t === 'request-close-popup' || t === 'auto-close') { suppressNextHint = true; setTimeout(()=>{ suppressNextHint = false; }, 1000); } }, false); })();
-    </script>
-    <!-- ✅ Firebase 로드: 로그인 상태에 따라 "데이터 서버(serverN)" 정보 표시 -->
-    <script type="module"> import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"; import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js"; import { getDatabase, ref, get, runTransaction, update
-        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"; const firebaseConfig = { apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k", authDomain: "siu-studio.firebaseapp.com", databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "siu-studio", storageBucket: "siu-studio.appspot.com", messagingSenderId: "830887143444", appId: "1:830887143444:web:70b45fc12140e893c31f01", measurementId: "G-1Y090YJDB6" }; const app = initializeApp(firebaseConfig); const auth = getAuth(app);
-        const db = getDatabase(app); // ── 샤딩 유틸 (다른 페이지들과 동일 정책: 15명/서버, idKey 충돌시 uid 일부 붙임) function sanitizeIdKey(raw) { const s = (raw || '').toString().trim().toLowerCase(); const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
-        return base || 'user'; } function makeIdKeyFromUser(user) { const email = (user.email || '').toString(); if (email.includes('@')) { const local = email.split('@')[0]; return sanitizeIdKey(local); } const dn = sanitizeIdKey(user.displayName ||
-        ''); if (dn && dn !== 'user') return dn; return user_${(user.uid || '').slice(0,6) || '000000'}; } async function ensureServerMapping(user) { // 1) 기존 매핑 있으면 사용 try { const m = await get(ref(db, userServerMap/${user.uid})); if (m.exists()) { const
-        { server, id } = m.val() || {}; if (server && id) return { server, id }; } } catch {} // 2) 없으면 새로 할당 let nextIndex = 0; try { const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1); nextIndex = res?.snapshot?.val()
-        || 1; } catch { nextIndex = 1; } const serverNum = Math.max(1, Math.ceil(nextIndex / 15)); const server = server${serverNum}; let idKey = makeIdKeyFromUser(user); // 같은 server 안에서 idKey 충돌 방지 try { const exists = await get(ref(db, users/${server}/${idKey}));
-        if (exists.exists()) idKey = ${idKey}-${(user.uid||'').slice(0,4)}; } catch {} try { await update(ref(db), { [userServerMap/${user.uid}]: { server, id: idKey, createdAt: Date.now() } }); } catch {} return { server, id: idKey }; } // 🔐 로그인 상태에
-        따라 패널 정보 업데이트 onAuthStateChanged(auth, async (user) => { if (!user) { window.__setAuthStatus?.('비로그인'); window.__updateServerInfo?.({ server: '-', id: '(로그인 필요)' }); return; } window.__setAuthStatus?.('로그인'); try { const info = await ensureServerMapping(user);
-        // 패널에 서버 번호/ID 표시 window.__updateServerInfo?.(info); // { server: 'serverN', id: 'idKey' } } catch (e) { console.warn('서버 매핑 조회 실패:', e); window.__updateServerInfo?.({ server: '(조회 실패)', id: '-' }); } }); </script>
-    <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
-    <script>
-        DisableDevtool({ disableMenu: true, disableSelect: true, disableCopy: true, disableCut: true, disablePaste: true, clearIntervalWhenDevOpenTrigger: true, ondevtoolopen(type, next) { window.close(); next(); }, ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); } });
-    </script>
-    <script>
-        // 우클릭 차단 (입력 영역은 허용) document.addEventListener('contextmenu', function (e) { if (e.target.closest('input, textarea, [contenteditable="true"]')) return; e.preventDefault(); });
-    </script>
-    <!-- 팝업으로 열렸을 때 자동 종료 (원본 유지 + 오타 수정) -->
-    <script>
-        (function() { try { const openedByScript = !!window.opener; if (openedByScript) { const CLOSE_DELAY_MS = 500; setTimeout(() => { try { window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*'); } catch (e) {} try { window.close(); } catch (e) {} setTimeout(() => { try { window.location.href = 'about:blank'; } catch (e) {} try { window.close(); } catch (e) {} }, 50); }, CLOSE_DELAY_MS); } } catch (e) { console.warn('팝업 자동 종료 검사 중 오류:', e); } })();
-    </script>
-</body>
+  <div class="container">
+    <nav class="sidebar">
+      <button id="show-license">라이센스 정보</button>
+      <button id="show-contact">Contact Us</button>
+    </nav>
 
+    <div class="content">
+      <div class="overlay">
+        <h1>태양계정복</h1>
+        <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 -->
+        <a href="game.html" id="start-btn" class="start-btn">게임 시작</a>
+      </div>
+
+      <!-- 팝업 차단 안내 토스트 -->
+      <div
+        id="popup-hint"
+        style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;"
+      >
+        팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.
+      </div>
+
+      <div class="panel" id="license-panel" aria-modal="true" role="dialog">
+        <h2>라이센스 정보</h2>
+        <p>© 2025 SIU Studio. All rights reserved.</p>
+        <p>
+          본 게임의 소스 코드 및 리소스(예: 이미지, 사운드, 디자인, 스크립트 등)는 제작자의 명시적 서면 허가 없이 다음 행위를 모두 금지합니다:
+        </p>
+        <ul>
+          <li>복사(Copying)</li>
+          <li>수정(Modification)</li>
+          <li>리버스 엔지니어링(Reverse Engineering)</li>
+          <li>재배포(Redistribution)</li>
+          <li>상업적 이용(Commercial Use)</li>
+        </ul>
+        <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
+        <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
+        <button class="close-btn" data-target="license-panel">닫기</button>
+      </div>
+
+      <div class="panel" id="contact-panel" aria-modal="true" role="dialog">
+        <h2>Contact Us</h2>
+        <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
+        <p>
+          <a href="mailto:support@siustudio.kro.kr" style="color: #f4b400; text-decoration: none;">support@siustudio.kro.kr</a>
+        </p>
+        <button class="close-btn" data-target="contact-panel">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 환경 배지 & 연결정보 패널 -->
+  <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
+  <div id="env-panel" role="dialog" aria-modal="true" aria-labelledby="env-title">
+    <div class="row">
+      <h3 id="env-title">연결 정보</h3>
+      <button id="env-close" aria-label="닫기">✕</button>
+    </div>
+    <dl id="env-list"><!-- JS에서 채웁니다 --></dl>
+    <p class="muted" style="margin-top:8px;">* 일부 값은 브라우저/OS 정책으로 비공개이거나 근사치일 수 있습니다.</p>
+  </div>
+
+  <!-- 패널 토글 -->
+  <script>
+    const $licenseBtn = document.getElementById('show-license');
+    const $contactBtn = document.getElementById('show-contact');
+    const $licensePanel = document.getElementById('license-panel');
+    const $contactPanel = document.getElementById('contact-panel');
+    const $envPanel = document.getElementById('env-panel');
+
+    function closeEnvPanel() { $envPanel.style.display = 'none'; }
+
+    document.querySelectorAll('.close-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
+      });
+    });
+
+    // 열기 시 서로 겹치지 않도록
+    $licenseBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      $contactPanel.classList.remove('active');
+      $licensePanel.classList.add('active');
+    });
+
+    $contactBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      $licensePanel.classList.remove('active');
+      $contactPanel.classList.add('active');
+    });
+  </script>
+
+  <!-- 환경 배지 & 연결정보 로직 (+ 서버 샤드 표시 훅 포함) -->
+  <script>
+    (function () {
+      const $badge = document.getElementById('env-badge');
+      const $panel = document.getElementById('env-panel');
+      const $list = document.getElementById('env-list');
+      const $close = document.getElementById('env-close');
+
+      function isMobileLike() {
+        const ua = navigator.userAgent || '';
+        const uaDataMobile = (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean')
+          ? navigator.userAgentData.mobile : null;
+        const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const smallScreen = Math.max(screen.width, screen.height) < 1024;
+        const mobUA = /(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua);
+        if (uaDataMobile !== null) return uaDataMobile;
+        if (mobUA) return true;
+        return touch && smallScreen;
+      }
+
+      function bool(v) { return v ? '예' : '아니오'; }
+
+      function getConn() {
+        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!c) return null;
+        return { type: c.type, effectiveType: c.effectiveType, downlinkMbps: c.downlink, rttMs: c.rtt, saveData: !!c.saveData };
+      }
+
+      function tz() {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
+        catch (_) { return ''; }
+      }
+
+      function hoverPointer() {
+        const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+        return { canHover, coarse, fine };
+      }
+
+      function displayMode() {
+        if (!window.matchMedia) return 'browser';
+        if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
+        if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
+        return 'browser';
+      }
+
+      function deviceTypeLabel() { return isMobileLike() ? '모바일' : 'PC'; }
+
+      function gather() {
+        const h = hoverPointer();
+        const conn = getConn();
+        const ua = navigator.userAgent || '';
+        const uaDataPlat = (navigator.userAgentData && navigator.userAgentData.platform) ? navigator.userAgentData.platform : '';
+        const langs = (navigator.languages && navigator.languages.length ? navigator.languages.join(', ') : (navigator.language || ''));
+        const ref = document.referrer || '';
+
+        const rows = [];
+
+        // 로그인/서버 샤드 정보 (Firebase 모듈에서 주입)
+        const authLabel = (window.__AUTH_STATUS || '비로그인');
+        rows.push(['계정 상태', authLabel]);
+        if (window.__SERVER_INFO) {
+          rows.push(['데이터 서버', window.__SERVER_INFO.server || '-']);
+          if (window.__SERVER_INFO.id) rows.push(['저장 ID', window.__SERVER_INFO.id]);
+        }
+
+        // 나머지 환경 정보
+        rows.push(['디바이스', deviceTypeLabel()]);
+        rows.push(['플랫폼', uaDataPlat || navigator.platform || '']);
+        rows.push(['PWA 표시모드', displayMode()]);
+        rows.push(['온라인', bool(navigator.onLine)]);
+        rows.push(['언어', langs]);
+        rows.push(['타임존', tz() || '']);
+        rows.push(['뷰포트', String(window.innerWidth) + ' × ' + String(window.innerHeight)]);
+        rows.push(['스크린', String(screen.width) + ' × ' + String(screen.height)]);
+        rows.push(['DPR', String(window.devicePixelRatio || 1)]);
+        rows.push(['터치 지원', bool(('ontouchstart' in window) || (navigator.maxTouchPoints > 0))]);
+        rows.push(['마우스 Hover', bool(h.canHover)]);
+        rows.push(['포인터(굵음)', bool(h.coarse)]);
+        rows.push(['포인터(정밀)', bool(h.fine)]);
+        rows.push(['쿠키 사용', bool(navigator.cookieEnabled)]);
+        rows.push(['Referrer', ref || '(없음)']);
+        rows.push(['User-Agent', ua]);
+
+        if (conn) {
+          rows.push(['네트워크 유형', conn.type || '(알 수 없음)']);
+          rows.push(['효과적 유형', conn.effectiveType || '(알 수 없음)']);
+          rows.push(['추정 다운링크(Mbps)', (typeof conn.downlinkMbps === 'number') ? String(conn.downlinkMbps) : '(알 수 없음)']);
+          rows.push(['RTT(ms)', (typeof conn.rttMs === 'number') ? String(conn.rttMs) : '(알 수 없음)']);
+          rows.push(['데이터 절약모드', bool(conn.saveData)]);
+        } else {
+          rows.push(['네트워크', '(API 미지원)']);
+        }
+
+        return rows;
+      }
+
+      function render() {
+        const rows = gather();
+        document.getElementById('env-badge').textContent = deviceTypeLabel();
+        $list.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${(v === undefined || v === null || v === '') ? '-' : String(v)}</dd>`).join('');
+      }
+
+      function openPanel() {
+        // 다른 패널 닫고 열기
+        document.getElementById('license-panel').classList.remove('active');
+        document.getElementById('contact-panel').classList.remove('active');
+        render();
+        $panel.style.display = 'block';
+      }
+
+      function closePanel() { $panel.style.display = 'none'; }
+
+      document.getElementById('env-badge').addEventListener('click', () => ($panel.style.display === 'block' ? closePanel() : openPanel()));
+      document.getElementById('env-close').addEventListener('click', closePanel);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+      document.addEventListener('click', e => { if ($panel.style.display === 'block' && !e.target.closest('#env-panel, #env-badge')) closePanel(); });
+
+      ['resize', 'orientationchange', 'online', 'offline'].forEach(evt => window.addEventListener(evt, () => {
+        if ($panel.style.display === 'block') render();
+      }));
+
+      if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
+        navigator.connection.addEventListener('change', () => {
+          if ($panel.style.display === 'block') render();
+        });
+      }
+
+      // 외부(Firebase 모듈)에서 서버 정보 주입할 수 있도록 훅 제공
+      window.__updateServerInfo = function (info) {
+        window.__SERVER_INFO = info || null;
+        if ($panel.style.display === 'block') render();
+      };
+      window.__setAuthStatus = function (label) {
+        window.__AUTH_STATUS = label || null;
+        if ($panel.style.display === 'block') render();
+      };
+
+      // 초기 라벨
+      document.getElementById('env-badge').textContent = deviceTypeLabel();
+    })();
+  </script>
+
+  <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 -->
+  <script>
+    (function () {
+      const POPUP_NAME = 'gameWindow';
+      const GAME_URL = 'game.html';
+      const W = 1024, H = 768;
+
+      // 토스트는 "사용자 제스처 순간의 open 실패"일 때만 노출
+      let lastAttemptFromUser = false;
+      let suppressNextHint = false;
+
+      function showPopupHint(msg) {
+        if (!lastAttemptFromUser || suppressNextHint) return;
+        var el = document.getElementById('popup-hint');
+        if (!el) return;
+        el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.';
+        el.style.display = 'block';
+        clearTimeout(showPopupHint._t);
+        showPopupHint._t = setTimeout(function () { el.style.display = 'none'; }, 4000);
+      }
+
+      function isDesktop() {
+        const ua = navigator.userAgent || '';
+        if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+          return navigator.userAgentData.mobile === false;
+        }
+        if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false;
+        const finePointer = window.matchMedia?.('(pointer: fine)')?.matches;
+        const canHover = window.matchMedia?.('(hover: hover)')?.matches;
+        if (finePointer && canHover) return true;
+        return Math.max(screen.width, screen.height) >= 1024;
+      }
+
+      function openGamePopup(url) {
+        const left = Math.max(0, Math.round((screen.width - W) / 2));
+        const top = Math.max(0, Math.round((screen.height - H) / 2));
+        const opts = [
+          `width=${W}`,
+          `height=${H}`,
+          `left=${left}`,
+          `top=${top}`,
+          'resizable=yes',
+          'scrollbars=yes',
+          'status=no',
+          'toolbar=no',
+          'menubar=no',
+          'noopener',
+          'noreferrer'
+        ].join(',');
+
+        let win = null;
+        try { win = window.open(url, POPUP_NAME, opts); }
+        catch (e) { win = null; }
+        return win;
+      }
+
+      function shouldUsePopup() { return isDesktop(); }
+
+      const startBtn = document.getElementById('start-btn');
+      if (!startBtn) return;
+
+      startBtn.addEventListener('click', function (e) {
+        if (!shouldUsePopup()) return; // 모바일: 기본 이동
+        e.preventDefault();            // PC: 현재 탭 유지
+
+        lastAttemptFromUser = true;
+        suppressNextHint = false;
+
+        const p = openGamePopup(GAME_URL);
+        if (!p || p.closed) {
+          showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.');
+        } else {
+          try { p.focus(); } catch { /* noop */ }
+        }
+
+        // 제스처 종료: 동일 tick 이후로 플래그 해제
+        setTimeout(() => { lastAttemptFromUser = false; }, 0);
+      });
+
+      // 팝업이 정상 종료/요청 종료될 때는 "차단" 토스트를 억제
+      window.addEventListener('message', (e) => {
+        const t = e.data && e.data.type;
+        if (t === 'request-close-popup' || t === 'auto-close') {
+          suppressNextHint = true;
+          setTimeout(() => { suppressNextHint = false; }, 1000);
+        }
+      }, false);
+    })();
+  </script>
+
+  <!-- Firebase 로드: 로그인 상태에 따라 "데이터 서버(serverN)" 정보 표시 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // ── 샤딩 유틸 (다른 페이지들과 동일 정책: 15명/서버, idKey 충돌시 uid 일부 붙임)
+    function sanitizeIdKey(raw) {
+      const s = (raw || '').toString().trim().toLowerCase();
+      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+      return base || 'user';
+    }
+
+    function makeIdKeyFromUser(user) {
+      const email = (user.email || '').toString();
+      if (email.includes('@')) {
+        const local = email.split('@')[0];
+        return sanitizeIdKey(local);
+      }
+      const dn = sanitizeIdKey(user.displayName || '');
+      if (dn && dn !== 'user') return dn;
+      return `user_${(user.uid || '').slice(0, 6) || '000000'}`;
+    }
+
+    async function ensureServerMapping(user) {
+      // 1) 기존 매핑 있으면 사용
+      try {
+        const m = await get(ref(db, `userServerMap/${user.uid}`));
+        if (m.exists()) {
+          const { server, id } = m.val() || {};
+          if (server && id) return { server, id };
+        }
+      } catch {}
+
+      // 2) 없으면 새로 할당
+      let nextIndex = 0;
+      try {
+        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
+        nextIndex = res?.snapshot?.val() || 1;
+      } catch { nextIndex = 1; }
+
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
+      const server = `server${serverNum}`;
+
+      let idKey = makeIdKeyFromUser(user);
+      // 같은 server 안에서 idKey 충돌 방지
+      try {
+        const exists = await get(ref(db, `users/${server}/${idKey}`));
+        if (exists.exists()) idKey = `${idKey}-${(user.uid || '').slice(0, 4)}`;
+      } catch {}
+
+      try {
+        await update(ref(db), {
+          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
+        });
+      } catch {}
+
+      return { server, id: idKey };
+    }
+
+    // 로그인 상태에 따라 패널 정보 업데이트
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.__setAuthStatus?.('비로그인');
+        window.__updateServerInfo?.({ server: '-', id: '(로그인 필요)' });
+        return;
+      }
+      window.__setAuthStatus?.('로그인');
+      try {
+        const info = await ensureServerMapping(user);
+        // 패널에 서버 번호/ID 표시
+        window.__updateServerInfo?.(info); // { server: 'serverN', id: 'idKey' }
+      } catch (e) {
+        console.warn('서버 매핑 조회 실패:', e);
+        window.__updateServerInfo?.({ server: '(조회 실패)', id: '-' });
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        window.close();
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+  </script>
+
+  <script>
+    // 우클릭 차단 (입력 영역은 허용)
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
+  </script>
+
+  <!-- 팝업으로 열렸을 때 자동 종료 (원본 유지 + 오타 수정) -->
+  <script>
+    (function () {
+      try {
+        const openedByScript = !!window.opener;
+        if (openedByScript) {
+          const CLOSE_DELAY_MS = 500;
+          setTimeout(() => {
+            try { window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*'); } catch (e) {}
+            try { window.close(); } catch (e) {}
+            setTimeout(() => {
+              try { window.location.href = 'about:blank'; } catch (e) {}
+              try { window.close(); } catch (e) {}
+            }, 50);
+          }, CLOSE_DELAY_MS);
+        }
+      } catch (e) {
+        console.warn('팝업 자동 종료 검사 중 오류:', e);
+      }
+    })();
+  </script>
+</body>
 </html>
