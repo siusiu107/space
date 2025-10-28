@@ -1,208 +1,151 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>🛠️ 태양계 정복 - 관리자 패널</title>
-  <style>
-    :root{
-      --bg:#0b1220; --panel:rgba(255,255,255,.06); --line:rgba(255,255,255,.12);
-      --ok:#20df9e; --warn:#ffd36e; --err:#ff7b7b; --accent:#00c0ff;
-    }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,'Noto Sans KR',sans-serif; background:var(--bg) url('/images/space-bg.jpg') center/cover no-repeat fixed; color:#eaf6ff}
-    h1{font-size:20px; margin:16px 0 12px; color:var(--accent)}
-    .wrap{max-width:1100px; margin:24px auto; padding:0 12px}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(10,12,18,.55)); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 16px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06); margin-bottom:14px}
-    .grid{display:grid; grid-template-columns: repeat(12,1fr); gap:12px}
-    .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-    label{display:block; font-size:12px; opacity:.92; margin-bottom:4px}
-    input,select,textarea{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.25); color:#fff; font-size:14px; outline:none}
-    textarea{min-height:92px; resize:vertical}
-    fieldset{border:1px dashed var(--line); border-radius:12px; padding:10px}
-    legend{opacity:.9; font-size:12px}
-    .btn{padding:10px 14px; border-radius:10px; border:1px solid var(--line); background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); color:#eaf6ff; font-weight:800; cursor:pointer}
-    .btn.primary{background:linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; border:none}
-    .btn.warn{background:linear-gradient(180deg,#ffd26b,#ff8b3d); color:#3b1a00; border:none}
-    .btn.danger{background:linear-gradient(180deg,#ff9ea1,#ff6b6b); color:#2b0000; border:none}
-    .btn:disabled{opacity:.55; cursor:not-allowed}
-    .muted{color:#cfe6ff; font-size:12px}
-    .big-deny{padding:26px; text-align:center; font-weight:900; color:#ffd0a8; font-size:20px}
-    .tag{display:inline-block; padding:3px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; margin-right:6px}
-    .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-    .hr{height:1px; background:var(--line); margin:10px 0}
-    .kvs{display:grid; grid-template-columns: 200px 1fr; gap:8px; align-items:center}
-    .sublabel{font-size:11px; opacity:.8}
-    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); border-radius:999px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🛠 관리자 패널 - 태양계 정복</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:rgba(255,255,255,0.06);
+    --stroke:rgba(255,255,255,0.12);
+    --accent:#00c0ff; --ok:#20df9e; --warn:#ffd36e; --err:#ff7b7b;
+  }
+  body{ margin:0; padding:24px; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; color:#eaf6ff; background:var(--bg); }
+  h1{ margin:0 0 16px; font-size:20px; color:var(--accent); }
+  .card{ background:var(--card); border:1px solid var(--stroke); border-radius:14px; padding:16px; margin-bottom:16px; }
+  label{ display:block; margin:8px 0 4px; font-weight:700; }
+  input, select{ width:100%; padding:10px; border-radius:10px; border:1px solid var(--stroke); background:rgba(0,0,0,0.25); color:#fff; }
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .btnbar{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  button{ padding:10px 12px; border-radius:10px; border:1px solid var(--stroke); background:linear-gradient(180deg,#00c0ff,#00a2ff); color:#001218; font-weight:900; cursor:pointer; }
+  button.secondary{ background:transparent; color:#eaf6ff; }
+  button.warn{ background:linear-gradient(180deg,#ffd36e,#ffb347); color:#3b1a00; }
+  button.danger{ background:linear-gradient(180deg,#ff7b7b,#ff5f5f); color:#2b0000; }
+  .muted{ color:#9fdcff; font-size:12px; }
+  .hidden{ display:none; }
+  #toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:rgba(10,12,20,.9); border:1px solid var(--stroke); border-radius:12px; padding:8px 12px; display:none; z-index:9999; }
+  .kv{ display:grid; grid-template-columns:140px 1fr; gap:6px 8px; margin-top:8px; font-size:14px; }
+  .kv b{ color:#dffaff; }
+  .note{ font-size:12px; color:#cfe6ff; margin-top:6px; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div style="display:flex; align-items:center; gap:10px; justify-content:space-between">
-        <h1>🛠️ 태양계 정복 · 관리자 패널</h1>
-        <div class="row">
-          <span id="who" class="tag muted">인증 대기…</span>
-          <button id="login-google" class="btn">Google 로그인</button>
-          <button id="logout" class="btn">로그아웃</button>
-        </div>
+  <h1>🛠 관리자 패널</h1>
+
+  <div class="card" id="auth-card">
+    <div id="auth-state" class="muted">로그인 상태 확인 중…</div>
+    <div id="no-perm" class="hidden" style="color:#ffdede; margin-top:8px; font-weight:800;">이 페이지를 볼 권한이 없습니다!</div>
+  </div>
+
+  <div class="card hidden" id="search-card">
+    <h2 style="margin:0 0 10px;">🔍 사용자 검색</h2>
+    <div class="row">
+      <div>
+        <label>이메일</label>
+        <input id="q-email" type="email" placeholder="user@example.com" />
       </div>
-      <div class="muted">
-        <!-- 운영 참고: RTDB 규칙(예시)
-          {
-            "rules":{
-              ".read": "auth!=null && auth.token.email_verified==true",
-              ".write": "auth!=null && auth.token.email_verified==true && auth.token.admin==true",
-              "userServerMap": { "$uid": { ".read": "auth!=null && (auth.uid==$uid || auth.token.admin==true)", ".write": false } }
-            }
-          }
-          - 운영 계정(예: siu46852579@gmail.com)에 커스텀 클레임 {admin:true} 부여 필요.
-          - 그렇지 않으면 타 계정 데이터 수정은 규칙에서 거절됨.
-        -->
-        <div>※ 운영 팁: <b>가능하면 사용자 오프라인 시</b> 수정하고, 동시에 아래 <b>“수정 후 의심도 자동 보정”</b>을 켜 두면 감지 스파이크를 줄이는 데 도움된다.</div>
+      <div>
+        <label>UID</label>
+        <input id="q-uid" type="text" placeholder="Firebase UID" />
       </div>
     </div>
+    <div class="btnbar">
+      <button id="btn-search">검색</button>
+      <button id="btn-clear" class="secondary">초기화</button>
+    </div>
+    <div id="search-note" class="note">email 또는 uid 중 하나만 입력해도 됩니다.</div>
+  </div>
 
-    <div id="deny" class="card big-deny" style="display:none">⛔ 이 페이지를 볼 권한이 없습니다!</div>
-
-    <div id="admin-ui" style="display:none">
-      <!-- 검색 -->
-      <div class="card">
-        <div class="grid">
-          <div class="col" style="grid-column: span 7;">
-            <label>이메일로 검색 (권장)</label>
-            <div class="row">
-              <input id="q-email" placeholder="user@example.com"/>
-              <button id="btn-find-email" class="btn primary">검색</button>
-            </div>
-            <div class="sublabel">⚙️ 게임 규칙과 동일한 방식으로 idKey를 생성해 server1~server20을 순차 조회</div>
-          </div>
-          <div class="col" style="grid-column: span 5;">
-            <label>서버/ID키로 직접 열기</label>
-            <div class="row" style="gap:6px">
-              <select id="q-server">
-                <option value="server1">server1</option>
-                <option value="server2">server2</option>
-                <option value="server3">server3</option>
-                <option value="server4">server4</option>
-                <option value="server5">server5</option>
-                <option value="server6">server6</option>
-                <option value="server7">server7</option>
-                <option value="server8">server8</option>
-                <option value="server9">server9</option>
-                <option value="server10">server10</option>
-                <option value="server11">server11</option>
-                <option value="server12">server12</option>
-                <option value="server13">server13</option>
-                <option value="server14">server14</option>
-                <option value="server15">server15</option>
-                <option value="server16">server16</option>
-                <option value="server17">server17</option>
-                <option value="server18">server18</option>
-                <option value="server19">server19</option>
-                <option value="server20">server20</option>
-              </select>
-              <input id="q-idkey" class="mono" placeholder="idKey (email에서 파생)"/>
-              <button id="btn-open-path" class="btn">열기</button>
-            </div>
-          </div>
-        </div>
-        <div id="where" class="muted" style="margin-top:8px">경로: -</div>
-      </div>
-
-      <!-- 상태 패널 -->
-      <div id="status-panel" class="card" style="display:none">
-        <div class="row" style="justify-content:space-between; align-items:flex-start">
-          <div class="row" style="gap:8px; align-items:center">
-            <span class="pill"><strong>계정:</strong> <span id="st-email" class="mono">-</span></span>
-            <span class="pill"><strong>서버:</strong> <span id="st-server" class="mono">-</span></span>
-            <span class="pill"><strong>ID키:</strong> <span id="st-idkey" class="mono">-</span></span>
-          </div>
-          <div class="row">
-            <button id="btn-refresh" class="btn">다시 불러오기</button>
-          </div>
-        </div>
-        <div class="hr"></div>
-        <div class="grid">
-          <!-- gameData -->
-          <div class="col" style="grid-column: span 6;">
-            <fieldset>
-              <legend>🎮 gameData</legend>
-              <div class="kvs">
-                <div>자원(resources)</div><input id="gd-res" type="number" min="0" step="1"/>
-                <div>코인(coins)</div><input id="gd-coin" type="number" min="0" step="1"/>
-                <div>이벤트코인(eventCoins)</div><input id="gd-eco" type="number" min="0" step="1"/>
-                <div>클릭 파워(clickPower)</div><input id="gd-click" type="number" min="1" step="1"/>
-                <div>우주선 레벨(shipLevel)</div><input id="gd-ship" type="number" min="1" step="1"/>
-                <div>업그레이드 비용(shipUpgradeCost)</div><input id="gd-shipcost" type="number" min="0" step="1"/>
-                <div>알바 수(workerCount)</div><input id="gd-worker" type="number" min="0" step="1"/>
-                <div>코인 알바(conversionCount)</div><input id="gd-conv" type="number" min="0" step="1"/>
-                <div>자동변환(autoConvertBought)</div>
-                <select id="gd-auto"><option value="false">false</option><option value="true">true</option></select>
-              </div>
-              <div class="row" style="margin-top:10px; gap:8px">
-                <label class="row" style="gap:6px; align-items:center">
-                  <input id="opt-safe-adjust" type="checkbox" checked/>
-                  <span class="sublabel">저장 후 <b>의심도 자동 보정(권장)</b></span>
-                </label>
-                <button id="btn-save-gd" class="btn primary">gameData 저장</button>
-              </div>
-            </fieldset>
-          </div>
-
-          <!-- security -->
-          <div class="col" style="grid-column: span 6;">
-            <fieldset>
-              <legend>🛡️ security</legend>
-              <div class="kvs">
-                <div>의심도(suspicion)</div><input id="sc-sus" type="number" min="0" step="1"/>
-                <div>정지(banned)</div>
-                <select id="sc-ban"><option value="false">false</option><option value="true">true</option></select>
-                <div>약관동의(tosAccepted)</div>
-                <select id="sc-tos"><option value="false">false</option><option value="true">true</option></select>
-                <div>약관위반플래그(tosViolated)</div>
-                <select id="sc-tosv"><option value="false">false</option><option value="true">true</option></select>
-                <div>공정시간(fairSeconds)</div><input id="sc-fair" type="number" min="0" step="1"/>
-                <div>마지막 경고시각(lastWarnAt, ms)</div><input id="sc-warn" type="number" min="0" step="1"/>
-              </div>
-              <div class="row" style="margin-top:10px; gap:8px">
-                <button id="btn-save-sc" class="btn primary">security 저장</button>
-                <button id="btn-unban" class="btn warn">정지 해제 & 의심도 낮추기</button>
-              </div>
-              <div class="sublabel" style="margin-top:8px">
-                * Firebase Auth에서 계정을 “사용 중지”로 바꿨다면, 서버(Admin SDK)에서 별도 해제 필요. 여긴 RTDB 측 상태만 조정.
-              </div>
-            </fieldset>
-          </div>
-        </div>
-      </div>
-
-      <!-- JSON 내보내기/적용 -->
-      <div id="json-panel" class="card" style="display:none">
-        <div class="row" style="justify-content:space-between">
-          <div><b>📦 백업/복원</b> <span class="sublabel">선택 계정의 gameData/security JSON</span></div>
-          <div class="row" style="gap:8px">
-            <button id="btn-export" class="btn">내보내기</button>
-            <button id="btn-apply" class="btn">JSON 적용</button>
-          </div>
-        </div>
-        <textarea id="json-area" class="mono" placeholder='{"gameData":{...},"security":{...}}'></textarea>
-      </div>
+  <div class="card hidden" id="result-card">
+    <h2 style="margin:0 0 10px;">👤 사용자 상태</h2>
+    <div class="kv">
+      <div><b>UID</b></div><div id="out-uid">-</div>
+      <div><b>Email</b></div><div id="out-email">-</div>
+      <div><b>Auth Disabled</b></div><div id="out-disabled">-</div>
+      <div><b>Base Path</b></div><div id="out-base">-</div>
+      <div><b>Tried Paths</b></div><div id="out-tried" style="word-break:break-all;">-</div>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
+  <div class="card hidden" id="edit-card">
+    <h2 style="margin:0 0 10px;">🧩 게임 데이터 / 보안 수정</h2>
+
+    <div class="row">
+      <div>
+        <label>자원(resources)</label>
+        <input id="in-resources" type="number" step="1" />
+      </div>
+      <div>
+        <label>코인(coins)</label>
+        <input id="in-coins" type="number" step="1" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>이벤트코인(eventCoins)</label>
+        <input id="in-eco" type="number" step="1" />
+      </div>
+      <div>
+        <label>클릭파워(clickPower)</label>
+        <input id="in-click" type="number" step="1" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>우주선 렙(shipLevel)</label>
+        <input id="in-ship" type="number" step="1" />
+      </div>
+      <div>
+        <label>업글 비용(shipUpgradeCost)</label>
+        <input id="in-shipcost" type="number" step="1" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>알바 수(workerCount)</label>
+        <input id="in-worker" type="number" step="1" />
+      </div>
+      <div>
+        <label>코인 알바 수(conversionCount)</label>
+        <input id="in-conv" type="number" step="1" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>의심도(suspicion)</label>
+        <input id="in-sus" type="number" step="1" />
+      </div>
+      <div>
+        <label>정지(banned)</label>
+        <select id="in-banned">
+          <option value="false">false</option>
+          <option value="true">true</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btnbar">
+      <button id="btn-save">저장</button>
+      <button id="btn-sus0" class="secondary">의심도 0으로</button>
+      <button id="btn-unban" class="warn">정지 해제 & 의심도 10</button>
+      <button id="btn-reactivate" class="warn">계정 재활성화(Auth+RTDB)</button>
+    </div>
+    <div class="note">※ 저장은 일부 입력된 필드만 반영됩니다.</div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Firebase v9 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import {
-      getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, getIdTokenResult
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import {
-      getDatabase, ref, get, update, runTransaction
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
-    /* ====== 프로젝트 설정 (게임과 동일) ====== */
+    // === 게임과 동일한 설정 사용 ===
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -213,282 +156,240 @@
       appId: "1:830887143444:web:70b45fc12140e893c31f01",
       measurementId: "G-1Y090YJDB6"
     };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db   = getDatabase(app);
+    const functions = getFunctions(app, "asia-northeast3");
 
-    /* ====== 상수/상태 ====== */
     const ADMIN_EMAIL = "siu46852579@gmail.com";
-    const MAX_SERVERS = 20; // server1 ~ server20 순회
 
-    let current = {
-      server: null,
-      idKey:  null,
-      email:  null,
-      basePath: null,
-      gameData: null,
-      security: null
-    };
+    // === UI refs ===
+    const elAuthState = document.getElementById("auth-state");
+    const elNoPerm = document.getElementById("no-perm");
+    const cardSearch = document.getElementById("search-card");
+    const cardResult = document.getElementById("result-card");
+    const cardEdit = document.getElementById("edit-card");
 
-    /* ====== 도우미 ====== */
-    function el(id){ return document.getElementById(id); }
-    function setText(id, v){ const e=el(id); if(e) e.textContent = v; }
-    function toast(msg){ console.log("[ADMIN]", msg); }
+    const qEmail = document.getElementById("q-email");
+    const qUid   = document.getElementById("q-uid");
+    const btnSearch = document.getElementById("btn-search");
+    const btnClear  = document.getElementById("btn-clear");
 
-    function encodeEmailToKey(email){
-      const s = String(email||'').trim().toLowerCase();
-      return s
-        .replace(/\s+/g,'')
-        .replace(/@/g,'_at_')
-        .replace(/\./g,'_dot_')
-        .replace(/[#$\[\]\/\\?%*]/g,'-')
-        .replace(/[^a-z0-9_\-]/g, '-')
-        .replace(/-+/g,'-')
-        .replace(/^[-_]+|[-_]+$/g,'') || 'user';
+    const outUid = document.getElementById("out-uid");
+    const outEmail = document.getElementById("out-email");
+    const outDisabled = document.getElementById("out-disabled");
+    const outBase = document.getElementById("out-base");
+    const outTried = document.getElementById("out-tried");
+
+    const inResources = document.getElementById("in-resources");
+    const inCoins = document.getElementById("in-coins");
+    const inEco = document.getElementById("in-eco");
+    const inClick = document.getElementById("in-click");
+    const inShip = document.getElementById("in-ship");
+    const inShipCost = document.getElementById("in-shipcost");
+    const inWorker = document.getElementById("in-worker");
+    const inConv = document.getElementById("in-conv");
+    const inSus = document.getElementById("in-sus");
+    const inBanned = document.getElementById("in-banned");
+
+    const btnSave = document.getElementById("btn-save");
+    const btnSus0 = document.getElementById("btn-sus0");
+    const btnUnban = document.getElementById("btn-unban");
+    const btnReactivate = document.getElementById("btn-reactivate");
+
+    let current = { uid:null, email:null, basePath:null, disabled:null };
+
+    function toast(msg, ms=2200){
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.style.display = "block";
+      setTimeout(()=>{ t.style.display="none"; }, ms);
     }
 
-    function basePathOf(server, idKey){ return `users/${server}/${idKey}`; }
-
-    async function pathExists(path){
-      try{ const s = await get(ref(db, path)); return s.exists(); } catch{ return false; }
-    }
-    async function readJson(path){
-      const s = await get(ref(db, path)); return s.exists()? s.val() : null;
-    }
-    async function writeJson(path, obj){
-      await update(ref(db), { [path]: obj });
+    function showCards(can){
+      cardSearch.classList.toggle("hidden", !can);
+      cardResult.classList.toggle("hidden", !can);
+      cardEdit.classList.toggle("hidden", !can);
     }
 
-    function fillGameData(gd){
-      el("gd-res").value      = Number(gd?.resources || 0);
-      el("gd-coin").value     = Number(gd?.coins || 0);
-      el("gd-eco").value      = Number(gd?.eventCoins || 0);
-      el("gd-click").value    = Number(gd?.clickPower || 1);
-      el("gd-ship").value     = Number(gd?.shipLevel || 1);
-      el("gd-shipcost").value = Number(gd?.shipUpgradeCost || 20);
-      el("gd-worker").value   = Number(gd?.workerCount || 0);
-      el("gd-conv").value     = Number(gd?.conversionCount || 0);
-      el("gd-auto").value     = String(!!gd?.autoConvertBought);
-    }
-    function pullGameDataFromUI(){
-      return {
-        resources: Number(el("gd-res").value || 0),
-        coins: Number(el("gd-coin").value || 0),
-        eventCoins: Number(el("gd-eco").value || 0),
-        clickPower: Number(el("gd-click").value || 1),
-        shipLevel: Number(el("gd-ship").value || 1),
-        shipUpgradeCost: Number(el("gd-shipcost").value || 20),
-        workerCount: Number(el("gd-worker").value || 0),
-        conversionCount: Number(el("gd-conv").value || 0),
-        autoConvertBought: (el("gd-auto").value === "true"),
-        _lastUpdated: Date.now()
-      };
-    }
-
-    function fillSecurity(sc){
-      el("sc-sus").value  = Number(sc?.suspicion || 0);
-      el("sc-ban").value  = String(!!sc?.banned);
-      el("sc-tos").value  = String(!!sc?.tosAccepted);
-      el("sc-tosv").value = String(!!sc?.tosViolated);
-      el("sc-fair").value = Number(sc?.fairSeconds || 0);
-      el("sc-warn").value = Number(sc?.lastWarnAt || 0);
-    }
-    function pullSecurityFromUI(){
-      return {
-        suspicion: Number(el("sc-sus").value || 0),
-        banned: (el("sc-ban").value === "true"),
-        tosAccepted: (el("sc-tos").value === "true"),
-        tosViolated: (el("sc-tosv").value === "true"),
-        fairSeconds: Number(el("sc-fair").value || 0),
-        lastWarnAt: Number(el("sc-warn").value || 0)
-      };
-    }
-
-    function showWhere(){
-      const path = current.basePath? `${current.basePath}` : '-';
-      el("where").textContent = `경로: ${path}`;
-      setText("st-email", current.email || "-");
-      setText("st-server", current.server || "-");
-      setText("st-idkey",  current.idKey  || "-");
-    }
-
-    function setAdminVisible(v){
-      el("admin-ui").style.display = v? "block":"none";
-      el("deny").style.display = v? "none":"block";
-    }
-
-    async function ensureAdmin(user){
-      if(!user){ setAdminVisible(false); return; }
-      const tokenRes = await getIdTokenResult(user, true);
-      const isAdminClaim = !!tokenRes?.claims?.admin;
-      const ok = (user.email === ADMIN_EMAIL) || isAdminClaim;
-      setText("who", `${user.email||"(익명)"} ${ok? "· 관리자":"· 일반"}`);
-      el("login-google").style.display = user? "none":"inline-flex";
-      el("logout").style.display = user? "inline-flex":"none";
-      setAdminVisible(ok);
-    }
-
-    /* ====== 계정 로드 ====== */
-    async function loadAccountBy(server, idKey, email=null){
-      const base = basePathOf(server, idKey);
-      // gameData / security 읽기
-      const [gd, sc] = await Promise.all([
-        readJson(`${base}/gameData`),
-        readJson(`${base}/security`)
-      ]);
-
-      if(!gd && !sc){
-        throw new Error("해당 경로에 데이터가 없습니다.");
-      }
-      current.server   = server;
-      current.idKey    = idKey;
-      current.email    = email || current.email || "(unknown)";
-      current.basePath = base;
-      current.gameData = gd || {};
-      current.security = sc || {};
-
-      // 채우기
-      el("status-panel").style.display = "block";
-      el("json-panel").style.display   = "block";
-      fillGameData(current.gameData);
-      fillSecurity(current.security);
-      showWhere();
-      toast("로드 완료");
-    }
-
-    async function findByEmail(email){
-      const idKey = encodeEmailToKey(email);
-      for(let i=1;i<=MAX_SERVERS;i++){
-        const server = `server${i}`;
-        const exists = await pathExists(basePathOf(server, idKey));
-        if(exists){
-          await loadAccountBy(server, idKey, email);
-          return;
-        }
-      }
-      throw new Error("일치하는 계정을 찾을 수 없습니다. (server1~server20 범위)");
-    }
-
-    /* ====== 저장 액션 ====== */
-    async function saveGameData(){
-      if(!current.basePath) return;
-      const gd = pullGameDataFromUI();
-      // 가능하면 트랜잭션: _lastUpdated 유지
-      await runTransaction(ref(db, `${current.basePath}/gameData`), cur => {
-        const prev = cur || {};
-        return { ...prev, ...gd, _lastUpdated: Date.now() };
-      });
-
-      if(el("opt-safe-adjust").checked){
-        // 수정 직후 의심도 완충: suspicion을 안전선 아래로 내리기 + 경고 타임스탬프 갱신
-        await update(ref(db), {
-          [`${current.basePath}/security/suspicion`]: Math.max(0, Math.min(19, Number(el("sc-sus").value||0))),
-          [`${current.basePath}/security/lastWarnAt`]: Date.now()
+    async function ensureSignedIn(){
+      return new Promise(async (resolve)=>{
+        onAuthStateChanged(auth, async (u)=>{
+          if(!u){
+            elAuthState.textContent = "구글 계정으로 로그인 해주세요(관리자만 접근 가능).";
+            const provider = new GoogleAuthProvider();
+            try{
+              await signInWithPopup(auth, provider);
+            }catch(e){
+              elAuthState.textContent = "로그인이 필요합니다.";
+            }
+            return;
+          }
+          // 토큰 새로고침(커스텀 클레임 반영용)
+          try { await u.getIdToken(true); } catch {}
+          const token = await u.getIdTokenResult().then(r=>r?.claims||{});
+          const isAdmin = token.admin === true || (u.email && u.email.toLowerCase() === ADMIN_EMAIL);
+          elAuthState.textContent = `로그인: ${u.email || u.uid}`;
+          if(!isAdmin){
+            elNoPerm.classList.remove("hidden");
+            showCards(false);
+            return resolve(false);
+          }
+          elNoPerm.classList.add("hidden");
+          showCards(true);
+          resolve(true);
         });
-      }
-      toast("gameData 저장 완료");
-    }
-
-    async function saveSecurity(){
-      if(!current.basePath) return;
-      const sc = pullSecurityFromUI();
-      await update(ref(db), { [`${current.basePath}/security`]: sc });
-      toast("security 저장 완료");
-    }
-
-    async function quickUnban(){
-      if(!current.basePath) return;
-      // 정지 해제 + 의심도 10으로 낮춤 + 약관 동의는 그대로 유지
-      await update(ref(db), {
-        [`${current.basePath}/security/banned`]: false,
-        [`${current.basePath}/security/suspicion`]: 10,
-        [`${current.basePath}/security/lastWarnAt`]: Date.now()
       });
-      // UI 반영
-      el("sc-ban").value = "false";
-      el("sc-sus").value = 10;
-      toast("정지 해제 및 의심도 조정 완료");
     }
 
-    /* ====== JSON 내보내기/적용 ====== */
-    async function exportJson(){
-      if(!current.basePath) return;
-      const [gd, sc] = await Promise.all([
-        readJson(`${current.basePath}/gameData`),
-        readJson(`${current.basePath}/security`)
-      ]);
-      el("json-area").value = JSON.stringify({ gameData: gd||{}, security: sc||{} }, null, 2);
-    }
-    async function applyJson(){
-      if(!current.basePath) return;
-      let obj = null;
-      try{ obj = JSON.parse(el("json-area").value||""); }catch(e){ alert("JSON 파싱 오류"); return; }
-      const ups = {};
-      if(obj.gameData) ups[`${current.basePath}/gameData`] = { ...obj.gameData, _lastUpdated: Date.now() };
-      if(obj.security) ups[`${current.basePath}/security`] = obj.security;
-      await update(ref(db), ups);
-      toast("JSON 적용 완료");
-      // UI 갱신
-      if(obj.gameData) fillGameData(obj.gameData);
-      if(obj.security) fillSecurity(obj.security);
+    // === Callable helpers ===
+    const callFind = httpsCallable(functions, "adminFindUser");
+    const callUpdate = httpsCallable(functions, "adminUpdateUser");
+    const callReactivate = httpsCallable(functions, "reactivateUser");
+
+    function fillForm(gameData, security){
+      // 숫자 아닌 값은 공란 유지
+      const num = (v)=> (Number.isFinite(Number(v)) ? Number(v) : "");
+      inResources.value = num(gameData?.resources);
+      inCoins.value     = num(gameData?.coins);
+      inEco.value       = num(gameData?.eventCoins);
+      inClick.value     = num(gameData?.clickPower);
+      inShip.value      = num(gameData?.shipLevel);
+      inShipCost.value  = num(gameData?.shipUpgradeCost);
+      inWorker.value    = num(gameData?.workerCount);
+      inConv.value      = num(gameData?.conversionCount);
+
+      inSus.value       = num(security?.suspicion);
+      inBanned.value    = String(!!security?.banned);
     }
 
-    /* ====== 이벤트 바인딩 ====== */
-    el("btn-find-email").onclick = async ()=>{
-      const email = (el("q-email").value||"").trim();
-      if(!email) return;
-      try{
-        el("status-panel").style.display = "none";
-        el("json-panel").style.display   = "none";
-        setText("where","경로: (검색 중…)");
-        await findByEmail(email);
-      }catch(e){ alert(e.message || e); setText("where", "경로: -"); }
-    };
-    el("btn-open-path").onclick = async ()=>{
-      const server = el("q-server").value;
-      const idKey  = (el("q-idkey").value||"").trim();
-      if(!idKey) return;
-      try{
-        el("status-panel").style.display = "none";
-        el("json-panel").style.display   = "none";
-        setText("where","경로: (열기…)");
-        await loadAccountBy(server, idKey, null);
-      }catch(e){ alert(e.message || e); setText("where", "경로: -"); }
-    };
-    el("btn-refresh").onclick = async ()=>{
-      if(current.server && current.idKey){
-        await loadAccountBy(current.server, current.idKey, current.email);
+    function pickSetPayload(){
+      const pickNum = (el)=> {
+        const v = el.value.trim();
+        if (v==="") return undefined;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : undefined;
+      };
+      const gd = {
+        resources: pickNum(inResources),
+        coins: pickNum(inCoins),
+        eventCoins: pickNum(inEco),
+        clickPower: pickNum(inClick),
+        shipLevel: pickNum(inShip),
+        shipUpgradeCost: pickNum(inShipCost),
+        workerCount: pickNum(inWorker),
+        conversionCount: pickNum(inConv),
+      };
+      const sec = {
+        suspicion: pickNum(inSus),
+        banned: (inBanned.value === "true")
+      };
+      // undefined 제거
+      const gdClean = Object.fromEntries(Object.entries(gd).filter(([,v])=>v!==undefined));
+      const secClean = Object.fromEntries(Object.entries(sec).filter(([,v])=>v!==undefined));
+      return { gameData: gdClean, security: secClean };
+    }
+
+    async function doSearch(){
+      const email = qEmail.value.trim() || undefined;
+      const uid = qUid.value.trim() || undefined;
+
+      if(!email && !uid){
+        toast("email 또는 uid를 입력하세요."); return;
       }
-    };
-
-    el("btn-save-gd").onclick = saveGameData;
-    el("btn-save-sc").onclick = saveSecurity;
-    el("btn-unban").onclick   = quickUnban;
-
-    el("btn-export").onclick  = exportJson;
-    el("btn-apply").onclick   = applyJson;
-
-    el("login-google").onclick = async ()=>{
       try{
-        await signInWithPopup(auth, new GoogleAuthProvider());
-      }catch(e){ alert("로그인 실패: "+(e.message||e)); }
-    };
-    el("logout").onclick = ()=>signOut(auth).catch(()=>{});
+        const r = await callFind({ target: { email, uid } });
+        const d = r.data || {};
+        current.uid = d.targetUid || null;
+        current.email = d.targetEmail || null;
+        current.basePath = d.basePath || null;
+        current.disabled = !!d.disabled;
 
-    onAuthStateChanged(auth, async (user)=>{
-      await ensureAdmin(user);
-      if(!user) return;
+        outUid.textContent = d.targetUid || "-";
+        outEmail.textContent = d.targetEmail || "-";
+        outDisabled.textContent = String(!!d.disabled);
+        outBase.textContent = d.basePath || "(미발견)";
+        outTried.textContent = (d.triedPaths && d.triedPaths.length) ? d.triedPaths.join("  •  ") : "-";
+
+        fillForm(d.gameData, d.security);
+        toast(d.basePath ? "찾음!" : "경로를 직접 찾지 못했어요. triedPaths 확인");
+      }catch(e){
+        console.error(e);
+        toast("검색 실패: " + (e?.message || "unknown"));
+      }
+    }
+
+    async function doSave(){
+      if(!current.uid && !current.email){ toast("먼저 검색하세요."); return; }
+      const set = pickSetPayload();
+      if (!Object.keys(set.gameData).length && !Object.keys(set.security).length){
+        toast("변경할 값이 없습니다."); return;
+      }
       try{
-        const tokenRes = await getIdTokenResult(user, true);
-        const isAdminClaim = !!tokenRes?.claims?.admin;
-        if(user.email !== ADMIN_EMAIL && !isAdminClaim){
-          // 로그인했지만 권한 없음
-          setAdminVisible(false);
-        }else{
-          setAdminVisible(true);
-        }
-      }catch{}
+        const r = await callUpdate({ target: { uid: current.uid, email: current.email }, set });
+        const d = r.data || {};
+        toast(d.updated ? "저장 완료!" : "반영할 값이 없었습니다.");
+        // 저장 후 재조회
+        await doSearch();
+      }catch(e){
+        console.error(e);
+        toast("저장 실패: " + (e?.message || "unknown"));
+      }
+    }
+
+    async function doUnban(){
+      if(!current.uid && !current.email){ toast("먼저 검색하세요."); return; }
+      try{
+        // RTDB만 완화해도 되지만, 실무에선 Auth disabled도 함께 해제하는게 안전
+        const r = await callReactivate({
+          target: { uid: current.uid, email: current.email },
+          alsoUnbanInRtdb: true,
+          suspicionTo: 10
+        });
+        toast("정지 해제 + 의심도 10으로 설정 완료!");
+        await doSearch();
+      }catch(e){
+        console.error(e);
+        toast("정지 해제 실패: " + (e?.message || "unknown"));
+      }
+    }
+
+    async function doReactivate(){
+      if(!current.uid && !current.email){ toast("먼저 검색하세요."); return; }
+      try{
+        const r = await callReactivate({
+          target: { uid: current.uid, email: current.email },
+          alsoUnbanInRtdb: true,
+          suspicionTo: Number.isFinite(Number(inSus.value)) ? Number(inSus.value) : 10
+        });
+        toast("계정 재활성화 완료!");
+        await doSearch();
+      }catch(e){
+        console.error(e);
+        toast("재활성화 실패: " + (e?.message || "unknown"));
+      }
+    }
+
+    // 의심도 0 버튼
+    btnSus0.addEventListener("click", ()=>{
+      inSus.value = "0";
+      toast("의심도 입력값을 0으로 변경했습니다. '저장'을 눌러 반영하세요.");
     });
+
+    // 이벤트 바인딩
+    btnSearch.addEventListener("click", doSearch);
+    btnClear.addEventListener("click", ()=>{
+      qEmail.value=""; qUid.value="";
+      outUid.textContent = outEmail.textContent = outDisabled.textContent = outBase.textContent = outTried.textContent = "-";
+      fillForm({}, {});
+      current = { uid:null, email:null, basePath:null, disabled:null };
+      toast("초기화 완료");
+    });
+    btnSave.addEventListener("click", doSave);
+    btnUnban.addEventListener("click", doUnban);
+    btnReactivate.addEventListener("click", doReactivate);
+
+    // 진입 시 권한 확인
+    await ensureSignedIn();
   </script>
 </body>
 </html>
