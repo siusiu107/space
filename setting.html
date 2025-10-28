@@ -112,50 +112,8 @@
     /* 푸터 (기본) */
     footer{ margin:12px 0 24px; text-align:center; color:var(--muted); font-size:12px; }
 
-    /* 채팅 공통 */
-    .chat-wrap{
-      display:none; margin-top:10px; border:1px solid var(--stroke);
-      border-radius:12px; padding:10px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-    }
-    .chat-wrap .log{
-      height:220px; overflow:auto; border:1px solid rgba(255,255,255,0.08);
-      border-radius:10px; padding:8px; background:rgba(0,0,0,0.2);
-      font-size:14px;
-    }
-    .chat-wrap .row{ display:flex; gap:8px; margin-top:8px; }
-    .chat-wrap input{
-      flex:1; padding:10px; border-radius:10px;
-      border:1px solid rgba(255,255,255,0.18); background:rgba(0,0,0,0.25); color:#e6f7ff;
-    }
-
-    /* 약관 모달 */
-    #tos{
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2100;
-      background: rgba(0,0,0,0.5);
-    }
-    #tos .panel{
-      width:min(720px, 92vw); max-height:80vh; overflow:auto;
-      background: var(--glass-bg); border:1px solid var(--stroke);
-      border-radius:16px; padding:16px;
-    }
-    #tos h3{ margin:0 0 8px; }
-    #tos p{ color:#cfe7ff; font-size:14px; line-height:1.5; }
-
     /* 섹션 토글 */
-    #user-section, #admin-section{ display:none; }
-
-    /* 요청 목록 (관리자) */
-    .req-wrap{ display:none; margin-top:10px; border:1px solid var(--stroke); border-radius:12px; padding:10px; background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
-    .req-list{ max-height:240px; overflow:auto; border:1px solid rgba(255,255,255,0.08); border-radius:10px; background:rgba(0,0,0,0.2); }
-    .req-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.08); }
-    .req-row:last-child{ border-bottom:none; }
-    .req-code{ font-weight:800; letter-spacing:0.5px; margin-right:6px; }
-    .badge{ font-size:11px; padding:2px 6px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); margin-right:6px; }
-    .badge.active{ background:rgba(0,200,255,0.12); }
-    .badge.ended{ background:rgba(255,80,80,0.12); }
-    .muted{ color:var(--muted); font-size:12px; }
-    .req-actions{ display:flex; gap:6px; }
+    #user-section, #admin-section{ display:none; } /* admin-section 요소는 제거되었지만 원래 스타일은 유지 */
 
     /* --- footer & small button & policy modal (ADD) --- */
     footer{
@@ -226,90 +184,6 @@
           <button id="reset-btn" class="btn danger" disabled>전체 삭제</button>
         </div>
       </div>
-
-      <!-- 상담사 도움 요청 -->
-      <div class="item">
-        <div class="left">
-          <div>🆘</div>
-          <div>
-            <div class="title">상담사 도움</div>
-            <div class="desc">화면 공유 + 원격 제어를 상담사에게 요청합니다.</div>
-          </div>
-        </div>
-        <div class="right">
-          <button id="help-btn" class="btn">도움이 필요하신가요?? 상담사에게 도움 요청하기</button>
-        </div>
-      </div>
-
-      <!-- 채팅(세션이 열리면 표시) -->
-      <div id="chat-user" class="chat-wrap" aria-live="polite">
-        <div class="title">상담사 채팅</div>
-        <div class="desc">세션 종료 시 채팅은 삭제되고 로그만 보존됩니다.</div>
-        <div id="chat-log-user" class="log" role="log"></div>
-        <div class="row">
-          <input id="chat-input-user" placeholder="메시지 입력…" />
-          <button id="chat-send-user" class="btn secondary">전송</button>
-          <button id="end-session-user" class="btn danger">세션 종료</button>
-        </div>
-        <div class="desc" style="margin-top:6px">세션 코드: <code id="session-code-user">없음</code></div>
-      </div>
-    </div>
-
-    <!-- ===== 관리자 섹션 ===== -->
-    <div id="admin-section" class="card">
-      <h1>👨‍💼 상담사 콘솔</h1>
-      <p class="sub">대시보드에서 <b>Enter code</b> 또는 목록 <b>Connect</b>로 원격 제어를 시작하세요.</p>
-
-      <div class="item">
-        <div class="left">
-          <div>🔗</div>
-          <div>
-            <div class="title">세션 연결</div>
-            <div class="desc">사용자가 생성한 6자리 코드를 입력하세요.</div>
-          </div>
-        </div>
-        <div class="right">
-          <input id="sess-admin" placeholder="세션 코드 6자리" />
-          <button id="connect-admin" class="btn">연결</button>
-          <button id="openDash-admin" class="btn secondary">Cobrowse 대시보드</button>
-        </div>
-      </div>
-
-      <!-- 원격 탐색/조작 -->
-      <div class="item">
-        <div class="left">
-          <div>🧭</div>
-          <div>
-            <div class="title">원격 탐색/조작</div>
-            <div class="desc">경로 이동 또는 CSS 선택자 클릭/하이라이트를 사용자 브라우저에서 수행합니다.</div>
-          </div>
-        </div>
-        <div class="right">
-          <input id="path-admin" placeholder="/game.html 또는 https://example.com" />
-          <button id="nav-admin" class="btn">경로 이동</button>
-          <input id="selector-admin" placeholder="CSS 선택자 (예: #buy, .btn-primary)" />
-          <button id="click-admin" class="btn secondary">선택자 클릭</button>
-          <button id="highlight-admin" class="btn secondary">하이라이트</button>
-        </div>
-      </div>
-
-      <div id="chat-admin" class="chat-wrap">
-        <div class="title">채팅</div>
-        <div id="chat-log-admin" class="log"></div>
-        <div class="row">
-          <input id="chat-input-admin" placeholder="메시지 입력…" />
-          <button id="chat-send-admin" class="btn secondary">전송</button>
-          <button id="end-session-admin" class="btn danger">세션 종료(채팅 삭제)</button>
-        </div>
-        <div class="desc" style="margin-top:6px" id="status-admin">대기중…</div>
-      </div>
-
-      <!-- 실시간 요청 목록 -->
-      <div id="req-wrap" class="req-wrap">
-        <div class="title">요청 목록</div>
-        <div class="desc">사용자가 생성한 <b>활성 세션</b>이 자동으로 표시됩니다.</div>
-        <div id="req-list" class="req-list" role="list"></div>
-      </div>
     </div>
 
     <footer>
@@ -328,21 +202,6 @@
       <div>처리 중…</div>
       <div class="spinner" aria-hidden="true"></div>
       <div style="font-size:12px;color:#cfe7ff;">잠시만 기다려주세요</div>
-    </div>
-  </div>
-
-  <!-- 이용약관 모달 (사용자용) -->
-  <div id="tos" aria-modal="true" role="dialog">
-    <div class="panel">
-      <h3>원격 지원 이용약관</h3>
-      <p>원격 지원 세션 동안 상담사는 귀하의 브라우저 화면을 볼 수 있으며, 귀하의 명시적 동의가 있을 경우 마우스/키보드 입력을 원격으로 수행할 수 있습니다.</p>
-      <p>결제정보·비밀번호 등 민감 정보가 노출되지 않도록 주의해 주세요. 필요한 경우 해당 영역은 마스킹되거나 공유가 제한될 수 있습니다.</p>
-      <p>세션 중 채팅 내역은 문제 해결을 위해 <b>임시 저장</b>되며, 세션 종료 시 채팅 내역은 삭제됩니다. 다만, 시스템 로그(세션 생성/종료 시각, 오류, 요약 등)는 품질/보안 목적으로 보존될 수 있습니다.</p>
-      <p>원격 제어는 언제든 종료할 수 있으며, 종료 즉시 제어 권한은 해제됩니다.</p>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-        <button id="tos-cancel" class="btn secondary">취소</button>
-        <button id="tos-accept" class="btn">동의하고 진행</button>
-      </div>
     </div>
   </div>
 
@@ -367,7 +226,7 @@
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
       getDatabase, ref, runTransaction, push, onChildAdded, set, remove,
-      serverTimestamp, update, get, child, onChildChanged, onChildRemoved
+      serverTimestamp, update, get, child
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     /* 주소 표시 고정 */
@@ -406,49 +265,12 @@
     }
     backBtn.addEventListener('click', () => { location.href = '/game.html'; });
 
-    /* 섹션 참조 */
-    const userSection  = document.getElementById('user-section');
-    const adminSection = document.getElementById('admin-section');
-
     /* 사용자 섹션 refs */
+    const userSection  = document.getElementById('user-section');
     const accountDesc = document.getElementById('account-desc');
     const accountPath = document.getElementById('account-path');
     const signoutBtn  = document.getElementById('signout-btn');
     const resetBtn    = document.getElementById('reset-btn');
-    const helpBtn     = document.getElementById('help-btn');
-
-    const chatUserWrap  = document.getElementById('chat-user');
-    const chatLogUser   = document.getElementById('chat-log-user');
-    const chatInputUser = document.getElementById('chat-input-user');
-    const chatSendUser  = document.getElementById('chat-send-user');
-    const endBtnUser    = document.getElementById('end-session-user');
-    const sessionCodeElUser = document.getElementById('session-code-user');
-
-    const tosModal  = document.getElementById('tos');
-    const tosAccept = document.getElementById('tos-accept');
-    const tosCancel = document.getElementById('tos-cancel');
-
-    /* 관리자 섹션 refs */
-    const sessAdmin     = document.getElementById('sess-admin');
-    const connectAdmin  = document.getElementById('connect-admin');
-    const openDashBtn   = document.getElementById('openDash-admin');
-
-    const pathAdmin     = document.getElementById('path-admin');
-    const navAdmin      = document.getElementById('nav-admin');
-    const selectorAdmin = document.getElementById('selector-admin');
-    const clickAdmin    = document.getElementById('click-admin');
-    const highlightAdmin= document.getElementById('highlight-admin');
-
-    const chatAdminWrap = document.getElementById('chat-admin');
-    const chatLogAdmin  = document.getElementById('chat-log-admin');
-    const chatInputAdmin= document.getElementById('chat-input-admin');
-    const chatSendAdmin = document.getElementById('chat-send-admin');
-    const endBtnAdmin   = document.getElementById('end-session-admin');
-    const statusAdmin   = document.getElementById('status-admin');
-
-    /* 요청 목록 refs */
-    const reqWrap = document.getElementById('req-wrap');
-    const reqList = document.getElementById('req-list');
 
     /* ===== 샤딩/아이디키 유틸 ===== */
     let uid = null;
@@ -526,133 +348,13 @@
       } catch {}
     }
 
-    /* ===== 사용자 기능 구현 ===== */
-    let userSessionId = null; // 6자리 세션 코드
-
-    function appendMsgUser(who, text, ts){
-      const d = document.createElement('div');
-      const time = ts ? new Date(ts).toLocaleTimeString() : '';
-      d.textContent = `[${who}] ${text} ${time?`· ${time}`:''}`;
-      chatLogUser.appendChild(d);
-      chatLogUser.scrollTop = chatLogUser.scrollHeight;
-    }
-
-    // 약관 모달
-    function openTos(){ tosModal.style.display = 'flex'; }
-    function closeTos(){ tosModal.style.display = 'none'; }
-    tosCancel.onclick = closeTos;
-
-    // 사용자: 도움요청 플로우
-    helpBtn.addEventListener('click', () => { openTos(); });
-    tosAccept.addEventListener('click', async () => {
-      closeTos();
-      await startRemoteHelpUser();
-    });
-
-    async function startRemoteHelpUser(){
-      helpBtn.disabled = true;
-      try{
-        await window.CobrowseIO.client();
-        await window.CobrowseIO.start();
-        const code = await window.CobrowseIO.createSessionCode(); // 6자리
-        userSessionId = code;
-        sessionCodeElUser.textContent = code;
-
-        // 세션 메타 생성 + 로그 기록
-        await set(ref(db, `sessions/${userSessionId}/meta`), {
-          createdAt: serverTimestamp(),
-          userUid: uid || null,
-          status: 'active'
-        });
-        await push(ref(db, `sessions/${userSessionId}/logs`), {
-          type:'create', by:'user', at: serverTimestamp()
-        });
-
-        // 채팅 구독
-        const userChatRef = ref(db, `sessions/${userSessionId}/chat`);
-        onChildAdded(userChatRef, (snap)=>{
-          const m = snap.val(); if (!m) return;
-          appendMsgUser(m.from==='agent'?'상담사':'나', m.text, m.ts || Date.now());
-        });
-
-        // 🧭 원격 명령 구독
-        const userCmdRef = ref(db, `sessions/${userSessionId}/commands`);
-        onChildAdded(userCmdRef, (snap) => {
-          const cmd = snap.val(); if (!cmd) return;
-          if (cmd.type === 'navigate' && cmd.path) {
-            try { location.assign(cmd.path); }
-            catch(e){ push(ref(db, `sessions/${userSessionId}/logs`), { type:'error', msg:'navigate failed', detail:String(e), at: serverTimestamp() }); }
-          } else if (cmd.type === 'click' && cmd.selector) {
-            const el = document.querySelector(cmd.selector);
-            if (el) {
-              try {
-                el.focus?.(); el.click?.();
-                el.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window }));
-                push(ref(db, `sessions/${userSessionId}/logs`), { type:'action', msg:'click', selector:cmd.selector, at: serverTimestamp() });
-              } catch(e) {
-                push(ref(db, `sessions/${userSessionId}/logs`), { type:'error', msg:'click failed', selector:cmd.selector, detail:String(e), at: serverTimestamp() });
-              }
-            } else {
-              push(ref(db, `sessions/${userSessionId}/logs`), { type:'warn', msg:'selector not found', selector:cmd.selector, at: serverTimestamp() });
-            }
-          } else if (cmd.type === 'highlight' && cmd.selector) {
-            const el = document.querySelector(cmd.selector);
-            if (el) {
-              const prev = el.style.outline;
-              el.style.outline = '3px solid #00e5ff';
-              setTimeout(()=>{ el.style.outline = prev; }, 1800);
-              push(ref(db, `sessions/${userSessionId}/logs`), { type:'action', msg:'highlight', selector:cmd.selector, at: serverTimestamp() });
-            } else {
-              push(ref(db, `sessions/${userSessionId}/logs`), { type:'warn', msg:'selector not found', selector:cmd.selector, at: serverTimestamp() });
-            }
-          }
-        });
-
-        chatUserWrap.style.display = 'block';
-        showToast('상담사 코드가 복사되었어요: ' + code);
-        try { await navigator.clipboard.writeText(code); } catch {}
-      }catch(err){
-        console.error(err);
-        showToast('도움 요청 실패. 잠시 후 다시 시도해 주세요.');
-      }finally{
-        helpBtn.disabled = false;
-      }
-    }
-
-    // 사용자: 채팅 전송
-    const sendUserMsg = async () => {
-      if (!userSessionId) return showToast('세션이 아직 시작되지 않았어요');
-      const text = chatInputUser.value.trim(); if (!text) return;
-      chatInputUser.value = '';
-      await push(ref(db, `sessions/${userSessionId}/chat`), { from:'user', text, ts: Date.now() });
-      await push(ref(db, `sessions/${userSessionId}/logs`), { type:'chat', dir:'user->agent', text, at: serverTimestamp() });
-    };
-    chatSendUser.addEventListener('click', sendUserMsg);
-    chatInputUser.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendUserMsg(); });
-
-    // 사용자: 세션 종료
-    endBtnUser.addEventListener('click', async () => {
-      if (!userSessionId) return;
-      const ok = confirm('원격 지원 세션을 종료할까요? (채팅내용은 삭제되고 로그는 보존됩니다)');
-      if (!ok) return;
-      try{
-        await update(ref(db, `sessions/${userSessionId}/meta`), { status:'ended', endedAt: serverTimestamp() });
-        await push(ref(db, `sessions/${userSessionId}/logs`), { type:'end', by:'user', at: serverTimestamp() });
-        await remove(ref(db, `sessions/${userSessionId}/chat`)); // 채팅 삭제
-        chatUserWrap.style.display = 'none';
-        sessionCodeElUser.textContent = '없음';
-        userSessionId = null;
-        showToast('세션을 종료했어요');
-      }catch(e){ console.error(e); showToast('세션 종료 실패'); }
-    });
-
     // 사용자: 계정/초기화
     signoutBtn.addEventListener('click', async () => {
       try { await signOut(auth); showToast('로그아웃 되었어요'); setTimeout(()=>location.href='/index.html', 400); }
       catch (e) { console.error(e); showToast('로그아웃 실패'); }
     });
 
-    // ✅ 변경된 “전체 삭제 + 자동 로그아웃” (샤딩 경로 삭제)
+    // “전체 삭제 + 자동 로그아웃”
     resetBtn.addEventListener('click', async () => {
       if (!uid){ showToast('로그인 후 이용하세요'); return; }
       const basePath = userBasePath || `users/${uid}`; // 안전장치
@@ -666,7 +368,6 @@
       // 버튼 중복 클릭 방지
       resetBtn.disabled = true;
       signoutBtn.disabled = true;
-      helpBtn.disabled = true;
       showOverlay(true);
 
       try{
@@ -690,200 +391,17 @@
         // 실패 시 버튼 원복
         resetBtn.disabled = false;
         signoutBtn.disabled = false;
-        helpBtn.disabled = false;
       }finally{
         showOverlay(false);
       }
     });
 
-    /* ===== 관리자 기능 구현 ===== */
-    let adminSessionId = null;
-
-    function appendMsgAdmin(who, text, ts){
-      const d = document.createElement('div');
-      const time = ts ? new Date(ts).toLocaleTimeString() : '';
-      d.textContent = `[${who}] ${text} ${time?`· ${time}`:''}`;
-      chatLogAdmin.appendChild(d);
-      chatLogAdmin.scrollTop = chatLogAdmin.scrollHeight;
-    }
-
-    function bindAdminHandlers(){
-      openDashBtn.onclick = () => window.open('https://cobrowse.io/dashboard', '_blank', 'noopener');
-
-      connectAdmin.onclick = async () => {
-        adminSessionId = (sessAdmin.value || '').trim();
-        if (!adminSessionId) return alert('세션 코드(6자리)를 입력하세요.');
-        statusAdmin.textContent = '세션 연결 중…';
-
-        // 메타 없으면 생성
-        const base = ref(db, `sessions/${adminSessionId}`);
-        const metaSnap = await get(child(base, 'meta'));
-        if (!metaSnap.exists()){
-          await set(child(base, 'meta'), { createdAt: serverTimestamp(), status:'active' });
-        }
-
-        // 채팅 구독
-        onChildAdded(child(base, 'chat'), (snap) => {
-          const m = snap.val(); if (!m) return;
-          appendMsgAdmin(m.from==='user'?'사용자':'상담사', m.text, m.ts || Date.now());
-        });
-
-        chatAdminWrap.style.display = 'block';
-        statusAdmin.textContent = '채팅 연결됨';
-      };
-
-      // 원격 경로 이동
-      navAdmin.onclick = async () => {
-        if (!adminSessionId) return alert('먼저 세션을 연결하세요.');
-        const path = (pathAdmin.value || '').trim();
-        if (!path) return alert('이동할 경로를 입력하세요.');
-        await push(ref(db, `sessions/${adminSessionId}/commands`), { type:'navigate', path, at: Date.now() });
-        await push(ref(db, `sessions/${adminSessionId}/logs`), { type:'command', cmd:'navigate', path, by:'agent', at: serverTimestamp() });
-      };
-
-      // 원격 클릭/하이라이트
-      clickAdmin.onclick = async () => {
-        if (!adminSessionId) return alert('먼저 세션을 연결하세요.');
-        const selector = (selectorAdmin.value || '').trim();
-        if (!selector) return alert('CSS 선택자를 입력하세요.');
-        await push(ref(db, `sessions/${adminSessionId}/commands`), { type:'click', selector, at: Date.now() });
-        await push(ref(db, `sessions/${adminSessionId}/logs`), { type:'command', cmd:'click', selector, by:'agent', at: serverTimestamp() });
-      };
-      highlightAdmin.onclick = async () => {
-        if (!adminSessionId) return alert('먼저 세션을 연결하세요.');
-        const selector = (selectorAdmin.value || '').trim();
-        if (!selector) return alert('CSS 선택자를 입력하세요.');
-        await push(ref(db, `sessions/${adminSessionId}/commands`), { type:'highlight', selector, at: Date.now() });
-        await push(ref(db, `sessions/${adminSessionId}/logs`), { type:'command', cmd:'highlight', selector, by:'agent', at: serverTimestamp() });
-      };
-
-      // 채팅 전송 / 종료
-      const sendAdminMsg = async () => {
-        if (!adminSessionId) return alert('세션 먼저 연결하세요.');
-        const text = chatInputAdmin.value.trim(); if (!text) return;
-        chatInputAdmin.value = '';
-        await push(ref(db, `sessions/${adminSessionId}/chat`), { from:'agent', text, ts: Date.now() });
-        await push(ref(db, `sessions/${adminSessionId}/logs`), { type:'chat', dir:'agent->user', text, at: serverTimestamp() });
-      };
-      chatSendAdmin.onclick = sendAdminMsg;
-      chatInputAdmin.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendAdminMsg(); });
-
-      endBtnAdmin.onclick = async () => {
-        if (!adminSessionId) return;
-        if (!confirm('세션을 종료하고 채팅 내역을 삭제할까요? (로그는 보존됩니다)')) return;
-        await update(ref(db, `sessions/${adminSessionId}/meta`), { status:'ended', endedAt: serverTimestamp() });
-        await push(ref(db, `sessions/${adminSessionId}/logs`), { type:'end', by:'agent', at: serverTimestamp() });
-        await remove(ref(db, `sessions/${adminSessionId}/chat`));
-        statusAdmin.textContent = '세션 종료됨 (채팅 삭제 완료)';
-      };
-
-      // 요청 목록 워처
-      if (!window.__REQ_BOUND__) { startRequestWatcher(); window.__REQ_BOUND__ = true; }
-    }
-
-    // 요청 목록
-    const reqEls = new Map(); // code -> row element
-    function fmt(ts){
-      if (!ts) return '';
-      try {
-        const d = new Date(ts);
-        return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
-      } catch { return ''; }
-    }
-    function makeReqRow(code, meta){
-      const row = document.createElement('div');
-      row.className = 'req-row';
-      row.id = `req-${code}`;
-
-      const left = document.createElement('div');
-      const codeEl = document.createElement('span');
-      codeEl.className = 'req-code';
-      codeEl.textContent = code;
-
-      const badge = document.createElement('span');
-      badge.className = `badge ${meta?.status || 'unknown'}`;
-      badge.textContent = meta?.status || 'unknown';
-
-      const timeEl = document.createElement('span');
-      timeEl.className = 'muted';
-      timeEl.textContent = meta?.createdAt ? `· ${fmt(meta.createdAt)}` : '';
-
-      left.appendChild(codeEl); left.appendChild(badge); left.appendChild(timeEl);
-
-      const actions = document.createElement('div');
-      actions.className = 'req-actions';
-
-      const btnConn = document.createElement('button');
-      btnConn.className = 'btn secondary';
-      btnConn.textContent = '연결';
-      btnConn.onclick = () => { sessAdmin.value = code; connectAdmin.click(); };
-
-      const btnCopy = document.createElement('button');
-      btnCopy.className = 'btn secondary';
-      btnCopy.textContent = '코드 복사';
-      btnCopy.onclick = async () => {
-        try { await navigator.clipboard.writeText(code); showToast('코드를 복사했어요'); } catch {}
-      };
-
-      actions.appendChild(btnConn);
-      actions.appendChild(btnCopy);
-
-      row.appendChild(left);
-      row.appendChild(actions);
-      return row;
-    }
-    function upsertReq(code, meta){
-      if (!meta || meta.status !== 'active'){
-        const exist = reqEls.get(code);
-        if (exist){ exist.remove(); reqEls.delete(code); }
-        if (reqEls.size === 0) reqWrap.style.display = 'none';
-        return;
-      }
-      if (reqEls.has(code)){
-        const row = reqEls.get(code);
-        const badge = row.querySelector('.badge');
-        const timeEl = row.querySelector('.muted');
-        if (badge){ badge.className = `badge ${meta.status}`; badge.textContent = meta.status; }
-        if (timeEl){ timeEl.textContent = meta.createdAt ? `· ${fmt(meta.createdAt)}` : ''; }
-      } else {
-        const row = makeReqRow(code, meta);
-        reqList.appendChild(row);
-        reqEls.set(code, row);
-      }
-      reqWrap.style.display = 'block';
-    }
-    function startRequestWatcher(){
-      const sessionsRef = ref(db, 'sessions');
-      onChildAdded(sessionsRef, async (snap) => {
-        const code = snap.key;
-        let meta = snap.child('meta').val();
-        if (!meta){
-          const metaSnap = await get(child(ref(db, `sessions/${code}`), 'meta'));
-          meta = metaSnap.val();
-        }
-        upsertReq(code, meta);
-      });
-      onChildChanged(sessionsRef, (snap) => {
-        const code = snap.key;
-        const meta = snap.child('meta').val();
-        upsertReq(code, meta);
-      });
-      onChildRemoved(sessionsRef, (snap) => {
-        const code = snap.key;
-        const exist = reqEls.get(code);
-        if (exist){ exist.remove(); reqEls.delete(code); }
-        if (reqEls.size === 0) reqWrap.style.display = 'none';
-      });
-    }
-
-    /* ===== 인증 상태: 관리자/사용자 UI 토글 + 매핑 확보 ===== */
+    /* ===== 인증 상태: 사용자 UI 표시 + 매핑 확보 ===== */
     onAuthStateChanged(auth, async (user) => {
       uid = user ? user.uid : null;
-      const isAdmin = !!(user && user.email === 'siu46852579@gmail.com');
 
       if (!user) {
         userSection.style.display = 'block';
-        adminSection.style.display = 'none';
         accountDesc.textContent = '로그인이 필요합니다.';
         accountPath.textContent = '';
         signoutBtn.disabled = true;
@@ -891,7 +409,7 @@
         return;
       }
 
-      // ★ 서버/아이디 매핑 확보
+      // 서버/아이디 매핑 확보
       try {
         const mapping = await ensureServerMapping(user);
         userServerKey = mapping.server;
@@ -907,48 +425,20 @@
         accountPath.textContent = `데이터 경로: ${userBasePath} (fallback)`;
       }
 
-      if (isAdmin) {
-        userSection.style.display = 'block';
-        adminSection.style.display = 'block';
+      userSection.style.display = 'block';
 
-        helpBtn.disabled = true;
+      if (user && user.emailVerified){
+        accountDesc.textContent = `${user.email} (로그인됨)`;
         signoutBtn.disabled = false;
         resetBtn.disabled = false;
-
-        accountDesc.textContent = `${user.email} (관리자 로그인됨)`;
-        if (!window.__ADMIN_BOUND__) { bindAdminHandlers(); window.__ADMIN_BOUND__ = true; }
-      } else {
-        userSection.style.display = 'block';
-        adminSection.style.display = 'none';
-
-        if (user && user.emailVerified){
-          accountDesc.textContent = `${user.email} (로그인됨)`;
-          signoutBtn.disabled = false;
-          resetBtn.disabled = false;
-        } else if (user && !user.emailVerified){
-          accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
-          signoutBtn.disabled = false;
-          resetBtn.disabled = true;
-        }
+      } else if (user && !user.emailVerified){
+        accountDesc.textContent = '이메일 인증이 필요합니다. 인증 후 다시 시도하세요.';
+        signoutBtn.disabled = false;
+        resetBtn.disabled = true;
       }
     });
 
-    /* Cobrowse.io SDK 로더 (전역) */
-    (function(w,t,c,p,s,e){
-      p=new Promise(function(r){
-        w[c]={client:function(){
-          if(!s){ s=document.createElement(t);
-            s.src='https://js.cobrowse.io/CobrowseIO.js'; s.async=1; s.crossOrigin='anonymous';
-            e=document.getElementsByTagName(t)[0]; e.parentNode.insertBefore(s,e);
-            s.onload=function(){ r(w[c]); };
-          } return p;
-        }}; });
-    })(window,'script','CobrowseIO');
-    window.CobrowseIO = window.CobrowseIO || {};
-    window.CobrowseIO.license = "eFtcbWqBdRylMQ";
-    window.CobrowseIO.capabilities = ["cursor","remote-control"];
-
-    /* --- policy modal open/close (ADD) --- */
+    /* --- policy modal open/close --- */
     const btnPolicy   = document.getElementById('btn-policy');
     const policyModal = document.getElementById('policy');
     const policyClose = document.getElementById('policy-close');
