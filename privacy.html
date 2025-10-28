@@ -5,31 +5,88 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>개인정보 처리방침 | 태양계 정복: 우주 생존 클릭커</title>
   <style>
+    /* ===== Document (Light) Theme ===== */
     :root{
-      --bg:#0b1220; --panel:#121a2a; --ink:#e9f3ff; --muted:#b8c7e6;
-      --accent:#00d4ff; --line:rgba(255,255,255,.08); --warn:#ffd36e;
+      --bg:#ffffff;
+      --ink:#111827;          /* 본문 텍스트 */
+      --muted:#6b7280;        /* 보조 텍스트 */
+      --line:#e5e7eb;         /* 구분선/테두리 */
+      --accent:#0b57d0;       /* 링크/강조 */
+      --note-bg:#eef6ff;      /* 주석 박스 배경 */
+      --note-line:#93c5fd;    /* 주석 박스 라인 */
+      --warn-bg:#fff7e6;      /* 경고 박스 배경 */
+      --warn-line:#f59e0b;    /* 경고 박스 라인 */
     }
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:Inter, Pretendard, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;line-height:1.65;}
-    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
-    .wrap{max-width:900px;margin:32px auto;padding:0 16px 48px;}
-    header{padding:18px 16px;margin:0 0 14px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(10,16,28,.35));box-shadow:0 12px 28px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04)}
-    h1{font-size:24px;margin:0 0 6px;color:#bfe9ff}
-    .meta{color:var(--muted);font-size:14px}
-    nav.toc{margin:18px 0 22px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:rgba(255,255,255,.02)}
-    nav.toc a{display:inline-block;margin:4px 10px 4px 0;font-weight:700}
-    section{margin:26px 0;padding:18px 16px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(10,16,28,.20))}
-    h2{margin:0 0 12px;font-size:18px;color:#cfeaff}
-    h3{margin:18px 0 8px;font-size:16px;color:#d9ebff}
-    ul{padding-left:18px}
-    .note{background:rgba(255,255,255,.04);border-left:3px solid var(--accent);padding:10px 12px;border-radius:8px;color:#dceaff}
-    .warn{background:rgba(255,211,110,.10);border-left:3px solid var(--warn);color:#ffe9b3;padding:10px 12px;border-radius:8px}
-    footer{margin-top:28px;color:var(--muted);font-size:13px}
-    code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:6px}
-    table{width:100%;border-collapse:collapse;margin:10px 0;border:1px solid var(--line)}
-    th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
-    th{color:#bfe9ff}
+
+    html,body{
+      margin:0; padding:0;
+      background:var(--bg); color:var(--ink);
+      font-family: Inter, Pretendard, "Apple SD Gothic Neo", "Noto Sans KR",
+                   "Malgun Gothic", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height:1.7; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    }
+
+    .wrap{ max-width:900px; margin:40px auto 64px; padding:0 20px; }
+
+    /* Header */
+    header{ padding:16px 0 8px; border-bottom:1px solid var(--line); }
+    h1{ font-size:28px; margin:0 0 8px; letter-spacing:.2px; }
+    .meta{ color:var(--muted); font-size:14px; }
+
+    /* TOC */
+    nav.toc{
+      margin:18px 0 26px; padding:12px 14px;
+      border:1px solid var(--line); border-radius:10px; background:#fafafa;
+    }
+    nav.toc a{
+      display:inline-block; margin:4px 12px 4px 0; font-weight:700; color:var(--accent);
+      text-decoration:none;
+    }
+    nav.toc a:hover{ text-decoration:underline; }
+
+    /* Sections */
+    section{ margin:28px 0; }
+    h2{ margin:0 0 12px; font-size:20px; }
+    h3{ margin:18px 0 8px; font-size:16px; color:#1f2937; }
+    p{ margin:10px 0; }
+    ul{ margin:8px 0; padding-left:20px; }
+
+    /* Callouts */
+    .note{
+      background:var(--note-bg); border-left:4px solid var(--note-line);
+      padding:10px 12px; border-radius:8px; color:#0f172a;
+    }
+    .warn{
+      background:var(--warn-bg); border-left:4px solid var(--warn-line);
+      padding:10px 12px; border-radius:8px; color:#7a4a00;
+    }
+
+    /* Links & inline code */
+    a{ color:var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    code{
+      background:#f3f4f6; color:#111827; border:1px solid var(--line);
+      padding:2px 6px; border-radius:6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    /* Tables */
+    table{ width:100%; border-collapse:collapse; margin:10px 0; border:1px solid var(--line); }
+    th,td{ border-bottom:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top; }
+    th{ background:#fafafa; }
+
+    /* Footer */
+    footer{ margin-top:36px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+
+    /* Anchor offset for fixed headers (if any in outer layout) */
+    :target{ scroll-margin-top: 80px; }
+
+    /* Print-friendly tweaks */
+    @media print {
+      .wrap{ max-width: none; margin:0; padding:0; }
+      nav.toc{ page-break-inside: avoid; }
+      a{ color: #000; text-decoration: underline; }
+    }
   </style>
-  <!-- 본 템플릿은 공개 리더보드·닉네임 인덱스·공개설정(UI) 구조를 반영합니다. 원격지원(상담사 도움) 기능은 사용하지 않으므로 관련 조항을 제거했습니다. 실제 운영 시 연락처·보관 기간 등을 확인하세요. -->
 </head>
 <body>
   <div class="wrap">
