@@ -24,9 +24,11 @@
   .muted{ color:#9fdcff; font-size:12px; }
   .hidden{ display:none; }
   #toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:rgba(10,12,20,.9); border:1px solid var(--stroke); border-radius:12px; padding:8px 12px; display:none; z-index:9999; }
-  .kv{ display:grid; grid-template-columns:140px 1fr; gap:6px 8px; margin-top:8px; font-size:14px; }
+  .kv{ display:grid; grid-template-columns:160px 1fr; gap:6px 8px; margin-top:8px; font-size:14px; }
   .kv b{ color:#dffaff; }
   .note{ font-size:12px; color:#cfe6ff; margin-top:6px; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
+  .pre{ white-space:pre-wrap; word-break:break-all; }
 </style>
 </head>
 <body>
@@ -49,11 +51,21 @@
         <input id="q-uid" type="text" placeholder="Firebase UID" />
       </div>
     </div>
+    <div class="row">
+      <div>
+        <label>스캔 최대 서버 (기본 1000)</label>
+        <input id="q-max" type="number" min="1" max="1000" placeholder="1000" />
+      </div>
+      <div>
+        <label>동시 스캔 수 (기본 24)</label>
+        <input id="q-conc" type="number" min="4" max="48" placeholder="24" />
+      </div>
+    </div>
     <div class="btnbar">
       <button id="btn-search">검색</button>
       <button id="btn-clear" class="secondary">초기화</button>
     </div>
-    <div id="search-note" class="note">email 또는 uid 중 하나만 입력해도 됩니다.</div>
+    <div class="note">email 또는 uid만 입력해도 됩니다. (server1~server1000 스캔, 응답에는 경로 요약만 표시)</div>
   </div>
 
   <div class="card hidden" id="result-card">
@@ -63,7 +75,9 @@
       <div><b>Email</b></div><div id="out-email">-</div>
       <div><b>Auth Disabled</b></div><div id="out-disabled">-</div>
       <div><b>Base Path</b></div><div id="out-base">-</div>
-      <div><b>Tried Paths</b></div><div id="out-tried" style="word-break:break-all;">-</div>
+      <div><b>Tried Count</b></div><div id="out-tried-count">0</div>
+      <div><b>Tried Head</b></div><div id="out-tried-head" class="mono pre">-</div>
+      <div><b>Tried Tail</b></div><div id="out-tried-tail" class="mono pre">-</div>
     </div>
   </div>
 
@@ -134,7 +148,7 @@
       <button id="btn-unban" class="warn">정지 해제 & 의심도 10</button>
       <button id="btn-reactivate" class="warn">계정 재활성화(Auth+RTDB)</button>
     </div>
-    <div class="note">※ 저장은 일부 입력된 필드만 반영됩니다.</div>
+    <div class="note">※ 저장은 입력한 필드만 반영됩니다.</div>
   </div>
 
   <div id="toast"></div>
@@ -145,7 +159,7 @@
     import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
 
-    // === 게임과 동일한 설정 사용 ===
+    // === 게임과 동일 설정 ===
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -163,7 +177,7 @@
 
     const ADMIN_EMAIL = "siu46852579@gmail.com";
 
-    // === UI refs ===
+    // UI refs
     const elAuthState = document.getElementById("auth-state");
     const elNoPerm = document.getElementById("no-perm");
     const cardSearch = document.getElementById("search-card");
@@ -172,6 +186,8 @@
 
     const qEmail = document.getElementById("q-email");
     const qUid   = document.getElementById("q-uid");
+    const qMax   = document.getElementById("q-max");
+    const qConc  = document.getElementById("q-conc");
     const btnSearch = document.getElementById("btn-search");
     const btnClear  = document.getElementById("btn-clear");
 
@@ -179,7 +195,9 @@
     const outEmail = document.getElementById("out-email");
     const outDisabled = document.getElementById("out-disabled");
     const outBase = document.getElementById("out-base");
-    const outTried = document.getElementById("out-tried");
+    const outTriedCount = document.getElementById("out-tried-count");
+    const outTriedHead  = document.getElementById("out-tried-head");
+    const outTriedTail  = document.getElementById("out-tried-tail");
 
     const inResources = document.getElementById("in-resources");
     const inCoins = document.getElementById("in-coins");
@@ -204,7 +222,6 @@
       t.textContent = msg; t.style.display = "block";
       setTimeout(()=>{ t.style.display="none"; }, ms);
     }
-
     function showCards(can){
       cardSearch.classList.toggle("hidden", !can);
       cardResult.classList.toggle("hidden", !can);
@@ -215,7 +232,7 @@
       return new Promise(async (resolve)=>{
         onAuthStateChanged(auth, async (u)=>{
           if(!u){
-            elAuthState.textContent = "구글 계정으로 로그인 해주세요(관리자만 접근 가능).";
+            elAuthState.textContent = "구글 계정으로 로그인 해주세요(관리자만 접근).";
             const provider = new GoogleAuthProvider();
             try{
               await signInWithPopup(auth, provider);
@@ -224,10 +241,9 @@
             }
             return;
           }
-          // 토큰 새로고침(커스텀 클레임 반영용)
           try { await u.getIdToken(true); } catch {}
-          const token = await u.getIdTokenResult().then(r=>r?.claims||{});
-          const isAdmin = token.admin === true || (u.email && u.email.toLowerCase() === ADMIN_EMAIL);
+          const claims = await u.getIdTokenResult().then(r=>r?.claims||{});
+          const isAdmin = claims.admin === true || (u.email && u.email.toLowerCase() === ADMIN_EMAIL);
           elAuthState.textContent = `로그인: ${u.email || u.uid}`;
           if(!isAdmin){
             elNoPerm.classList.remove("hidden");
@@ -241,13 +257,12 @@
       });
     }
 
-    // === Callable helpers ===
+    // Callable refs
     const callFind = httpsCallable(functions, "adminFindUser");
     const callUpdate = httpsCallable(functions, "adminUpdateUser");
     const callReactivate = httpsCallable(functions, "reactivateUser");
 
     function fillForm(gameData, security){
-      // 숫자 아닌 값은 공란 유지
       const num = (v)=> (Number.isFinite(Number(v)) ? Number(v) : "");
       inResources.value = num(gameData?.resources);
       inCoins.value     = num(gameData?.coins);
@@ -257,7 +272,6 @@
       inShipCost.value  = num(gameData?.shipUpgradeCost);
       inWorker.value    = num(gameData?.workerCount);
       inConv.value      = num(gameData?.conversionCount);
-
       inSus.value       = num(security?.suspicion);
       inBanned.value    = String(!!security?.banned);
     }
@@ -283,21 +297,27 @@
         suspicion: pickNum(inSus),
         banned: (inBanned.value === "true")
       };
-      // undefined 제거
       const gdClean = Object.fromEntries(Object.entries(gd).filter(([,v])=>v!==undefined));
       const secClean = Object.fromEntries(Object.entries(sec).filter(([,v])=>v!==undefined));
       return { gameData: gdClean, security: secClean };
     }
 
+    function readSearchOpts(){
+      const maxServers = Number(qMax.value) || 1000;
+      const concurrency = Number(qConc.value) || 24;
+      return { maxServers, concurrency };
+    }
+
     async function doSearch(){
       const email = qEmail.value.trim() || undefined;
       const uid = qUid.value.trim() || undefined;
+      const search = readSearchOpts();
 
       if(!email && !uid){
         toast("email 또는 uid를 입력하세요."); return;
       }
       try{
-        const r = await callFind({ target: { email, uid } });
+        const r = await callFind({ target: { email, uid }, search });
         const d = r.data || {};
         current.uid = d.targetUid || null;
         current.email = d.targetEmail || null;
@@ -308,10 +328,13 @@
         outEmail.textContent = d.targetEmail || "-";
         outDisabled.textContent = String(!!d.disabled);
         outBase.textContent = d.basePath || "(미발견)";
-        outTried.textContent = (d.triedPaths && d.triedPaths.length) ? d.triedPaths.join("  •  ") : "-";
+
+        outTriedCount.textContent = d.triedCount ?? 0;
+        outTriedHead.textContent = (d.triedHead && d.triedHead.length) ? d.triedHead.join("\n") : "-";
+        outTriedTail.textContent = (d.triedTail && d.triedTail.length) ? d.triedTail.join("\n") : "-";
 
         fillForm(d.gameData, d.security);
-        toast(d.basePath ? "찾음!" : "경로를 직접 찾지 못했어요. triedPaths 확인");
+        toast(d.basePath ? "찾음!" : "직접 경로는 못 찾음 — triedHead/Tail 확인");
       }catch(e){
         console.error(e);
         toast("검색 실패: " + (e?.message || "unknown"));
@@ -324,11 +347,11 @@
       if (!Object.keys(set.gameData).length && !Object.keys(set.security).length){
         toast("변경할 값이 없습니다."); return;
       }
+      const search = readSearchOpts();
       try{
-        const r = await callUpdate({ target: { uid: current.uid, email: current.email }, set });
+        const r = await callUpdate({ target: { uid: current.uid, email: current.email }, set, search });
         const d = r.data || {};
         toast(d.updated ? "저장 완료!" : "반영할 값이 없었습니다.");
-        // 저장 후 재조회
         await doSearch();
       }catch(e){
         console.error(e);
@@ -338,12 +361,13 @@
 
     async function doUnban(){
       if(!current.uid && !current.email){ toast("먼저 검색하세요."); return; }
+      const search = readSearchOpts();
       try{
-        // RTDB만 완화해도 되지만, 실무에선 Auth disabled도 함께 해제하는게 안전
         const r = await callReactivate({
           target: { uid: current.uid, email: current.email },
           alsoUnbanInRtdb: true,
-          suspicionTo: 10
+          suspicionTo: 10,
+          search
         });
         toast("정지 해제 + 의심도 10으로 설정 완료!");
         await doSearch();
@@ -355,11 +379,13 @@
 
     async function doReactivate(){
       if(!current.uid && !current.email){ toast("먼저 검색하세요."); return; }
+      const search = readSearchOpts();
       try{
         const r = await callReactivate({
           target: { uid: current.uid, email: current.email },
           alsoUnbanInRtdb: true,
-          suspicionTo: Number.isFinite(Number(inSus.value)) ? Number(inSus.value) : 10
+          suspicionTo: Number.isFinite(Number(inSus.value)) ? Number(inSus.value) : 10,
+          search
         });
         toast("계정 재활성화 완료!");
         await doSearch();
@@ -369,17 +395,16 @@
       }
     }
 
-    // 의심도 0 버튼
     btnSus0.addEventListener("click", ()=>{
       inSus.value = "0";
       toast("의심도 입력값을 0으로 변경했습니다. '저장'을 눌러 반영하세요.");
     });
 
-    // 이벤트 바인딩
     btnSearch.addEventListener("click", doSearch);
     btnClear.addEventListener("click", ()=>{
-      qEmail.value=""; qUid.value="";
-      outUid.textContent = outEmail.textContent = outDisabled.textContent = outBase.textContent = outTried.textContent = "-";
+      qEmail.value=""; qUid.value=""; qMax.value=""; qConc.value="";
+      outUid.textContent = outEmail.textContent = outDisabled.textContent = outBase.textContent = "-";
+      outTriedCount.textContent = "0"; outTriedHead.textContent = outTriedTail.textContent = "-";
       fillForm({}, {});
       current = { uid:null, email:null, basePath:null, disabled:null };
       toast("초기화 완료");
@@ -388,7 +413,6 @@
     btnUnban.addEventListener("click", doUnban);
     btnReactivate.addEventListener("click", doReactivate);
 
-    // 진입 시 권한 확인
     await ensureSignedIn();
   </script>
 </body>
