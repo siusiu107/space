@@ -257,7 +257,7 @@
       color:#eaf6ff;
     }
     #daily-title{ margin:0 0 8px; font-size:18px; display:flex; justify-content:space-between; align-items:center; gap:6px; }
-    #daily-info{ margin:6px 0 10px; font-size:13px; color:#cfe6ff; min-height:36px; }
+    #daily-info{ margin:6px 0 10px; font-size:12px; color:#cfe6ff; min-height:36px; }
     #daily-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
 
     .tabbar{ display:flex; gap:6px; margin:8px 0 10px; flex-wrap:wrap; }
@@ -620,7 +620,7 @@
   <div id="ban-overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="ban-title">
       <h3 id="ban-title">⛔ 계정 정지됨</h3>
-    <div id="ban-desc">
+      <div id="ban-desc">
         <p>이용약관 위반 의심에 따라 플레이가 제한되었습니다.</p>
         <p>의심도: <b id="ban-sus-value">0</b></p>
         <p style="color:#ffd36e">※ 정지 중에는 자원/코인이 증가하지 않습니다.</p>
@@ -1169,6 +1169,19 @@
     let currentMode = 'daily';
     let activeItems = [];
 
+    /* ====== 🔒 이벤트 잠금(캔슬) 유틸 ====== */
+    let eventLockUntil = 0;
+    function isEventLocked(){ return Date.now() < eventLockUntil; }
+    function cancelEvents(reason='이벤트 일시 중지'){
+      eventLockUntil = Date.now() + 5*60*1000; // 5분 잠금
+      try { showToast(`🎟️ ${reason} (5분)`, null, null, 4500); } catch {}
+      try {
+        const info = document.getElementById('daily-info');
+        if (info) info.innerHTML = '⚠️ 안전 점검으로 이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
+      } catch {}
+      updateSpinButtons();
+    }
+
     function openDailyOverlay(){ dailyOverlay.classList.add('show'); dailyOverlay.setAttribute('aria-hidden','false'); }
     function closeDailyOverlay(){ dailyOverlay.classList.remove('show'); dailyOverlay.setAttribute('aria-hidden','true'); }
     dailyCloseBtn.onclick = closeDailyOverlay;
@@ -1246,10 +1259,20 @@
     function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
+    /* 🔁 버튼 상태(잠금 포함) */
     function updateSpinButtons(){
-      spinDailyBtn.disabled   = !dailyUnlocked || !canClaimToday() || isSpinning;
-      spinPremiumBtn.disabled = !canSpendEC(1) || isSpinning;
-      spinEcoinBtn.disabled   = !canSpendEC(10) || isSpinning;
+      const locked = isEventLocked();
+      const canDaily   = dailyUnlocked && canClaimToday() && !isSpinning;
+      const canPremium = canSpendEC(1)  && !isSpinning;
+      const canEcoin   = canSpendEC(10) && !isSpinning;
+
+      spinDailyBtn.disabled   = locked || !canDaily;
+      spinPremiumBtn.disabled = locked || !canPremium;
+      spinEcoinBtn.disabled   = locked || !canEcoin;
+
+      if (locked && dailyInfo){
+        dailyInfo.innerHTML = '⚠️ 안전 점검으로 이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
+      }
     }
 
     async function tryUnlockDaily(){
@@ -1272,6 +1295,13 @@
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
       if (!security.tosAccepted){ showTosOverlay(true); return; }
       if (security.banned){ showBanOverlay(true); return; }
+
+      // 🔒 이벤트 잠금 중이면 차단
+      if (isEventLocked()){
+        dailyInfo.innerHTML = '이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
+        updateSpinButtons();
+        return;
+      }
 
       if (mode==='daily' && !dailyUnlocked) { refreshDailyInfo(false); return; }
       if (mode==='premium' && !canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
@@ -1686,6 +1716,16 @@
       const spikeRes  = Math.max(0, dr - (legRes  + physResRoom));
       const spikeCoin = Math.max(0, dc - (legCoin + physCoinRoom));
 
+      /* ✅ 슬롯 외 출처 불명 EC 증가 → 롤백 + 이벤트 5분 잠금(캔슬) */
+      if (unknownEco > EPS) {
+        const rollback = Math.min(Math.floor(unknownEco), Math.floor(state.eventCoins || 0));
+        if (rollback > 0) {
+          state.eventCoins -= rollback;   // 즉시 원복
+          save(); updateUI();
+        }
+        cancelEvents('비정상 이벤트코인 증가 감지');
+      }
+
       // 규모 로그 가중
       const mag = Math.log10(1
         + unknownRes
@@ -2022,10 +2062,11 @@
     function handleAuthError(err) {
       const code = err?.code || '';
       if (code === 'auth/user-disabled') {
+        // ✅ 로그인 시도 시: 상세(의심도 등) 노출 금지, 단 오탐 메일 안내는 포함
         security.banned = true;
-        saveSupportCtx({ banned: true });
-        showBanOverlay(true);
-        showAuthStatus('⛔ 계정이 정지되어 로그인할 수 없습니다.', true);
+        securityDirty = true;
+        showAuthStatus('⛔ 이용약관 위반으로 계정이 정지되었습니다. 오탐으로 의심되면 support@siustudio.kro.kr 로 메일을 보내 주세요.', true);
+        try { saveSupportCtx({ banned: true }); } catch {}
         return true;
       }
       return false;
@@ -2066,9 +2107,6 @@
 
     // =====================
     // ✅ 회원가입 (이메일 링크 방식)
-    //    - 링크 누르기 전까지 계정 생성 X
-    //    - 링크로 돌아오면 emailVerified=true 상태로 계정 생성
-    //    - 이어서 비밀번호 설정(linkWithCredential)
     // =====================
     let __emailLinkMode = false; // 링크 회귀 상태인지
 
@@ -2198,7 +2236,7 @@
     // 데이터 바인딩
     async function proceedWithDataBinding(){
       try {
-        const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
+        const rankSnap = await get(ref(db), `${userBasePath}/meta/rankingUnlocked`);
         rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
       } catch { rankingUnlocked = false; }
 
