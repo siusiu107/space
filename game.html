@@ -683,7 +683,7 @@
     /* ======================
        공통 상태 / 경로
        ====================== */
-    const SUPPORT_EMAIL = 'support@siustudio.kro.kr';
+    const SUPPORT_EMAIL = 'appeals@siustudio.kro.kr';
 
     let state = {};
     let uid = null;
@@ -2065,7 +2065,7 @@
         // ✅ 로그인 시도 시: 상세(의심도 등) 노출 금지, 단 오탐 메일 안내는 포함
         security.banned = true;
         securityDirty = true;
-        showAuthStatus('⛔ 이용약관 위반으로 계정이 정지되었습니다. 오탐으로 의심되면 support@siustudio.kro.kr 로 메일을 보내 주세요.', true);
+        showAuthStatus('⛔ 이용약관 위반으로 계정이 정지되었습니다. 오탐으로 의심되면 appeals@siustudio.kro.kr 로 메일을 보내 주세요.', true);
         try { saveSupportCtx({ banned: true }); } catch {}
         return true;
       }
