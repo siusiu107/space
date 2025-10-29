@@ -620,7 +620,7 @@
   <div id="ban-overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="ban-title">
       <h3 id="ban-title">⛔ 계정 정지됨</h3>
-      <div id="ban-desc">
+    <div id="ban-desc">
         <p>이용약관 위반 의심에 따라 플레이가 제한되었습니다.</p>
         <p>의심도: <b id="ban-sus-value">0</b></p>
         <p style="color:#ffd36e">※ 정지 중에는 자원/코인이 증가하지 않습니다.</p>
@@ -649,8 +649,12 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import {
       getAuth, onAuthStateChanged,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword,
-      sendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithRedirect
+      signInWithEmailAndPassword,
+      sendEmailVerification,               // 로그인 안내용 (패스워드 계정)
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+      // ✅ 이메일 링크 가입(인증 전까지 계정 미생성)
+      sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
+      EmailAuthProvider, linkWithCredential
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
       getDatabase, ref, onValue, runTransaction, update, get
@@ -669,6 +673,12 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
+
+    // ✅ 인증 링크 회귀 목적지 설정(현재 페이지로)
+    const actionCodeSettings = {
+      url: location.origin + location.pathname,
+      handleCodeInApp: true
+    };
 
     /* ======================
        공통 상태 / 경로
@@ -1057,10 +1067,29 @@
       return tpl.map(it=>{
         if (it.type==='coin'){
           const amt = Math.max(1, Math.round(base * it.coinMul * modeAdj));
-          return { ...it, awardCoin: amt, label:`코인 ${formatKR(amt)}`, onWin:()=>{ state.coins += amt; auditGain('coin', amt); } };
+          return {
+            ...it,
+            awardCoin: amt,
+            label:`코인 ${formatKR(amt)}`,
+            onWin:()=>{
+              // ✅ 출석/슬롯 코인 지급은 감사 의도 허용 창 등록 + 합법 장부 반영
+              registerAuditIntent('coin', amt);    // 의도 허용(레이스 보정)
+              state.coins += amt;
+              auditGain('coin', amt);
+            }
+          };
         }
         if (it.type==='ecoin'){
-          return { ...it, awardEcoin: it.val, label:`이벤트코인 ×${it.val}`, onWin:()=>{ state.eventCoins = (state.eventCoins||0) + it.val; auditGain('eco', it.val); } };
+          return {
+            ...it,
+            awardEcoin: it.val,
+            label:`이벤트코인 ×${it.val}`,
+            onWin:()=>{
+              registerAuditIntent('eco', it.val);
+              state.eventCoins = (state.eventCoins||0) + it.val;
+              auditGain('eco', it.val);
+            }
+          };
         }
         if (it.type==='buff'){
           const multText = `x${1+it.bmult}`;
@@ -1523,6 +1552,16 @@
       audit.lastAt   = Date.now();
     }
 
+    // ✅ 의도된(합법) 지급을 미리 신고해 오탐을 차단하는 허용 창
+    let auditIntent = { res:0, coin:0, eco:0, until:0 };
+    function registerAuditIntent(kind, amount, windowMs=6000){
+      const now = Date.now();
+      if (auditIntent.until < now) auditIntent = { res:0, coin:0, eco:0, until: now + windowMs };
+      const k = kind === 'coins' ? 'coin' : (kind === 'resources' ? 'res' : kind);
+      auditIntent[k] = (auditIntent[k] || 0) + Math.max(0, Number(amount||0));
+      auditIntent.until = Math.max(auditIntent.until, now + windowMs);
+    }
+
     // === Vercel BAN 엔드포인트 자동 로더 (RTDB meta/banEndpoint 사용) ===
     let __BAN_ENDPOINT = null;
     async function __getBanEndpoint() {
@@ -1604,9 +1643,23 @@
       const dtSec = dtMs / 1000;
 
       const cur = { res: state.resources||0, coins: state.coins||0, eco: state.eventCoins||0 };
-      const dr = cur.res   - audit.last.res;   // 실측 변화량
-      const dc = cur.coins - audit.last.coins;
-      const de = cur.eco   - audit.last.eco;
+      let dr = cur.res   - audit.last.res;   // 실측 변화량
+      let dc = cur.coins - audit.last.coins;
+      let de = cur.eco   - audit.last.eco;
+
+      // ✅ 의도 허용 창 적용(서버 동기화 타이밍으로 인한 레이스 보정)
+      if (now <= (auditIntent.until||0)) {
+        const useRes = Math.min(Math.max(0, dr), auditIntent.res||0);
+        const useCoin= Math.min(Math.max(0, dc), auditIntent.coin||0);
+        const useEco = Math.min(Math.max(0, de), auditIntent.eco||0);
+        dr -= useRes; dc -= useCoin; de -= useEco;
+        auditIntent.res  -= useRes;
+        auditIntent.coin -= useCoin;
+        auditIntent.eco  -= useEco;
+      } else {
+        // 창 종료 시 잔여는 폐기
+        auditIntent = { res:0, coin:0, eco:0, until:0 };
+      }
 
       // 즉시 밴급 급증 (절대치)
       if (dc >= BAN_SPIKE_COINS || dr >= BAN_SPIKE_RES || de >= BAN_SPIKE_ECO) {
@@ -1633,7 +1686,7 @@
       const spikeRes  = Math.max(0, dr - (legRes  + physResRoom));
       const spikeCoin = Math.max(0, dc - (legCoin + physCoinRoom));
 
-      // 규모 로그 가중(증가량이 클수록 급격히 가중)
+      // 규모 로그 가중
       const mag = Math.log10(1
         + unknownRes
         + (unknownCoin * 10)
@@ -1657,7 +1710,7 @@
         (spikeRes  > EPS ? spikeRes  * 1.6 : 0) +
         (spikeCoin > EPS ? spikeCoin * 1.6 : 0);
 
-      // 최종 의심점수(규모/비율 가중)
+      // 최종 의심점수
       let score = (baseUnknown + baseSpike) * (1 + 0.6*mag + 0.8*ratioBoost);
 
       if (score > UNKNOWN_THRESH){
@@ -1947,6 +2000,7 @@
       if (mode === 'signup') {
         tabLogin.classList.remove('active'); tabSignup.classList.add('active');
         signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtnEl.style.display='block';
+        signupBtnEl.textContent = '회원가입(인증 메일 보내기)'; // ✅ 초기 레이블
       } else {
         tabLogin.classList.add('active'); tabSignup.classList.remove('active');
         signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
@@ -1977,7 +2031,7 @@
       return false;
     }
 
-    // 🔒 이메일 인증 필수 로그인
+    // 🔒 이메일 인증 필수 로그인(비밀번호 제공자용)
     loginBtn.addEventListener('click', async () => {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
@@ -2010,43 +2064,102 @@
       }
     });
 
-    // 회원가입 (TOS 필수)
-    signupBtnEl?.addEventListener('click', async (e) => {
-      e.preventDefault();
+    // =====================
+    // ✅ 회원가입 (이메일 링크 방식)
+    //    - 링크 누르기 전까지 계정 생성 X
+    //    - 링크로 돌아오면 emailVerified=true 상태로 계정 생성
+    //    - 이어서 비밀번호 설정(linkWithCredential)
+    // =====================
+    let __emailLinkMode = false; // 링크 회귀 상태인지
+
+    async function beginEmailLinkSignup() {
       showAuthStatus('');
       const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const passwordConfirm = document.getElementById('password-confirm').value;
-      const agree = document.getElementById('tos-checkbox').checked;
+      const agree = document.getElementById('tos-checkbox')?.checked;
 
-      if (!email || !password || !passwordConfirm) {
-        showAuthStatus('모든 필드를 입력하세요.');
-        return;
-      }
-      if (password !== passwordConfirm) {
-        showAuthStatus('비밀번호가 일치하지 않습니다.');
-        return;
-      }
-      if (!agree){
-        showAuthStatus('이용약관에 동의해야 회원가입이 가능합니다.');
-        return;
-      }
+      if (!email) { showAuthStatus('이메일을 입력하세요.'); return; }
+      if (!agree) { showAuthStatus('이용약관에 동의해야 회원가입 가능합니다.'); return; }
+
       try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const user = cred.user;
-        try { await sendEmailVerification(user); } catch {}
-        showAuthStatus('회원가입 완료! 📧 인증 메일을 보냈습니다. 인증 후 로그인하세요.', false);
-        try { await auth.signOut(); } catch {}
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        try { localStorage.setItem('signupEmail', email); } catch {}
+        showAuthStatus('📧 인증 메일을 보냈습니다. 메일의 링크를 누르면 가입이 완료됩니다.', false);
+        document.getElementById('password')?.setAttribute('disabled','true');
+        document.getElementById('password-confirm')?.setAttribute('disabled','true');
+        signupBtnEl.textContent = '메일 전송됨 – 링크로 돌아오면 비번 설정';
       } catch (err) {
-        if (!handleAuthError(err)) {
-          const code = (err && err.code) || '';
-          const msg =
-            code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
-            code === 'auth/invalid-email'       ? '이메일 형식이 올바르지 않습니다.' :
-            code === 'auth/weak-password'       ? '비밀번호가 너무 약합니다.' :
-            '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.';
-          showAuthStatus(msg);
-        }
+        const code = err?.code || '';
+        const msg =
+          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
+          code === 'auth/missing-android-pkg-name' || code === 'auth/missing-continue-uri' || code === 'auth/unauthorized-continue-uri'
+            ? '인증 링크 설정이 올바르지 않습니다. 콘솔의 Authorized domains를 확인하세요.' :
+          '인증 메일 전송에 실패했습니다. 잠시 후 다시 시도하세요.';
+        showAuthStatus(msg);
+      }
+    }
+
+    async function completeEmailLinkIfNeeded() {
+      if (!isSignInWithEmailLink(auth, window.location.href)) return;
+      __emailLinkMode = true;
+      setAuthMode('signup');
+      document.getElementById('auth-title').textContent = '이메일 확인됨 – 비밀번호 설정';
+      document.getElementById('password')?.removeAttribute('disabled');
+      document.getElementById('password-confirm')?.removeAttribute('disabled');
+      document.getElementById('signup-extra').style.display = 'block';
+      signupBtnEl.textContent = '비밀번호 설정 완료하기';
+
+      let email = null;
+      try { email = localStorage.getItem('signupEmail'); } catch {}
+      if (!email) email = prompt('가입에 사용한 이메일을 입력하세요') || '';
+      email = email.trim();
+      if (!email) { showAuthStatus('이메일을 확인할 수 없습니다. 다시 시도해주세요.'); return; }
+
+      try {
+        await signInWithEmailLink(auth, email, window.location.href);
+        try { localStorage.setItem('signupEmail', email); } catch {}
+        showAuthStatus('✅ 이메일 인증 완료! 이제 비밀번호를 설정하세요.', false);
+      } catch (err) {
+        const code = err?.code || '';
+        const msg =
+          code === 'auth/invalid-action-code' ? '유효하지 않은 링크입니다. 다시 요청해 주세요.' :
+          code === 'auth/expired-action-code' ? '링크 유효기간이 지났습니다. 다시 요청해 주세요.' :
+          '링크 확인 중 오류가 발생했습니다.';
+        showAuthStatus(msg);
+      }
+    }
+
+    async function finalizePassword() {
+      const email = (localStorage.getItem('signupEmail') || '').trim();
+      const pw  = document.getElementById('password').value;
+      const pw2 = document.getElementById('password-confirm').value;
+
+      if (!pw || !pw2) { showAuthStatus('비밀번호를 입력하세요.'); return; }
+      if (pw !== pw2)   { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
+      if (!auth.currentUser) { showAuthStatus('세션이 만료되었습니다. 링크를 다시 열어주세요.'); return; }
+
+      try {
+        await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(email, pw));
+        showAuthStatus('🔐 비밀번호 설정 완료! 이제 로그인 탭에서 로그인하세요.', false);
+        await auth.signOut();
+        setAuthMode('login');
+      } catch (err) {
+        const code = err?.code || '';
+        const msg =
+          code === 'auth/provider-already-linked' ? '이미 비밀번호가 설정된 계정입니다. 로그인해 주세요.' :
+          code === 'auth/credential-already-in-use' ? '이미 사용 중인 자격증명입니다.' :
+          code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
+          '비밀번호 설정에 실패했습니다. 잠시 후 다시 시도하세요.';
+        showAuthStatus(msg);
+      }
+    }
+
+    // 기존 회원가입 버튼 동작 대체
+    signupBtnEl?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (__emailLinkMode) {
+        finalizePassword();
+      } else {
+        beginEmailLinkSignup();
       }
     });
 
@@ -2155,9 +2268,9 @@
         hideAllOverlays();
         security.banned = false; // 서버 로딩 전 UI 오탐 방지
 
-        const isEmailPassword = (user.providerData || []).some(p => p.providerId === 'password');
-        // 🔒 이메일 미인증이면 즉시 로그아웃 + 안내
-        if (isEmailPassword && !user.emailVerified) {
+        const isPasswordProvider = (user.providerData || []).some(p => p.providerId === 'password');
+        // 🔒 (패스워드 제공자 전용) 이메일 미인증이면 즉시 차단
+        if (isPasswordProvider && !user.emailVerified) {
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('📧 이메일 인증을 완료해야 로그인할 수 있어요. 받은 메일의 링크로 인증한 뒤 다시 로그인해주세요.', true);
           try { await auth.signOut(); } catch {}
@@ -2168,7 +2281,7 @@
         loadBuffs();
         renderBuffStatus();
 
-        // 캐시된 게임 데이터로 즉시 렌더
+        // 캐시 즉시 렌더
         try {
           const cacheRaw = localStorage.getItem(`gd_cache_${uid}`);
           if (cacheRaw) {
@@ -2280,10 +2393,11 @@
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
         setAuthMode(currentAuthMode);
-
-        /* ❌ (삭제됨) persisted 밴 상태 복원 로직 */
       }
     });
+
+    // ✅ 첫 로드 시 이메일 링크 회귀 처리
+    completeEmailLinkIfNeeded();
 
     // 부팅 오버레이 페일세이프
     setTimeout(() => {
