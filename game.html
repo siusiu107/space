@@ -2054,7 +2054,7 @@
     tabSignup.addEventListener('click', () => { hideAllOverlays(); setAuthMode('signup'); showAuthStatus(''); });
 
     document.getElementById('settings-btn').addEventListener('click', () => {
-      try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
+      try { history.replaceState(null, '', '/game' + (location.hash || '')); } catch {}
       location.href = '/setting.html';
     });
 
