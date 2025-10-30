@@ -650,9 +650,8 @@
     import {
       getAuth, onAuthStateChanged,
       signInWithEmailAndPassword,
-      sendEmailVerification,               // 로그인 안내용 (패스워드 계정)
+      sendEmailVerification,
       GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-      // ✅ 이메일 링크 가입(인증 전까지 계정 미생성)
       sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
       EmailAuthProvider, linkWithCredential
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -693,12 +692,18 @@
     let isInitialSync = false;
 
     let userServerKey = null;
-    let userIdKey     = null; // 🔑 경로용(인코딩된 키)
+    let userIdKey     = null;
     let userBasePath  = null;
 
     let dailyUnlocked = false;
     let rankingUnlocked = false;
     let bootDone = false;
+
+    /* 🔒 의심검사 동결(로딩 폭증 방지) */
+    let auditFreezeUntil = 0;
+    function auditFreeze(ms = 5000) {
+      auditFreezeUntil = Date.now() + ms;
+    }
 
     /* ======================
        토스트 / UI 유틸
@@ -1072,7 +1077,7 @@
             awardCoin: amt,
             label:`코인 ${formatKR(amt)}`,
             onWin:()=>{
-              // ✅ 출석/슬롯 코인 지급은 의도 허용 창 등록 + 합법 장부 반영
+              // ✅ 출석/슬롯 코인 지급은 감사 의도 허용 창 등록 + 합법 장부 반영
               registerAuditIntent('coin', amt);    // 의도 허용(레이스 보정)
               state.coins += amt;
               auditGain('coin', amt);
@@ -1291,7 +1296,6 @@
       }
     }
 
-    // ✅ 여기서 핵심 수정: 슬롯 결과에 맞춰 "미리" 허용 창 등록해서 여러 번 돌려도 의심도 안 오르게 함
     async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
       if (!security.tosAccepted){ showTosOverlay(true); return; }
@@ -1310,15 +1314,6 @@
 
       setMode(mode);
       const picked = pickWeighted(activeItems);
-
-      // ✅ 당첨될 아이템을 알았으니 "이만큼은 정상이다" 라고 먼저 등록
-      //    이렇게 하면 프리미엄/이벤트코인 룰렛을 여러 번 연속으로 돌려도
-      //    auditCheck에서 "비정상 ECO/코인 급증"으로 안 잡음
-      const anticipatedCoin  = picked.awardCoin  || 0;
-      const anticipatedEcoin = picked.awardEcoin || 0;
-      if (anticipatedCoin  > 0) registerAuditIntent('coin', anticipatedCoin, 8000);
-      if (anticipatedEcoin > 0) registerAuditIntent('eco',  anticipatedEcoin, 8000);
-
       const before = makeDeltaSnapshot();
       if (mode==='premium') { auditSpend('eco', 1);  state.eventCoins -= 1; }
       if (mode==='ecoin')   { auditSpend('eco', 10); state.eventCoins -= 10; }
@@ -1675,6 +1670,12 @@
 
     // 규모 가중 포함 감지
     function auditCheck(){
+      // 🔒 로딩/서버 동기화로 숫자가 확 바뀌는 구간은 검사 스킵
+      if (Date.now() < auditFreezeUntil) {
+        auditResetCycle();
+        return;
+      }
+
       if (!audit.last){ auditInit(); return; }
       const now = Date.now();
       let dtMs = now - (audit.lastAt || now);
@@ -1726,9 +1727,7 @@
       const spikeRes  = Math.max(0, dr - (legRes  + physResRoom));
       const spikeCoin = Math.max(0, dc - (legCoin + physCoinRoom));
 
-      /* ✅ 슬롯 외 출처 불명 EC 증가 → 롤백 + 이벤트 5분 잠금(캔슬)
-         (위에서 registerAuditIntent로 돌릴 때마다 허용창 넣어주기 때문에
-          이제는 정말로 출처가 없는 경우만 여기로 옴) */
+      /* ✅ 슬롯 외 출처 불명 EC 증가 → 롤백 + 이벤트 5분 잠금(캔슬) */
       if (unknownEco > EPS) {
         const rollback = Math.min(Math.floor(unknownEco), Math.floor(state.eventCoins || 0));
         if (rollback > 0) {
@@ -1837,7 +1836,7 @@
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
-      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`;
+      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`;   // 비용 고정
       clickUp.disabled  = state.coins < clickUpgradeCost;
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
@@ -2052,7 +2051,7 @@
       if (mode === 'signup') {
         tabLogin.classList.remove('active'); tabSignup.classList.add('active');
         signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtnEl.style.display='block';
-        signupBtnEl.textContent = '회원가입(인증 메일 보내기)'; // ✅ 초기 레이블
+        signupBtnEl.textContent = '회원가입(인증 메일 보내기)';
       } else {
         tabLogin.classList.add('active'); tabSignup.classList.remove('active');
         signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
@@ -2074,7 +2073,6 @@
     function handleAuthError(err) {
       const code = err?.code || '';
       if (code === 'auth/user-disabled') {
-        // ✅ 로그인 시도 시: 상세(의심도 등) 노출 금지, 단 오탐 메일 안내는 포함
         security.banned = true;
         securityDirty = true;
         showAuthStatus('⛔ 이용약관 위반으로 계정이 정지되었습니다. 오탐으로 의심되면 appeals@siustudio.kro.kr 로 메일을 보내 주세요.', true);
@@ -2101,7 +2099,6 @@
           try { await auth.signOut(); } catch {}
           return;
         }
-        // (비밀번호 제공자 + 인증 완료) 또는 (구글 등) → 정상
       } catch (err) {
         if (!handleAuthError(err)) {
           const code = (err && err.code) || '';
@@ -2120,7 +2117,7 @@
     // =====================
     // ✅ 회원가입 (이메일 링크 방식)
     // =====================
-    let __emailLinkMode = false; // 링크 회귀 상태인지
+    let __emailLinkMode = false;
 
     async function beginEmailLinkSignup() {
       showAuthStatus('');
@@ -2203,7 +2200,6 @@
       }
     }
 
-    // 기존 회원가입 버튼 동작 대체
     signupBtnEl?.addEventListener('click', async (e) => {
       e.preventDefault();
       if (__emailLinkMode) {
@@ -2232,7 +2228,7 @@
     });
     document.getElementById('ban-copy-info')?.addEventListener('click', copySupportInfo);
 
-    // 세션 중간 정지 빠른 감지(30초마다 토큰 강제 갱신)
+    // 세션 중간 정지 빠른 감지
     setInterval(async () => {
       try {
         if (auth?.currentUser) {
@@ -2269,6 +2265,9 @@
 
         if (isInitialSync) {
           state = { ...defaultData, ...(server || {}) };
+          // 🔒 서버에서 한꺼번에 받아온 직후 5초간 의심검사 끔 (로딩 폭증 방지)
+          auditFreeze(5000);
+
           await fetchDaily();
 
           if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
@@ -2294,6 +2293,8 @@
         } else {
           const serverLast = server._lastUpdated || 0;
           if (serverLast >= (localLastWrite || 0)) {
+            // 🔒 서버가 우리보다 최신 → 이 값이 진짜 → 4초 정도 검사 멈춤
+            auditFreeze(4000);
             state = { ...defaultData, ...server };
           } else {
             state = { ...defaultData, ...server, ...state };
@@ -2313,13 +2314,11 @@
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
 
       if (user) {
-        /* ✅ 새 세션은 클린 상태로 */
         clearSupportCtx();
         hideAllOverlays();
-        security.banned = false; // 서버 로딩 전 UI 오탐 방지
+        security.banned = false;
 
         const isPasswordProvider = (user.providerData || []).some(p => p.providerId === 'password');
-        // 🔒 (패스워드 제공자 전용) 이메일 미인증이면 즉시 차단
         if (isPasswordProvider && !user.emailVerified) {
           try { await sendEmailVerification(user); } catch {}
           showAuthStatus('📧 이메일 인증을 완료해야 로그인할 수 있어요. 받은 메일의 링크로 인증한 뒤 다시 로그인해주세요.', true);
@@ -2428,7 +2427,6 @@
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
 
-        /* ✅ 로그아웃 시 보안 상태 완전 리셋 & 밴 래치 제거 */
         security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
         securityDirty = false;
         renderSecurityBadge();
