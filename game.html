@@ -161,79 +161,8 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
-    /* 의심도 배지: 숨김 */
+    /* 의심도 배지: 요구사항대로 완전 숨김 */
     #suspicion-badge{ display:none !important; }
-
-    /* 버프 버튼 */
-    #buff-btn {
-      margin-left: 6px;
-      padding: 5px 10px;
-      border-radius: 8px;
-      background: linear-gradient(180deg, rgba(0,210,255,0.16), rgba(0,130,210,0.08));
-      border: 1px solid rgba(0,210,255,0.4);
-      color: #e6f5ff;
-      cursor: pointer;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    #buff-btn:hover { filter: brightness(1.05); }
-
-    /* 버프 오버레이 */
-    #buff-overlay{
-      position: fixed;
-      inset: 0;
-      background: rgba(2,6,12,0.65);
-      backdrop-filter: blur(4px);
-      z-index: 5000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-    #buff-overlay.show{ display:flex; }
-    #buff-card{
-      width: min(420px, 94vw);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.72));
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 16px;
-      padding: 14px;
-      color: #eaf6ff;
-      box-shadow: 0 22px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
-    }
-    #buff-list{
-      margin-top: 10px;
-      max-height: 50vh;
-      overflow-y: auto;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      background: rgba(0,0,0,0.08);
-      padding: 8px;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-    .buff-item{
-      padding: 6px 6px 4px 6px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      display:flex;
-      justify-content: space-between;
-      gap: 6px;
-    }
-    .buff-item:last-child{ border-bottom: none; }
-    .buff-kind{ opacity:.8; font-size:12px; }
-    .buff-mult{ font-weight: 700; color:#fff; }
-    .buff-left{ font-variant-numeric: tabular-nums; }
-    #buff-close{
-      margin-top: 10px;
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: linear-gradient(180deg,#00ffa8,#00d2ff);
-      border:none;
-      font-weight: 800;
-      cursor:pointer;
-      color:#002018;
-    }
 
     /* 본문 */
     #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
@@ -356,8 +285,13 @@
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
 
-    /* 버프 상태 (기존 텍스트는 사용 안 함) */
-    /* #buff-status{ ... } --> 버튼으로 대체했으므로 비워둠 */
+    /* 버프 상태 이름+잔여 */
+    #buff-status{
+      display:inline-block;
+      max-width: clamp(120px, 40vw, 260px);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      vertical-align: middle; margin-left: 6px; color:#9fdcff; font-variant-numeric: tabular-nums;
+    }
 
     /* 토스트 */
     #toast{
@@ -422,11 +356,10 @@
     #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,0.10);
       border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
-
   </style>
 </head>
 <body>
-  <!-- 부팅 중 오버레이 -->
+  <!-- 부팅 중 오버레이 (최초 1회만) -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;">
@@ -461,6 +394,7 @@
         · <u>자원·코인 비정상 급증(예: 한 번에 10억 코인)</u> 탐지 시 경고 또는 즉시 정지될 수 있습니다.<br/>
         · 자세한 내용은 아래 ‘이용약관 동의’ 모달에서 확인하세요.
       </div>
+      <!-- 🔗 이용약관 자세히 보기 (inframe /privacy) -->
       <div style="margin-top:8px; text-align:left;">
         <a href="#" id="tos-more-link" style="font-size:12px; color:#9fdcff; text-decoration:underline;">
           이용약관 자세히 보기
@@ -499,7 +433,7 @@
     </div>
   </div>
 
-  <!-- 상단 바 & 메인 -->
+  <!-- 상단 바 & 메인 게임 -->
   <div id="top-bar">
     <div class="bar-group">
       <img src="/images/resource-icon.png" alt="Resource" />
@@ -513,21 +447,9 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
-      <button id="buff-btn" type="button">🔮 버프</button>
+      <span id="buff-status" title="활성 버프 목록">버프: 없음</span>
       <span id="suspicion-badge" title="핵 사용 의심도">의심도: 0</span>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
-    </div>
-  </div>
-
-  <!-- 버프 오버레이 -->
-  <div id="buff-overlay" aria-hidden="true">
-    <div id="buff-card" role="dialog" aria-modal="true" aria-labelledby="buff-title">
-      <h3 id="buff-title">현재 버프 목록</h3>
-      <p style="margin:4px 0 6px; font-size:12px; color:#cfe6ff;">버프는 남은 시간이 지나면 자동으로 사라집니다.</p>
-      <div id="buff-list">
-        <!-- JS에서 채움 -->
-      </div>
-      <button id="buff-close">닫기</button>
     </div>
   </div>
 
@@ -569,7 +491,7 @@
     </nav>
   </div>
 
-  <!-- 커스텀 우클릭 메뉴 -->
+  <!-- 커스텀 메뉴 -->
   <div id="custom-menu">
     <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
     <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
@@ -609,7 +531,7 @@
       <div class="tabbar">
         <button class="tbtn active" data-mode="daily">출석 슬롯(무료/일1회)</button>
         <button class="tbtn" data-mode="premium">프리미엄 슬롯(이벤트코인 1)</button>
-        <button class="tbtn" data-mode="ecoin">이벤트코인 슬롯(이벤트코인 10)</button>
+        <button class="tbtn" data-mode="ecoin">이벤트코인 슬롯(10)</button>
       </div>
 
       <div id="daily-info">확인 중…</div>
@@ -635,7 +557,7 @@
     </div>
   </div>
 
-  <!-- 마이그레이션 오버레이 -->
+  <!-- 🔶 마이그레이션 오버레이 -->
   <div id="migrate-overlay" aria-hidden="true">
     <div id="migrate-card" role="dialog" aria-modal="true" aria-labelledby="migrate-title">
       <h3 id="migrate-title">데이터 저장 방식 변경 안내</h3>
@@ -643,7 +565,7 @@
         게임 내 데이터 저장 방식이 변경되어 <b>데이터 마이그레이션</b>이 필요합니다.<br/>
         아래 버튼을 누르면 <b>기존 위치의 모든 데이터(하위 키 전체)</b>를 새 위치로 이동하고, <b>원본은 삭제</b>됩니다.
       </div>
-      <div class="warnbox">⚠️ 진행 중 창을 닫거나 종료하면 <b>데이터 이전 중 문제</b>가 발생할 수 있습니다.</div>
+      <div class="warnbox">⚠️ 진행 중 창을 닫거나 종료하면 <b>데이터 이전 중 문제</b>가 발생할 수 있습니다. 가능하면 완료까지 기다려 주세요.</div>
       <div id="migrate-progress">대기 중…</div>
       <div id="migrate-actions">
         <button id="migrate-start">마이그레이션 시작</button>
@@ -651,7 +573,7 @@
     </div>
   </div>
 
-  <!-- 이용약관 오버레이 -->
+  <!-- 📜 이용약관 오버레이 -->
   <div id="tos-overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="tos-title">
       <h3 id="tos-title">이용약관 동의</h3>
@@ -673,7 +595,7 @@
     </div>
   </div>
 
-  <!-- 정책(inframe) 오버레이 -->
+  <!-- 🧩 정책(inframe) 오버레이 (/privacy 표시) -->
   <div id="policy-overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="policy-title">
       <h3 id="policy-title">이용약관 · 개인정보 처리방침</h3>
@@ -694,7 +616,7 @@
     </div>
   </div>
 
-  <!-- 정지 오버레이 -->
+  <!-- ⛔ 정지 오버레이 (오탐 대응 버튼 포함) -->
   <div id="ban-overlay" class="overlay" aria-hidden="true">
     <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="ban-title">
       <h3 id="ban-title">⛔ 계정 정지됨</h3>
@@ -719,7 +641,7 @@
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
   <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
 
-  <!-- 토스트 -->
+  <!-- 토스트 컨테이너 -->
   <div id="toast" role="status" aria-live="polite"></div>
 
   <!-- Firebase + 게임 로직 -->
@@ -751,11 +673,15 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
+    // ✅ 인증 링크 회귀 목적지 설정(현재 페이지로)
     const actionCodeSettings = {
       url: location.origin + location.pathname,
       handleCodeInApp: true
     };
 
+    /* ======================
+       공통 상태 / 경로
+       ====================== */
     const SUPPORT_EMAIL = 'appeals@siustudio.kro.kr';
 
     let state = {};
@@ -775,16 +701,20 @@
 
     /* 🔒 의심검사 동결(로딩 폭증 방지) */
     let auditFreezeUntil = 0;
-    function auditFreeze(ms = 5000) {
+    function auditFreeze(ms = 3000) {
       auditFreezeUntil = Date.now() + ms;
     }
 
+    /* 네트워크 지연 감지용 */
+    let initialSyncStart = 0;
+    let networkUnstableShown = false;
+
     /* ======================
-       토스트 / 네트워크 경고
+       토스트 / UI 유틸
        ====================== */
     let toastTimer = null;
     function showToast(message, actionText = null, onAction = null, ttlMs = 5000){
-      if (!bootDone) return;
+      if (!bootDone && message !== '네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.') return;
       const box = document.getElementById('toast');
       if(!box) return;
       clearTimeout(toastTimer);
@@ -800,11 +730,6 @@
         if(btn){ btn.onclick = () => { try{ onAction(); }catch{} hideToast(); }; }
       }
       toastTimer = setTimeout(hideToast, ttlMs);
-    }
-
-    // 📡 네트워크 불안정 알림 (5초)
-    function showNetworkUnstable(msg = '네트워크가 불안정합니다. 다시 시도해 주세요.') {
-      showToast(msg, null, null, 5000);
     }
 
     /* ======================
@@ -855,24 +780,9 @@
       persistBuffs();
       renderBuffStatus();
     }
-
-    // 🟣 버프 오버레이 열고/닫고/리스트 렌더
-    function openBuffOverlay(){
-      const ov = document.getElementById('buff-overlay');
-      if (!ov) return;
-      renderBuffStatus(true);
-      ov.classList.add('show');
-      ov.setAttribute('aria-hidden','false');
-    }
-    function closeBuffOverlay(){
-      const ov = document.getElementById('buff-overlay');
-      if (!ov) return;
-      ov.classList.remove('show');
-      ov.setAttribute('aria-hidden','true');
-    }
-
-    function renderBuffStatus(toOverlayOnly=false){
-      const ovList = document.getElementById('buff-list');
+    function renderBuffStatus(){
+      const el = document.getElementById('buff-status');
+      if(!el){ return; }
       pruneExpiredBuffs();
       const now = Date.now();
       const names = { all:'전체', coin:'코인', res:'자원' };
@@ -884,32 +794,10 @@
           const s = Math.max(0, Math.floor((leftMs%60000)/1000));
           const mult = 1 + b.value;
           const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
-          return {
-            type: names[b.type]||'버프',
-            mult: multText,
-            left: `${m}:${String(s).padStart(2,'0')}`
-          };
+          return `${names[b.type]||'버프'} ${multText} (${m}:${String(s).padStart(2,'0')})`;
         });
-
-      if (ovList){
-        if (!items.length){
-          ovList.innerHTML = `<div style="padding:10px 4px; color:#dbefff;">현재 활성화된 버프가 없습니다.</div>`;
-        } else {
-          ovList.innerHTML = items.map(it=>`
-            <div class="buff-item">
-              <div>
-                <div class="buff-kind">${it.type}</div>
-                <div class="buff-mult">${it.mult}</div>
-              </div>
-              <div class="buff-left">${it.left}</div>
-            </div>
-          `).join('');
-        }
-      }
-
-      if (!toOverlayOnly){
-        // 기존에는 텍스트 뱃지로 보여줬지만 지금은 버튼만 있어서 여기서는 아무 것도 안 함
-      }
+      el.textContent = items.length ? `버프: ${items.join(' · ')}` : '버프: 없음';
+      el.title = items.join('\n') || '버프 없음';
     }
 
     /* ========= 숫자 한국식 단위 ========= */
@@ -945,6 +833,7 @@
     function getWorkerPower()  { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost(){ return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
 
+    // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null) {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
@@ -980,6 +869,7 @@
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
     }
 
+    /* ========= 새 키 규칙 ========= */
     function encodeEmailToKey(email){
       const s = String(email||'').trim().toLowerCase();
       return s
@@ -1090,6 +980,7 @@
     async function performMigration(srcBasePath, destBasePath, user){
       setMigrateProgress('1/3 기존 데이터 읽는 중…');
       const srcRef = ref(db, srcBasePath);
+      const destRef = ref(db, destBasePath);
 
       const snap = await get(srcRef);
       if (!snap.exists()){
@@ -1132,7 +1023,7 @@
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
     }
 
-    // 기존 calcBaseCoin은 남겨둠
+    /* ✅ 룰렛용 기본값은 유지하지만, 지금부터는 “현재 코인 기반” 보상이 우선 */
     function calcBaseCoin(){
       const rps = state.workerCount * getWorkerPower();
       const cps = state.conversionCount;
@@ -1148,79 +1039,107 @@
         32  * ship +
         (auto ? 20 : 0);
       const baseRaw = 50 + score;
-      const base = Math.round(baseRaw * 0.65);
-      return Math.min(Math.max(base, 30), 30000);
+      return Math.min(Math.max(baseRaw * 0.65, 30), 30000);
     }
 
-    // === 슬롯 템플릿(변형 전) → 지금은 가중치만 씀 ===
+    /* ====== 여기서부터 룰렛 템플릿 ======
+       요청:
+       - 출석: 현재코인 ×0.6, ×0.7
+       - 프리미엄: 현재코인 ×1, ×2
+       - 이벤트코인: 현재코인 ×5, ×10, ×20
+       - 나머지(버프/이벤트코인 지급)는 유지
+    */
+
     const TPL_DAILY = [
-      { key:'coin_x0_6', w:0.55 },
-      { key:'coin_x0_7', w:0.45 }
-    ];
-    const TPL_PREMIUM = [
-      { key:'coin_x1', w:0.55 },
-      { key:'coin_x2', w:0.45 }
-    ];
-    const TPL_ECOIN = [
-      { key:'coin_x5',  w:0.50 },
-      { key:'coin_x10', w:0.35 },
-      { key:'coin_x20', w:0.15 }
+      { key:'coin_cur_06', type:'coin', currentCoinMul:0.6, icon:'💰', color:'#00E5FF', w:0.35 },
+      { key:'coin_cur_07', type:'coin', currentCoinMul:0.7, icon:'💰', color:'#4DFFB5', w:0.25 },
+      { key:'res_x2_5m',   type:'buff', bkind:'res',  bmult:1.0, bdur:5*60*1000, icon:'⚡',  color:'#FFA8FF', w:0.18 },
+      { key:'all_x2_3m',   type:'buff', bkind:'all',  bmult:1.0, bdur:3*60*1000, icon:'🚀',  color:'#8AE1FF', w:0.13 },
+      { key:'coinbuf_x2_3m', type:'buff', bkind:'coin', bmult:1.0, bdur:3*60*1000, icon:'🪙', color:'#FFD0A8', w:0.06 },
+      { key:'eco_1',       type:'ecoin', val:1,       icon:'🎟️', color:'#FFD05C', w:0.03 }
     ];
 
-    function materializeDynamicItems(mode){
-      const curCoins = Math.max(0, state.coins || 0);
-      if (mode === 'daily') {
-        return TPL_DAILY.map(t => {
-          const mul = t.key === 'coin_x0_6' ? 0.6 : 0.7;
-          const amt = Math.max(1, Math.floor(curCoins * mul));
+    const TPL_PREMIUM = [
+      { key:'coin_cur_1',  type:'coin', currentCoinMul:1.0, icon:'💰', color:'#00E5FF', w:0.28 },
+      { key:'coin_cur_2',  type:'coin', currentCoinMul:2.0, icon:'💰', color:'#4DFFB5', w:0.20 },
+      { key:'coin_x5_5',   type:'coin', coinMul:5.5,       icon:'💰', color:'#32C6FF', w:0.09 },  /* 기존 거 하나는 남겨둠 */
+      { key:'all_x2_10m',  type:'buff', bkind:'all',  bmult:1.0, bdur:10*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
+      { key:'res_x3_7m',   type:'buff', bkind:'res',  bmult:2.0, bdur:7*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.13 },
+      { key:'coinbuf_x3_5m', type:'buff', bkind:'coin', bmult:2.0, bdur:5*60*1000, icon:'🪙', color:'#FFD0A8', w:0.09 },
+      { key:'eco_3',       type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.03 }
+    ];
+
+    const TPL_ECOIN = [
+      { key:'coin_cur_5',  type:'coin', currentCoinMul:5.0,  icon:'💰', color:'#00E5FF', w:0.27 },
+      { key:'coin_cur_10', type:'coin', currentCoinMul:10.0, icon:'💰', color:'#4DFFB5', w:0.20 },
+      { key:'coin_cur_20', type:'coin', currentCoinMul:20.0, icon:'💰', color:'#32C6FF', w:0.12 },
+      { key:'all_x3_15m',  type:'buff', bkind:'all',  bmult:2.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.16 },
+      { key:'res_x5_12m',  type:'buff', bkind:'res',  bmult:4.0,  bdur:12*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
+      { key:'eco_8',       type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.07 },
+      { key:'eco_12',      type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.04 },
+      { key:'eco_20',      type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.02 }
+    ];
+
+    function materializeItems(tpl, mode){
+      const base = calcBaseCoin(); // 혹시 남은 예전 항목들에서 사용
+      return tpl.map(it=>{
+        // 🔥 여기서 현재 코인 기반 보상 처리
+        if (it.type === 'coin' && typeof it.currentCoinMul === 'number') {
+          const curCoins = state.coins || 0;
+          const amt = Math.max(1, Math.round(curCoins * it.currentCoinMul));
           return {
-            ...t,
-            type: 'coin',
-            icon: '💰',
-            label: `코인 ${formatKR(amt)} (${Math.round(mul*100)}%)`,
+            ...it,
             awardCoin: amt,
-            onWin: () => {
+            label: `현재코인 ×${it.currentCoinMul} (= ${formatKR(amt)})`,
+            onWin:()=>{
               registerAuditIntent('coin', amt);
               state.coins += amt;
               auditGain('coin', amt);
             }
           };
-        });
-      } else if (mode === 'premium') {
-        return TPL_PREMIUM.map(t => {
-          const mul = t.key === 'coin_x1' ? 1 : 2;
-          const amt = Math.max(1, Math.floor(curCoins * mul));
+        }
+        if (it.type==='coin' && typeof it.coinMul === 'number') {
+          const amt = Math.max(1, Math.round(base * it.coinMul));
           return {
-            ...t,
-            type: 'coin',
-            icon: '💰',
-            label: `코인 ${formatKR(amt)} (x${mul})`,
+            ...it,
             awardCoin: amt,
-            onWin: () => {
+            label:`코인 ${formatKR(amt)}`,
+            onWin:()=>{
               registerAuditIntent('coin', amt);
               state.coins += amt;
               auditGain('coin', amt);
             }
           };
-        });
-      } else {
-        return TPL_ECOIN.map(t => {
-          const mul = t.key === 'coin_x5' ? 5 : (t.key === 'coin_x10' ? 10 : 20);
-          const amt = Math.max(1, Math.floor(curCoins * mul));
+        }
+        if (it.type==='ecoin'){
           return {
-            ...t,
-            type: 'coin',
-            icon: '💰',
-            label: `코인 ${formatKR(amt)} (x${mul})`,
-            awardCoin: amt,
-            onWin: () => {
-              registerAuditIntent('coin', amt);
-              state.coins += amt;
-              auditGain('coin', amt);
+            ...it,
+            awardEcoin: it.val,
+            label:`이벤트코인 ×${it.val}`,
+            onWin:()=>{
+              registerAuditIntent('eco', it.val);
+              state.eventCoins = (state.eventCoins||0) + it.val;
+              auditGain('eco', it.val);
             }
           };
-        });
-      }
+        }
+        if (it.type==='buff'){
+          const multText = `x${1+it.bmult}`;
+          const minText  = `${Math.round(it.bdur/60000)}m`;
+          let title = it.bkind==='all' ? `모든 생산 ${multText}`
+                   : it.bkind==='coin' ? `코인 생산 ${multText}`
+                   :                    `자원 생산 ${multText}`;
+          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
+        }
+        return it;
+      });
+    }
+    function getItemsForMode(mode){
+      const tpl = mode==='daily'   ? TPL_DAILY
+               : mode==='premium' ? TPL_PREMIUM
+               : mode==='ecoin'   ? TPL_ECOIN
+               : TPL_PREMIUM;
+      return materializeItems(tpl, mode);
     }
 
     function playSfx(id){
@@ -1259,7 +1178,7 @@
       return new Promise(resolve=>{
         requestAnimationFrame(()=>{
           requestAnimationFrame(()=>{
-            reel.style.transition = 'transform 3s cubic-bezier(.17,.89,.35,1.12)';
+            reel.style.transition = 'transform 2.6s cubic-bezier(.17,.89,.35,1.12)';
             reel.style.transform = `translateY(${targetY}px)`;
           });
         });
@@ -1282,13 +1201,15 @@
     let currentMode = 'daily';
     let activeItems = [];
 
+    /* ====== 🔒 이벤트 잠금(캔슬) 유틸 ====== */
     let eventLockUntil = 0;
     function isEventLocked(){ return Date.now() < eventLockUntil; }
     function cancelEvents(reason='이벤트 일시 중지'){
-      eventLockUntil = Date.now() + 5*60*1000;
-      showToast(`🎟️ ${reason} (5분)`, null, null, 4500);
+      eventLockUntil = Date.now() + 5*60*1000; // 5분 잠금
+      try { showToast(`🎟️ ${reason} (5분)`, null, null, 5000); } catch {}
       try {
-        if (dailyInfo) dailyInfo.innerHTML = '⚠️ 안전 점검으로 이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
+        const info = document.getElementById('daily-info');
+        if (info) info.innerHTML = '⚠️ 안전 점검으로 이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
       } catch {}
       updateSpinButtons();
     }
@@ -1301,20 +1222,21 @@
     function setMode(mode){
       currentMode = mode;
       tabs.forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
-      activeItems = materializeDynamicItems(mode);
+      activeItems = getItemsForMode(mode);
+      slotWrap.style.display     = 'flex';
+      document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
+      document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
+      document.getElementById('spin-ecoin').style.display   = (mode==='ecoin')? 'inline-block':'none';
       buildSlot(activeItems);
       buildProbPanel(activeItems, mode);
       buildRewardList(activeItems);
       updateSpinButtons();
-      document.getElementById('spin-daily').style.display   = (mode==='daily')? 'inline-block':'none';
-      document.getElementById('spin-premium').style.display = (mode==='premium')? 'inline-block':'none';
-      document.getElementById('spin-ecoin').style.display   = (mode==='ecoin')? 'inline-block':'none';
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
     function buildProbPanel(items, mode){
-      const total=items.reduce((a,b)=>a+(b.w||0),0)||1;
-      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${(((it.w||0)/total)*100).toFixed(2)}%</td></tr>`).join('');
+      const total=items.reduce((a,b)=>a+b.w,0)||1;
+      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
       const header = mode==='daily' ? '출석 슬롯 확률'
                   : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
                   : '이벤트코인 슬롯 확률(EC -10)';
@@ -1366,9 +1288,10 @@
         eventCoins: (state.eventCoins||0) - before.eventCoins
       };
     }
-    function pickWeighted(items){ const s=items.reduce((a,b)=>a+(b.w||0),0); let r=Math.random()*s; for(const it of items){ r-=(it.w||0); if(r<=0) return it; } return items.at(-1); }
+    function pickWeighted(items){ const s=items.reduce((a,b)=>a+b.w,0); let r=Math.random()*s; for(const it of items){ if((r-=it.w)<=0) return it; } return items.at(-1); }
     function canSpendEC(n){ return (state.eventCoins||0) >= n; }
 
+    /* 🔁 버튼 상태(잠금 포함) */
     function updateSpinButtons(){
       const locked = isEventLocked();
       const canDaily   = dailyUnlocked && canClaimToday() && !isSpinning;
@@ -1384,11 +1307,28 @@
       }
     }
 
+    async function tryUnlockDaily(){
+      if (!uid || dailyUnlocked) return;
+      if ((state.coins || 0) >= 100){
+        dailyUnlocked = true;
+        try {
+          await update(ref(db), { [`${userBasePath}/daily/unlocked`]: true });
+        } catch(e){ console.warn('unlock save error', e); }
+        showToast('🔓 출석 보상 잠금 해제!', '지금 열기', () => {
+          setMode('daily'); openDailyOverlay();
+        });
+        refreshDailyInfo(canClaimToday());
+        updateAttendanceLabels();
+        updateSpinButtons();
+      }
+    }
+
     async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
       if (!security.tosAccepted){ showTosOverlay(true); return; }
       if (security.banned){ showBanOverlay(true); return; }
 
+      // 🔒 이벤트 잠금 중이면 차단
       if (isEventLocked()){
         dailyInfo.innerHTML = '이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
         updateSpinButtons();
@@ -1400,15 +1340,13 @@
       if (mode==='ecoin'   && !canSpendEC(10)){ dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
 
       setMode(mode);
-      const items = activeItems;
-      const picked = pickWeighted(items);
+      const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
-
       if (mode==='premium') { auditSpend('eco', 1);  state.eventCoins -= 1; }
       if (mode==='ecoin')   { auditSpend('eco', 10); state.eventCoins -= 10; }
 
       isSpinning = true; updateSpinButtons();
-      await spinSlot(items, picked);
+      await spinSlot(activeItems, picked);
       picked.onWin();
 
       try{
@@ -1431,7 +1369,6 @@
       }catch(e){
         console.error(e);
         dailyInfo.textContent='보상 지급 중 오류가 발생했습니다.';
-        showNetworkUnstable();
       }finally{
         isSpinning = false; updateSpinButtons();
       }
@@ -1448,10 +1385,8 @@
         const v = snap.exists() ? snap.val() : { lastKey:null, streak:0, unlocked:false };
         dailyCache = v;
         dailyUnlocked = v?.unlocked ? true : false;
-      }catch(e){
-        console.warn('fetchDaily error', e);
+      }catch{
         dailyCache = { lastKey:null, streak:0, unlocked:false }; dailyUnlocked = false;
-        showNetworkUnstable();
       }
     }
     async function checkDailyAndMaybeShow(){
@@ -1497,6 +1432,7 @@
     const authErrorEl   = document.getElementById('auth-error');
     const bootOverlay   = document.getElementById('boot-overlay');
 
+    // ★ 부팅 오버레이는 '처음 1회'만
     function setBootVisible(v){
       if (!bootOverlay) return;
       const seen = localStorage.getItem('boot_seen') === '1';
@@ -1530,14 +1466,16 @@
     }
 
     /* ===========================
-       보안/약관/의심도
+       ⚠️ 보안/약관/의심도 (강화판)
        =========================== */
     let security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
     let securityDirty = false;
 
-    const SEC_WARN_LEVEL = 20;
-    const SEC_BAN_LEVEL  = 30;
+    // 임계값
+    const SEC_WARN_LEVEL = 20;  // 경고
+    const SEC_BAN_LEVEL  = 30;  // 정지
 
+    // 감지 파라미터
     const EPS               = 1e-6;
     const UNKNOWN_THRESH    = 0.05;
     const HUMAN_MAX_CPS     = 12;
@@ -1546,6 +1484,7 @@
     const COIN_WEIGHT       = 1.0;
     const ECO_WEIGHT        = 1.2;
 
+    // ★ 즉시 밴 급증 한계
     const BAN_SPIKE_COINS = 1_000_000_000;
     const BAN_SPIKE_RES   = 100_000_000;
     const BAN_SPIKE_ECO   = 50_000;
@@ -1636,11 +1575,9 @@
         const pov = document.getElementById('policy-overlay');
         if (pov){ pov.classList.remove('show'); pov.setAttribute('aria-hidden','true'); }
       }catch{}
-      try{
-        closeBuffOverlay();
-      }catch{}
     }
 
+    // === 합법 증감 장부 ===
     let audit = {
       last: null,
       recGain:  { res:0, coin:0, eco:0 },
@@ -1663,6 +1600,7 @@
       if (!audit.recSpend[k]) audit.recSpend[k] = 0;
       audit.recSpend[k] += Number(amount||0);
     }
+    function auditAdd(kind, amount){ auditGain(kind, amount); }
     function auditResetCycle(){
       audit.recGain  = { res:0, coin:0, eco:0 };
       audit.recSpend = { res:0, coin:0, eco:0 };
@@ -1670,6 +1608,7 @@
       audit.lastAt   = Date.now();
     }
 
+    // 의도 허용 창
     let auditIntent = { res:0, coin:0, eco:0, until:0 };
     function registerAuditIntent(kind, amount, windowMs=6000){
       const now = Date.now();
@@ -1679,6 +1618,7 @@
       auditIntent.until = Math.max(auditIntent.until, now + windowMs);
     }
 
+    // BAN 엔드포인트
     let __BAN_ENDPOINT = null;
     async function __getBanEndpoint() {
       if (__BAN_ENDPOINT) return __BAN_ENDPOINT;
@@ -1917,7 +1857,7 @@
 
       renderSecurityBadge();
       tryUnlockDaily();
-      renderBuffStatus(); // 오버레이 갱신
+      renderBuffStatus();
 
       try {
         if (uid) {
@@ -1994,7 +1934,7 @@
     function ensureReady() {
       if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
-      if (isInitialSync) { showAuthStatus('데이터 동기화 중입니다. 잠시만 기다려주세요.'); return false; }
+      if (isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
       if (!security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
       if (security.banned){ showBanOverlay(true); showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
@@ -2011,7 +1951,7 @@
         const resMul = activeBuffFactor('res');
         const inc = state.clickPower * resMul;
         state.resources += inc;
-        auditGain('res', inc);
+        auditAdd('res', inc);
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
@@ -2074,15 +2014,16 @@
         tab.classList.add('active');
       }));
 
+      // 메인 루프
       window.__gameTimer = setInterval(async () => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
 
         if (!security.banned){
           pruneExpiredBuffs();
           let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res');
-          if (state.workerCount > 0){ state.resources += workerGain; auditGain('res', workerGain); }
+          if (state.workerCount > 0){ state.resources += workerGain; auditAdd('res', workerGain); }
           let convGain = state.conversionCount * activeBuffFactor('coin');
-          if (state.conversionCount > 0){ state.coins += convGain; auditGain('coin', convGain); }
+          if (state.conversionCount > 0){ state.coins += convGain; auditAdd('coin', convGain); }
           if (state.autoConvertBought) convertResources();
         }
 
@@ -2093,6 +2034,9 @@
       }, 1000);
     }
 
+    /* ======================
+       인증/부팅 흐름
+       ====================== */
     const tabLogin  = document.getElementById('auth-tab-login');
     const tabSignup = document.getElementById('auth-tab-signup');
     const signupExtra = document.getElementById('signup-extra');
@@ -2158,16 +2102,14 @@
               ? '아이디 또는 비밀번호가 일치하지 않습니다.' :
             code === 'auth/user-not-found'         ? '등록된 계정이 없습니다. 회원가입을 먼저 진행하세요.' :
             code === 'auth/invalid-email'          ? '이메일 형식이 올바르지 않습니다.' :
-            code === 'auth/network-request-failed' ? '네트워크가 불안정합니다. 다시 시도해 주세요.' :
+            code === 'auth/network-request-failed' ? '네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.' :
             '로그인 중 문제가 발생하였습니다. 나중에 다시 시도하세요';
           showAuthStatus(msg);
-          if (code === 'auth/network-request-failed') {
-            showNetworkUnstable();
-          }
         }
       }
     });
 
+    /* ========= 이메일 링크 회원가입 ========= */
     let __emailLinkMode = false;
 
     async function beginEmailLinkSignup() {
@@ -2193,9 +2135,6 @@
             ? '인증 링크 설정이 올바르지 않습니다. 콘솔의 Authorized domains를 확인하세요.' :
           '인증 메일 전송에 실패했습니다. 잠시 후 다시 시도하세요.';
         showAuthStatus(msg);
-        if (code === 'auth/network-request-failed') {
-          showNetworkUnstable();
-        }
       }
     }
 
@@ -2226,9 +2165,6 @@
           code === 'auth/expired-action-code' ? '링크 유효기간이 지났습니다. 다시 요청해 주세요.' :
           '링크 확인 중 오류가 발생했습니다.';
         showAuthStatus(msg);
-        if (code === 'auth/network-request-failed') {
-          showNetworkUnstable();
-        }
       }
     }
 
@@ -2254,9 +2190,6 @@
           code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
           '비밀번호 설정에 실패했습니다. 잠시 후 다시 시도하세요.';
         showAuthStatus(msg);
-        if (code === 'auth/network-request-failed') {
-          showNetworkUnstable();
-        }
       }
     }
 
@@ -2269,6 +2202,7 @@
       }
     });
 
+    // TOS 동의
     const tosAgree = document.getElementById('tos-agree');
     const tosAccept = document.getElementById('tos-accept');
     tosAgree?.addEventListener('change', ()=>{ tosAccept.disabled = !tosAgree.checked; });
@@ -2279,6 +2213,7 @@
       showToast('✅ 이용약관에 동의되었습니다. 공정한 플레이를 부탁드려요!', null, null, 3500);
     });
 
+    // 정지 오버레이 버튼들
     document.getElementById('ban-ok')?.addEventListener('click', ()=> showBanOverlay(false));
     document.getElementById('ban-appeal-email')?.addEventListener('click', ()=>{
       const { mailto } = buildSupportMail();
@@ -2286,6 +2221,7 @@
     });
     document.getElementById('ban-copy-info')?.addEventListener('click', copySupportInfo);
 
+    // 정기 토큰 확인
     setInterval(async () => {
       try {
         if (auth?.currentUser) {
@@ -2298,6 +2234,7 @@
       }
     }, 30000);
 
+    // 데이터 바인딩
     async function proceedWithDataBinding(){
       try {
         const rankSnap = await get(ref(db), `${userBasePath}/meta/rankingUnlocked`);
@@ -2316,12 +2253,24 @@
 
       saveSupportCtx({ banned: false });
 
+      const syncStart = Date.now();
+      initialSyncStart = syncStart;
+
       dataUnsubscribe = onValue(dataRef, async snap => {
         const server = snap.exists() ? snap.val() : null;
+        const loadTime = Date.now() - syncStart;
+
+        // 네트워크가 3초 이상 걸리면 5초짜리 안내
+        if (loadTime > 3000 && !networkUnstableShown) {
+          networkUnstableShown = true;
+          showToast('네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.', null, null, 5000);
+          auditFreeze(5000);
+        }
 
         if (isInitialSync) {
           state = { ...defaultData, ...(server || {}) };
-          auditFreeze(5000);
+          // 최초 동기화는 3초만 검사 끔(요청사항)
+          if (!networkUnstableShown) auditFreeze(3000);
 
           await fetchDaily();
 
@@ -2348,7 +2297,8 @@
         } else {
           const serverLast = server._lastUpdated || 0;
           if (serverLast >= (localLastWrite || 0)) {
-            auditFreeze(4000);
+            // 서버가 더 최신 → 3초만 더 끔
+            auditFreeze(3000);
             state = { ...defaultData, ...server };
           } else {
             state = { ...defaultData, ...server, ...state };
@@ -2498,6 +2448,7 @@
 
     completeEmailLinkIfNeeded();
 
+    // 부팅 오버레이 페일세이프
     setTimeout(() => {
       const stillBooting = bootOverlay && getComputedStyle(bootOverlay).display !== 'none';
       const gameHidden = document.getElementById('container')?.style.visibility !== 'visible';
@@ -2521,7 +2472,6 @@
         } catch (err2) {
           if (handleAuthError(err2)) return;
           showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
-          showNetworkUnstable();
         }
       }
     });
@@ -2531,27 +2481,10 @@
       else window.__DEFER_INIT = wireGame;
       renderBuffStatus();
       renderSecurityBadge();
-
-      const buffBtn   = document.getElementById('buff-btn');
-      const buffClose = document.getElementById('buff-close');
-      const buffOv    = document.getElementById('buff-overlay');
-
-      if (buffBtn) buffBtn.addEventListener('click', openBuffOverlay);
-      if (buffClose) buffClose.addEventListener('click', closeBuffOverlay);
-      if (buffOv) buffOv.addEventListener('click', (e)=>{ if (e.target === buffOv) closeBuffOverlay(); });
-      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeBuffOverlay(); });
     });
 
     setInterval(renderBuffStatus, 1000);
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
-
-    // 데일리 잠금 해제 체크 함수 (기존 코드에서 참조하므로 유지)
-    function tryUnlockDaily(){
-      if (dailyUnlocked) return;
-      if ((state.coins||0) >= 100){
-        dailyUnlocked = true;
-      }
-    }
   </script>
 
   <!-- 우클릭 커스텀 메뉴 -->
@@ -2661,7 +2594,7 @@
     CobrowseIO.client().then(function(){ CobrowseIO.start(); });
   </script>
 
-  <!-- Firebase 커맨드 -->
+  <!-- Firebase 커맨드(세션 제어) -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -2746,7 +2679,7 @@
     }
   </script>
 
-  <!-- 팝업 검사 -->
+  <!-- Popup Enforcement (간소) -->
   <script>
     (function(){
       const gate = document.getElementById('popup-gate');
@@ -2770,7 +2703,7 @@
     })();
   </script>
 
-  <!-- 정책(inframe) 오버레이 열기/닫기 -->
+  <!-- 📎 정책(inframe) 오버레이 열기/닫기 -->
   <script>
     (function () {
       const more   = document.getElementById('tos-more-link');
