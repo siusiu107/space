@@ -1072,7 +1072,7 @@
             awardCoin: amt,
             label:`코인 ${formatKR(amt)}`,
             onWin:()=>{
-              // ✅ 출석/슬롯 코인 지급은 감사 의도 허용 창 등록 + 합법 장부 반영
+              // ✅ 출석/슬롯 코인 지급은 의도 허용 창 등록 + 합법 장부 반영
               registerAuditIntent('coin', amt);    // 의도 허용(레이스 보정)
               state.coins += amt;
               auditGain('coin', amt);
@@ -1291,6 +1291,7 @@
       }
     }
 
+    // ✅ 여기서 핵심 수정: 슬롯 결과에 맞춰 "미리" 허용 창 등록해서 여러 번 돌려도 의심도 안 오르게 함
     async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
       if (!security.tosAccepted){ showTosOverlay(true); return; }
@@ -1309,6 +1310,15 @@
 
       setMode(mode);
       const picked = pickWeighted(activeItems);
+
+      // ✅ 당첨될 아이템을 알았으니 "이만큼은 정상이다" 라고 먼저 등록
+      //    이렇게 하면 프리미엄/이벤트코인 룰렛을 여러 번 연속으로 돌려도
+      //    auditCheck에서 "비정상 ECO/코인 급증"으로 안 잡음
+      const anticipatedCoin  = picked.awardCoin  || 0;
+      const anticipatedEcoin = picked.awardEcoin || 0;
+      if (anticipatedCoin  > 0) registerAuditIntent('coin', anticipatedCoin, 8000);
+      if (anticipatedEcoin > 0) registerAuditIntent('eco',  anticipatedEcoin, 8000);
+
       const before = makeDeltaSnapshot();
       if (mode==='premium') { auditSpend('eco', 1);  state.eventCoins -= 1; }
       if (mode==='ecoin')   { auditSpend('eco', 10); state.eventCoins -= 10; }
@@ -1716,7 +1726,9 @@
       const spikeRes  = Math.max(0, dr - (legRes  + physResRoom));
       const spikeCoin = Math.max(0, dc - (legCoin + physCoinRoom));
 
-      /* ✅ 슬롯 외 출처 불명 EC 증가 → 롤백 + 이벤트 5분 잠금(캔슬) */
+      /* ✅ 슬롯 외 출처 불명 EC 증가 → 롤백 + 이벤트 5분 잠금(캔슬)
+         (위에서 registerAuditIntent로 돌릴 때마다 허용창 넣어주기 때문에
+          이제는 정말로 출처가 없는 경우만 여기로 옴) */
       if (unknownEco > EPS) {
         const rollback = Math.min(Math.floor(unknownEco), Math.floor(state.eventCoins || 0));
         if (rollback > 0) {
