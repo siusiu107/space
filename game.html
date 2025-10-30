@@ -161,6 +161,20 @@
     }
     #settings-btn:hover { filter: brightness(1.08); }
 
+    /* 새 버프 버튼 */
+    #buff-btn{
+      margin-left: 6px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: rgba(0,212,255,0.12);
+      border: 1px solid rgba(0,212,255,0.35);
+      color:#e6f5ff;
+      cursor:pointer;
+      font-weight:700;
+      backdrop-filter: blur(4px);
+    }
+    #buff-btn:hover{ background: rgba(0,212,255,0.25); }
+
     /* 의심도 배지: 요구사항대로 완전 숨김 */
     #suspicion-badge{ display:none !important; }
 
@@ -285,13 +299,27 @@
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
 
-    /* 버프 상태 이름+잔여 */
-    #buff-status{
-      display:inline-block;
-      max-width: clamp(120px, 40vw, 260px);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      vertical-align: middle; margin-left: 6px; color:#9fdcff; font-variant-numeric: tabular-nums;
+    /* 버프 상태 보기 오버레이 */
+    #buff-overlay{
+      position:fixed; inset:0; z-index:3650; display:none; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(2,6,12,.60), rgba(2,6,12,.80)); backdrop-filter: blur(4px);
     }
+    #buff-overlay.show{ display:flex; }
+    #buff-card{
+      width:min(480px, 94vw); border-radius:16px; border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(10,12,18,.66));
+      padding:16px; box-shadow: 0 22px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+      color:#eaf6ff;
+    }
+    #buff-list{ margin-top:10px; max-height:42vh; overflow-y:auto; }
+    .buff-item{
+      padding:8px 8px; margin-bottom:4px; border:1px solid rgba(255,255,255,0.05);
+      border-radius:10px; background:rgba(0,0,0,0.12); font-size:13px;
+      display:flex; justify-content:space-between; gap:8px;
+    }
+
+    /* 버프 상태 이름+잔여 (기존 span대신 오버레이에서 표시하므로 최소화) */
+    #buff-status{ display:none; }
 
     /* 토스트 */
     #toast{
@@ -366,7 +394,7 @@
         <div aria-hidden="true" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,0.06);">🔒</div>
         <div style="text-align:left;">
           <div style="font-weight:800; font-size:15px;">로그인 상태 확인 중…</div>
-          <div style="font-size:12px; color:#bcd8ee; margin-top:2px;">잠시만 기다려주세요</div>
+          <div style="font-size:12px; color:#bcd8ee; margin-top:2px;">게임 데이터 불러오는 중이에요</div>
         </div>
       </div>
       <div style="margin:0 auto 12px;"><div class="spinner" aria-hidden="true"></div></div>
@@ -447,7 +475,8 @@
       <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
       <span id="ship-level">1렙 (20코인)</span>
       <button id="upgrade-ship">업그레이드</button>
-      <span id="buff-status" title="활성 버프 목록">버프: 없음</span>
+      <!-- 버프 버튼으로 교체 -->
+      <button id="buff-btn" aria-label="현재 버프 보기">버프(0)</button>
       <span id="suspicion-badge" title="핵 사용 의심도">의심도: 0</span>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
@@ -595,23 +624,13 @@
     </div>
   </div>
 
-  <!-- 🧩 정책(inframe) 오버레이 (/privacy 표시) -->
-  <div id="policy-overlay" class="overlay" aria-hidden="true">
-    <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="policy-title">
-      <h3 id="policy-title">이용약관 · 개인정보 처리방침</h3>
-      <div style="height:70vh; max-height:80vh; margin-top:6px;">
-        <iframe
-          id="policy-frame"
-          title="정책 문서"
-          src="/privacy"
-          loading="lazy"
-          style="width:100%; height:100%; border:0; border-radius:10px; background:#fff;"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-          referrerpolicy="no-referrer"
-        ></iframe>
-      </div>
+  <!-- 🧪 버프 목록 오버레이 -->
+  <div id="buff-overlay" aria-hidden="true">
+    <div id="buff-card" role="dialog" aria-modal="true" aria-labelledby="buff-title">
+      <h3 id="buff-title">현재 적용 중인 버프</h3>
+      <div id="buff-list">적용 중인 버프가 없습니다.</div>
       <div class="overlay-actions">
-        <button id="policy-close" class="spinbtn">닫기</button>
+        <button id="buff-close" class="spinbtn">닫기</button>
       </div>
     </div>
   </div>
@@ -707,13 +726,15 @@
 
     /* 네트워크 지연 감지용 */
     let initialSyncStart = 0;
-    let networkUnstableShown = false;
+    let networkUnstableShown = false; // 메시지 안 쓸 거라 플래그만 유지
 
     /* ======================
        토스트 / UI 유틸
        ====================== */
     let toastTimer = null;
     function showToast(message, actionText = null, onAction = null, ttlMs = 5000){
+      // 네트워크 불안정 메시지는 더 이상 안 띄움
+      if (message && message.indexOf('네트워크가 불안정합니다') !== -1) return;
       if (!bootDone && message !== '네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.') return;
       const box = document.getElementById('toast');
       if(!box) return;
@@ -780,24 +801,33 @@
       persistBuffs();
       renderBuffStatus();
     }
+
+    // 👉 여기서부터: 버튼/오버레이용 버프 렌더
     function renderBuffStatus(){
-      const el = document.getElementById('buff-status');
-      if(!el){ return; }
+      const btn = document.getElementById('buff-btn');
+      const listEl = document.getElementById('buff-list');
       pruneExpiredBuffs();
       const now = Date.now();
-      const names = { all:'전체', coin:'코인', res:'자원' };
-      const items = (window.fx.buffs||[])
-        .filter(b=>b && b.until>now)
-        .map(b=>{
-          const leftMs = b.until - now;
-          const m = Math.max(0, Math.floor(leftMs/60000));
-          const s = Math.max(0, Math.floor((leftMs%60000)/1000));
-          const mult = 1 + b.value;
-          const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
-          return `${names[b.type]||'버프'} ${multText} (${m}:${String(s).padStart(2,'0')})`;
-        });
-      el.textContent = items.length ? `버프: ${items.join(' · ')}` : '버프: 없음';
-      el.title = items.join('\n') || '버프 없음';
+      const buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
+      const count = buffs.length;
+      if (btn) {
+        btn.textContent = count > 0 ? `버프(${count})` : '버프(0)';
+      }
+      if (listEl) {
+        if (count === 0) {
+          listEl.innerHTML = '적용 중인 버프가 없습니다.';
+        } else {
+          const names = { all:'전체', coin:'코인', res:'자원' };
+          listEl.innerHTML = buffs.map(b=>{
+            const leftMs = b.until - now;
+            const m = Math.max(0, Math.floor(leftMs/60000));
+            const s = Math.max(0, Math.floor((leftMs%60000)/1000));
+            const mult = 1 + b.value;
+            const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
+            return `<div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>`;
+          }).join('');
+        }
+      }
     }
 
     /* ========= 숫자 한국식 단위 ========= */
@@ -876,7 +906,7 @@
         .replace(/\s+/g,'')
         .replace(/@/g,'_at_')
         .replace(/\./g,'_dot_')
-        .replace(/[#$\[\]\/\\?%*]/g,'-')
+        .replace(/[#$\[\]\/\\?%*]/g, '-')
         .replace(/[^a-z0-9_\-]/g, '-')
         .replace(/-+/g,'-')
         .replace(/^[-_]+|[-_]+$/g,'') || 'user';
@@ -1042,13 +1072,7 @@
       return Math.min(Math.max(baseRaw * 0.65, 30), 30000);
     }
 
-    /* ====== 여기서부터 룰렛 템플릿 ======
-       요청:
-       - 출석: 현재코인 ×0.6, ×0.7
-       - 프리미엄: 현재코인 ×1, ×2
-       - 이벤트코인: 현재코인 ×5, ×10, ×20
-       - 나머지(버프/이벤트코인 지급)는 유지
-    */
+    /* ====== 여기서부터 룰렛 템플릿 ====== */
 
     const TPL_DAILY = [
       { key:'coin_cur_06', type:'coin', currentCoinMul:0.6, icon:'💰', color:'#00E5FF', w:0.35 },
@@ -1062,7 +1086,7 @@
     const TPL_PREMIUM = [
       { key:'coin_cur_1',  type:'coin', currentCoinMul:1.0, icon:'💰', color:'#00E5FF', w:0.28 },
       { key:'coin_cur_2',  type:'coin', currentCoinMul:2.0, icon:'💰', color:'#4DFFB5', w:0.20 },
-      { key:'coin_x5_5',   type:'coin', coinMul:5.5,       icon:'💰', color:'#32C6FF', w:0.09 },  /* 기존 거 하나는 남겨둠 */
+      { key:'coin_x5_5',   type:'coin', coinMul:5.5,       icon:'💰', color:'#32C6FF', w:0.09 },
       { key:'all_x2_10m',  type:'buff', bkind:'all',  bmult:1.0, bdur:10*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
       { key:'res_x3_7m',   type:'buff', bkind:'res',  bmult:2.0, bdur:7*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.13 },
       { key:'coinbuf_x3_5m', type:'buff', bkind:'coin', bmult:2.0, bdur:5*60*1000, icon:'🪙', color:'#FFD0A8', w:0.09 },
@@ -1081,9 +1105,8 @@
     ];
 
     function materializeItems(tpl, mode){
-      const base = calcBaseCoin(); // 혹시 남은 예전 항목들에서 사용
+      const base = calcBaseCoin();
       return tpl.map(it=>{
-        // 🔥 여기서 현재 코인 기반 보상 처리
         if (it.type === 'coin' && typeof it.currentCoinMul === 'number') {
           const curCoins = state.coins || 0;
           const amt = Math.max(1, Math.round(curCoins * it.currentCoinMul));
@@ -1328,7 +1351,6 @@
       if (!security.tosAccepted){ showTosOverlay(true); return; }
       if (security.banned){ showBanOverlay(true); return; }
 
-      // 🔒 이벤트 잠금 중이면 차단
       if (isEventLocked()){
         dailyInfo.innerHTML = '이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
         updateSpinButtons();
@@ -1472,10 +1494,9 @@
     let securityDirty = false;
 
     // 임계값
-    const SEC_WARN_LEVEL = 20;  // 경고
-    const SEC_BAN_LEVEL  = 30;  // 정지
+    const SEC_WARN_LEVEL = 20;
+    const SEC_BAN_LEVEL  = 30;
 
-    // 감지 파라미터
     const EPS               = 1e-6;
     const UNKNOWN_THRESH    = 0.05;
     const HUMAN_MAX_CPS     = 12;
@@ -1484,7 +1505,6 @@
     const COIN_WEIGHT       = 1.0;
     const ECO_WEIGHT        = 1.2;
 
-    // ★ 즉시 밴 급증 한계
     const BAN_SPIKE_COINS = 1_000_000_000;
     const BAN_SPIKE_RES   = 100_000_000;
     const BAN_SPIKE_ECO   = 50_000;
@@ -1574,6 +1594,10 @@
       try{
         const pov = document.getElementById('policy-overlay');
         if (pov){ pov.classList.remove('show'); pov.setAttribute('aria-hidden','true'); }
+      }catch{}
+      try{
+        const bov = document.getElementById('buff-overlay');
+        if (bov){ bov.classList.remove('show'); bov.setAttribute('aria-hidden','true'); }
       }catch{}
     }
 
@@ -2014,6 +2038,24 @@
         tab.classList.add('active');
       }));
 
+      // 버프 버튼 오픈
+      const buffBtn = document.getElementById('buff-btn');
+      const buffOv  = document.getElementById('buff-overlay');
+      const buffClose = document.getElementById('buff-close');
+      if (buffBtn && buffOv) {
+        buffBtn.addEventListener('click', ()=>{
+          renderBuffStatus();
+          buffOv.classList.add('show');
+          buffOv.setAttribute('aria-hidden','false');
+        });
+      }
+      if (buffClose && buffOv) {
+        buffClose.addEventListener('click', ()=>{
+          buffOv.classList.remove('show');
+          buffOv.setAttribute('aria-hidden','true');
+        });
+      }
+
       // 메인 루프
       window.__gameTimer = setInterval(async () => {
         if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
@@ -2260,16 +2302,14 @@
         const server = snap.exists() ? snap.val() : null;
         const loadTime = Date.now() - syncStart;
 
-        // 네트워크가 3초 이상 걸리면 5초짜리 안내
+        // (요청) 네트워크가 불안정합니다 메시지는 더 이상 안 띄움
         if (loadTime > 3000 && !networkUnstableShown) {
           networkUnstableShown = true;
-          showToast('네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.', null, null, 5000);
           auditFreeze(5000);
         }
 
         if (isInitialSync) {
           state = { ...defaultData, ...(server || {}) };
-          // 최초 동기화는 3초만 검사 끔(요청사항)
           if (!networkUnstableShown) auditFreeze(3000);
 
           await fetchDaily();
@@ -2297,7 +2337,6 @@
         } else {
           const serverLast = server._lastUpdated || 0;
           if (serverLast >= (localLastWrite || 0)) {
-            // 서버가 더 최신 → 3초만 더 끔
             auditFreeze(3000);
             state = { ...defaultData, ...server };
           } else {
