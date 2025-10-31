@@ -718,22 +718,25 @@
     let rankingUnlocked = false;
     let bootDone = false;
 
-    /* 🔒 의심검사 동결(로딩 폭증 방지) */
-    let auditFreezeUntil = 0;
-    function auditFreeze(ms = 3000) {
-      auditFreezeUntil = Date.now() + ms;
+    /* 🔒 3초 부트 스킵 전용 타임스탬프 (요청사항) */
+    const AUDIT_BOOT_TS = Date.now();
+    const AUDIT_INITIAL_SKIP_MS = 3000;
+
+    /* 🔒 이후에는 더 이상 검사 멈추는 freeze 안 씀 (기존 auditFreeze는 더미) */
+    function auditFreeze(ms = 0) {
+      // 요청: "처음 3초만 검사 안 하게" → 나머지 시간에는 무조건 검사
+      // 그래서 여기서는 아무 것도 하지 않음
     }
 
-    /* 네트워크 지연 감지용 */
+    /* 네트워크 지연 감지용 (토스트는 안 띄움) */
     let initialSyncStart = 0;
-    let networkUnstableShown = false; // 메시지 안 쓸 거라 플래그만 유지
+    let networkUnstableShown = false;
 
     /* ======================
        토스트 / UI 유틸
        ====================== */
     let toastTimer = null;
     function showToast(message, actionText = null, onAction = null, ttlMs = 5000){
-      // 네트워크 불안정 메시지는 더 이상 안 띄움
       if (message && message.indexOf('네트워크가 불안정합니다') !== -1) return;
       if (!bootDone && message !== '네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.') return;
       const box = document.getElementById('toast');
@@ -1712,13 +1715,17 @@
     }
 
     function auditCheck(){
-      if (Date.now() < auditFreezeUntil) {
+      const nowGlobal = Date.now();
+
+      // ✅ 요청사항: "처음 3초만 검사하지 않게"
+      // → 초기 부팅 시작 시각(AUDIT_BOOT_TS)로부터 3초가 지나기 전이면 검사 스킵
+      if (nowGlobal - AUDIT_BOOT_TS < AUDIT_INITIAL_SKIP_MS) {
         auditResetCycle();
         return;
       }
 
       if (!audit.last){ auditInit(); return; }
-      const now = Date.now();
+      const now = nowGlobal;
       let dtMs = now - (audit.lastAt || now);
       if (dtMs < 0) dtMs = 0;
       if (dtMs > MAX_TICK_GAP_MS) dtMs = MAX_TICK_GAP_MS;
@@ -2056,12 +2063,10 @@
         });
       }
 
-      // 메인 루프 (의심도는 무조건 돌고, 실제 틱은 플레이 허용일 때만)
+      // 메인 루프
       window.__gameTimer = setInterval(async () => {
-        // 로그인/동기화 안 되면 아무 것도 안 함
         if (!uid || isInitialSync) return;
 
-        // 실제 게임 자원/코인 틱은 팝업/모바일에서만, 그리고 정지 안 됐을 때만
         if (window.__PLAY_ALLOWED && !security.banned) {
           pruneExpiredBuffs();
 
@@ -2083,11 +2088,10 @@
           if (state.autoConvertBought) convertResources();
         }
 
-        // 👇 여기서는 항상 의심도 돌림 (PC로 열어도 백그라운드에서 감시)
+        // ✅ 1초마다 의심도 검사 (3초 지난 이후부터는 항상)
         auditCheck();
         await saveSecurity();
 
-        // UI/저장 업데이트는 실제 플레이 환경일 때만
         if (window.__PLAY_ALLOWED) {
           save();
           updateUI();
@@ -2321,16 +2325,15 @@
         const server = snap.exists() ? snap.val() : null;
         const loadTime = Date.now() - syncStart;
 
-        // (요청) 네트워크가 불안정합니다 메시지는 더 이상 안 띄움
+        // 이전 코드에서 여기서 auditFreeze(...) 하던 거 전부 제거
         if (loadTime > 3000 && !networkUnstableShown) {
           networkUnstableShown = true;
-          auditFreeze(5000);
         }
 
         if (isInitialSync) {
           state = { ...defaultData, ...(server || {}) };
-          if (!networkUnstableShown) auditFreeze(3000);
 
+          // 이 부분도 이제 freeze 안 함
           await fetchDaily();
 
           if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
@@ -2356,7 +2359,6 @@
         } else {
           const serverLast = server._lastUpdated || 0;
           if (serverLast >= (localLastWrite || 0)) {
-            auditFreeze(3000);
             state = { ...defaultData, ...server };
           } else {
             state = { ...defaultData, ...server, ...state };
