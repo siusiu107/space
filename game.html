@@ -1859,7 +1859,7 @@
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
-      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`;
+      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`; 
       clickUp.disabled  = state.coins < clickUpgradeCost;
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
@@ -2056,23 +2056,42 @@
         });
       }
 
-      // 메인 루프
+      // 메인 루프 (의심도는 무조건 돌고, 실제 틱은 플레이 허용일 때만)
       window.__gameTimer = setInterval(async () => {
-        if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
+        // 로그인/동기화 안 되면 아무 것도 안 함
+        if (!uid || isInitialSync) return;
 
-        if (!security.banned){
+        // 실제 게임 자원/코인 틱은 팝업/모바일에서만, 그리고 정지 안 됐을 때만
+        if (window.__PLAY_ALLOWED && !security.banned) {
           pruneExpiredBuffs();
+
+          // 자원 알바
           let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res');
-          if (state.workerCount > 0){ state.resources += workerGain; auditAdd('res', workerGain); }
+          if (state.workerCount > 0) {
+            state.resources += workerGain;
+            auditAdd('res', workerGain);
+          }
+
+          // 코인 알바
           let convGain = state.conversionCount * activeBuffFactor('coin');
-          if (state.conversionCount > 0){ state.coins += convGain; auditAdd('coin', convGain); }
+          if (state.conversionCount > 0) {
+            state.coins += convGain;
+            auditAdd('coin', convGain);
+          }
+
+          // 자동 변환
           if (state.autoConvertBought) convertResources();
         }
 
+        // 👇 여기서는 항상 의심도 돌림 (PC로 열어도 백그라운드에서 감시)
         auditCheck();
         await saveSecurity();
 
-        save(); updateUI();
+        // UI/저장 업데이트는 실제 플레이 환경일 때만
+        if (window.__PLAY_ALLOWED) {
+          save();
+          updateUI();
+        }
       }, 1000);
     }
 
