@@ -79,6 +79,42 @@
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
   </script>
 
+  <script>
+    (function(){
+      let warningActivated = false;
+      function isPopupWindow() {
+        try {
+          return !!(window.opener && !window.opener.closed);
+        } catch (err) {
+          return false;
+        }
+      }
+      function activatePopupWarning() {
+        if (warningActivated || !document.body) return;
+        warningActivated = true;
+        document.body.classList.add('not-popup');
+        const warning = document.getElementById('popup-warning');
+        if (warning) {
+          warning.setAttribute('aria-hidden', 'false');
+          warning.tabIndex = -1;
+          const focusTarget = warning.querySelector('[data-popup-focus]');
+          if (focusTarget && typeof focusTarget.focus === 'function') {
+            focusTarget.focus();
+          } else if (typeof warning.focus === 'function') {
+            warning.focus();
+          }
+        }
+      }
+      if (!isPopupWindow()) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', activatePopupWarning, { once: true });
+        } else {
+          activatePopupWarning();
+        }
+      }
+    })();
+  </script>
+
   <style>
     :root{
       --glass-bg: rgba(10,12,20,0.40);
@@ -384,9 +420,68 @@
     #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,0.10);
       border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    /* 팝업 미사용 경고 */
+    #popup-warning {
+      position: fixed; inset: 0; z-index: 4000;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px; text-align: center;
+      background: linear-gradient(180deg, rgba(2,6,12,0.75), rgba(2,6,12,0.88));
+      backdrop-filter: blur(4px);
+    }
+    #popup-warning .popup-card {
+      width: min(420px, 92vw);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(10,12,18,0.72));
+      padding: 22px 20px;
+      color: #eaf6ff;
+      box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #popup-warning h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 800;
+      color: #9fdcff;
+    }
+    #popup-warning p {
+      margin: 0 0 18px;
+      line-height: 1.6;
+      font-size: 14px;
+      color: #d8ecff;
+    }
+    #popup-warning a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      text-decoration: none;
+      color: #00120b;
+      background: linear-gradient(90deg, #00c0ff, #0077ff);
+      box-shadow: 0 10px 28px rgba(0,120,255,0.22);
+    }
+    body.not-popup { overflow: hidden; }
+    body.not-popup #popup-warning { display:flex; }
+    body.not-popup #boot-overlay,
+    body.not-popup #auth-container,
+    body.not-popup #top-bar,
+    body.not-popup #container { display: none !important; }
   </style>
 </head>
 <body>
+  <div id="popup-warning" role="alertdialog" aria-labelledby="popup-warning-title" aria-modal="true" aria-hidden="true">
+    <div class="popup-card">
+      <h2 id="popup-warning-title">팝업 전용 모드</h2>
+      <p>
+        이 페이지는 메인 메뉴에서 팝업으로 열어야 정상적으로 이용할 수 있어요.<br />
+        메인 메뉴로 돌아가서 &lsquo;게임 시작&rsquo;을 눌러 팝업으로 실행해주세요.
+      </p>
+      <a href="/main.html" data-popup-focus="true">메인 메뉴로 이동</a>
+    </div>
+  </div>
+
   <!-- 부팅 중 오버레이 (최초 1회만) -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
