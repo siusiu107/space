@@ -79,55 +79,6 @@
     window.notifyAuthSuccessAndExit = notifyAuthSuccessAndExit;
   </script>
 
-  <script>
-    (function(){
-      let warningActivated = false;
-      function isPopupWindow() {
-        try {
-          return !!(window.opener && !window.opener.closed);
-        } catch (err) {
-          return false;
-        }
-      }
-      function activatePopupWarning() {
-        if (warningActivated) return;
-        const body = document.body;
-        if (!body) {
-          const retry = window.requestAnimationFrame || function(cb){ return setTimeout(cb, 16); };
-          retry(activatePopupWarning);
-          return;
-        }
-        warningActivated = true;
-        body.classList.add('not-popup');
-        const warning = document.getElementById('popup-warning');
-        if (warning) {
-          warning.setAttribute('aria-hidden', 'false');
-          warning.tabIndex = -1;
-          const focusTarget = warning.querySelector('[data-popup-focus]');
-          if (focusTarget && typeof focusTarget.focus === 'function') {
-            focusTarget.focus();
-          } else if (typeof warning.focus === 'function') {
-            warning.focus();
-          }
-        }
-      }
-      function ensurePopupWarning() {
-        if (isPopupWindow()) return;
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', activatePopupWarning, { once: true });
-        } else {
-          activatePopupWarning();
-        }
-      }
-      ensurePopupWarning();
-      window.addEventListener('pageshow', () => {
-        if (!isPopupWindow()) {
-          activatePopupWarning();
-        }
-      }, { once: true });
-    })();
-  </script>
-
   <style>
     :root{
       --glass-bg: rgba(10,12,20,0.40);
@@ -433,68 +384,9 @@
     #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,0.10);
       border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
-
-    /* 팝업 미사용 경고 */
-    #popup-warning {
-      position: fixed; inset: 0; z-index: 4000;
-      display: none; align-items: center; justify-content: center;
-      padding: 20px; text-align: center;
-      background: linear-gradient(180deg, rgba(2,6,12,0.75), rgba(2,6,12,0.88));
-      backdrop-filter: blur(4px);
-    }
-    #popup-warning .popup-card {
-      width: min(420px, 92vw);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(10,12,18,0.72));
-      padding: 22px 20px;
-      color: #eaf6ff;
-      box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
-    }
-    #popup-warning h2 {
-      margin: 0 0 12px;
-      font-size: 20px;
-      font-weight: 800;
-      color: #9fdcff;
-    }
-    #popup-warning p {
-      margin: 0 0 18px;
-      line-height: 1.6;
-      font-size: 14px;
-      color: #d8ecff;
-    }
-    #popup-warning a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 11px 18px;
-      border-radius: 10px;
-      font-weight: 800;
-      text-decoration: none;
-      color: #00120b;
-      background: linear-gradient(90deg, #00c0ff, #0077ff);
-      box-shadow: 0 10px 28px rgba(0,120,255,0.22);
-    }
-    body.not-popup { overflow: hidden; }
-    body.not-popup #popup-warning { display:flex; }
-    body.not-popup #boot-overlay,
-    body.not-popup #auth-container,
-    body.not-popup #top-bar,
-    body.not-popup #container { display: none !important; }
   </style>
 </head>
 <body>
-  <div id="popup-warning" role="alertdialog" aria-labelledby="popup-warning-title" aria-modal="true" aria-hidden="true">
-    <div class="popup-card">
-      <h2 id="popup-warning-title">팝업 전용 모드</h2>
-      <p>
-        이 페이지는 메인 메뉴에서 팝업으로 열어야 정상적으로 이용할 수 있어요.<br />
-        메인 메뉴로 돌아가서 &lsquo;게임 시작&rsquo;을 눌러 팝업으로 실행해주세요.
-      </p>
-      <a href="/main.html" data-popup-focus="true">메인 메뉴로 이동</a>
-    </div>
-  </div>
-
   <!-- 부팅 중 오버레이 (최초 1회만) -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
@@ -850,10 +742,10 @@
       const box = document.getElementById('toast');
       if(!box) return;
       clearTimeout(toastTimer);
-      box.innerHTML = `<div class="t-row">
+      box.innerHTML = <div class="t-row">
         <span class="t-msg">${message}</span>
-        ${actionText ? `<button class="t-btn" id="toast-action">${actionText}</button>` : ``}
-      </div>`;
+        ${actionText ? <button class="t-btn" id="toast-action">${actionText}</button> : `}
+      </div>;
       box.classList.add('show');
       box.style.display='block';
       function hideToast(){ box.classList.remove('show'); box.style.display='none'; }
@@ -867,7 +759,7 @@
     /* ======================
        버프 저장/적용/표시
        ====================== */
-    function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
+    function buffStorageKey(){ return siu_buffs_${uid||'anon'}; }
     function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
     function persistBuffs(){
       ensureFx();
@@ -922,7 +814,7 @@
       const buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
       const count = buffs.length;
       if (btn) {
-        btn.textContent = count > 0 ? `버프(${count})` : '버프(0)';
+        btn.textContent = count > 0 ? 버프(${count}) : '버프(0)';
       }
       if (listEl) {
         if (count === 0) {
@@ -934,8 +826,8 @@
             const m = Math.max(0, Math.floor(leftMs/60000));
             const s = Math.max(0, Math.floor((leftMs%60000)/1000));
             const mult = 1 + b.value;
-            const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
-            return `<div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>`;
+            const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? x${Math.round(mult)} : x${(Math.round(mult*10)/10)};
+            return <div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>;
           }).join('');
         }
       }
@@ -1006,7 +898,7 @@
       const now = Date.now();
       state._lastUpdated = now;
       localLastWrite = now;
-      try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch {}
+      try { localStorage.setItem(lastWrite_${uid}, String(now)); } catch {}
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
     }
 
@@ -1029,7 +921,7 @@
         .replace(/^[-_]+|[-_]+$/g,'') || 'user';
     }
     function fallbackIdFromUid(uid){
-      return `user_${String(uid||'').slice(0,8) || '00000000'}`;
+      return user_${String(uid||'').slice(0,8) || '00000000'};
     }
     function makeIdKeyFromUser(user){
       if (user?.email) return encodeEmailToKey(user.email);
@@ -1051,7 +943,7 @@
         const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
         const idx = res?.snapshot?.val() || 1;
         const serverNum = Math.max(1, Math.ceil(idx / 15));
-        return `server${serverNum}`;
+        return server${serverNum};
       }catch{
         return 'server1';
       }
@@ -1064,24 +956,24 @@
 
       let mapping = null;
       try {
-        const m = await get(ref(db, `userServerMap/${uid}`));
+        const m = await get(ref(db, userServerMap/${uid}));
         mapping = m.exists() ? (m.val() || null) : null;
       } catch {}
 
-      const legacySnap = await get(ref(db, `users/${uid}`));
+      const legacySnap = await get(ref(db, users/${uid}));
       const legacyExists = legacySnap.exists();
 
       let srcBasePath = null;
       let server = desiredServer;
 
       if (mapping && mapping.server && mapping.id) {
-        srcBasePath = `users/${mapping.server}/${mapping.id}`;
+        srcBasePath = users/${mapping.server}/${mapping.id};
         server = mapping.server;
       } else if (legacyExists) {
-        srcBasePath = `users/${uid}`;
+        srcBasePath = users/${uid};
       }
 
-      const destBasePath = `users/${server}/${desiredId}`;
+      const destBasePath = users/${server}/${desiredId};
       const destSnap = await get(ref(db, destBasePath));
       const destExists = destSnap.exists();
 
@@ -1100,7 +992,7 @@
       }
 
       if (!mapping && legacyExists) {
-        return { need:true, server, oldMapping: null, srcBasePath: `users/${uid}`, destBasePath, reason: 'legacy-flat' };
+        return { need:true, server, oldMapping: null, srcBasePath: users/${uid}, destBasePath, reason: 'legacy-flat' };
       }
 
       return { need:false, server, oldMapping: mapping || null, srcBasePath: null, destBasePath, reason: 'fresh-or-already-ok' };
@@ -1135,7 +1027,7 @@
       }
       const displayEmail = String(user?.email || '').trim();
       await update(ref(db), {
-        [`userServerMap/${user.uid}`]: {
+        [userServerMap/${user.uid}]: {
           server: userServerKey,
           id: userIdKey,
           displayId: displayEmail || null,
@@ -1154,14 +1046,14 @@
     function kstDayKey(d=new Date()){
       const t = kstDate(d);
       const y=t.getFullYear(), m=String(t.getMonth()+1).padStart(2,'0'), day=String(t.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
+      return ${y}-${m}-${day};
     }
     function nextResetKST(d=new Date()){ const t=kstDate(d); const n=new Date(t); n.setHours(24,0,0,0); return n; }
     function fmtLeft(ms){
       if(ms<=0) return '지금 가능';
       const s=Math.floor(ms/1000);
       const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60;
-      return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
+      return ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')};
     }
 
     /* ✅ 룰렛용 기본값은 유지하지만, 지금부터는 “현재 코인 기반” 보상이 우선 */
@@ -1224,7 +1116,7 @@
           return {
             ...it,
             awardCoin: amt,
-            label: `현재코인 ×${it.currentCoinMul} (= ${formatKR(amt)})`,
+            label: 현재코인 ×${it.currentCoinMul} (= ${formatKR(amt)}),
             onWin:()=>{
               registerAuditIntent('coin', amt);
               state.coins += amt;
@@ -1237,7 +1129,7 @@
           return {
             ...it,
             awardCoin: amt,
-            label:`코인 ${formatKR(amt)}`,
+            label:코인 ${formatKR(amt)},
             onWin:()=>{
               registerAuditIntent('coin', amt);
               state.coins += amt;
@@ -1249,7 +1141,7 @@
           return {
             ...it,
             awardEcoin: it.val,
-            label:`이벤트코인 ×${it.val}`,
+            label:이벤트코인 ×${it.val},
             onWin:()=>{
               registerAuditIntent('eco', it.val);
               state.eventCoins = (state.eventCoins||0) + it.val;
@@ -1258,12 +1150,12 @@
           };
         }
         if (it.type==='buff'){
-          const multText = `x${1+it.bmult}`;
-          const minText  = `${Math.round(it.bdur/60000)}m`;
-          let title = it.bkind==='all' ? `모든 생산 ${multText}`
-                   : it.bkind==='coin' ? `코인 생산 ${multText}`
-                   :                    `자원 생산 ${multText}`;
-          return { ...it, label:`${title} / ${minText}`, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
+          const multText = x${1+it.bmult};
+          const minText  = ${Math.round(it.bdur/60000)}m;
+          let title = it.bkind==='all' ? 모든 생산 ${multText}
+                   : it.bkind==='coin' ? 코인 생산 ${multText}
+                   :                    자원 생산 ${multText};
+          return { ...it, label:${title} / ${minText}, onWin:()=>{ addTempBuff(it.bkind, it.bmult, it.bdur); } };
         }
         return it;
       });
@@ -1294,7 +1186,7 @@
     const slotWrap = document.getElementById('slot-wrap');
     const reel = document.getElementById('slot-reel');
     function buildSlot(items){
-      const rows = items.map(it=>`<div class="slot-item"><span class="slot-icon">${it.icon||'🎁'}</span>${it.label||it.key}</div>`).join('');
+      const rows = items.map(it=><div class="slot-item"><span class="slot-icon">${it.icon||'🎁'}</span>${it.label||it.key}</div>).join('');
       reel.innerHTML = rows.repeat(8);
       reel.style.transform = 'translateY(0px)';
       reel.style.transition = 'none';
@@ -1313,7 +1205,7 @@
         requestAnimationFrame(()=>{
           requestAnimationFrame(()=>{
             reel.style.transition = 'transform 2.6s cubic-bezier(.17,.89,.35,1.12)';
-            reel.style.transform = `translateY(${targetY}px)`;
+            reel.style.transform = translateY(${targetY}px);
           });
         });
         reel.ontransitionend = ()=>{ reel.ontransitionend=null; stopTickLoop(); playSfx('sfx-win'); resolve(); };
@@ -1340,7 +1232,7 @@
     function isEventLocked(){ return Date.now() < eventLockUntil; }
     function cancelEvents(reason='이벤트 일시 중지'){
       eventLockUntil = Date.now() + 5*60*1000; // 5분 잠금
-      try { showToast(`🎟️ ${reason} (5분)`, null, null, 5000); } catch {}
+      try { showToast(🎟️ ${reason} (5분), null, null, 5000); } catch {}
       try {
         const info = document.getElementById('daily-info');
         if (info) info.innerHTML = '⚠️ 안전 점검으로 이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
@@ -1370,14 +1262,14 @@
 
     function buildProbPanel(items, mode){
       const total=items.reduce((a,b)=>a+b.w,0)||1;
-      const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
+      const rows=items.map(it=><tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>).join('');
       const header = mode==='daily' ? '출석 슬롯 확률'
                   : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
                   : '이벤트코인 슬롯 확률(EC -10)';
-      probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
+      probPanel.innerHTML = <div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>;
     }
     function buildRewardList(items){
-      rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
+      rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>${it.icon||''} ${it.label||it.key}).join(' · ');
     }
     function canClaimToday(){
       const today = kstDayKey();
@@ -1387,17 +1279,17 @@
       const today = kstDayKey();
       const streak = dailyCache?.streak || 0;
       const resetLeft = Math.max(0, nextResetKST()-kstDate());
-      const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
+      const leftText = canClaim ? '지금 가능' : 다음 출석까지 ${fmtLeft(resetLeft)};
 
       if (!dailyUnlocked){
         const need = Math.max(0, 100 - (state.coins||0));
-        dailyInfo.innerHTML = `🔒 출석 보상은 <b>100코인</b> 모으면 해제!<br>남은 코인: <b>${formatKR(need)}</b>`;
+        dailyInfo.innerHTML = 🔒 출석 보상은 <b>100코인</b> 모으면 해제!<br>남은 코인: <b>${formatKR(need)}</b>;
         spinDailyBtn.disabled = true;
         return;
       }
       dailyInfo.innerHTML = canClaim
-        ? `오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일`
-        : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일`;
+        ? 오늘(${today}) 출석 슬롯 가능! <b>${leftText}</b><br>연속 ${streak}일
+        : 오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일;
       spinDailyBtn.disabled = !canClaim;
     }
 
@@ -1446,7 +1338,7 @@
       if ((state.coins || 0) >= 100){
         dailyUnlocked = true;
         try {
-          await update(ref(db), { [`${userBasePath}/daily/unlocked`]: true });
+          await update(ref(db), { [${userBasePath}/daily/unlocked]: true });
         } catch(e){ console.warn('unlock save error', e); }
         showToast('🔓 출석 보상 잠금 해제!', '지금 열기', () => {
           setMode('daily'); openDailyOverlay();
@@ -1459,7 +1351,7 @@
 
     async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
-      if (!requireTosConsent()) return;
+      if (!security.tosAccepted){ showTosOverlay(true); return; }
       if (security.banned){ showBanOverlay(true); return; }
 
       if (isEventLocked()){
@@ -1490,14 +1382,14 @@
           let streak = Number(dailyCache?.streak||0);
           if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
           await update(ref(db), {
-            [`${userBasePath}/daily`]: { ...(dailyCache||{}), unlocked: true, lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key }
+            [${userBasePath}/daily]: { ...(dailyCache||{}), unlocked: true, lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key }
           });
           dailyCache = { ...(dailyCache||{}), lastKey: today, streak, unlocked:true };
-          dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
+          dailyInfo.innerHTML = 🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일;
         } else {
           dailyInfo.innerHTML = (mode==='premium')
-            ? `🎉 프리미엄 당첨: <b>${picked.label}</b>`
-            : `🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
+            ? 🎉 프리미엄 당첨: <b>${picked.label}</b>
+            : 🎉 EC 슬롯 당첨: <b>${picked.label}</b>;
         }
       }catch(e){
         console.error(e);
@@ -1514,7 +1406,7 @@
     async function fetchDaily(){
       if (!uid) return;
       try{
-        const snap = await get(ref(db, `${userBasePath}/daily`));
+        const snap = await get(ref(db, ${userBasePath}/daily));
         const v = snap.exists() ? snap.val() : { lastKey:null, streak:0, unlocked:false };
         dailyCache = v;
         dailyUnlocked = v?.unlocked ? true : false;
@@ -1552,13 +1444,13 @@
       img.onerror = function onErr() {
         if (attempted > 1) {
           attempted -= 1;
-          img.src = `/images/ship-level${attempted}.png`;
+          img.src = /images/ship-level${attempted}.png;
         } else {
           img.onerror = null;
-          img.src = `/images/ship-level1.png`;
+          img.src = /images/ship-level1.png;
         }
       };
-      img.src = `/images/ship-level${attempted}.png`;
+      img.src = /images/ship-level${attempted}.png;
     }
 
     const authContainer = document.getElementById('auth-container');
@@ -1601,39 +1493,6 @@
     /* ===========================
        ⚠️ 보안/약관/의심도 (강화판)
        =========================== */
-    const LOCAL_TOS_KEY = 'siu_tos_accept_v1';
-    function getLocalTosAccepted(){
-      try { return localStorage.getItem(LOCAL_TOS_KEY) === '1'; }
-      catch { return false; }
-    }
-    function setLocalTosAccepted(){
-      try { localStorage.setItem(LOCAL_TOS_KEY, '1'); }
-      catch {}
-    }
-    function hasTosConsent(){
-      if (security.tosAccepted){
-        setLocalTosAccepted();
-        return true;
-      }
-      if (getLocalTosAccepted()){
-        security.tosAccepted = true;
-        securityDirty = true;
-        if (typeof queueMicrotask === 'function') {
-          queueMicrotask(() => saveSecurity());
-        } else if (typeof Promise !== 'undefined') {
-          Promise.resolve().then(() => saveSecurity());
-        } else {
-          setTimeout(() => saveSecurity(), 0);
-        }
-        return true;
-      }
-      return false;
-    }
-    function requireTosConsent(){
-      if (hasTosConsent()) return true;
-      showTosOverlay(true);
-      return false;
-    }
     let security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
     let securityDirty = false;
 
@@ -1657,7 +1516,7 @@
       const el = document.getElementById('suspicion-badge');
       if (!el) return;
       el.classList.remove('warn','ban');
-      el.textContent = `의심도: ${Math.round(security.suspicion)}`;
+      el.textContent = 의심도: ${Math.round(security.suspicion)};
       if (security.suspicion >= SEC_BAN_LEVEL){ el.classList.add('ban'); }
       else if (security.suspicion > SEC_WARN_LEVEL){ el.classList.add('warn'); }
     }
@@ -1678,18 +1537,12 @@
     }
     async function loadSecurity(){
       try {
-        const snap = await get(ref(db, `${userBasePath}/security`));
+        const snap = await get(ref(db, ${userBasePath}/security));
         if (snap.exists()){
           const v = snap.val() || {};
           security = { ...security, ...v };
         }
       } catch {}
-      if (security.tosAccepted){
-        setLocalTosAccepted();
-      } else if (getLocalTosAccepted()){
-        security.tosAccepted = true;
-        securityDirty = true;
-      }
       markTosViolationFlag();
       await saveSecurity();
     }
@@ -1697,7 +1550,7 @@
       if (!uid || !userBasePath) return;
       if (!securityDirty) return;
       try {
-        await update(ref(db), { [`${userBasePath}/security`]: {
+        await update(ref(db), { [${userBasePath}/security]: {
           suspicion: security.suspicion,
           banned: security.banned,
           tosAccepted: security.tosAccepted,
@@ -1974,24 +1827,24 @@
       const sus    = (typeof security?.suspicion === 'number') ? security.suspicion
                 : (typeof persisted?.suspicion === 'number') ? persisted.suspicion : null;
       return [
-        `서버: ${server}`,
-        `아이디키: ${idKey}`,
-        `Realtime DB 경로: ${path}`,
-        `UID: ${uidStr}`,
-        `현재 의심도: ${sus === null ? '(알 수 없음)' : sus}`,
-        `발생 시각(KST): ${nowKST}`
+        서버: ${server},
+        아이디키: ${idKey},
+        Realtime DB 경로: ${path},
+        UID: ${uidStr},
+        현재 의심도: ${sus === null ? '(알 수 없음)' : sus},
+        발생 시각(KST): ${nowKST}
       ].join('\n');
     }
     function buildSupportMail(){
       const persisted = readSupportCtx();
       const s = userServerKey || persisted?.server || 'server?';
       const i = userIdKey     || persisted?.idKey  || 'id?';
-      const subject = `[Appeal] 오탐 검토 요청 - ${s} / ${i}`;
+      const subject = [Appeal] 오탐 검토 요청 - ${s} / ${i};
       const header  = '안녕하세요, 오탐으로 의심되어 검토를 요청드립니다.\n';
       const info    = buildSupportInfoText();
       const footer  = '\n\n상세 상황:\n(여기에 상황을 자세히 적어주세요)\n';
-      const body    = `${header}\n${info}${footer}`;
-      const mailto  = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const body    = ${header}\n${info}${footer};
+      const mailto  = mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)};
       return { subject, body, mailto };
     }
     async function copySupportInfo(){
@@ -2005,31 +1858,31 @@
 
     function updateUI() {
       pruneExpiredBuffs();
-      document.getElementById('score').innerText  = `자원: ${formatKR(state.resources)}`;
-      document.getElementById('coins').innerText  = `코인: ${formatKR(state.coins)}`;
-      document.getElementById('ecoins').innerText = `이벤트코인: ${formatKR(state.eventCoins||0)}`;
-      document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${formatKR(state.shipUpgradeCost)}코인)`;
+      document.getElementById('score').innerText  = 자원: ${formatKR(state.resources)};
+      document.getElementById('coins').innerText  = 코인: ${formatKR(state.coins)};
+      document.getElementById('ecoins').innerText = 이벤트코인: ${formatKR(state.eventCoins||0)};
+      document.getElementById('ship-level').innerText = ${state.shipLevel}렙 (${formatKR(state.shipUpgradeCost)}코인);
       setShipImage(state.shipLevel);
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
-      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`; 
+      clickUp.innerText = 클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인); 
       clickUp.disabled  = state.coins < clickUpgradeCost;
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
       const autoBtn = document.getElementById('auto-convert-buy');
-      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : `자동변환 구매<br>(${formatKR(100)}코인)`;
+      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : 자동변환 구매<br>(${formatKR(100)}코인);
       autoBtn.disabled = state.autoConvertBought || state.coins < 100;
 
       document.getElementById('convert-button').disabled = state.resources < 10;
 
       const hireWork = document.getElementById('hire-worker');
-      hireWork.innerText = `알바 고용 (${formatKR(getWorkerCost())}코인)`;
+      hireWork.innerText = 알바 고용 (${formatKR(getWorkerCost())}코인);
       hireWork.disabled = state.coins < getWorkerCost();
       document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower() * activeBuffFactor('res')).toFixed(1);
 
       const hireConv = document.getElementById('hire-conversion');
-      hireConv.innerText = `코인 알바 (${formatKR(getConversionCost())}코인)`;
+      hireConv.innerText = 코인 알바 (${formatKR(getConversionCost())}코인);
       hireConv.disabled = state.coins < getConversionCost();
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
@@ -2051,7 +1904,7 @@
             autoConvertBought: state.autoConvertBought,
             ownedPlanets: state.ownedPlanets
           };
-          localStorage.setItem(`gd_cache_${uid}`, JSON.stringify(cachePick));
+          localStorage.setItem(gd_cache_${uid}, JSON.stringify(cachePick));
         }
       } catch {}
     }
@@ -2074,7 +1927,7 @@
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         div.style.margin='10px 0';
-        div.innerHTML = `<strong>${p.name}</strong> — ${formatKR(p.cost)}코인<br>필요 렙: ${p.requiredShipLevel}`;
+        div.innerHTML = <strong>${p.name}</strong> — ${formatKR(p.cost)}코인<br>필요 렙: ${p.requiredShipLevel};
         const btn = document.createElement('button'); btn.className='general';
         btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
         btn.onclick = async () => {
@@ -2087,7 +1940,7 @@
             save(); updateUI(); renderPlanets();
             if (p.name === '화성' && !rankingUnlocked) {
               rankingUnlocked = true;
-              try { await update(ref(db), { [`${userBasePath}/meta/rankingUnlocked`]: true }); } catch{}
+              try { await update(ref(db), { [${userBasePath}/meta/rankingUnlocked]: true }); } catch{}
               showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{ location.href='/ranking.html'; });
             }
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
@@ -2113,7 +1966,7 @@
       if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
-      if (!requireTosConsent()){ showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
+      if (!security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
       if (security.banned){ showBanOverlay(true); showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
     }
@@ -2420,7 +2273,6 @@
     tosAgree?.addEventListener('change', ()=>{ tosAccept.disabled = !tosAgree.checked; });
     tosAccept?.addEventListener('click', async ()=>{
       security.tosAccepted = true; securityDirty = true;
-      setLocalTosAccepted();
       await saveSecurity();
       showTosOverlay(false);
       showToast('✅ 이용약관에 동의되었습니다. 공정한 플레이를 부탁드려요!', null, null, 3500);
@@ -2450,14 +2302,14 @@
     // 데이터 바인딩
     async function proceedWithDataBinding(){
       try {
-        const rankSnap = await get(ref(db), `${userBasePath}/meta/rankingUnlocked`);
+        const rankSnap = await get(ref(db), ${userBasePath}/meta/rankingUnlocked);
         rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
       } catch { rankingUnlocked = false; }
 
-      dataRef = ref(db, `${userBasePath}/gameData`);
+      dataRef = ref(db, ${userBasePath}/gameData);
       isInitialSync = true;
       try {
-        const saved = localStorage.getItem(`lastWrite_${uid}`);
+        const saved = localStorage.getItem(lastWrite_${uid});
         localLastWrite = saved ? parseInt(saved, 10) : 0;
       } catch { localLastWrite = 0; }
 
@@ -2497,7 +2349,7 @@
           auditInit();
           renderSecurityBadge();
 
-          if (!hasTosConsent()){ showTosOverlay(true); } else { showTosOverlay(false); }
+          if (!security.tosAccepted){ showTosOverlay(true); }
           if (security.banned){ showBanOverlay(true); }
           return;
         }
@@ -2542,7 +2394,7 @@
         renderBuffStatus();
 
         try {
-          const cacheRaw = localStorage.getItem(`gd_cache_${uid}`);
+          const cacheRaw = localStorage.getItem(gd_cache_${uid});
           if (cacheRaw) {
             const cached = JSON.parse(cacheRaw);
             state = { ...defaultData, ...state, ...cached };
@@ -2561,10 +2413,10 @@
           const fallbackServer = await allocateServerForUser();
           userServerKey = fallbackServer;
           userIdKey     = makeIdKeyFromUser(user);
-          userBasePath  = `users/${userServerKey}/${userIdKey}`;
+          userBasePath  = users/${userServerKey}/${userIdKey};
           try {
             await update(ref(db), {
-              [`userServerMap/${uid}`]: {
+              [userServerMap/${uid}]: {
                 server: userServerKey,
                 id: userIdKey,
                 displayId: String(user?.email||'') || null,
@@ -2579,7 +2431,7 @@
         }
         userServerKey = plan.server;
         userIdKey     = makeIdKeyFromUser(user);
-        userBasePath  = `users/${userServerKey}/${userIdKey}`;
+        userBasePath  = users/${userServerKey}/${userIdKey};
 
         saveSupportCtx({ banned: false });
 
@@ -2594,7 +2446,7 @@
                 await performMigration(plan.srcBasePath, plan.destBasePath, user);
                 try {
                   await update(ref(db), {
-                    [`userServerMap/${uid}`]: {
+                    [userServerMap/${uid}]: {
                       server: userServerKey,
                       id: userIdKey,
                       displayId: String(user?.email||'') || null,
@@ -2615,7 +2467,7 @@
         } else {
           try {
             await update(ref(db), {
-              [`userServerMap/${uid}`]: {
+              [userServerMap/${uid}]: {
                 server: userServerKey,
                 id: userIdKey,
                 displayId: String(user?.email||'') || null,
@@ -2700,8 +2552,8 @@
     const customMenu = document.getElementById('custom-menu');
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
-      customMenu.style.top = `${e.clientY}px`;
-      customMenu.style.left = `${e.clientX}px`;
+      customMenu.style.top = ${e.clientY}px;
+      customMenu.style.left = ${e.clientX}px;
       customMenu.style.display = 'block';
     });
     customMenu.addEventListener('click', (e) => {
@@ -2833,7 +2685,7 @@
     }
 
     function bindCommands(id){
-      const cmdRef = ref(db2, `sessions/${id}/commands`);
+      const cmdRef = ref(db2, sessions/${id}/commands);
       onChildAdded(cmdRef, (snap) => {
         const cmd = snap.val() || {};
         try {
@@ -2858,7 +2710,7 @@
     }
 
     function watchSessionEnd(id){
-      const statusRef = ref(db2, `sessions/${id}/meta/status`);
+      const statusRef = ref(db2, sessions/${id}/meta/status);
       onValue(statusRef, (snap) => {
         if (snap.val() === 'ended') {
           try { sessionStorage.removeItem('cobrowse_session_id'); } catch {}
