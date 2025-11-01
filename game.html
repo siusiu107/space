@@ -90,9 +90,15 @@
         }
       }
       function activatePopupWarning() {
-        if (warningActivated || !document.body) return;
+        if (warningActivated) return;
+        const body = document.body;
+        if (!body) {
+          const retry = window.requestAnimationFrame || function(cb){ return setTimeout(cb, 16); };
+          retry(activatePopupWarning);
+          return;
+        }
         warningActivated = true;
-        document.body.classList.add('not-popup');
+        body.classList.add('not-popup');
         const warning = document.getElementById('popup-warning');
         if (warning) {
           warning.setAttribute('aria-hidden', 'false');
@@ -105,13 +111,20 @@
           }
         }
       }
-      if (!isPopupWindow()) {
+      function ensurePopupWarning() {
+        if (isPopupWindow()) return;
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', activatePopupWarning, { once: true });
         } else {
           activatePopupWarning();
         }
       }
+      ensurePopupWarning();
+      window.addEventListener('pageshow', () => {
+        if (!isPopupWindow()) {
+          activatePopupWarning();
+        }
+      }, { once: true });
     })();
   </script>
 
@@ -1446,7 +1459,7 @@
 
     async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
-      if (!security.tosAccepted){ showTosOverlay(true); return; }
+      if (!requireTosConsent()) return;
       if (security.banned){ showBanOverlay(true); return; }
 
       if (isEventLocked()){
@@ -1588,6 +1601,39 @@
     /* ===========================
        ⚠️ 보안/약관/의심도 (강화판)
        =========================== */
+    const LOCAL_TOS_KEY = 'siu_tos_accept_v1';
+    function getLocalTosAccepted(){
+      try { return localStorage.getItem(LOCAL_TOS_KEY) === '1'; }
+      catch { return false; }
+    }
+    function setLocalTosAccepted(){
+      try { localStorage.setItem(LOCAL_TOS_KEY, '1'); }
+      catch {}
+    }
+    function hasTosConsent(){
+      if (security.tosAccepted){
+        setLocalTosAccepted();
+        return true;
+      }
+      if (getLocalTosAccepted()){
+        security.tosAccepted = true;
+        securityDirty = true;
+        if (typeof queueMicrotask === 'function') {
+          queueMicrotask(() => saveSecurity());
+        } else if (typeof Promise !== 'undefined') {
+          Promise.resolve().then(() => saveSecurity());
+        } else {
+          setTimeout(() => saveSecurity(), 0);
+        }
+        return true;
+      }
+      return false;
+    }
+    function requireTosConsent(){
+      if (hasTosConsent()) return true;
+      showTosOverlay(true);
+      return false;
+    }
     let security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
     let securityDirty = false;
 
@@ -1638,6 +1684,12 @@
           security = { ...security, ...v };
         }
       } catch {}
+      if (security.tosAccepted){
+        setLocalTosAccepted();
+      } else if (getLocalTosAccepted()){
+        security.tosAccepted = true;
+        securityDirty = true;
+      }
       markTosViolationFlag();
       await saveSecurity();
     }
@@ -2061,7 +2113,7 @@
       if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
       if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
-      if (!security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
+      if (!requireTosConsent()){ showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
       if (security.banned){ showBanOverlay(true); showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
     }
@@ -2368,6 +2420,7 @@
     tosAgree?.addEventListener('change', ()=>{ tosAccept.disabled = !tosAgree.checked; });
     tosAccept?.addEventListener('click', async ()=>{
       security.tosAccepted = true; securityDirty = true;
+      setLocalTosAccepted();
       await saveSecurity();
       showTosOverlay(false);
       showToast('✅ 이용약관에 동의되었습니다. 공정한 플레이를 부탁드려요!', null, null, 3500);
@@ -2444,7 +2497,7 @@
           auditInit();
           renderSecurityBadge();
 
-          if (!security.tosAccepted){ showTosOverlay(true); }
+          if (!hasTosConsent()){ showTosOverlay(true); } else { showTosOverlay(false); }
           if (security.banned){ showBanOverlay(true); }
           return;
         }
