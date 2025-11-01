@@ -125,6 +125,63 @@
     #env-close { background: transparent; border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
     #env-close:hover { background: rgba(255,255,255,.08); }
 
+    /* 팝업 에러 오버레이 */
+    #popup-error-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20000;
+    }
+    #popup-error-card {
+      width: min(720px, 96vw);
+      max-height: 80vh;
+      background: rgba(10,12,20,0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #popup-error-card h3 {
+      margin: 0;
+      font-size: 15px;
+      color: #ffd36e;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    #popup-error-text {
+      flex: 1;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 6px;
+      padding: 6px;
+      overflow: auto;
+      color: #fff;
+      font-family: ui-monospace, SFMono-Regular, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    #popup-error-close {
+      align-self: flex-end;
+      padding: 6px 12px;
+      border: none;
+      background: #f44336;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #popup-error-close:hover {
+      background: #e53935;
+    }
+
     /* Responsive (모바일 더 작게) */
     @media (max-width: 768px) {
       .container { flex-direction: column; }
@@ -159,6 +216,11 @@
       .panel h2 { font-size: 20px; }
       .panel p, .panel ul li { font-size: 12px; }
       .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; }
+
+      /* 팝업 에러 카드 */
+      #popup-error-card {
+        max-height: 80vh;
+      }
     }
   </style>
 </head>
@@ -176,12 +238,15 @@
         <a href="game.html" id="start-btn" class="start-btn">게임 시작</a>
       </div>
 
-      <!-- 팝업 차단 안내 토스트 -->
-      <div
-        id="popup-hint"
-        style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;"
-      >
-        팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.
+      <!-- 팝업 에러 오버레이 -->
+      <div id="popup-error-overlay" aria-modal="true" role="dialog">
+        <div id="popup-error-card">
+          <h3>
+            팝업이 차단되었어요
+            <button id="popup-error-close" type="button">닫기</button>
+          </h3>
+          <pre id="popup-error-text">/error/erorr.json 불러오는 중…</pre>
+        </div>
       </div>
 
       <div class="panel" id="license-panel" aria-modal="true" role="dialog">
@@ -340,12 +405,13 @@
         rows.push(['Referrer', ref || '(없음)']);
         rows.push(['User-Agent', ua]);
 
-        if (conn) {
-          rows.push(['네트워크 유형', conn.type || '(알 수 없음)']);
-          rows.push(['효과적 유형', conn.effectiveType || '(알 수 없음)']);
-          rows.push(['추정 다운링크(Mbps)', (typeof conn.downlinkMbps === 'number') ? String(conn.downlinkMbps) : '(알 수 없음)']);
-          rows.push(['RTT(ms)', (typeof conn.rttMs === 'number') ? String(conn.rttMs) : '(알 수 없음)']);
-          rows.push(['데이터 절약모드', bool(conn.saveData)]);
+        const conn2 = conn;
+        if (conn2) {
+          rows.push(['네트워크 유형', conn2.type || '(알 수 없음)']);
+          rows.push(['효과적 유형', conn2.effectiveType || '(알 수 없음)']);
+          rows.push(['추정 다운링크(Mbps)', (typeof conn2.downlinkMbps === 'number') ? String(conn2.downlinkMbps) : '(알 수 없음)']);
+          rows.push(['RTT(ms)', (typeof conn2.rttMs === 'number') ? String(conn2.rttMs) : '(알 수 없음)']);
+          rows.push(['데이터 절약모드', bool(conn2.saveData)]);
         } else {
           rows.push(['네트워크', '(API 미지원)']);
         }
@@ -405,20 +471,29 @@
       const POPUP_NAME = 'gameWindow';
       const GAME_URL = 'game.html';
       const W = 1024, H = 768;
+      const CTRL_FORCE_KEY = 'siu_force_no_popup';
 
-      // 토스트는 "사용자 제스처 순간의 open 실패"일 때만 노출
-      let lastAttemptFromUser = false;
-      let suppressNextHint = false;
+      const popupErrorOverlay = document.getElementById('popup-error-overlay');
+      const popupErrorText = document.getElementById('popup-error-text');
+      const popupErrorClose = document.getElementById('popup-error-close');
 
-      function showPopupHint(msg) {
-        if (!lastAttemptFromUser || suppressNextHint) return;
-        var el = document.getElementById('popup-hint');
-        if (!el) return;
-        el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.';
-        el.style.display = 'block';
-        clearTimeout(showPopupHint._t);
-        showPopupHint._t = setTimeout(function () { el.style.display = 'none'; }, 4000);
+      function showPopupErrorOverlay() {
+        // 표시 먼저
+        popupErrorOverlay.style.display = 'flex';
+        // /error/erorr.json 을 무조건 시도
+        fetch('/error/erorr.json', { cache: 'no-store' })
+          .then(r => r.text())
+          .then(txt => {
+            popupErrorText.textContent = txt;
+          })
+          .catch(() => {
+            popupErrorText.textContent = '팝업이 차단되었고, /error/erorr.json을 불러오지 못했습니다.\n브라우저 팝업을 허용하거나, Ctrl+게임시작 으로 새 탭에서 여세요.';
+          });
       }
+
+      popupErrorClose.addEventListener('click', () => {
+        popupErrorOverlay.style.display = 'none';
+      });
 
       function isDesktop() {
         const ua = navigator.userAgent || '';
@@ -461,29 +536,39 @@
       if (!startBtn) return;
 
       startBtn.addEventListener('click', function (e) {
-        if (!shouldUsePopup()) return; // 모바일: 기본 이동
-        e.preventDefault();            // PC: 현재 탭 유지
+        // 1) Ctrl + 클릭 → 팝업 말고 "이 탭에서" 열기 + 세션스토리지에 표시
+        if (e.ctrlKey) {
+          try { sessionStorage.setItem(CTRL_FORCE_KEY, '1'); } catch {}
+          // 같은 탭에서 이동
+          window.location.href = GAME_URL;
+          return;
+        }
 
-        lastAttemptFromUser = true;
-        suppressNextHint = false;
+        if (!shouldUsePopup()) {
+          // 모바일: 그냥 이동
+          window.location.href = GAME_URL;
+          return;
+        }
+
+        // 데스크톱: 팝업
+        e.preventDefault();
+        // 혹시 이전 값 남아있으면 지움
+        try { sessionStorage.removeItem(CTRL_FORCE_KEY); } catch {}
 
         const p = openGamePopup(GAME_URL);
         if (!p || p.closed) {
-          showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.');
+          // 팝업 차단 → /error/erorr.json 전체 보여주기
+          showPopupErrorOverlay();
         } else {
           try { p.focus(); } catch { /* noop */ }
         }
-
-        // 제스처 종료: 동일 tick 이후로 플래그 해제
-        setTimeout(() => { lastAttemptFromUser = false; }, 0);
       });
 
-      // 팝업이 정상 종료/요청 종료될 때는 "차단" 토스트를 억제
+      // 팝업이 정상 종료/요청 종료될 때는 별 처리 없음 (기존 메시지 처리 필요하면 여기서)
       window.addEventListener('message', (e) => {
         const t = e.data && e.data.type;
         if (t === 'request-close-popup' || t === 'auto-close') {
-          suppressNextHint = true;
-          setTimeout(() => { suppressNextHint = false; }, 1000);
+          // 여기서는 토스트 억제 같은 거 안 함. 필요하면 추가.
         }
       }, false);
     })();
@@ -610,12 +695,14 @@
     });
   </script>
 
-  <!-- 팝업으로 열렸을 때 자동 종료 (원본 유지 + 오타 수정) -->
+  <!-- 팝업으로 열렸을 때 자동 종료 (Ctrl+게임시작으로 온 경우는 제외) -->
   <script>
     (function () {
+      const CTRL_FORCE_KEY = 'siu_force_no_popup';
       try {
         const openedByScript = !!window.opener;
-        if (openedByScript) {
+        const forceNoPopup = sessionStorage.getItem(CTRL_FORCE_KEY) === '1';
+        if (openedByScript && !forceNoPopup) {
           const CLOSE_DELAY_MS = 500;
           setTimeout(() => {
             try { window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*'); } catch (e) {}
@@ -625,6 +712,9 @@
               try { window.close(); } catch (e) {}
             }, 50);
           }, CLOSE_DELAY_MS);
+        } else if (forceNoPopup) {
+          // 한 번만 쓰고 지움
+          sessionStorage.removeItem(CTRL_FORCE_KEY);
         }
       } catch (e) {
         console.warn('팝업 자동 종료 검사 중 오류:', e);
