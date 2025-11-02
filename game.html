@@ -2632,6 +2632,7 @@
       if (action === 'download') { location.href='/app-download.html'; }
       if (action === 'resume')   { customMenu.style.display='none'; }
       if (action === 'rank')     { location.href='/ranking.html'; }
+      if (action === 'store')    { customMenu.style.display='none'; try{ window.openStoreOverlay(); }catch{} }
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
@@ -2673,6 +2674,7 @@
         }
         if (action === 'download') { location.href='/app-download.html'; }
         if (action === 'rank')     { location.href='/ranking.html'; }
+        if (action === 'store')    { try{ window.openStoreOverlay(); }catch{} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
         if (action === 'resume')   { /* 닫기만 */ }
         closeSide();
