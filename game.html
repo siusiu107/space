@@ -757,39 +757,6 @@
     let rankingUnlocked = false;
     let bootDone = false;
 
-    window.addEventListener('message', (e) => {
-      const data = e?.data;
-      if (!data || typeof data !== 'object') return;
-
-      const originForReply = (e.origin === 'null' || !e.origin) ? '*' : e.origin;
-      const isAllowedOrigin = originForReply === '*' ||
-        allowedParentOrigins.includes(e.origin) ||
-        e.origin === location.origin;
-      if (!isAllowedOrigin) return;
-
-      // 상점이 "잔액 좀 줘" 라고 요청
-      if (data.type === 'shop:request-state') {
-        if (e.origin && e.origin !== 'null') parentOrigin = e.origin;
-        try {
-          if (e.source && typeof e.source.postMessage === 'function') {
-            e.source.postMessage({
-              type: 'shop:state',
-              coins: state.coins,
-              eventCoins: state.eventCoins
-            }, originForReply);
-          }
-        } catch (err) {
-          console.warn('shop state postMessage failed', err);
-        }
-      }
-
-      // 상점이 "이거 사달라" 요청
-      if (data.type === 'shop:buy') {
-        // 여기서 가격 체크 → 차감 → 버프 적용 → DB 저장
-        // 끝나고 다시 상점으로 결과 보내기
-      }
-    });
-
     
     /* 🔒 3초 부트 스킵 전용 타임스탬프 (요청사항) */
     const AUDIT_BOOT_TS = Date.now();
