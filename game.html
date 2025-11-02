@@ -298,6 +298,31 @@
     #prob-panel table{ width:100%; border-collapse:collapse; font-size:12px; }
     #prob-panel td{ padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
     #reward-list{ margin-top:6px; font-size:12px; color:#dbefff; }
+    
+        /* 상점 오버레이 */
+    #store-overlay{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background: rgba(2,6,12,.72); backdrop-filter: blur(8px); z-index:3600;
+    }
+    #store-overlay.show{ display:flex; }
+    #store-card{
+      width:min(880px, 94vw); height:min(600px, 82vh);
+      border-radius:16px; border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(6,8,16,.92));
+      box-shadow: 0 22px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+      display:flex; flex-direction:column; overflow:hidden; color:#eaf6ff;
+    }
+    #store-header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 18px; font-weight:800; letter-spacing:.3px;
+      background: rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    #store-close{
+      background:transparent; border:none; color:#fff; font-size:22px;
+      cursor:pointer; line-height:1; padding:4px 8px;
+    }
+    #store-close:hover{ color:#ff9090; }
+    #store-frame{ flex:1; width:100%; border:0; background:#02050c; }
 
     /* 버프 상태 보기 오버레이 */
     #buff-overlay{
@@ -526,6 +551,7 @@
     <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
     <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
     <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
+    <div class="menu-item" data-action="store"><span>🛒 상점 열기</span></div>
     <div class="menu-item" data-action="attendance">
       <span>📅 출석 보상</span>
       <span id="attendance-left">-</span>
@@ -542,6 +568,7 @@
       <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
       <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
       <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
+      <button class="side-item" data-action="store"><span class="icon">🛒</span><span>상점 열기</span></button>
       <button class="side-item" data-action="attendance">
         <span><span class="icon">📅</span>출석 보상</span>
         <span class="side-right" id="attendance-left-side">-</span>
@@ -549,6 +576,18 @@
     </nav>
   </aside>
 
+  <!-- 상점 오버레이 -->
+  <div id="store-overlay" aria-hidden="true">
+    <div id="store-card" role="dialog" aria-modal="true" aria-labelledby="store-title">
+      <div id="store-header">
+        <span id="store-title">🛒 우주 상점</span>
+        <button id="store-close" aria-label="상점 닫기">×</button>
+      </div>
+      <iframe id="store-frame" src="상점.html" title="상점" loading="lazy"></iframe>
+    </div>
+  </div>
+
+  
   <!-- 출석/슬롯 오버레이 -->
   <div id="daily-overlay" aria-hidden="true">
     <div id="daily-card" role="dialog" aria-modal="true" aria-labelledby="daily-title">
@@ -2546,7 +2585,31 @@
     setInterval(renderBuffStatus, 1000);
     window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
   </script>
+  
+  <!-- 상점 오버레이 스크립트 -->
+  <script>
+    (function(){
+      const storeOverlay = document.getElementById('store-overlay');
+      const storeClose   = document.getElementById('store-close');
 
+      function openStore(){
+        storeOverlay.classList.add('show');
+        storeOverlay.setAttribute('aria-hidden','false');
+      }
+      function closeStore(){
+        storeOverlay.classList.remove('show');
+        storeOverlay.setAttribute('aria-hidden','true');
+      }
+
+      storeClose.addEventListener('click', closeStore);
+      storeOverlay.addEventListener('click', (e)=>{ if(e.target===storeOverlay) closeStore(); });
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeStore(); });
+
+      window.openStoreOverlay = openStore;
+      window.closeStoreOverlay = closeStore;
+    })();
+  </script>
+  
   <!-- 우클릭 커스텀 메뉴 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
