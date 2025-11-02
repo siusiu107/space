@@ -2,505 +2,344 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>🛒 상점 - 태양계 정복</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIU 상점</title>
   <style>
-    :root{
-      --bg: radial-gradient(circle at top, #0f172a 0%, #020617 40%, #000 100%);
-      --panel: rgba(8,10,16,0.55);
-      --panel-solid: rgba(10,12,20,0.9);
-      --stroke: rgba(255,255,255,0.06);
-      --txt: #e2f3ff;
-      --muted: #96b7d3;
-      --accent: #00d0ff;
-      --danger: #ff6b6b;
-      --round: 14px;
+    :root {
+      --bg: radial-gradient(circle at top, #0f172a 0%, #020617 60%, #000 100%);
+      --card: rgba(3, 7, 18, 0.4);
+      --stroke: rgba(255,255,255,0.08);
+      --accent: #38bdf8;
+      --danger: #f43f5e;
     }
-    *{box-sizing:border-box;}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--txt);
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      height:100vh;
-      display:flex;
-      flex-direction:column;
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
     }
-    /* 상단 바 */
-    header{
-      padding:8px 12px 6px;
-      border-bottom:1px solid rgba(255,255,255,0.04);
-      background:rgba(2,6,12,0.35);
-      backdrop-filter:blur(8px);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
-    .title-area{
-      display:flex; align-items:center; gap:8px;
+    .title {
+      font-size: 1.2rem;
+      font-weight: 700;
     }
-    .title-icon{
-      width:34px; height:34px; border-radius:12px;
-      background:linear-gradient(180deg, #00d0ff, #0070ff);
-      display:flex; align-items:center; justify-content:center;
-      font-size:19px; color:#00101a; font-weight:700;
-      border:1px solid rgba(255,255,255,0.35);
-      box-shadow:0 10px 20px rgba(0,0,0,0.25);
+    .badge {
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
     }
-    .title-text{ font-weight:700; line-height:1.1; }
-    .title-sub{ font-size:11px; color:var(--muted); }
-
-    .balance{
-      display:flex; gap:10px; align-items:center;
-      font-size:13px;
+    .balance-box {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(148,163,184,0.15);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.82rem;
     }
-    .bal-box{
-      display:flex; gap:6px; align-items:center;
-      background:rgba(255,255,255,0.03);
-      border:1px solid rgba(255,255,255,0.03);
-      border-radius:12px;
-      padding:4px 10px;
+    .balance-label { opacity: 0.7; }
+    .balance-value { font-weight: 700; color: #f97316; }
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
     }
-    .bal-label{opacity:0.65; font-size:11px;}
-    .bal-value{font-weight:700; font-variant-numeric:tabular-nums;}
-
-    /* 레이아웃 */
-    .wrap{
-      flex:1;
-      display:flex;
-      min-height:0;
+    .item {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      backdrop-filter: blur(10px);
     }
-    nav{
-      width:152px;
-      border-right:1px solid rgba(255,255,255,0.03);
-      background:rgba(0,0,0,0.08);
-      padding:8px 6px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
+    .item-title {
+      font-weight: 700;
+      font-size: 1rem;
     }
-    .tab-btn{
-      padding:8px 10px;
-      border-radius:10px;
-      border:1px solid transparent;
-      background:transparent;
-      color:var(--txt);
-      text-align:left;
-      cursor:pointer;
-      display:flex;
-      gap:6px;
-      align-items:center;
-      font-size:13px;
+    .item-desc {
+      font-size: 0.78rem;
+      opacity: 0.75;
+      line-height: 1.4;
     }
-    .tab-btn small{color:var(--muted); font-size:11px;}
-    .tab-btn.active{
-      background:linear-gradient(180deg, rgba(0,208,255,0.35), rgba(0,94,191,0));
-      border:1px solid rgba(0,214,255,0.45);
-      box-shadow:0 6px 18px rgba(0,227,255,0.15);
+    .price {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #f97316;
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
     }
-
-    main{
-      flex:1;
-      padding:10px 10px 16px;
-      overflow-y:auto;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-content:flex-start;
+    .buy-btn {
+      margin-top: 6px;
+      border: none;
+      background: linear-gradient(120deg, #0ea5e9, #6366f1);
+      border-radius: 999px;
+      color: #fff;
+      padding: 6px 10px;
+      font-weight: 600;
+      font-size: 0.78rem;
+      cursor: pointer;
     }
-    .section-title{
-      width:100%;
-      font-size:13px;
-      opacity:0.75;
-      margin-bottom:2px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
+    .buy-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
-    .section-title small{font-size:11px; color:var(--muted);}
-
-    .item{
-      width:calc(33.33% - 8px);
-      min-width:210px;
-      background:radial-gradient(circle at 10% 10%, rgba(255,255,255,0.05), rgba(0,0,0,0));
-      border:1px solid rgba(255,255,255,0.03);
-      border-radius:12px;
-      padding:10px 10px 9px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .item-top{
-      display:flex; gap:10px; align-items:flex-start;
-    }
-    .item-icon{
-      width:34px; height:34px; border-radius:10px;
-      background:rgba(0,208,255,0.12);
-      display:flex; align-items:center; justify-content:center;
-      font-size:18px;
-    }
-    .item-name{ font-weight:700; }
-    .item-desc{ font-size:12px; color:var(--muted); line-height:1.35; }
-    .price-row{
-      display:flex; gap:6px; align-items:center; flex-wrap:wrap;
-    }
-    .price{
-      display:inline-flex; gap:4px; align-items:center;
-      background:rgba(0,0,0,0.22);
-      border:1px solid rgba(255,255,255,0.03);
-      border-radius:999px;
-      padding:2px 8px 2px 6px;
-      font-size:11px;
-    }
-    .price span{font-variant-numeric:tabular-nums;}
-    .btn-buy{
-      margin-top:4px;
-      background:linear-gradient(180deg,#00d0ff,#0090ff);
-      border:none;
-      border-radius:999px;
-      padding:6px 10px;
-      color:#001018;
-      font-weight:700;
-      cursor:pointer;
-      font-size:12px;
-      display:inline-flex;
-      gap:4px;
-      align-items:center;
-    }
-    .btn-buy:disabled{
-      opacity:0.5;
-      cursor:not-allowed;
-    }
-    .badge{
-      display:inline-flex; align-items:center; gap:3px;
-      background:rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.05);
-      border-radius:999px;
-      padding:2px 10px;
-      font-size:11px;
-    }
-
-    /* 토스트 */
-    #toast{
-      position:fixed; left:50%; bottom:14px; transform:translateX(-50%) translateY(20px);
-      background:rgba(0,0,0,0.80);
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:10px;
-      padding:6px 12px;
-      font-size:12px; color:#fff;
-      display:none;
-      z-index:9999;
-    }
-
-    @media (max-width:900px){
-      .item{ width:calc(50% - 8px); }
-      nav{width:128px;}
-    }
-    @media (max-width:640px){
-      header{ flex-wrap:wrap; }
-      .balance{ width:100%; justify-content:flex-end; }
-      .item{ width:100%; }
-      .wrap{flex-direction:column;}
-      nav{width:100%; flex-direction:row; overflow-x:auto;}
-      .tab-btn{white-space:nowrap;}
+    footer {
+      font-size: 0.7rem;
+      opacity: 0.4;
+      text-align: center;
+      margin-top: auto;
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="title-area">
-      <div class="title-icon">🛒</div>
-      <div>
-        <div class="title-text">상점</div>
-        <div class="title-sub">태양계 정복: 우주 생존 클릭커</div>
-      </div>
+    <div>
+      <div class="title">🛒 SIU 이벤트 상점</div>
+      <div class="badge" id="user-status">로그인 확인 중…</div>
     </div>
-    <div class="balance">
-      <div class="bal-box" id="bal-coins">
-        <span class="bal-label">코인</span>
-        <span class="bal-value" id="coins-amount">알 수 없음</span>
-      </div>
-      <div class="bal-box" id="bal-ecoins">
-        <span class="bal-label">이벤트코인</span>
-        <span class="bal-value" id="ecoins-amount">알 수 없음</span>
-      </div>
+    <div class="balance-box">
+      <span class="balance-label">이벤트 코인</span>
+      <span class="balance-value" id="eco-balance">-</span>
     </div>
   </header>
 
-  <div class="wrap">
-    <nav>
-      <button class="tab-btn active" data-tab="featured">⭐ 추천</button>
-      <button class="tab-btn" data-tab="buffs">⚡ 버프</button>
-      <button class="tab-btn" data-tab="packs">📦 자원팩</button>
-      <button class="tab-btn" data-tab="misc">🧰 기타</button>
-    </nav>
-    <main id="main-area">
-      <!-- 여기 내용은 JS에서 렌더 -->
-    </main>
-  </div>
+  <main>
+    <!-- 1. 30분 전체 버프 권한만 기록 -->
+    <article class="item">
+      <div class="item-title">전체 버프 30분</div>
+      <div class="item-desc">
+        게임 데이터에 <code>/shop/pendingBuff</code> 으로만 남깁니다.<br />
+        메인 게임에서 이 값만 읽어서 버프 적용하면 돼.
+      </div>
+      <div class="price">200 <span style="opacity:0.6;">이벤트코인</span></div>
+      <button class="buy-btn" data-buy="buff_all_30m">구매</button>
+    </article>
 
-  <div id="toast"></div>
+    <!-- 2. 스킨 해제 -->
+    <article class="item">
+      <div class="item-title">우주선 스킨 해제</div>
+      <div class="item-desc">
+        <code>/shop/skins/space</code> = true 로만 남깁니다.<br />
+        메인 게임에서 이 값 있으면 스킨 노출.
+      </div>
+      <div class="price">300 <span style="opacity:0.6;">이벤트코인</span></div>
+      <button class="buy-btn" data-buy="skin_space">구매</button>
+    </article>
 
-  <script>
-  // ===============================
-  // 간단 데이터: 상점 아이템
-  // ===============================
-  const SHOP_ITEMS = {
-    featured: [
+    <!-- 3. 출석권 충전 -->
+    <article class="item">
+      <div class="item-title">출석권 +1</div>
+      <div class="item-desc">
+        <code>/shop/tickets/daily</code> 를 +1만 시킵니다.<br />
+        메인에서 이 숫자만큼 소모하도록만 연결하면 끝.
+      </div>
+      <div class="price">150 <span style="opacity:0.6;">이벤트코인</span></div>
+      <button class="buy-btn" data-buy="ticket_daily">구매</button>
+    </article>
+  </main>
+
+  <footer>
+    파이어베이스에 직접 쓰는 페이지. 의심도(/security)에는 <b>절대</b> 접근 안 함.
+  </footer>
+
+  <script type="module">
+    // 🔥 Firebase 불러오기
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      update,
+      runTransaction,
+      push
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    // 메인 게임이랑 같은 설정 써야 같은 RTDB를 만짐
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+
+    const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    const statusEl = document.getElementById("user-status");
+    const ecoEl    = document.getElementById("eco-balance");
+
+    // 실제로 팔리는 아이템 정의
+    const SHOP_ITEMS = [
       {
-        id: 'buff_coin_5m',
-        icon: '⚡',
-        name: '코인 버프 50% (5분)',
-        desc: '5분 동안 코인 획득량 +50%.',
-        priceCoin: 120,
-        priceEvent: 0,
-        give: { type: 'buff', buffType:'coin', buffValue:0.5, buffDurMs:5*60*1000 }
+        id: "buff_all_30m",
+        name: "전체 버프 30분",
+        price: 200,
+        write: async (basePath) => {
+          // 의심도 X, 게임데이터만 참고하도록 별도 위치에 남김
+          await update(ref(db), {
+            [`${basePath}/shop/pendingBuff`]: {
+              type: "all",
+              value: 0.5,
+              durationMs: 30 * 60 * 1000,
+              grantedAt: Date.now(),
+              from: "shop.html"
+            }
+          });
+        }
       },
       {
-        id: 'res_pack_500',
-        icon: '🪨',
-        name: '자원 500팩',
-        desc: '즉시 자원 +500. 초반 성장용.',
-        priceCoin: 60,
-        priceEvent: 0,
-        give: { type: 'res', amount: 500 }
+        id: "skin_space",
+        name: "우주선 스킨",
+        price: 300,
+        write: async (basePath) => {
+          await update(ref(db), {
+            [`${basePath}/shop/skins/space`]: true
+          });
+        }
       },
       {
-        id: 'event_pack_small',
-        icon: '🎟️',
-        name: '이벤트코인 x3',
-        desc: '이벤트 슬롯을 자주 돌리고 싶을 때.',
-        priceCoin: 0,
-        priceEvent: 2, // 이벤트코인으로도 파는 예시
-        give: { type: 'event', amount: 3 }
+        id: "ticket_daily",
+        name: "출석권 +1",
+        price: 150,
+        write: async (basePath) => {
+          // 숫자만 +1 하도록 트랜잭션
+          const tRef = ref(db, `${basePath}/shop/tickets/daily`);
+          await runTransaction(tRef, (cur) => {
+            const v = typeof cur === "number" ? cur : 0;
+            return v + 1;
+          });
+        }
       }
-    ],
-    buffs: [
-      {
-        id: 'buff_all_10m',
-        icon: '💫',
-        name: '전체 획득 +30% (10분)',
-        desc: '자원/코인 전부 +30%.',
-        priceCoin: 210,
-        priceEvent: 1,
-        give: { type: 'buff', buffType:'all', buffValue:0.3, buffDurMs:10*60*1000 }
-      },
-      {
-        id: 'buff_res_10m',
-        icon: '🪐',
-        name: '자원 채굴 +80% (10분)',
-        desc: '자원만 강하게 늘리고 싶을 때.',
-        priceCoin: 160,
-        priceEvent: 0,
-        give: { type: 'buff', buffType:'res', buffValue:0.8, buffDurMs:10*60*1000 }
-      },
-      {
-        id: 'buff_coin_15m',
-        icon: '💰',
-        name: '코인 +100% (15분)',
-        desc: '코인 2배. 이벤트 전 밀어넣기.',
-        priceCoin: 280,
-        priceEvent: 1,
-        give: { type: 'buff', buffType:'coin', buffValue:1.0, buffDurMs:15*60*1000 }
-      }
-    ],
-    packs: [
-      {
-        id: 'res_pack_1500',
-        icon: '📦',
-        name: '자원 1,500팩',
-        desc: '바로 업그레이드하고 싶을 때.',
-        priceCoin: 140,
-        priceEvent: 0,
-        give: { type: 'res', amount: 1500 }
-      },
-      {
-        id: 'coin_pack_200',
-        icon: '🟡',
-        name: '코인 200팩',
-        desc: '코인이 모자랄 때 한번에 보충.',
-        priceCoin: 0,
-        priceEvent: 4,
-        give: { type: 'coin', amount: 200 }
-      }
-    ],
-    misc: [
-      {
-        id: 'name_ticket',
-        icon: '📝',
-        name: '이름 변경권',
-        desc: '계정 이름/표시이름을 한 번 바꿀 수 있습니다. (부모에서 처리)',
-        priceCoin: 90,
-        priceEvent: 0,
-        give: { type: 'ticket', ticketType:'rename' }
-      },
-      {
-        id: 'slot_ticket',
-        icon: '🎰',
-        name: '슬롯 추가권',
-        desc: '오늘 슬롯 1회 더.',
-        priceCoin: 80,
-        priceEvent: 0,
-        give: { type: 'ticket', ticketType:'slot_add' }
-      }
-    ]
-  };
+    ];
 
-  // 현재 잔액 (부모가 안 보내주면 0)
-  let currentCoins = 0;
-  let currentEcoins = 0;
-  let parentAvailable = false;
+    let uid = null;
+    let userBasePath = null;
 
-  // ===============================
-  // 렌더
-  // ===============================
-  const mainArea = document.getElementById('main-area');
-
-  function renderTab(tabName){
-    mainArea.innerHTML = '';
-    const items = SHOP_ITEMS[tabName] || [];
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    title.innerHTML = `<span>${tabName === 'featured' ? '추천 상품' :
-                       tabName === 'buffs' ? '버프 상품' :
-                       tabName === 'packs' ? '자원팩' : '기타'}</span>
-                       <small>클릭하면 구매 요청을 보냅니다.</small>`;
-    mainArea.appendChild(title);
-
-    items.forEach(item=>{
-      const el = document.createElement('div');
-      el.className = 'item';
-      el.innerHTML = `
-        <div class="item-top">
-          <div class="item-icon">${item.icon}</div>
-          <div>
-            <div class="item-name">${item.name}</div>
-            <div class="item-desc">${item.desc}</div>
-          </div>
-        </div>
-        <div class="price-row">
-          ${item.priceCoin > 0 ? `<div class="price">🟡 <span>${item.priceCoin}</span></div>` : ''}
-          ${item.priceEvent > 0 ? `<div class="price">🎟️ <span>${item.priceEvent}</span></div>` : ''}
-        </div>
-        <button class="btn-buy" data-id="${item.id}">구매</button>
-      `;
-      const btn = el.querySelector('.btn-buy');
-      btn.addEventListener('click', ()=>handleBuy(item));
-      mainArea.appendChild(el);
-    });
-  }
-
-  // ===============================
-  // 탭 클릭
-  // ===============================
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      renderTab(btn.dataset.tab);
-    });
-  });
-
-  // 처음은 추천
-  renderTab('featured');
-
-  // ===============================
-  // 부모와 통신
-  // ===============================
-  function requestStateToParent(){
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type:'shop:request-state' }, '*');
-        parentAvailable = true;
-      }
-    } catch (e) {
-      parentAvailable = false;
-    }
-  }
-
-  // 부모가 상태 보내줄 때 처리
-  window.addEventListener('message', (e)=>{
-    const data = e.data;
-    if (!data || typeof data !== 'object') return;
-
-    // 부모가 "지금 네가 가진 거" 알려줌
-    if (data.type === 'shop:state') {
-      if (typeof data.coins === 'number') {
-        currentCoins = data.coins;
-        document.getElementById('coins-amount').textContent = data.coins.toLocaleString('ko-KR');
-      }
-      if (typeof data.eventCoins === 'number') {
-        currentEcoins = data.eventCoins;
-        document.getElementById('ecoins-amount').textContent = data.eventCoins.toLocaleString('ko-KR');
-      }
+    // 현재 이벤트코인 다시 읽어오기
+    async function refreshBalance() {
+      if (!userBasePath) return;
+      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
+      const snap = await get(ecoRef);
+      const val = snap.exists() ? snap.val() : 0;
+      ecoEl.textContent = val;
+      return val;
     }
 
-    // 부모가 구매 결과 보내줌
-    if (data.type === 'shop:result') {
-      showToast(data.message || (data.ok ? '구매되었습니다.' : '구매에 실패했습니다.'));
-      if (data.ok && typeof data.newCoins === 'number') {
-        currentCoins = data.newCoins;
-        document.getElementById('coins-amount').textContent = data.newCoins.toLocaleString('ko-KR');
-      }
-      if (data.ok && typeof data.newEventCoins === 'number') {
-        currentEcoins = data.newEventCoins;
-        document.getElementById('ecoins-amount').textContent = data.newEventCoins.toLocaleString('ko-KR');
-      }
-    }
-  });
-
-  // 페이지 열리면 부모한테 “상태 줘” 요청
-  requestStateToParent();
-
-  // ===============================
-  // 구매 처리
-  // ===============================
-  function handleBuy(item){
-    // 부모가 있으면 부모한테 맡김
-    if (parentAvailable) {
-      try {
-        window.parent.postMessage({
-          type: 'shop:buy',
-          itemId: item.id,
-          priceCoin: item.priceCoin,
-          priceEvent: item.priceEvent,
-          give: item.give
-        }, '*');
-        showToast('구매 요청을 보냈습니다.');
+    // 구매 처리
+    async function handleBuy(itemId) {
+      if (!uid || !userBasePath) {
+        alert("아직 로그인/경로를 못 찾았어요. 조금 있다가 다시 눌러줘.");
         return;
-      } catch (e) {
-        // 아래 로컬 처리로 갈게
       }
+
+      const item = SHOP_ITEMS.find(i => i.id === itemId);
+      if (!item) return;
+
+      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
+      let purchaseOk = false;
+      let newBalance = 0;
+
+      // 이벤트 코인만 차감
+      await runTransaction(ecoRef, (current) => {
+        const cur = typeof current === "number" ? current : Number(current) || 0;
+        if (cur < item.price) {
+          // 잔액 부족 -> 그대로 반환
+          purchaseOk = false;
+          return cur;
+        }
+        purchaseOk = true;
+        newBalance = cur - item.price;
+        return newBalance;
+      });
+
+      if (!purchaseOk) {
+        alert("이벤트 코인이 부족합니다.");
+        await refreshBalance();
+        return;
+      }
+
+      // 여기서부터는 ‘의심도’랑 관련 없는 위치에만 씀
+      // 구매 로그
+      const logKey = push(ref(db, `${userBasePath}/shop/purchases`)).key;
+      const payload = {
+        itemId: item.id,
+        name: item.name,
+        price: item.price,
+        paidWith: "eventCoins",
+        ts: Date.now(),
+        // 👇 이거 넣어두면 메인에서 볼 때도 "이건 상점에서 산 거" 라고 구분 가능
+        suspicionSafe: true,
+        source: "shop.html"
+      };
+      await update(ref(db), {
+        [`${userBasePath}/shop/purchases/${logKey}`]: payload
+      });
+
+      // 아이템 효과 쓰기 (전부 /shop 밑이라 의심도 트리거 안 됨)
+      await item.write(userBasePath);
+
+      // 잔액 다시 보여주기
+      await refreshBalance();
+      alert("구매 완료!");
     }
 
-    // 부모가 없을 때(미리보기 모드): 그냥 잔액만 체크해서 화면만 갱신
-    if (item.priceCoin > 0 && currentCoins < item.priceCoin) {
-      showToast('코인이 부족합니다.');
-      return;
-    }
-    if (item.priceEvent > 0 && currentEcoins < item.priceEvent) {
-      showToast('이벤트코인이 부족합니다.');
-      return;
-    }
-    currentCoins  -= item.priceCoin || 0;
-    currentEcoins -= item.priceEvent || 0;
-    document.getElementById('coins-amount').textContent = currentCoins.toLocaleString('ko-KR');
-    document.getElementById('ecoins-amount').textContent = currentEcoins.toLocaleString('ko-KR');
-    showToast('구매되었습니다. (미리보기)');
-  }
+    // 버튼 바인딩
+    document.querySelectorAll("[data-buy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-buy");
+        handleBuy(id).catch((err) => {
+          console.error(err);
+          alert("구매 중 오류가 났어요. 콘솔 확인해봐.");
+        });
+      });
+    });
 
-  // ===============================
-  // 토스트
-  // ===============================
-  const toastEl = document.getElementById('toast');
-  let toastTimer = null;
-  function showToast(msg){
-    toastEl.textContent = msg;
-    toastEl.style.display = 'block';
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=>{ toastEl.style.display = 'none'; }, 3000);
-  }
+    // 로그인 감지
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        statusEl.textContent = "로그인이 필요합니다.";
+        ecoEl.textContent = "-";
+        uid = null;
+        userBasePath = null;
+        return;
+      }
+      uid = user.uid;
+      statusEl.textContent = user.email || user.uid;
+
+      // 메인 게임이랑 똑같이 userServerMap에서 실제 경로 찾아옴
+      const mapSnap = await get(ref(db, `userServerMap/${uid}`));
+      if (!mapSnap.exists()) {
+        statusEl.textContent = "userServerMap 없음 (메인에서 한 번 로그인해)";
+        return;
+      }
+      const mapping = mapSnap.val() || {};
+      userBasePath = `users/${mapping.server}/${mapping.id}`;
+
+      await refreshBalance();
+    });
   </script>
 </body>
 </html>
