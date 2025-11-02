@@ -2,624 +2,238 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>태양계정복 - 상점</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-
-  <!-- Applixir SDK -->
-  <script src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
-
+  <title>이용이 잠시 정지되었습니다</title>
+  <meta name="robots" content="noindex,nofollow" />
   <style>
-    :root{
-      --bg: radial-gradient(circle at top, #0f172a 0%, #020617 55%, #000 100%);
-      --panel: rgba(8,10,16,0.55);
-      --stroke: rgba(255,255,255,0.06);
-      --txt: #e2f3ff;
-      --muted: #96b7d3;
-      --accent: #00d0ff;
+    :root {
+      --bg: radial-gradient(circle at top, #10192c 0%, #070b14 50%, #020309 100%);
+      --card: rgba(6, 10, 18, 0.65);
+      --stroke: rgba(255,255,255,0.04);
+      --accent: #ff5f7a;
+      --accent-soft: rgba(255, 95, 122, 0.12);
+      --text: #f4f6ff;
+      --muted: #9aa2b3;
+      --warn: #ffbc5f;
     }
-    *{box-sizing:border-box;}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--txt);
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      height:100vh;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      padding:12px 12px 50px;
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
     }
-    header{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:center;
+    .panel {
+      width: min(460px, 96vw);
+      background: radial-gradient(circle at 10% 0%, rgba(255,95,122,0.15), rgba(6,12,20,0.1)) border-box;
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 20px;
+      backdrop-filter: blur(14px);
+      text-align: center;
+      padding: 42px 28px 30px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 22px 55px rgba(0,0,0,0.35);
     }
-    .title-wrap{display:flex;gap:8px;align-items:center;}
-    .title-icon{
-      width:34px;height:34px;border-radius:12px;
-      background:linear-gradient(180deg,#00d0ff,#0070ff);
-      display:flex;align-items:center;justify-content:center;
-      color:#001018;font-weight:700;
+    .badge {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      background: rgba(255, 87, 120, 0.1);
+      border: 1px solid rgba(255, 196, 211, 0.25);
+      border-radius: 999px;
+      padding: 4px 14px 4px 6px;
+      margin-bottom: 16px;
+      font-size: 0.7rem;
+      color: #ffe7ee;
     }
-    .title-main{font-weight:700;}
-    .title-sub{font-size:11px;color:var(--muted);}
-    .balance{
-      display:flex;gap:10px;align-items:center;
+    .badge-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: radial-gradient(circle,#ff5f7a 0%,#ffbc5f 65%);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.65rem;
+      color: #1a0a0d;
+      animation: pulse 1.4s ease-in-out infinite;
     }
-    .bal-box{
-      background:rgba(255,255,255,0.03);
-      border:1px solid rgba(255,255,255,0.03);
-      border-radius:12px;
-      padding:4px 10px;
-      display:flex;gap:6px;align-items:center;
-      font-size:12px;
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.2); opacity: 0.3; }
     }
-    .bal-label{opacity:.7;}
-    .bal-value{font-weight:700;font-variant-numeric:tabular-nums;}
-    .layout{
-      flex:1;
-      display:grid;
-      grid-template-columns:280px minmax(0,1fr);
-      gap:12px;
-      min-height:0;
+    h1 {
+      font-size: clamp(1.45rem, 3.4vw, 1.8rem);
+      margin: 0 0 10px;
+      letter-spacing: -0.35px;
     }
-    /* 왼쪽: 광고+상태 */
-    .left-panel{
-      background:rgba(0,0,0,0.15);
-      border:1px solid rgba(255,255,255,0.02);
-      border-radius:14px;
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      min-height:0;
+    p.sub {
+      margin: 0 auto 20px;
+      max-width: 360px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.9rem;
     }
-    .section-title{
-      font-size:12px;
-      opacity:.7;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
+    .alert-box {
+      background: rgba(8, 8, 11, 0.25);
+      border: 1px solid rgba(255,80,110,0.28);
+      border-radius: 14px;
+      padding: 14px 14px 10px;
+      text-align: left;
+      margin-bottom: 16px;
+      font-size: 0.78rem;
     }
-    .card{
-      background:rgba(4,6,12,0.35);
-      border:1px solid rgba(255,255,255,0.03);
-      border-radius:12px;
-      padding:7px 10px 8px;
+    .alert-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
     }
-    .big-val{font-size:1.4rem;font-weight:700;}
-    .btn{
-      background:linear-gradient(180deg,#0ea5e9,#6366f1);
-      border:none;
-      padding:6px 10px;
-      border-radius:999px;
-      color:#fff;
-      font-size:12px;
-      font-weight:600;
-      cursor:pointer;
-      display:inline-flex;
-      gap:4px;
-      align-items:center;
+    .alert-label {
+      color: rgba(244, 246, 255, 0.55);
     }
-    .btn:disabled{opacity:.4;cursor:not-allowed;}
-    /* 오른쪽: 상점 */
-    .shop-panel{
-      background:rgba(0,0,0,0.08);
-      border:1px solid rgba(255,255,255,0.02);
-      border-radius:14px;
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      min-height:0;
+    .alert-value {
+      font-weight: 600;
+      color: #fff;
     }
-    .tabs{
-      display:flex;
-      gap:6px;
-      margin-bottom:8px;
+    .progress {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 12px;
     }
-    .tab-btn{
-      background:rgba(255,255,255,0.01);
-      border:1px solid transparent;
-      border-radius:999px;
-      padding:4px 12px;
-      color:var(--txt);
-      font-size:12px;
-      cursor:pointer;
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff5f7a, #ffe39b);
+      border-radius: 999px;
+      animation: moving 2.4s ease-in-out infinite;
     }
-    .tab-btn.active{
-      background:linear-gradient(180deg,rgba(0,208,255,.25),rgba(0,94,191,0));
-      border-color:rgba(0,208,255,0.5);
+    @keyframes moving {
+      0% { width: 18%; }
+      40% { width: 85%; }
+      100% { width: 28%; }
     }
-    .items{
-      flex:1;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      overflow-y:auto;
+    .foot {
+      font-size: 0.7rem;
+      color: rgba(244,246,255,0.38);
+      margin-top: 20px;
+      line-height: 1.4;
     }
-    .item{
-      width:calc(33.33% - 8px);
-      min-width:210px;
-      background:radial-gradient(circle at 10% 10%, rgba(255,255,255,0.05), rgba(0,0,0,0));
-      border:1px solid rgba(255,255,255,0.03);
-      border-radius:12px;
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
+    .btn-row {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .item-top{display:flex;gap:8px;}
-    .item-icon{
-      width:34px;height:34px;border-radius:10px;
-      background:rgba(0,208,255,0.12);
-      display:flex;align-items:center;justify-content:center;
-      font-size:18px;
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,186,186,0.38);
+      background: rgba(56, 3, 13, 0.12);
+      color: #fff;
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-decoration: none;
     }
-    .item-name{font-weight:700;}
-    .item-desc{font-size:12px;color:var(--muted);line-height:1.3;}
-    .price{font-size:11px;display:inline-flex;gap:4px;align-items:center;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.03);border-radius:999px;padding:2px 8px;}
-    .buy-btn{
-      background:linear-gradient(180deg,#00d0ff,#0090ff);
-      border:none;
-      border-radius:999px;
-      padding:6px 10px;
-      color:#001018;
-      font-weight:700;
-      cursor:pointer;
-      font-size:12px;
-      display:inline-flex;
-      gap:4px;align-items:center;
+    .btn-secondary {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.06);
     }
-    #toast{
-      position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
-      background:rgba(0,0,0,.8);
-      border:1px solid rgba(255,255,255,0.1);
-      border-radius:10px;
-      padding:6px 12px;
-      display:none;
-      font-size:12px;
-      z-index:9999;
+    .tag {
+      background: rgba(255, 188, 95, 0.15);
+      border: 1px solid rgba(255, 188, 95, 0.25);
+      color: #ffe6c7;
+      padding: 1px 10px 2px;
+      border-radius: 999px;
+      font-size: 0.63rem;
+      letter-spacing: 0;
     }
-    #applixir_anchor{width:0;height:0;overflow:hidden;}
-    @media (max-width:960px){
-      .layout{grid-template-columns:1fr;}
-      .item{width:calc(50% - 8px);}
+    .orb {
+      position: absolute;
+      top: -80px;
+      right: -70px;
+      width: 170px;
+      height: 170px;
+      background: radial-gradient(circle,#ff5f7a 0%, rgba(255,95,122,0) 68%);
+      opacity: 0.25;
+      pointer-events: none;
     }
-    @media (max-width:640px){
-      .item{width:100%;}
-      header{flex-wrap:wrap;}
-      .balance{width:100%;justify-content:flex-end;}
+    @media (max-width: 460px) {
+      .panel { padding: 34px 18px 26px; }
+      .alert-row { flex-wrap: wrap; }
+      .btn-row { flex-direction: column; }
+      .orb { display: none; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="title-wrap">
-      <div class="title-icon">🛒</div>
-      <div>
-        <div class="title-main">SIU 통합 상점</div>
-        <div class="title-sub">Applixir 광고 시청 + 이벤트코인 상점 (의심도 비포함)</div>
-      </div>
-    </div>
-    <div class="balance">
-      <div class="bal-box">
-        <span class="bal-label">이벤트코인</span>
-        <span class="bal-value" id="eco-balance">-</span>
-      </div>
-      <div class="bal-box" id="user-status">로그인 확인 중…</div>
-    </div>
-  </header>
+  <div class="panel">
+    <div class="orb"></div>
 
-  <div class="layout">
-    <!-- 왼쪽: 광고 -->
-    <div class="left-panel">
-      <div class="section-title">
-        <span>📺 리워드 광고</span>
-        <small>3회 +1 / 5회 +3</small>
+    <div class="badge">
+      <div class="badge-icon">!</div>
+      버그 발견으로 이용이 잠시 정지되었습니다
+    </div>
+    <h1>일시적으로 차단된 상태입니다</h1>
+    <p class="sub">
+      서비스 안정성을 위해 문제가 되는 기능을 잠깐 멈춰 뒀어요.<br />
+      버그가 수정되는 대로 다시 열어드릴게요. 조금만 기다려 주세요 🙏
+    </p>
+
+    <div class="alert-box">
+      <div class="alert-row">
+        <span class="alert-label">현재 상태</span>
+        <span class="alert-value" id="st">점검 중</span>
       </div>
-      <div class="card">
-        <div style="font-size:12px;opacity:.6;">광고 누적 시청수</div>
-        <div class="big-val" id="ad-views">-</div>
+      <div class="alert-row">
+        <span class="alert-label">사유</span>
+        <span class="alert-value">예상치 못한 동작(버그) 발견</span>
       </div>
-      <div class="card">
-        <button id="btn-ad" class="btn" disabled>광고 시청하기</button>
-        <div id="ad-msg" style="font-size:11px;opacity:.6;margin-top:4px;"></div>
+      <div class="alert-row">
+        <span class="alert-label">재개 예정</span>
+        <span class="alert-value"><span class="tag">관리자 오픈 시 자동 복구</span></span>
       </div>
-      <div class="card" style="font-size:11px;opacity:.55;">
-        보상은 <code>/ads/applixir/...</code> 아래에만 기록되고,<br/>
-        <code>/security</code> 나 의심도 경로에는 전혀 안 씁니다.
+      <div class="progress">
+        <div class="progress-bar"></div>
       </div>
     </div>
 
-    <!-- 오른쪽: 상점 -->
-    <div class="shop-panel">
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="featured">⭐ 추천</button>
-        <button class="tab-btn" data-tab="buffs">⚡ 버프</button>
-        <button class="tab-btn" data-tab="tickets">🎟️ 티켓/기타</button>
+    <div class="foot">
+      계속 이 화면만 보인다면 관리자에게 “버그 정리 완료 여부”를 문의해 주세요.<br />
+      (문의: <strong>support@siustudio.kro.kr</strong>)
+      <div class="btn-row">
+        <button class="btn" id="retryBtn">🔄 다시 시도</button>
+        <button class="btn btn-secondary" id="homeBtn">🏠 홈으로</button>
       </div>
-      <div class="items" id="items"></div>
     </div>
   </div>
 
-  <!-- Applixir가 비디오 주입할 곳 -->
-  <div id="applixir_anchor"></div>
-
-  <div id="toast"></div>
-
-  <script type="module">
-    // ===========================================================
-    // ==== 설정 (여기만 네 프로젝트에 맞게 바꾸면 변환 가능) ====
-    // ===========================================================
-    const APPLIXIR_API_KEY = "581358cb-52b3-4c27-a835-44b167debbe4"; // 네가 준 키
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-      authDomain: "siu-studio.firebaseapp.com",
-      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "siu-studio",
-      storageBucket: "siu-studio.appspot.com",
-      messagingSenderId: "830887143444",
-      appId: "1:830887143444:web:70b45fc12140e893c31f01",
-      measurementId: "G-1Y090YJDB6"
-    };
-
-    // ===========================================================
-    // Firebase 불러오기
-    // ===========================================================
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import {
-      getDatabase,
-      ref,
-      get,
-      update,
-      runTransaction,
-      push
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-
-    const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
-
-    // DOM 요소
-    const ecoEl    = document.getElementById('eco-balance');
-    const userEl   = document.getElementById('user-status');
-    const adViewsEl= document.getElementById('ad-views');
-    const adBtn    = document.getElementById('btn-ad');
-    const adMsg    = document.getElementById('ad-msg');
-    const itemsEl  = document.getElementById('items');
-    const toastEl  = document.getElementById('toast');
-
-    let uid = null;
-    let userBasePath = null; // users/{server}/{id}
-
-    // ===========================================================
-    // 상점 아이템 (이벤트코인 전용)
-    // ===========================================================
-    const SHOP_ITEMS = {
-      featured: [
-        { id:'buff_all_30m', icon:'💫', name:'전체 버프 30분', desc:'/shop/pendingBuff 로 내려가고, 메인에서만 실제 적용', priceEvent:3,
-          write: async (basePath) => {
-            await update(ref(db), {
-              [`${basePath}/shop/pendingBuff`]: {
-                type:'all',
-                value:0.3,
-                durationMs:30*60*1000,
-                grantedAt:Date.now(),
-                source:'shop'
-              }
-            });
-          }
-        },
-        { id:'res_pack_500', icon:'🪨', name:'자원 500권한', desc:'/shop/pendingRes 로만 남김', priceEvent:1,
-          write: async (basePath) => {
-            await update(ref(db), {
-              [`${basePath}/shop/pendingRes`]: {
-                amount:500,
-                grantedAt:Date.now(),
-                source:'shop'
-              }
-            });
-          }
-        }
-      ],
-      buffs: [
-        { id:'buff_coin_10m', icon:'💰', name:'코인 +50% (10분)', desc:'메인에서만 읽도록 /shop/pendingBuffCoin 에 씀', priceEvent:2,
-          write: async (basePath) => {
-            await update(ref(db), {
-              [`${basePath}/shop/pendingBuffCoin`]: {
-                value:0.5,
-                durationMs:10*60*1000,
-                grantedAt:Date.now(),
-                source:'shop'
-              }
-            });
-          }
-        },
-        { id:'buff_res_10m', icon:'🪐', name:'자원 +80% (10분)', desc:'자원만 올리는 버프', priceEvent:2,
-          write: async (basePath) => {
-            await update(ref(db), {
-              [`${basePath}/shop/pendingBuffRes`]: {
-                value:0.8,
-                durationMs:10*60*1000,
-                grantedAt:Date.now(),
-                source:'shop'
-              }
-            });
-          }
-        }
-      ],
-      tickets: [
-        { id:'ticket_daily', icon:'🎰', name:'출석권 +1', desc:'/shop/tickets/daily 을 +1만 함', priceEvent:1,
-          write: async (basePath) => {
-            const tRef = ref(db, `${basePath}/shop/tickets/daily`);
-            await runTransaction(tRef, (cur) => {
-              const v = typeof cur === 'number' ? cur : 0;
-              return v + 1;
-            });
-          }
-        },
-        { id:'skin_space', icon:'🚀', name:'우주선 스킨 해제', desc:'/shop/skins/space = true', priceEvent:4,
-          write: async (basePath) => {
-            await update(ref(db), {
-              [`${basePath}/shop/skins/space`]: true
-            });
-          }
-        }
-      ]
-    };
-
-    // ===========================================================
-    // 렌더
-    // ===========================================================
-    function renderTab(tab){
-      itemsEl.innerHTML = '';
-      const list = SHOP_ITEMS[tab] || [];
-      list.forEach(item => {
-        const el = document.createElement('div');
-        el.className = 'item';
-        el.innerHTML = `
-          <div class="item-top">
-            <div class="item-icon">${item.icon}</div>
-            <div>
-              <div class="item-name">${item.name}</div>
-              <div class="item-desc">${item.desc}</div>
-            </div>
-          </div>
-          <div class="price">🎟️ ${item.priceEvent}</div>
-          <button class="buy-btn" data-id="${item.id}">구매</button>
-        `;
-        const btn = el.querySelector('.buy-btn');
-        btn.addEventListener('click', () => buyItem(tab, item.id));
-        itemsEl.appendChild(el);
-      });
-    }
-
-    // 탭 이벤트
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderTab(btn.dataset.tab);
-      });
+  <script>
+    document.getElementById('retryBtn')?.addEventListener('click', function () {
+      location.reload();
     });
 
-    // 초기 탭
-    renderTab('featured');
-
-    // ===========================================================
-    // Firebase 로그인 감지
-    // ===========================================================
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        userEl.textContent = "로그인 필요";
-        adBtn.disabled     = true;
-        return;
-      }
-      uid = user.uid;
-      userEl.textContent = user.email || user.uid;
-
-      // userServerMap에서 실제 경로 찾기
-      const mapSnap = await get(ref(db, `userServerMap/${uid}`));
-      if (!mapSnap.exists()) {
-        userEl.textContent = "userServerMap 없음(메인 먼저)";
-        adBtn.disabled = true;
-        return;
-      }
-      const m = mapSnap.val();
-      userBasePath = `users/${m.server}/${m.id}`;
-
-      await Promise.all([
-        refreshEventCoins(),
-        refreshAdViews()
-      ]);
-
-      adBtn.disabled = false;
+    document.getElementById('homeBtn')?.addEventListener('click', function () {
+      // 여기 서비스 루트 맞게 바꾸면 됨
+      location.href = '/';
     });
 
-    async function refreshEventCoins(){
-      if (!userBasePath) return;
-      const snap = await get(ref(db, `${userBasePath}/gameData/eventCoins`));
-      const val = snap.exists() ? snap.val() : 0;
-      ecoEl.textContent = Number(val).toLocaleString('ko-KR');
-      return Number(val) || 0;
-    }
-
-    async function refreshAdViews(){
-      if (!userBasePath) return;
-      const snap = await get(ref(db, `${userBasePath}/ads/applixir/viewCount`));
-      const val = snap.exists() ? snap.val() : 0;
-      adViewsEl.textContent = val;
-      return Number(val) || 0;
-    }
-
-    // ===========================================================
-    // 상점 구매 (이벤트코인만)
-    // ===========================================================
-    async function buyItem(tab, itemId){
-      if (!userBasePath) {
-        showToast("로그인/경로 확인 안 됨");
-        return;
-      }
-      const item = (SHOP_ITEMS[tab] || []).find(i => i.id === itemId);
-      if (!item) return;
-
-      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
-      let ok = false;
-      let newBal = 0;
-      await runTransaction(ecoRef, (cur) => {
-        const v = typeof cur === 'number' ? cur : Number(cur) || 0;
-        if (v < item.priceEvent) {
-          ok = false;
-          return v;
-        }
-        ok = true;
-        newBal = v - item.priceEvent;
-        return newBal;
-      });
-
-      if (!ok) {
-        showToast("이벤트코인이 부족합니다.");
-        await refreshEventCoins();
-        return;
-      }
-
-      // 구매 로그 (/shop/purchases) - 의심도 X
-      const logKey = push(ref(db, `${userBasePath}/shop/purchases`)).key;
-      await update(ref(db), {
-        [`${userBasePath}/shop/purchases/${logKey}`]: {
-          itemId: item.id,
-          name: item.name,
-          priceEvent: item.priceEvent,
-          ts: Date.now(),
-          source: "shop",
-          suspicionSafe: true
-        }
-      });
-
-      // 아이템 효과 기록 (/shop/... 밑만)
-      await item.write(userBasePath);
-
-      // 잔액 다시 표시
-      ecoEl.textContent = newBal.toLocaleString('ko-KR');
-      showToast("구매 완료!");
-    }
-
-    // ===========================================================
-    // 광고 보기 (Applixir)
-    // ===========================================================
-    adBtn.addEventListener('click', () => {
-      if (!userBasePath) {
-        showToast("로그인 후 이용하세요.");
-        return;
-      }
-      try {
-        initializeAndOpenPlayer({
-          apiKey: APPLIXIR_API_KEY,
-          injectionElementId: "applixir_anchor",
-          adStatusCallbackFn: onAdStatus,
-          adErrorCallbackFn: onAdError
-        });
-      } catch (e) {
-        console.error(e);
-        showToast("광고 실행 중 오류");
-      }
-    });
-
-    function onAdStatus(status){
-      console.log("Applixir:", status);
-      if (!status || !status.type) return;
-
-      // 광고 없음
-      if (status.type === 'allAdsCompleted' && status.noads === true) {
-        adMsg.textContent = "광고 없음 (Applixir 응답)";
-        showToast("현재 노출할 광고가 없습니다.");
-        return;
-      }
-
-      // 광고 완주
-      if (status.type === 'complete' || status.type === 'allAdsCompleted') {
-        adMsg.textContent = "광고 시청 완료, 보상 처리 중…";
-        giveAdReward().catch(err => {
-          console.error(err);
-          showToast("보상 처리 오류");
-        });
-      }
-    }
-
-    function onAdError(err){
-      console.warn("Applixir Error:", err);
-      showToast("광고 불러오기 실패");
-      adMsg.textContent = "광고 불러오기 실패";
-    }
-
-    // 광고 시청 후: viewCount +1 → 3배수 +1, 5배수 +3
-    async function giveAdReward(){
-      if (!userBasePath) return;
-
-      const viewRef = ref(db, `${userBasePath}/ads/applixir/viewCount`);
-      let finalCount = 0;
-      await runTransaction(viewRef, (cur) => {
-        const v = typeof cur === 'number' ? cur : Number(cur) || 0;
-        finalCount = v + 1;
-        return finalCount;
-      });
-
-      adViewsEl.textContent = finalCount;
-
-      let reward = 0;
-      if (finalCount % 5 === 0) {
-        reward = 3;
-      } else if (finalCount % 3 === 0) {
-        reward = 1;
-      }
-
-      if (reward === 0) {
-        adMsg.textContent = `누적 ${finalCount}회 (보상 없음)`;
-        return;
-      }
-
-      // eventCoins + reward
-      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
-      let newBal = 0;
-      await runTransaction(ecoRef, (cur) => {
-        const v = typeof cur === 'number' ? cur : Number(cur) || 0;
-        newBal = v + reward;
-        return newBal;
-      });
-
-      // 보상 로그 (/ads/... 밑)
-      const rKey = push(ref(db, `${userBasePath}/ads/applixir/rewards`)).key;
-      const ups = {};
-      ups[`${userBasePath}/ads/applixir/rewards/${rKey}`] = {
-        ts: Date.now(),
-        viewCount: finalCount,
-        reward,
-        currency: 'eventCoins',
-        source: 'applixir',
-        suspicionSafe: true
-      };
-      await update(ref(db), ups);
-
-      ecoEl.textContent = newBal.toLocaleString('ko-KR');
-      adMsg.textContent = `누적 ${finalCount}회 → 이벤트코인 +${reward}`;
-      showToast(`이벤트코인 ${reward}개 지급`);
-    }
-
-    // ===========================================================
-    // 토스트
-    // ===========================================================
-    let toastTimer = null;
-    function showToast(msg){
-      toastEl.textContent = msg;
-      toastEl.style.display = 'block';
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toastEl.style.display = 'none';
-      }, 2500);
-    }
+    (function fakeStatus(){
+      const el = document.getElementById('st');
+      if (!el) return;
+      el.textContent = '패치 적용 중';
+    })();
   </script>
 </body>
 </html>
