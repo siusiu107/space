@@ -521,21 +521,16 @@
   </div>
 
   <!-- 커스텀 메뉴 -->
-<div id="custom-menu">
-  <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
-  <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
-  <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
-  <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
-
-  <!-- ✅ 추가 -->
-  <div class="menu-item" data-action="shop"><span>🛒 상점</span></div>
-
-  <div class="menu-item" data-action="attendance">
-    <span>📅 출석 보상</span>
-    <span id="attendance-left">-</span>
+  <div id="custom-menu">
+    <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
+    <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
+    <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
+    <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
+    <div class="menu-item" data-action="attendance">
+      <span>📅 출석 보상</span>
+      <span id="attendance-left">-</span>
+    </div>
   </div>
-</div>
-
 
   <!-- 사이드 메뉴 -->
   <button id="side-menu-toggle" aria-label="사이드 메뉴 열기" title="메뉴">☰</button>
@@ -660,25 +655,6 @@
     </div>
   </div>
 
-  <!-- ✅ 상점 오버레이 (iframe으로 여는 거) -->
-<div id="shop-overlay"
-     style="position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
-            display:none; z-index:5000; align-items:center; justify-content:center;">
-  <div style="width:min(920px, 96vw); height:min(580px, 92vh);
-              background:rgba(5,7,11,0.75); border:1px solid rgba(255,255,255,0.12);
-              border-radius:14px; display:flex; flex-direction:column; overflow:hidden;">
-    <div style="display:flex; justify-content:space-between; align-items:center;
-                padding:8px 12px; background:rgba(0,0,0,0.25);
-                border-bottom:1px solid rgba(255,255,255,0.06);">
-      <div style="font-weight:700; color:#e6f7ff;">🛒 상점</div>
-      <button id="shop-close"
-              style="background:transparent; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
-    </div>
-    <iframe id="shop-frame" src="" style="flex:1; border:none; width:100%; height:100%; background:#06080d;"></iframe>
-  </div>
-</div>
-
-
   <!-- 사운드 -->
   <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
@@ -780,82 +756,82 @@
       toastTimer = setTimeout(hideToast, ttlMs);
     }
 
-/* ======================
-   버프 저장/적용/표시
-   ====================== */
-function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
-function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
-function persistBuffs(){
-  ensureFx();
-  try {
-    const now = Date.now();
-    const toSave = window.fx.buffs.filter(b=>b && b.until>now);
-    localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
-  } catch {}
-}
-function loadBuffs(){
-  ensureFx();
-  try {
-    const raw = localStorage.getItem(buffStorageKey());
-    const arr = raw ? JSON.parse(raw) : [];
-    const now = Date.now();
-    window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
-  } catch { window.fx.buffs = []; }
-}
-function pruneExpiredBuffs(){
-  ensureFx();
-  const before = window.fx.buffs.length;
-  const now = Date.now();
-  window.fx.buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
-  if (window.fx.buffs.length !== before) persistBuffs();
-}
-function activeBuffFactor(kind){
-  ensureFx();
-  const now = Date.now();
-  let factor = 1;
-  (window.fx.buffs||[]).forEach(b=>{
-    if(!b || now>=b.until) return;
-    if (b.type==='all') factor *= (1 + b.value);
-    else if (kind==='res'  && b.type==='res')  factor *= (1 + b.value);
-    else if (kind==='coin' && b.type==='coin') factor *= (1 + b.value);
-  });
-  return factor;
-}
-function addTempBuff(type, value, dur){
-  ensureFx();
-  const now=Date.now();
-  window.fx.buffs.push({ type, value, until: now + dur });
-  persistBuffs();
-  renderBuffStatus();
-}
-
-// 👉 여기서부터: 버튼/오버레이용 버프 렌더
-function renderBuffStatus(){
-  const btn = document.getElementById('buff-btn');
-  const listEl = document.getElementById('buff-list');
-  pruneExpiredBuffs();
-  const now = Date.now();
-  const buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
-  const count = buffs.length;
-  if (btn) {
-    btn.textContent = count > 0 ? `버프(${count})` : '버프(0)';
-  }
-  if (listEl) {
-    if (count === 0) {
-      listEl.innerHTML = '적용 중인 버프가 없습니다.';
-    } else {
-      const names = { all:'전체', coin:'코인', res:'자원' };
-      listEl.innerHTML = buffs.map(b=>{
-        const leftMs = b.until - now;
-        const m = Math.max(0, Math.floor(leftMs/60000));
-        const s = Math.max(0, Math.floor((leftMs%60000)/1000));
-        const mult = 1 + b.value;
-        const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
-        return `<div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>`;
-      }).join('');
+    /* ======================
+       버프 저장/적용/표시
+       ====================== */
+    function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
+    function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
+    function persistBuffs(){
+      ensureFx();
+      try {
+        const now = Date.now();
+        const toSave = window.fx.buffs.filter(b=>b && b.until>now);
+        localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
+      } catch {}
     }
-  }
-}
+    function loadBuffs(){
+      ensureFx();
+      try {
+        const raw = localStorage.getItem(buffStorageKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        const now = Date.now();
+        window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
+      } catch { window.fx.buffs = []; }
+    }
+    function pruneExpiredBuffs(){
+      ensureFx();
+      const before = window.fx.buffs.length;
+      const now = Date.now();
+      window.fx.buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
+      if (window.fx.buffs.length !== before) persistBuffs();
+    }
+    function activeBuffFactor(kind){
+      ensureFx();
+      const now = Date.now();
+      let factor = 1;
+      (window.fx.buffs||[]).forEach(b=>{
+        if(!b || now>=b.until) return;
+        if (b.type==='all') factor *= (1 + b.value);
+        else if (kind==='res'  && b.type==='res')  factor *= (1 + b.value);
+        else if (kind==='coin' && b.type==='coin') factor *= (1 + b.value);
+      });
+      return factor;
+    }
+    function addTempBuff(type, value, dur){
+      ensureFx();
+      const now=Date.now();
+      window.fx.buffs.push({ type, value, until: now + dur });
+      persistBuffs();
+      renderBuffStatus();
+    }
+
+    // 👉 여기서부터: 버튼/오버레이용 버프 렌더
+    function renderBuffStatus(){
+      const btn = document.getElementById('buff-btn');
+      const listEl = document.getElementById('buff-list');
+      pruneExpiredBuffs();
+      const now = Date.now();
+      const buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
+      const count = buffs.length;
+      if (btn) {
+        btn.textContent = count > 0 ? `버프(${count})` : '버프(0)';
+      }
+      if (listEl) {
+        if (count === 0) {
+          listEl.innerHTML = '적용 중인 버프가 없습니다.';
+        } else {
+          const names = { all:'전체', coin:'코인', res:'자원' };
+          listEl.innerHTML = buffs.map(b=>{
+            const leftMs = b.until - now;
+            const m = Math.max(0, Math.floor(leftMs/60000));
+            const s = Math.max(0, Math.floor((leftMs%60000)/1000));
+            const mult = 1 + b.value;
+            const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
+            return `<div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>`;
+          }).join('');
+        }
+      }
+    }
 
     /* ========= 숫자 한국식 단위 ========= */
     function formatKR(num, decimalsForUnits = 2) {
@@ -2581,30 +2557,21 @@ function renderBuffStatus(){
       customMenu.style.display = 'block';
     });
     customMenu.addEventListener('click', (e) => {
-  const btn = e.target.closest('.menu-item');
-  const action = btn && btn.getAttribute('data-action');
-  if (!action) return;
-
-  if (action === 'menu') { /* ... */ }
-  if (action === 'download') { location.href='/app-download.html'; }
-  if (action === 'resume')   { customMenu.style.display='none'; }
-  if (action === 'rank')     { location.href='/ranking.html'; }
-
-  /* ✅ 여기 추가됨 */
-  if (action === 'shop') {
-    const ov = document.getElementById('shop-overlay');
-    const fr = document.getElementById('shop-frame');
-    if (fr && !fr.src) {
-      fr.src = '상점.html';
-    }
-    ov.style.display = 'flex';
-  }
-
-  if (action === 'attendance'){
-    customMenu.style.display='none';
-    try{ window.openDailyManual && window.openDailyManual(); }catch(e){}
-  }
-});
+      const btn = e.target.closest('.menu-item');
+      const action = btn && btn.getAttribute('data-action');
+      if (!action) return;
+      if (action === 'menu') {
+        try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch {}
+        try { window.opener && window.opener.postMessage && window.opener.postMessage({ type: 'request-close-popup', from: location.href }, '*'); } catch {}
+        try { window.close(); } catch {}
+        setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
+      }
+      if (action === 'download') { location.href='/app-download.html'; }
+      if (action === 'resume')   { customMenu.style.display='none'; }
+      if (action === 'rank')     { location.href='/ranking.html'; }
+      if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
+    });
+    window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
   </script>
 
   <!-- 사이드 메뉴 -->
@@ -2824,29 +2791,6 @@ function renderBuffStatus(){
       ov      && ov.addEventListener('click', (e) => { if (e.target === ov) closePolicy(); });
       window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePolicy(); });
     })();
-    // ======================
-  // 시작
-  // ======================
- bindUI();
-loadBuffs();
-renderBuffStatus();
-
-// ✅ 상점 오버레이 닫기 (4번)
-const shopOverlay = document.getElementById('shop-overlay');
-const shopClose   = document.getElementById('shop-close');
-
-if (shopOverlay && shopClose) {
-  shopClose.addEventListener('click', () => {
-    shopOverlay.style.display = 'none';
-  });
-
-  // (선택) 오버레이 바깥 클릭 시 닫기
-  shopOverlay.addEventListener('click', (e) => {
-    if (e.target === shopOverlay) {
-      shopOverlay.style.display = 'none';
-    }
-  });
-}
   </script>
 </body>
 </html>
