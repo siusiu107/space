@@ -2,177 +2,258 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SIU 상점</title>
+  <title>태양계정복 - 상점</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+  <!-- Applixir SDK -->
+  <script src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+
   <style>
-    :root {
-      --bg: radial-gradient(circle at top, #0f172a 0%, #020617 60%, #000 100%);
-      --card: rgba(3, 7, 18, 0.4);
-      --stroke: rgba(255,255,255,0.08);
-      --accent: #38bdf8;
-      --danger: #f43f5e;
+    :root{
+      --bg: radial-gradient(circle at top, #0f172a 0%, #020617 55%, #000 100%);
+      --panel: rgba(8,10,16,0.55);
+      --stroke: rgba(255,255,255,0.06);
+      --txt: #e2f3ff;
+      --muted: #96b7d3;
+      --accent: #00d0ff;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: #e2e8f0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 16px;
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--txt);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:12px 12px 50px;
     }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+    header{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
     }
-    .title {
-      font-size: 1.2rem;
-      font-weight: 700;
+    .title-wrap{display:flex;gap:8px;align-items:center;}
+    .title-icon{
+      width:34px;height:34px;border-radius:12px;
+      background:linear-gradient(180deg,#00d0ff,#0070ff);
+      display:flex;align-items:center;justify-content:center;
+      color:#001018;font-weight:700;
     }
-    .badge {
-      background: rgba(148, 163, 184, 0.1);
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      border-radius: 999px;
-      padding: 4px 12px;
-      font-size: 0.78rem;
+    .title-main{font-weight:700;}
+    .title-sub{font-size:11px;color:var(--muted);}
+    .balance{
+      display:flex;gap:10px;align-items:center;
     }
-    .balance-box {
-      background: rgba(15, 23, 42, 0.45);
-      border: 1px solid rgba(148,163,184,0.15);
-      border-radius: 12px;
-      padding: 10px 12px;
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      font-size: 0.82rem;
+    .bal-box{
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.03);
+      border-radius:12px;
+      padding:4px 10px;
+      display:flex;gap:6px;align-items:center;
+      font-size:12px;
     }
-    .balance-label { opacity: 0.7; }
-    .balance-value { font-weight: 700; color: #f97316; }
-    main {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
+    .bal-label{opacity:.7;}
+    .bal-value{font-weight:700;font-variant-numeric:tabular-nums;}
+    .layout{
+      flex:1;
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+      gap:12px;
+      min-height:0;
     }
-    .item {
-      background: var(--card);
-      border: 1px solid var(--stroke);
-      border-radius: 16px;
-      padding: 14px 14px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      backdrop-filter: blur(10px);
+    /* 왼쪽: 광고+상태 */
+    .left-panel{
+      background:rgba(0,0,0,0.15);
+      border:1px solid rgba(255,255,255,0.02);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:0;
     }
-    .item-title {
-      font-weight: 700;
-      font-size: 1rem;
+    .section-title{
+      font-size:12px;
+      opacity:.7;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
     }
-    .item-desc {
-      font-size: 0.78rem;
-      opacity: 0.75;
-      line-height: 1.4;
+    .card{
+      background:rgba(4,6,12,0.35);
+      border:1px solid rgba(255,255,255,0.03);
+      border-radius:12px;
+      padding:7px 10px 8px;
     }
-    .price {
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: #f97316;
-      display: inline-flex;
-      gap: 4px;
-      align-items: center;
+    .big-val{font-size:1.4rem;font-weight:700;}
+    .btn{
+      background:linear-gradient(180deg,#0ea5e9,#6366f1);
+      border:none;
+      padding:6px 10px;
+      border-radius:999px;
+      color:#fff;
+      font-size:12px;
+      font-weight:600;
+      cursor:pointer;
+      display:inline-flex;
+      gap:4px;
+      align-items:center;
     }
-    .buy-btn {
-      margin-top: 6px;
-      border: none;
-      background: linear-gradient(120deg, #0ea5e9, #6366f1);
-      border-radius: 999px;
-      color: #fff;
-      padding: 6px 10px;
-      font-weight: 600;
-      font-size: 0.78rem;
-      cursor: pointer;
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+    /* 오른쪽: 상점 */
+    .shop-panel{
+      background:rgba(0,0,0,0.08);
+      border:1px solid rgba(255,255,255,0.02);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
     }
-    .buy-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .tabs{
+      display:flex;
+      gap:6px;
+      margin-bottom:8px;
     }
-    footer {
-      font-size: 0.7rem;
-      opacity: 0.4;
-      text-align: center;
-      margin-top: auto;
+    .tab-btn{
+      background:rgba(255,255,255,0.01);
+      border:1px solid transparent;
+      border-radius:999px;
+      padding:4px 12px;
+      color:var(--txt);
+      font-size:12px;
+      cursor:pointer;
+    }
+    .tab-btn.active{
+      background:linear-gradient(180deg,rgba(0,208,255,.25),rgba(0,94,191,0));
+      border-color:rgba(0,208,255,0.5);
+    }
+    .items{
+      flex:1;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      overflow-y:auto;
+    }
+    .item{
+      width:calc(33.33% - 8px);
+      min-width:210px;
+      background:radial-gradient(circle at 10% 10%, rgba(255,255,255,0.05), rgba(0,0,0,0));
+      border:1px solid rgba(255,255,255,0.03);
+      border-radius:12px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .item-top{display:flex;gap:8px;}
+    .item-icon{
+      width:34px;height:34px;border-radius:10px;
+      background:rgba(0,208,255,0.12);
+      display:flex;align-items:center;justify-content:center;
+      font-size:18px;
+    }
+    .item-name{font-weight:700;}
+    .item-desc{font-size:12px;color:var(--muted);line-height:1.3;}
+    .price{font-size:11px;display:inline-flex;gap:4px;align-items:center;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.03);border-radius:999px;padding:2px 8px;}
+    .buy-btn{
+      background:linear-gradient(180deg,#00d0ff,#0090ff);
+      border:none;
+      border-radius:999px;
+      padding:6px 10px;
+      color:#001018;
+      font-weight:700;
+      cursor:pointer;
+      font-size:12px;
+      display:inline-flex;
+      gap:4px;align-items:center;
+    }
+    #toast{
+      position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
+      background:rgba(0,0,0,.8);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;
+      padding:6px 12px;
+      display:none;
+      font-size:12px;
+      z-index:9999;
+    }
+    #applixir_anchor{width:0;height:0;overflow:hidden;}
+    @media (max-width:960px){
+      .layout{grid-template-columns:1fr;}
+      .item{width:calc(50% - 8px);}
+    }
+    @media (max-width:640px){
+      .item{width:100%;}
+      header{flex-wrap:wrap;}
+      .balance{width:100%;justify-content:flex-end;}
     }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <div class="title">🛒 SIU 이벤트 상점</div>
-      <div class="badge" id="user-status">로그인 확인 중…</div>
+    <div class="title-wrap">
+      <div class="title-icon">🛒</div>
+      <div>
+        <div class="title-main">SIU 통합 상점</div>
+        <div class="title-sub">Applixir 광고 시청 + 이벤트코인 상점 (의심도 비포함)</div>
+      </div>
     </div>
-    <div class="balance-box">
-      <span class="balance-label">이벤트 코인</span>
-      <span class="balance-value" id="eco-balance">-</span>
+    <div class="balance">
+      <div class="bal-box">
+        <span class="bal-label">이벤트코인</span>
+        <span class="bal-value" id="eco-balance">-</span>
+      </div>
+      <div class="bal-box" id="user-status">로그인 확인 중…</div>
     </div>
   </header>
 
-  <main>
-    <!-- 1. 30분 전체 버프 권한만 기록 -->
-    <article class="item">
-      <div class="item-title">전체 버프 30분</div>
-      <div class="item-desc">
-        게임 데이터에 <code>/shop/pendingBuff</code> 으로만 남깁니다.<br />
-        메인 게임에서 이 값만 읽어서 버프 적용하면 돼.
+  <div class="layout">
+    <!-- 왼쪽: 광고 -->
+    <div class="left-panel">
+      <div class="section-title">
+        <span>📺 리워드 광고</span>
+        <small>3회 +1 / 5회 +3</small>
       </div>
-      <div class="price">200 <span style="opacity:0.6;">이벤트코인</span></div>
-      <button class="buy-btn" data-buy="buff_all_30m">구매</button>
-    </article>
-
-    <!-- 2. 스킨 해제 -->
-    <article class="item">
-      <div class="item-title">우주선 스킨 해제</div>
-      <div class="item-desc">
-        <code>/shop/skins/space</code> = true 로만 남깁니다.<br />
-        메인 게임에서 이 값 있으면 스킨 노출.
+      <div class="card">
+        <div style="font-size:12px;opacity:.6;">광고 누적 시청수</div>
+        <div class="big-val" id="ad-views">-</div>
       </div>
-      <div class="price">300 <span style="opacity:0.6;">이벤트코인</span></div>
-      <button class="buy-btn" data-buy="skin_space">구매</button>
-    </article>
-
-    <!-- 3. 출석권 충전 -->
-    <article class="item">
-      <div class="item-title">출석권 +1</div>
-      <div class="item-desc">
-        <code>/shop/tickets/daily</code> 를 +1만 시킵니다.<br />
-        메인에서 이 숫자만큼 소모하도록만 연결하면 끝.
+      <div class="card">
+        <button id="btn-ad" class="btn" disabled>광고 시청하기</button>
+        <div id="ad-msg" style="font-size:11px;opacity:.6;margin-top:4px;"></div>
       </div>
-      <div class="price">150 <span style="opacity:0.6;">이벤트코인</span></div>
-      <button class="buy-btn" data-buy="ticket_daily">구매</button>
-    </article>
-  </main>
+      <div class="card" style="font-size:11px;opacity:.55;">
+        보상은 <code>/ads/applixir/...</code> 아래에만 기록되고,<br/>
+        <code>/security</code> 나 의심도 경로에는 전혀 안 씁니다.
+      </div>
+    </div>
 
-  <footer>
-    파이어베이스에 직접 쓰는 페이지. 의심도(/security)에는 <b>절대</b> 접근 안 함.
-  </footer>
+    <!-- 오른쪽: 상점 -->
+    <div class="shop-panel">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="featured">⭐ 추천</button>
+        <button class="tab-btn" data-tab="buffs">⚡ 버프</button>
+        <button class="tab-btn" data-tab="tickets">🎟️ 티켓/기타</button>
+      </div>
+      <div class="items" id="items"></div>
+    </div>
+  </div>
+
+  <!-- Applixir가 비디오 주입할 곳 -->
+  <div id="applixir_anchor"></div>
+
+  <div id="toast"></div>
 
   <script type="module">
-    // 🔥 Firebase 불러오기
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import {
-      getDatabase,
-      ref,
-      get,
-      update,
-      runTransaction,
-      push
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    // ===========================================================
+    // ==== 설정 (여기만 네 프로젝트에 맞게 바꾸면 변환 가능) ====
+    // ===========================================================
+    const APPLIXIR_API_KEY = "581358cb-52b3-4c27-a835-44b167debbe4"; // 네가 준 키
 
-    // 메인 게임이랑 같은 설정 써야 같은 RTDB를 만짐
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
       authDomain: "siu-studio.firebaseapp.com",
@@ -184,162 +265,361 @@
       measurementId: "G-1Y090YJDB6"
     };
 
+    // ===========================================================
+    // Firebase 불러오기
+    // ===========================================================
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      update,
+      runTransaction,
+      push
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
     const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    const statusEl = document.getElementById("user-status");
-    const ecoEl    = document.getElementById("eco-balance");
-
-    // 실제로 팔리는 아이템 정의
-    const SHOP_ITEMS = [
-      {
-        id: "buff_all_30m",
-        name: "전체 버프 30분",
-        price: 200,
-        write: async (basePath) => {
-          // 의심도 X, 게임데이터만 참고하도록 별도 위치에 남김
-          await update(ref(db), {
-            [`${basePath}/shop/pendingBuff`]: {
-              type: "all",
-              value: 0.5,
-              durationMs: 30 * 60 * 1000,
-              grantedAt: Date.now(),
-              from: "shop.html"
-            }
-          });
-        }
-      },
-      {
-        id: "skin_space",
-        name: "우주선 스킨",
-        price: 300,
-        write: async (basePath) => {
-          await update(ref(db), {
-            [`${basePath}/shop/skins/space`]: true
-          });
-        }
-      },
-      {
-        id: "ticket_daily",
-        name: "출석권 +1",
-        price: 150,
-        write: async (basePath) => {
-          // 숫자만 +1 하도록 트랜잭션
-          const tRef = ref(db, `${basePath}/shop/tickets/daily`);
-          await runTransaction(tRef, (cur) => {
-            const v = typeof cur === "number" ? cur : 0;
-            return v + 1;
-          });
-        }
-      }
-    ];
+    // DOM 요소
+    const ecoEl    = document.getElementById('eco-balance');
+    const userEl   = document.getElementById('user-status');
+    const adViewsEl= document.getElementById('ad-views');
+    const adBtn    = document.getElementById('btn-ad');
+    const adMsg    = document.getElementById('ad-msg');
+    const itemsEl  = document.getElementById('items');
+    const toastEl  = document.getElementById('toast');
 
     let uid = null;
-    let userBasePath = null;
+    let userBasePath = null; // users/{server}/{id}
 
-    // 현재 이벤트코인 다시 읽어오기
-    async function refreshBalance() {
-      if (!userBasePath) return;
-      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
-      const snap = await get(ecoRef);
-      const val = snap.exists() ? snap.val() : 0;
-      ecoEl.textContent = val;
-      return val;
-    }
-
-    // 구매 처리
-    async function handleBuy(itemId) {
-      if (!uid || !userBasePath) {
-        alert("아직 로그인/경로를 못 찾았어요. 조금 있다가 다시 눌러줘.");
-        return;
-      }
-
-      const item = SHOP_ITEMS.find(i => i.id === itemId);
-      if (!item) return;
-
-      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
-      let purchaseOk = false;
-      let newBalance = 0;
-
-      // 이벤트 코인만 차감
-      await runTransaction(ecoRef, (current) => {
-        const cur = typeof current === "number" ? current : Number(current) || 0;
-        if (cur < item.price) {
-          // 잔액 부족 -> 그대로 반환
-          purchaseOk = false;
-          return cur;
+    // ===========================================================
+    // 상점 아이템 (이벤트코인 전용)
+    // ===========================================================
+    const SHOP_ITEMS = {
+      featured: [
+        { id:'buff_all_30m', icon:'💫', name:'전체 버프 30분', desc:'/shop/pendingBuff 로 내려가고, 메인에서만 실제 적용', priceEvent:3,
+          write: async (basePath) => {
+            await update(ref(db), {
+              [`${basePath}/shop/pendingBuff`]: {
+                type:'all',
+                value:0.3,
+                durationMs:30*60*1000,
+                grantedAt:Date.now(),
+                source:'shop'
+              }
+            });
+          }
+        },
+        { id:'res_pack_500', icon:'🪨', name:'자원 500권한', desc:'/shop/pendingRes 로만 남김', priceEvent:1,
+          write: async (basePath) => {
+            await update(ref(db), {
+              [`${basePath}/shop/pendingRes`]: {
+                amount:500,
+                grantedAt:Date.now(),
+                source:'shop'
+              }
+            });
+          }
         }
-        purchaseOk = true;
-        newBalance = cur - item.price;
-        return newBalance;
+      ],
+      buffs: [
+        { id:'buff_coin_10m', icon:'💰', name:'코인 +50% (10분)', desc:'메인에서만 읽도록 /shop/pendingBuffCoin 에 씀', priceEvent:2,
+          write: async (basePath) => {
+            await update(ref(db), {
+              [`${basePath}/shop/pendingBuffCoin`]: {
+                value:0.5,
+                durationMs:10*60*1000,
+                grantedAt:Date.now(),
+                source:'shop'
+              }
+            });
+          }
+        },
+        { id:'buff_res_10m', icon:'🪐', name:'자원 +80% (10분)', desc:'자원만 올리는 버프', priceEvent:2,
+          write: async (basePath) => {
+            await update(ref(db), {
+              [`${basePath}/shop/pendingBuffRes`]: {
+                value:0.8,
+                durationMs:10*60*1000,
+                grantedAt:Date.now(),
+                source:'shop'
+              }
+            });
+          }
+        }
+      ],
+      tickets: [
+        { id:'ticket_daily', icon:'🎰', name:'출석권 +1', desc:'/shop/tickets/daily 을 +1만 함', priceEvent:1,
+          write: async (basePath) => {
+            const tRef = ref(db, `${basePath}/shop/tickets/daily`);
+            await runTransaction(tRef, (cur) => {
+              const v = typeof cur === 'number' ? cur : 0;
+              return v + 1;
+            });
+          }
+        },
+        { id:'skin_space', icon:'🚀', name:'우주선 스킨 해제', desc:'/shop/skins/space = true', priceEvent:4,
+          write: async (basePath) => {
+            await update(ref(db), {
+              [`${basePath}/shop/skins/space`]: true
+            });
+          }
+        }
+      ]
+    };
+
+    // ===========================================================
+    // 렌더
+    // ===========================================================
+    function renderTab(tab){
+      itemsEl.innerHTML = '';
+      const list = SHOP_ITEMS[tab] || [];
+      list.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'item';
+        el.innerHTML = `
+          <div class="item-top">
+            <div class="item-icon">${item.icon}</div>
+            <div>
+              <div class="item-name">${item.name}</div>
+              <div class="item-desc">${item.desc}</div>
+            </div>
+          </div>
+          <div class="price">🎟️ ${item.priceEvent}</div>
+          <button class="buy-btn" data-id="${item.id}">구매</button>
+        `;
+        const btn = el.querySelector('.buy-btn');
+        btn.addEventListener('click', () => buyItem(tab, item.id));
+        itemsEl.appendChild(el);
       });
-
-      if (!purchaseOk) {
-        alert("이벤트 코인이 부족합니다.");
-        await refreshBalance();
-        return;
-      }
-
-      // 여기서부터는 ‘의심도’랑 관련 없는 위치에만 씀
-      // 구매 로그
-      const logKey = push(ref(db, `${userBasePath}/shop/purchases`)).key;
-      const payload = {
-        itemId: item.id,
-        name: item.name,
-        price: item.price,
-        paidWith: "eventCoins",
-        ts: Date.now(),
-        // 👇 이거 넣어두면 메인에서 볼 때도 "이건 상점에서 산 거" 라고 구분 가능
-        suspicionSafe: true,
-        source: "shop.html"
-      };
-      await update(ref(db), {
-        [`${userBasePath}/shop/purchases/${logKey}`]: payload
-      });
-
-      // 아이템 효과 쓰기 (전부 /shop 밑이라 의심도 트리거 안 됨)
-      await item.write(userBasePath);
-
-      // 잔액 다시 보여주기
-      await refreshBalance();
-      alert("구매 완료!");
     }
 
-    // 버튼 바인딩
-    document.querySelectorAll("[data-buy]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-buy");
-        handleBuy(id).catch((err) => {
-          console.error(err);
-          alert("구매 중 오류가 났어요. 콘솔 확인해봐.");
-        });
+    // 탭 이벤트
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTab(btn.dataset.tab);
       });
     });
 
-    // 로그인 감지
+    // 초기 탭
+    renderTab('featured');
+
+    // ===========================================================
+    // Firebase 로그인 감지
+    // ===========================================================
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        statusEl.textContent = "로그인이 필요합니다.";
-        ecoEl.textContent = "-";
-        uid = null;
-        userBasePath = null;
+        userEl.textContent = "로그인 필요";
+        adBtn.disabled     = true;
         return;
       }
       uid = user.uid;
-      statusEl.textContent = user.email || user.uid;
+      userEl.textContent = user.email || user.uid;
 
-      // 메인 게임이랑 똑같이 userServerMap에서 실제 경로 찾아옴
+      // userServerMap에서 실제 경로 찾기
       const mapSnap = await get(ref(db, `userServerMap/${uid}`));
       if (!mapSnap.exists()) {
-        statusEl.textContent = "userServerMap 없음 (메인에서 한 번 로그인해)";
+        userEl.textContent = "userServerMap 없음(메인 먼저)";
+        adBtn.disabled = true;
         return;
       }
-      const mapping = mapSnap.val() || {};
-      userBasePath = `users/${mapping.server}/${mapping.id}`;
+      const m = mapSnap.val();
+      userBasePath = `users/${m.server}/${m.id}`;
 
-      await refreshBalance();
+      await Promise.all([
+        refreshEventCoins(),
+        refreshAdViews()
+      ]);
+
+      adBtn.disabled = false;
     });
+
+    async function refreshEventCoins(){
+      if (!userBasePath) return;
+      const snap = await get(ref(db, `${userBasePath}/gameData/eventCoins`));
+      const val = snap.exists() ? snap.val() : 0;
+      ecoEl.textContent = Number(val).toLocaleString('ko-KR');
+      return Number(val) || 0;
+    }
+
+    async function refreshAdViews(){
+      if (!userBasePath) return;
+      const snap = await get(ref(db, `${userBasePath}/ads/applixir/viewCount`));
+      const val = snap.exists() ? snap.val() : 0;
+      adViewsEl.textContent = val;
+      return Number(val) || 0;
+    }
+
+    // ===========================================================
+    // 상점 구매 (이벤트코인만)
+    // ===========================================================
+    async function buyItem(tab, itemId){
+      if (!userBasePath) {
+        showToast("로그인/경로 확인 안 됨");
+        return;
+      }
+      const item = (SHOP_ITEMS[tab] || []).find(i => i.id === itemId);
+      if (!item) return;
+
+      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
+      let ok = false;
+      let newBal = 0;
+      await runTransaction(ecoRef, (cur) => {
+        const v = typeof cur === 'number' ? cur : Number(cur) || 0;
+        if (v < item.priceEvent) {
+          ok = false;
+          return v;
+        }
+        ok = true;
+        newBal = v - item.priceEvent;
+        return newBal;
+      });
+
+      if (!ok) {
+        showToast("이벤트코인이 부족합니다.");
+        await refreshEventCoins();
+        return;
+      }
+
+      // 구매 로그 (/shop/purchases) - 의심도 X
+      const logKey = push(ref(db, `${userBasePath}/shop/purchases`)).key;
+      await update(ref(db), {
+        [`${userBasePath}/shop/purchases/${logKey}`]: {
+          itemId: item.id,
+          name: item.name,
+          priceEvent: item.priceEvent,
+          ts: Date.now(),
+          source: "shop",
+          suspicionSafe: true
+        }
+      });
+
+      // 아이템 효과 기록 (/shop/... 밑만)
+      await item.write(userBasePath);
+
+      // 잔액 다시 표시
+      ecoEl.textContent = newBal.toLocaleString('ko-KR');
+      showToast("구매 완료!");
+    }
+
+    // ===========================================================
+    // 광고 보기 (Applixir)
+    // ===========================================================
+    adBtn.addEventListener('click', () => {
+      if (!userBasePath) {
+        showToast("로그인 후 이용하세요.");
+        return;
+      }
+      try {
+        initializeAndOpenPlayer({
+          apiKey: APPLIXIR_API_KEY,
+          injectionElementId: "applixir_anchor",
+          adStatusCallbackFn: onAdStatus,
+          adErrorCallbackFn: onAdError
+        });
+      } catch (e) {
+        console.error(e);
+        showToast("광고 실행 중 오류");
+      }
+    });
+
+    function onAdStatus(status){
+      console.log("Applixir:", status);
+      if (!status || !status.type) return;
+
+      // 광고 없음
+      if (status.type === 'allAdsCompleted' && status.noads === true) {
+        adMsg.textContent = "광고 없음 (Applixir 응답)";
+        showToast("현재 노출할 광고가 없습니다.");
+        return;
+      }
+
+      // 광고 완주
+      if (status.type === 'complete' || status.type === 'allAdsCompleted') {
+        adMsg.textContent = "광고 시청 완료, 보상 처리 중…";
+        giveAdReward().catch(err => {
+          console.error(err);
+          showToast("보상 처리 오류");
+        });
+      }
+    }
+
+    function onAdError(err){
+      console.warn("Applixir Error:", err);
+      showToast("광고 불러오기 실패");
+      adMsg.textContent = "광고 불러오기 실패";
+    }
+
+    // 광고 시청 후: viewCount +1 → 3배수 +1, 5배수 +3
+    async function giveAdReward(){
+      if (!userBasePath) return;
+
+      const viewRef = ref(db, `${userBasePath}/ads/applixir/viewCount`);
+      let finalCount = 0;
+      await runTransaction(viewRef, (cur) => {
+        const v = typeof cur === 'number' ? cur : Number(cur) || 0;
+        finalCount = v + 1;
+        return finalCount;
+      });
+
+      adViewsEl.textContent = finalCount;
+
+      let reward = 0;
+      if (finalCount % 5 === 0) {
+        reward = 3;
+      } else if (finalCount % 3 === 0) {
+        reward = 1;
+      }
+
+      if (reward === 0) {
+        adMsg.textContent = `누적 ${finalCount}회 (보상 없음)`;
+        return;
+      }
+
+      // eventCoins + reward
+      const ecoRef = ref(db, `${userBasePath}/gameData/eventCoins`);
+      let newBal = 0;
+      await runTransaction(ecoRef, (cur) => {
+        const v = typeof cur === 'number' ? cur : Number(cur) || 0;
+        newBal = v + reward;
+        return newBal;
+      });
+
+      // 보상 로그 (/ads/... 밑)
+      const rKey = push(ref(db, `${userBasePath}/ads/applixir/rewards`)).key;
+      const ups = {};
+      ups[`${userBasePath}/ads/applixir/rewards/${rKey}`] = {
+        ts: Date.now(),
+        viewCount: finalCount,
+        reward,
+        currency: 'eventCoins',
+        source: 'applixir',
+        suspicionSafe: true
+      };
+      await update(ref(db), ups);
+
+      ecoEl.textContent = newBal.toLocaleString('ko-KR');
+      adMsg.textContent = `누적 ${finalCount}회 → 이벤트코인 +${reward}`;
+      showToast(`이벤트코인 ${reward}개 지급`);
+    }
+
+    // ===========================================================
+    // 토스트
+    // ===========================================================
+    let toastTimer = null;
+    function showToast(msg){
+      toastEl.textContent = msg;
+      toastEl.style.display = 'block';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.style.display = 'none';
+      }, 2500);
+    }
   </script>
 </body>
 </html>
