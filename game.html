@@ -660,6 +660,25 @@
     </div>
   </div>
 
+  <!-- ✅ 상점 오버레이 (iframe으로 여는 거) -->
+<div id="shop-overlay"
+     style="position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+            display:none; z-index:5000; align-items:center; justify-content:center;">
+  <div style="width:min(920px, 96vw); height:min(580px, 92vh);
+              background:rgba(5,7,11,0.75); border:1px solid rgba(255,255,255,0.12);
+              border-radius:14px; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="display:flex; justify-content:space-between; align-items:center;
+                padding:8px 12px; background:rgba(0,0,0,0.25);
+                border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div style="font-weight:700; color:#e6f7ff;">🛒 상점</div>
+      <button id="shop-close"
+              style="background:transparent; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+    </div>
+    <iframe id="shop-frame" src="" style="flex:1; border:none; width:100%; height:100%; background:#06080d;"></iframe>
+  </div>
+</div>
+
+
   <!-- 사운드 -->
   <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
   <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
@@ -809,6 +828,24 @@
       persistBuffs();
       renderBuffStatus();
     }
+
+    
+// ✅ 상점 오버레이 닫기 (4번)
+const shopOverlay = document.getElementById('shop-overlay');
+const shopClose   = document.getElementById('shop-close');
+
+if (shopOverlay && shopClose) {
+  shopClose.addEventListener('click', () => {
+    shopOverlay.style.display = 'none';
+  });
+
+  // (선택) 오버레이 바깥 클릭 시 닫기
+  shopOverlay.addEventListener('click', (e) => {
+    if (e.target === shopOverlay) {
+      shopOverlay.style.display = 'none';
+    }
+  });
+}
 
     // 👉 여기서부터: 버튼/오버레이용 버프 렌더
     function renderBuffStatus(){
