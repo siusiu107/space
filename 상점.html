@@ -3,18 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>이용이 잠시 정지되었습니다</title>
+  <title>이용이 잠시 중단되었습니다</title>
   <meta name="robots" content="noindex,nofollow" />
   <style>
     :root {
-      --bg: radial-gradient(circle at top, #10192c 0%, #070b14 50%, #020309 100%);
-      --card: rgba(6, 10, 18, 0.65);
+      --bg: radial-gradient(circle at top, #0d1320 0%, #060910 50%, #020309 100%);
+      --card: rgba(8, 10, 14, 0.45);
       --stroke: rgba(255,255,255,0.04);
       --accent: #ff5f7a;
-      --accent-soft: rgba(255, 95, 122, 0.12);
-      --text: #f4f6ff;
-      --muted: #9aa2b3;
-      --warn: #ffbc5f;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.6);
     }
     * { box-sizing: border-box; }
     body {
@@ -24,216 +22,119 @@
       align-items: center;
       justify-content: center;
       background: var(--bg);
-      color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      color: var(--text);
     }
-    .panel {
-      width: min(460px, 96vw);
-      background: radial-gradient(circle at 10% 0%, rgba(255,95,122,0.15), rgba(6,12,20,0.1)) border-box;
+    .box {
+      width: min(420px, 96vw);
+      background: rgba(4, 5, 8, 0.35);
       border: 1px solid rgba(255,255,255,0.03);
-      border-radius: 20px;
       backdrop-filter: blur(14px);
+      border-radius: 18px;
+      padding: 34px 26px 26px;
       text-align: center;
-      padding: 42px 28px 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 22px 55px rgba(0,0,0,0.35);
     }
-    .badge {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      background: rgba(255, 87, 120, 0.1);
-      border: 1px solid rgba(255, 196, 211, 0.25);
-      border-radius: 999px;
-      padding: 4px 14px 4px 6px;
-      margin-bottom: 16px;
-      font-size: 0.7rem;
-      color: #ffe7ee;
-    }
-    .badge-icon {
-      width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      background: radial-gradient(circle,#ff5f7a 0%,#ffbc5f 65%);
+    .icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: radial-gradient(circle, #ff5f7a 0%, #b92741 75%);
       display: grid;
       place-items: center;
-      font-weight: 700;
-      font-size: 0.65rem;
-      color: #1a0a0d;
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 1; }
-      100% { transform: scale(1.2); opacity: 0.3; }
+      margin: 0 auto 14px;
+      font-size: 28px;
+      line-height: 1;
     }
     h1 {
-      font-size: clamp(1.45rem, 3.4vw, 1.8rem);
+      font-size: 1.25rem;
       margin: 0 0 10px;
-      letter-spacing: -0.35px;
+      letter-spacing: -0.2px;
     }
-    p.sub {
-      margin: 0 auto 20px;
-      max-width: 360px;
-      color: var(--muted);
-      line-height: 1.6;
+    p.desc {
+      margin: 0 0 18px;
       font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--muted);
     }
-    .alert-box {
-      background: rgba(8, 8, 11, 0.25);
-      border: 1px solid rgba(255,80,110,0.28);
-      border-radius: 14px;
-      padding: 14px 14px 10px;
-      text-align: left;
+    .contact {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.45);
       margin-bottom: 16px;
-      font-size: 0.78rem;
     }
-    .alert-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-    .alert-label {
-      color: rgba(244, 246, 255, 0.55);
-    }
-    .alert-value {
-      font-weight: 600;
+    .contact strong {
       color: #fff;
-    }
-    .progress {
-      width: 100%;
-      height: 6px;
-      background: rgba(255,255,255,0.02);
-      border-radius: 999px;
-      overflow: hidden;
-      margin-top: 12px;
-    }
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #ff5f7a, #ffe39b);
-      border-radius: 999px;
-      animation: moving 2.4s ease-in-out infinite;
-    }
-    @keyframes moving {
-      0% { width: 18%; }
-      40% { width: 85%; }
-      100% { width: 28%; }
-    }
-    .foot {
-      font-size: 0.7rem;
-      color: rgba(244,246,255,0.38);
-      margin-top: 20px;
-      line-height: 1.4;
+      font-weight: 500;
     }
     .btn-row {
-      margin-top: 10px;
       display: flex;
       justify-content: center;
       gap: 10px;
       flex-wrap: wrap;
     }
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,186,186,0.38);
-      background: rgba(56, 3, 13, 0.12);
-      color: #fff;
-      font-size: 0.75rem;
+      border: none;
+      outline: none;
+      padding: 7px 16px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
       cursor: pointer;
-      text-decoration: none;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .btn-primary {
+      background: rgba(255,95,122,1);
+      color: #091017;
+      font-weight: 600;
     }
     .btn-secondary {
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(0,0,0,0.06);
+      background: rgba(0,0,0,0.08);
+      border: 1px solid rgba(255,255,255,0.05);
+      color: #fff;
     }
-    .tag {
-      background: rgba(255, 188, 95, 0.15);
-      border: 1px solid rgba(255, 188, 95, 0.25);
-      color: #ffe6c7;
-      padding: 1px 10px 2px;
-      border-radius: 999px;
-      font-size: 0.63rem;
-      letter-spacing: 0;
-    }
-    .orb {
+    .blur-ball {
       position: absolute;
-      top: -80px;
-      right: -70px;
-      width: 170px;
-      height: 170px;
-      background: radial-gradient(circle,#ff5f7a 0%, rgba(255,95,122,0) 68%);
-      opacity: 0.25;
+      inset: -90px auto auto -40px;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(255,95,122,0.35) 0%, rgba(255,95,122,0) 80%);
       pointer-events: none;
     }
-    @media (max-width: 460px) {
-      .panel { padding: 34px 18px 26px; }
-      .alert-row { flex-wrap: wrap; }
+    @media (max-width: 420px) {
+      .box { padding: 30px 18px 22px; }
       .btn-row { flex-direction: column; }
-      .orb { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="panel">
-    <div class="orb"></div>
-
-    <div class="badge">
-      <div class="badge-icon">!</div>
-      버그 발견으로 이용이 잠시 정지되었습니다
-    </div>
-    <h1>일시적으로 차단된 상태입니다</h1>
-    <p class="sub">
-      서비스 안정성을 위해 문제가 되는 기능을 잠깐 멈춰 뒀어요.<br />
-      버그가 수정되는 대로 다시 열어드릴게요. 조금만 기다려 주세요 🙏
+  <div class="box">
+    <div class="blur-ball"></div>
+    <div class="icon">!</div>
+    <h1>버그 발견으로 잠시 이용이 중단되었습니다</h1>
+    <p class="desc">
+      현재 문제를 수정하는 중입니다.<br />
+      잠시 후 다시 접속해 주세요.
     </p>
-
-    <div class="alert-box">
-      <div class="alert-row">
-        <span class="alert-label">현재 상태</span>
-        <span class="alert-value" id="st">점검 중</span>
-      </div>
-      <div class="alert-row">
-        <span class="alert-label">사유</span>
-        <span class="alert-value">예상치 못한 동작(버그) 발견</span>
-      </div>
-      <div class="alert-row">
-        <span class="alert-label">재개 예정</span>
-        <span class="alert-value"><span class="tag">관리자 오픈 시 자동 복구</span></span>
-      </div>
-      <div class="progress">
-        <div class="progress-bar"></div>
-      </div>
-    </div>
-
-    <div class="foot">
-      계속 이 화면만 보인다면 관리자에게 “버그 정리 완료 여부”를 문의해 주세요.<br />
-      (문의: <strong>support@siustudio.kro.kr</strong>)
-      <div class="btn-row">
-        <button class="btn" id="retryBtn">🔄 다시 시도</button>
-        <button class="btn btn-secondary" id="homeBtn">🏠 홈으로</button>
-      </div>
+    <p class="contact">
+      문의: <strong>support@siustudio.kro.kr</strong>
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="retry">다시 시도</button>
+      <button class="btn btn-secondary" id="home">홈으로</button>
     </div>
   </div>
 
   <script>
-    document.getElementById('retryBtn')?.addEventListener('click', function () {
+    document.getElementById('retry')?.addEventListener('click', () => {
       location.reload();
     });
-
-    document.getElementById('homeBtn')?.addEventListener('click', function () {
-      // 여기 서비스 루트 맞게 바꾸면 됨
+    document.getElementById('home')?.addEventListener('click', () => {
+      // 필요한 경로로 바꿔
       location.href = '/';
     });
-
-    (function fakeStatus(){
-      const el = document.getElementById('st');
-      if (!el) return;
-      el.textContent = '패치 적용 중';
-    })();
   </script>
 </body>
 </html>
