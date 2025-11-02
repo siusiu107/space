@@ -2827,15 +2827,15 @@ function renderBuffStatus(){
     // ======================
   // 시작
   // ======================
-  bindUI();
-  loadBuffs();
-  renderBuffStatus();
+ bindUI();
+loadBuffs();
+renderBuffStatus();
 
-  // ✅ 상점 오버레이 닫기 (4번)
-  const shopOverlay = document.getElementById('shop-overlay');
-  const shopClose   = document.getElementById('shop-close');
+// ✅ 상점 오버레이 닫기 (4번)
+const shopOverlay = document.getElementById('shop-overlay');
+const shopClose   = document.getElementById('shop-close');
 
-  if (shopOverlay && shopClose) {
+if (shopOverlay && shopClose) {
   shopClose.addEventListener('click', () => {
     shopOverlay.style.display = 'none';
   });
@@ -2847,7 +2847,6 @@ function renderBuffStatus(){
     }
   });
 }
-
   </script>
 </body>
 </html>
