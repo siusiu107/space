@@ -780,100 +780,82 @@
       toastTimer = setTimeout(hideToast, ttlMs);
     }
 
-    /* ======================
-       버프 저장/적용/표시
-       ====================== */
-    function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
-    function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
-    function persistBuffs(){
-      ensureFx();
-      try {
-        const now = Date.now();
-        const toSave = window.fx.buffs.filter(b=>b && b.until>now);
-        localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
-      } catch {}
-    }
-    function loadBuffs(){
-      ensureFx();
-      try {
-        const raw = localStorage.getItem(buffStorageKey());
-        const arr = raw ? JSON.parse(raw) : [];
-        const now = Date.now();
-        window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
-      } catch { window.fx.buffs = []; }
-    }
-    function pruneExpiredBuffs(){
-      ensureFx();
-      const before = window.fx.buffs.length;
-      const now = Date.now();
-      window.fx.buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
-      if (window.fx.buffs.length !== before) persistBuffs();
-    }
-    function activeBuffFactor(kind){
-      ensureFx();
-      const now = Date.now();
-      let factor = 1;
-      (window.fx.buffs||[]).forEach(b=>{
-        if(!b || now>=b.until) return;
-        if (b.type==='all') factor *= (1 + b.value);
-        else if (kind==='res'  && b.type==='res')  factor *= (1 + b.value);
-        else if (kind==='coin' && b.type==='coin') factor *= (1 + b.value);
-      });
-      return factor;
-    }
-    function addTempBuff(type, value, dur){
-      ensureFx();
-      const now=Date.now();
-      window.fx.buffs.push({ type, value, until: now + dur });
-      persistBuffs();
-      renderBuffStatus();
-    }
-
-    
-// ✅ 상점 오버레이 닫기 (4번)
-const shopOverlay = document.getElementById('shop-overlay');
-const shopClose   = document.getElementById('shop-close');
-
-if (shopOverlay && shopClose) {
-  shopClose.addEventListener('click', () => {
-    shopOverlay.style.display = 'none';
+/* ======================
+   버프 저장/적용/표시
+   ====================== */
+function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
+function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
+function persistBuffs(){
+  ensureFx();
+  try {
+    const now = Date.now();
+    const toSave = window.fx.buffs.filter(b=>b && b.until>now);
+    localStorage.setItem(buffStorageKey(), JSON.stringify(toSave));
+  } catch {}
+}
+function loadBuffs(){
+  ensureFx();
+  try {
+    const raw = localStorage.getItem(buffStorageKey());
+    const arr = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    window.fx.buffs = Array.isArray(arr) ? arr.filter(b=>b && b.until>now) : [];
+  } catch { window.fx.buffs = []; }
+}
+function pruneExpiredBuffs(){
+  ensureFx();
+  const before = window.fx.buffs.length;
+  const now = Date.now();
+  window.fx.buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
+  if (window.fx.buffs.length !== before) persistBuffs();
+}
+function activeBuffFactor(kind){
+  ensureFx();
+  const now = Date.now();
+  let factor = 1;
+  (window.fx.buffs||[]).forEach(b=>{
+    if(!b || now>=b.until) return;
+    if (b.type==='all') factor *= (1 + b.value);
+    else if (kind==='res'  && b.type==='res')  factor *= (1 + b.value);
+    else if (kind==='coin' && b.type==='coin') factor *= (1 + b.value);
   });
-
-  // (선택) 오버레이 바깥 클릭 시 닫기
-  shopOverlay.addEventListener('click', (e) => {
-    if (e.target === shopOverlay) {
-      shopOverlay.style.display = 'none';
-    }
-  });
+  return factor;
+}
+function addTempBuff(type, value, dur){
+  ensureFx();
+  const now=Date.now();
+  window.fx.buffs.push({ type, value, until: now + dur });
+  persistBuffs();
+  renderBuffStatus();
 }
 
-    // 👉 여기서부터: 버튼/오버레이용 버프 렌더
-    function renderBuffStatus(){
-      const btn = document.getElementById('buff-btn');
-      const listEl = document.getElementById('buff-list');
-      pruneExpiredBuffs();
-      const now = Date.now();
-      const buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
-      const count = buffs.length;
-      if (btn) {
-        btn.textContent = count > 0 ? `버프(${count})` : '버프(0)';
-      }
-      if (listEl) {
-        if (count === 0) {
-          listEl.innerHTML = '적용 중인 버프가 없습니다.';
-        } else {
-          const names = { all:'전체', coin:'코인', res:'자원' };
-          listEl.innerHTML = buffs.map(b=>{
-            const leftMs = b.until - now;
-            const m = Math.max(0, Math.floor(leftMs/60000));
-            const s = Math.max(0, Math.floor((leftMs%60000)/1000));
-            const mult = 1 + b.value;
-            const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
-            return `<div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>`;
-          }).join('');
-        }
-      }
+// 👉 여기서부터: 버튼/오버레이용 버프 렌더
+function renderBuffStatus(){
+  const btn = document.getElementById('buff-btn');
+  const listEl = document.getElementById('buff-list');
+  pruneExpiredBuffs();
+  const now = Date.now();
+  const buffs = (window.fx.buffs||[]).filter(b=>b && b.until>now);
+  const count = buffs.length;
+  if (btn) {
+    btn.textContent = count > 0 ? `버프(${count})` : '버프(0)';
+  }
+  if (listEl) {
+    if (count === 0) {
+      listEl.innerHTML = '적용 중인 버프가 없습니다.';
+    } else {
+      const names = { all:'전체', coin:'코인', res:'자원' };
+      listEl.innerHTML = buffs.map(b=>{
+        const leftMs = b.until - now;
+        const m = Math.max(0, Math.floor(leftMs/60000));
+        const s = Math.max(0, Math.floor((leftMs%60000)/1000));
+        const mult = 1 + b.value;
+        const multText = (Math.abs(mult - Math.round(mult)) < 1e-9) ? `x${Math.round(mult)}` : `x${(Math.round(mult*10)/10)}`;
+        return `<div class="buff-item"><span>${names[b.type]||'버프'} ${multText}</span><span>${m}:${String(s).padStart(2,'0')}</span></div>`;
+      }).join('');
     }
+  }
+}
 
     /* ========= 숫자 한국식 단위 ========= */
     function formatKR(num, decimalsForUnits = 2) {
@@ -2842,6 +2824,30 @@ if (shopOverlay && shopClose) {
       ov      && ov.addEventListener('click', (e) => { if (e.target === ov) closePolicy(); });
       window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePolicy(); });
     })();
+    // ======================
+  // 시작
+  // ======================
+  bindUI();
+  loadBuffs();
+  renderBuffStatus();
+
+  // ✅ 상점 오버레이 닫기 (4번)
+  const shopOverlay = document.getElementById('shop-overlay');
+  const shopClose   = document.getElementById('shop-close');
+
+  if (shopOverlay && shopClose) {
+  shopClose.addEventListener('click', () => {
+    shopOverlay.style.display = 'none';
+  });
+
+  // (선택) 오버레이 바깥 클릭 시 닫기
+  shopOverlay.addEventListener('click', (e) => {
+    if (e.target === shopOverlay) {
+      shopOverlay.style.display = 'none';
+    }
+  });
+}
+
   </script>
 </body>
 </html>
