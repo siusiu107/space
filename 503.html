@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>503 • 일시적으로 이용이 중단되었습니다</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    display:flex;align-items:center;justify-content:center;
+    background:#fafafa;font-family:'Raleway',sans-serif;color:#333;
+    padding:1rem;
+  }
+  #blocked {
+    width:100%;max-width:420px;padding:2rem;border-radius:10px;
+    background:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.08);
+    text-align:center;position:relative;overflow:hidden;
+    transition:opacity .12s ease, transform .12s ease;
+  }
+  .code-chip{
+    position:absolute;top:14px;right:14px;
+    background:rgba(255,95,122,.08);
+    border:1px solid rgba(255,95,122,.28);
+    border-radius:999px;
+    padding:3px 10px 4px;
+    font-size:.7rem;
+    display:flex;gap:5px;align-items:center;
+    color:#c01b3e;
+  }
+  .code-dot{width:6px;height:6px;border-radius:999px;background:#ff5f7a}
+  .icon{
+    font-size:4.4rem;margin-bottom:0.4rem;display:inline-block;
+    animation:shake 1.6s infinite ease-in-out;
+  }
+  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(3deg)}75%{transform:rotate(-3deg)}}
+  h1{
+    font-family:'Fredoka One',cursive;
+    font-size:3.9rem;
+    color:#ff5f7a;
+    margin-bottom:0.2rem;
+    text-shadow:2px 2px 8px rgba(255,95,122,0.05);
+  }
+  h2{font-size:1.4rem;font-weight:600;margin-bottom:0.6rem}
+  p{font-size:1rem;line-height:1.6;margin-bottom:1.2rem;color:#555}
+  .badge{
+    display:inline-block;
+    background:rgba(255,95,122,.08);
+    border:1px solid rgba(255,95,122,.3);
+    color:#c01b3e;
+    font-size:.7rem;
+    border-radius:999px;
+    padding:3px 12px 4px;
+    margin-bottom:.75rem;
+  }
+  .btn-main{
+    display:inline-block;
+    padding:.7rem 1.3rem;
+    background:#ff5f7a;
+    color:#fff;
+    border-radius:6px;
+    text-decoration:none;
+    font-weight:600;
+    transition:transform .12s,background .12s;
+  }
+  .btn-main:hover{transform:translateY(-3px);background:#d32a4a}
+  .loader {
+    margin: 14px auto 8px; width:40px; height:40px; border-radius:50%;
+    border:5px solid rgba(255,95,122,0.16); border-top-color:#ff5f7a;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin {to{transform:rotate(360deg)}}
+  .hint{font-size:0.9rem;color:#777;margin-top:4px}
+  .contact{font-size:0.8rem;color:#888;margin-top:18px}
+  .contact strong{color:#444}
+  .link-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+  .btn-light{
+    display:inline-block;padding:.55rem 1.1rem;
+    background:#f1f3f5;border-radius:6px;font-size:.83rem;
+    text-decoration:none;color:#333;
+  }
+  @media (max-width:430px){
+    h1{font-size:3.4rem}
+    #blocked{padding:1.6rem 1.2rem 1.4rem}
+  }
+</style>
+</head>
+<body>
+  <div id="blocked" role="main" aria-live="polite">
+    <div class="code-chip"><span class="code-dot"></span>503 Service Unavailable</div>
+    <div class="icon" aria-hidden="true">🛠️</div>
+    <div class="badge">버그 발견으로 잠시 이용이 정지되었습니다</div>
+    <h1>503</h1>
+    <h2>서비스를 잠깐 멈춰뒀어요</h2>
+    <p>
+      현재 기능 점검 및 오류 수정을 진행 중입니다.<br>
+      잠시 후 다시 접속해 주세요.
+    </p>
+
+    <div id="state-area">
+      <div class="loader" id="loader" title="로딩중" aria-hidden="true"></div>
+      <div class="hint" id="hint">관리자가 열어두면 자동으로 이용이 가능합니다.</div>
+    </div>
+
+    <div class="link-row" style="margin-top:18px;">
+      <a class="btn-main" id="retry-btn" href="javascript:void 0;">다시 시도</a>
+      <a class="btn-light" id="home-btn" href="http://xn--989a202a4ogwtc69p.siustudio.kro.kr/">홈으로</a>
+    </div>
+
+    <p class="contact">
+      문의: <strong>support@siustudio.kro.kr</strong>
+    </p>
+  </div>
+
+<script>
+(function(){
+  // 로더는 한번만 보여주고 바로 메시지로 전환
+  const loader = document.getElementById('loader');
+  const hint = document.getElementById('hint');
+  if (loader) loader.style.display = 'none';
+  if (hint) hint.textContent = '현재 점검 중입니다. 잠시 후 다시 시도해 주세요.';
+  
+  // 다시 시도 버튼 → 새로고침
+  document.getElementById('retry-btn')?.addEventListener('click', function(){
+    location.reload();
+  });
+
+  // 홈 버튼은 위에 href 있지만 JS로도 보강
+  document.getElementById('home-btn')?.addEventListener('click', function(e){
+    // 필요하면 여기서 '/main' 등으로 교체
+    // e.preventDefault();
+    // location.href = '/main';
+  });
+})();
+</script>
+</body>
+</html>
