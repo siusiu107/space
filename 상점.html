@@ -1,138 +1,221 @@
+
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>503 • 일시적으로 이용이 중단되었습니다</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    display:flex;align-items:center;justify-content:center;
-    background:#fafafa;font-family:'Raleway',sans-serif;color:#333;
-    padding:1rem;
-  }
-  #blocked {
-    width:100%;max-width:420px;padding:2rem;border-radius:10px;
-    background:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.08);
-    text-align:center;position:relative;overflow:hidden;
-    transition:opacity .12s ease, transform .12s ease;
-  }
-  .code-chip{
-    position:absolute;top:14px;right:14px;
-    background:rgba(255,95,122,.08);
-    border:1px solid rgba(255,95,122,.28);
-    border-radius:999px;
-    padding:3px 10px 4px;
-    font-size:.7rem;
-    display:flex;gap:5px;align-items:center;
-    color:#c01b3e;
-  }
-  .code-dot{width:6px;height:6px;border-radius:999px;background:#ff5f7a}
-  .icon{
-    font-size:4.4rem;margin-bottom:0.4rem;display:inline-block;
-    animation:shake 1.6s infinite ease-in-out;
-  }
-  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(3deg)}75%{transform:rotate(-3deg)}}
-  h1{
-    font-family:'Fredoka One',cursive;
-    font-size:3.9rem;
-    color:#ff5f7a;
-    margin-bottom:0.2rem;
-    text-shadow:2px 2px 8px rgba(255,95,122,0.05);
-  }
-  h2{font-size:1.4rem;font-weight:600;margin-bottom:0.6rem}
-  p{font-size:1rem;line-height:1.6;margin-bottom:1.2rem;color:#555}
-  .badge{
-    display:inline-block;
-    background:rgba(255,95,122,.08);
-    border:1px solid rgba(255,95,122,.3);
-    color:#c01b3e;
-    font-size:.7rem;
-    border-radius:999px;
-    padding:3px 12px 4px;
-    margin-bottom:.75rem;
-  }
-  .btn-main{
-    display:inline-block;
-    padding:.7rem 1.3rem;
-    background:#ff5f7a;
-    color:#fff;
-    border-radius:6px;
-    text-decoration:none;
-    font-weight:600;
-    transition:transform .12s,background .12s;
-  }
-  .btn-main:hover{transform:translateY(-3px);background:#d32a4a}
-  .loader {
-    margin: 14px auto 8px; width:40px; height:40px; border-radius:50%;
-    border:5px solid rgba(255,95,122,0.16); border-top-color:#ff5f7a;
-    animation: spin .6s linear infinite;
-  }
-  @keyframes spin {to{transform:rotate(360deg)}}
-  .hint{font-size:0.9rem;color:#777;margin-top:4px}
-  .contact{font-size:0.8rem;color:#888;margin-top:18px}
-  .contact strong{color:#444}
-  .link-row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
-  .btn-light{
-    display:inline-block;padding:.55rem 1.1rem;
-    background:#f1f3f5;border-radius:6px;font-size:.83rem;
-    text-decoration:none;color:#333;
-  }
-  @media (max-width:430px){
-    h1{font-size:3.4rem}
-    #blocked{padding:1.6rem 1.2rem 1.4rem}
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>이벤트코인 보상</title>
+  <style>
+    :root {
+      --bg: #0b1220; --panel:#111a2c; --muted:#a9b7d6; --text:#e7f1ff; --accent:#5aa8ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; min-height:100dvh; display:flex; align-items:center; justify-content:center;
+      background: radial-gradient(900px 480px at 15% -10%, #182544, transparent 60%),
+                  radial-gradient(800px 520px at 110% 110%, #16253e, transparent 60%),
+                  var(--bg);
+      color:var(--text); font-family: Inter, system-ui, Segoe UI, Apple SD Gothic Neo, Malgun Gothic, Arial, sans-serif;
+      padding: 24px;
+    }
+    .box {
+      width:100%; max-width:560px; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    h1 { margin:0 0 8px; font-size:20px; letter-spacing:.2px; }
+    .sub { color:var(--muted); font-size:13px; margin-bottom:10px; }
+    .row { display:flex; align-items:center; justify-content:space-between; margin:10px 0; gap:10px; }
+    .pill { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); padding:8px 12px; border-radius:999px; font-weight:700; }
+    .btn { cursor:pointer; border:none; background:var(--accent); color:#091425; font-weight:800; padding:10px 14px; border-radius:12px; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .mono { font-family: ui-monospace, Consolas, Monaco, monospace; }
+    .log { margin-top:12px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; max-height:160px; overflow:auto; font-size:12px; color:#cfe2ff; }
+    .prog { width:100%; height:8px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; border:1px solid rgba(255,255,255,.12) }
+    .prog > i { display:block; height:100%; width:0%; background:var(--accent); }
+  </style>
 </head>
 <body>
-  <div id="blocked" role="main" aria-live="polite">
-    <div class="code-chip"><span class="code-dot"></span>503 Service Unavailable</div>
-    <div class="icon" aria-hidden="true">🛠️</div>
-    <div class="badge">버그 발견으로 잠시 이용이 정지되었습니다</div>
-    <h1>503</h1>
-    <h2>서비스를 잠깐 멈춰뒀어요</h2>
-    <p>
-      현재 기능 점검 및 오류 수정을 진행 중입니다.<br>
-      잠시 후 다시 접속해 주세요.
-    </p>
+  <div class="box">
+    <h1>이벤트코인 보상</h1>
+    <div class="sub">광고 3회 <b>완료</b> 시 <b>+2 EC</b> • 데이터는 게임 저장소에 그대로 기록돼요</div>
 
-    <div id="state-area">
-      <div class="loader" id="loader" title="로딩중" aria-hidden="true"></div>
-      <div class="hint" id="hint">관리자가 열어두면 자동으로 이용이 가능합니다.</div>
+    <div class="row">
+      <div class="pill">보유 EC: <span id="ec" class="mono" style="margin-left:6px">—</span></div>
+      <button id="btn" class="btn">광고 보기</button>
     </div>
 
-    <div class="link-row" style="margin-top:18px;">
-      <a class="btn-main" id="retry-btn" href="javascript:void 0;">다시 시도</a>
-      <a class="btn-light" id="home-btn" href="http://xn--989a202a4ogwtc69p.siustudio.kro.kr/">홈으로</a>
+    <div class="row">
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+          <div>진행도</div><div><span id="prog-text">0</span> / 3</div>
+        </div>
+        <div class="prog"><i id="prog-bar"></i></div>
+      </div>
     </div>
 
-    <p class="contact">
-      문의: <strong>support@siustudio.kro.kr</strong>
-    </p>
+    <div id="log" class="log mono" aria-live="polite"></div>
   </div>
 
-<script>
-(function(){
-  // 로더는 한번만 보여주고 바로 메시지로 전환
-  const loader = document.getElementById('loader');
-  const hint = document.getElementById('hint');
-  if (loader) loader.style.display = 'none';
-  if (hint) hint.textContent = '현재 점검 중입니다. 잠시 후 다시 시도해 주세요.';
-  
-  // 다시 시도 버튼 → 새로고침
-  document.getElementById('retry-btn')?.addEventListener('click', function(){
-    location.reload();
-  });
+  <!-- Applixir -->
+  <div id="applixir-anchor"></div>
+  <script src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
 
-  // 홈 버튼은 위에 href 있지만 JS로도 보강
-  document.getElementById('home-btn')?.addEventListener('click', function(e){
-    // 필요하면 여기서 '/main' 등으로 교체
-    // e.preventDefault();
-    // location.href = '/main';
-  });
-})();
-</script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get, onValue, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    // === Firebase (메인 게임과 동일) ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // === 최소 상태 ===
+    const API_KEY = "581358cb-52b3-4c27-a835-44b167debbe4";
+    const $ec   = document.getElementById('ec');
+    const $btn  = document.getElementById('btn');
+    const $log  = document.getElementById('log');
+    const $pBar = document.getElementById('prog-bar');
+    const $pTxt = document.getElementById('prog-text');
+
+    // 진행도는 로컬에만 저장 (의심도 영향 X)
+    const LS_KEY = "siu_adTriplet";
+    let adProg = Math.max(0, Math.min(2, parseInt(localStorage.getItem(LS_KEY) || "0", 10)));
+    let basePath = null;
+    let dataRef  = null;
+    let lastCompleteAt = 0;  // 너무 빠른 중복 방지 (안전장치)
+
+    const sid = Math.random().toString(36).slice(2, 10);
+
+    function log(t) { $log.textContent = (new Date().toLocaleTimeString() + " " + t + "\n" + $log.textContent).slice(0, 4000); }
+    function setProg(n) {
+      adProg = n;
+      localStorage.setItem(LS_KEY, String(n));
+      $pTxt.textContent = String(n);
+      $pBar.style.width = (Math.round((n/3)*100)) + "%";
+    }
+    setProg(adProg);
+
+    function defaultData() {
+      return { resources:0, coins:0, eventCoins:0, clickPower:1, shipLevel:1, shipUpgradeCost:20,
+               workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[], _lastUpdated: Date.now() };
+    }
+
+    async function resolveBasePath(uid) {
+      try {
+        const mapSnap = await get(ref(db, `userServerMap/${uid}`));
+        if (mapSnap.exists()) {
+          const m = mapSnap.val() || {};
+          if (m.server && m.id) return `users/${m.server}/${m.id}`;
+        }
+      } catch {/*ignore*/}
+      try {
+        const legacy = await get(ref(db, `users/${uid}`));
+        if (legacy.exists()) return `users/${uid}`;
+      } catch {/*ignore*/}
+      throw new Error("게임 데이터가 아직 없어요. 메인 게임을 1회 실행 후 다시 시도해 주세요.");
+    }
+
+    function subscribeBalance() {
+      onValue(dataRef, (snap) => {
+        const v = snap.exists() ? (snap.val() || {}) : {};
+        $ec.textContent = String(v.eventCoins || 0);
+      });
+    }
+
+    async function markAudit(ts, note) {
+      try {
+        await update(ref(db, `${basePath}/audit/ads/${ts}`), {
+          provider: 'applixir',
+          session: sid,
+          note,
+          ts
+        });
+      } catch (e) { /* no-op */ }
+    }
+
+    async function markSafe(ts) {
+      try {
+        await update(ref(db, `${basePath}/security`), {
+          lastRewardFrom: 'applixir',
+          lastRewardAt: ts,
+          adSafe: true
+        });
+      } catch (e) { /* no-op */ }
+    }
+
+    async function awardIfTriplet() {
+      if (adProg !== 2) return;
+      const ts = Date.now();
+      await runTransaction(dataRef, (cur) => {
+        if (!cur) cur = defaultData();
+        const next = { ...cur };
+        next.eventCoins = (next.eventCoins || 0) + 2;
+        next._lastUpdated = ts;
+        return next;
+      });
+      await Promise.all([ markAudit(ts, 'triplet-award +2'), markSafe(ts) ]);
+      setProg(0);
+      log("보상 지급: +2 EC");
+    }
+
+    function playAd() {
+      const now = Date.now();
+      if (now - lastCompleteAt < 8000) { // 8초 미만 연속 완주는 무시 (의심 방지)
+        log("너무 빠른 연속 시도입니다. 잠시 후 다시 시도하세요.");
+        return;
+      }
+      const opts = {
+        apiKey: API_KEY,
+        injectionElementId: "applixir-anchor",
+        adStatusCallbackFn: async (st) => {
+          const t = (st && st.type) ? String(st.type) : String(st);
+          if (t === 'loaded')  log('광고 로드됨');
+          if (t === 'started') log('광고 시작');
+          if (t === 'complete') {
+            const ts = Date.now();
+            lastCompleteAt = ts;
+            log('광고 완료 (1회)');
+            await markAudit(ts, 'complete');
+            const next = (adProg + 1) % 3;
+            setProg(next);
+            await awardIfTriplet();
+          }
+          if (t === 'skipped') log('광고 스킵됨 (미지급)');
+        },
+        adErrorCallbackFn: (err) => { log('광고 에러: 잠시 후 다시 시도해 주세요.'); }
+      };
+      try { initializeAndOpenPlayer(opts); }
+      catch(e) { log('플레이어 초기화 실패: ' + e.message); }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { $ec.textContent = "로그인 필요"; $btn.disabled = true; log("로그인 후 이용하세요."); return; }
+      try {
+        basePath = await resolveBasePath(user.uid);
+        dataRef  = ref(db, `${basePath}/gameData`);
+        subscribeBalance();
+        $btn.disabled = false;
+        log("준비 완료");
+      } catch (e) {
+        $ec.textContent = "—";
+        $btn.disabled = true;
+        log(e.message || "초기화 실패");
+      }
+    });
+
+    document.getElementById('btn').addEventListener('click', playAd);
+  </script>
 </body>
 </html>
