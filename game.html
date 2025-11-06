@@ -2627,7 +2627,23 @@
       });
     }
 
-    if (isRunningAsWebApp() && customDownloadItem) {
+    function isEmbeddedContainer() {
+      if (isRunningAsWebApp()) return true;
+      const ua = (navigator.userAgent || '').toLowerCase();
+      if (ua.includes('; wv') || ua.includes(' wv)') || ua.includes('wv)') || /\bwv\b/.test(ua)) return true;
+      if (/(iphone|ipad|ipod).+applewebkit(?!.*safari)/i.test(navigator.userAgent || '')) return true;
+      if (window.ReactNativeWebView || window.flutter_inappwebview || window.AndroidBridge) return true;
+      if (window.Capacitor && window.Capacitor.isNativePlatform) return true;
+      try {
+        if (window.webkit && window.webkit.messageHandlers) return true;
+      } catch {}
+      return false;
+    }
+
+    const isEmbeddedApp = isEmbeddedContainer();
+    window.__IS_EMBEDDED_APP = isEmbeddedApp;
+
+    if (isEmbeddedApp && customDownloadItem) {
       customDownloadItem.remove();
     }
 
@@ -2648,6 +2664,7 @@
         setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
       }
       if (action === 'download') {
+        if (window.__IS_EMBEDDED_APP) return;
         const proceed = confirm('앱 다운로드를 위해 onestore.net 으로 이동합니다. 계속하시겠습니까?');
         if (proceed) { location.href = 'https://www.onestore.net'; }
       }
@@ -2665,6 +2682,11 @@
       const sideToggle = document.getElementById('side-menu-toggle');
       const sideMenu   = document.getElementById('side-menu');
       const backdrop   = document.getElementById('side-backdrop');
+      const sideDownloadItem = sideMenu.querySelector('[data-action="download"]');
+
+      if (window.__IS_EMBEDDED_APP && sideDownloadItem) {
+        sideDownloadItem.remove();
+      }
 
       function openSide(){
         sideMenu.classList.add('open');
@@ -2694,6 +2716,7 @@
           setTimeout(()=>{ if(!window.closed) location.href='/index.html'; }, 250);
         }
         if (action === 'download') {
+          if (window.__IS_EMBEDDED_APP) { closeSide(); return; }
           const proceed = confirm('앱 다운로드를 위해 onestore.net 으로 이동합니다. 계속하시겠습니까?');
           if (proceed) { location.href = 'https://www.onestore.net'; }
         }
