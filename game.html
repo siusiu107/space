@@ -2614,6 +2614,23 @@
   <!-- 우클릭 커스텀 메뉴 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
+    const customDownloadItem = customMenu.querySelector('[data-action="download"]');
+    const displayModes = ['standalone', 'minimal-ui', 'fullscreen'];
+
+    function isRunningAsWebApp() {
+      try {
+        if (navigator.standalone) return true;
+      } catch {}
+      return displayModes.some(mode => {
+        try { return window.matchMedia(`(display-mode: ${mode})`).matches; }
+        catch { return false; }
+      });
+    }
+
+    if (isRunningAsWebApp() && customDownloadItem) {
+      customDownloadItem.remove();
+    }
+
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
       customMenu.style.top = `${e.clientY}px`;
