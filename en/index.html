@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>Conquer the Solar System - Main Menu</title>
+  <meta name="description" content="Conquer the Solar System - a space survival clicker. Launch the HTML game with intuitive controls and vivid visuals.">
+  <meta name="keywords" content="solar system, space, clicker, HTML game, SIU Studio">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="./">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Conquer the Solar System - SIU Studio">
+  <meta property="og:description" content="A space survival clicker with intuitive controls and vibrant visuals. Launch the game in a popup now.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="space-bg.jpg">
+  <meta property="og:image:alt" content="Conquer the Solar System thumbnail">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Conquer the Solar System - SIU Studio">
+  <meta name="twitter:description" content="A space survival clicker with intuitive controls and vibrant visuals. Launch the game in a popup now.">
+  <meta name="twitter:image" content="space-bg.jpg">
+
+  <!-- Icons -->
+  <link rel="icon" href="space-bg.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileColor" content="#2d89ef">
+  <meta name="theme-color" content="#ffffff">
+
+  <script>
+    try {
+      if (!sessionStorage.getItem('pmode_init')) {
+        history.replaceState(null, '', '/login' + (location.hash || ''));
+        sessionStorage.setItem('pmode_init', '1');
+      }
+    } catch (e) {}
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+      background: linear-gradient(180deg, #000814 0%, #00122b 60%), url('/images/space-bg.jpg') center/cover no-repeat;
+      color: #f3f7ff;
+    }
+    header {
+      text-align: center;
+      padding: 60px 20px 30px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 32px;
+      letter-spacing: 0.4px;
+    }
+    header p {
+      margin: 14px 0 0;
+      font-size: 18px;
+      color: #b9cee6;
+    }
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+      text-align: center;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 26px;
+      margin-top: 26px;
+      background: linear-gradient(135deg, rgba(0, 221, 255, 0.9), rgba(0, 119, 255, 0.9));
+      color: #00111c;
+      border-radius: 999px;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 14px 32px rgba(0, 174, 255, 0.25);
+    }
+    .cta:hover {
+      transform: translateY(-1px);
+    }
+    .notes {
+      margin-top: 36px;
+      display: grid;
+      gap: 16px;
+      text-align: left;
+    }
+    .note {
+      padding: 18px;
+      border-radius: 14px;
+      background: rgba(6, 12, 22, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+    }
+    .note h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .note p {
+      margin: 0;
+      color: #c7daef;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    footer {
+      padding: 30px 20px 60px;
+      text-align: center;
+      font-size: 13px;
+      color: #9fb4ce;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Conquer the Solar System</h1>
+    <p>A vivid space survival clicker. Launch the game instantly in a popup window.</p>
+    <a class="cta" href="game.html" target="_blank" rel="noopener">Play now</a>
+  </header>
+  <main>
+    <div class="notes">
+      <article class="note">
+        <h2>Secure authentication</h2>
+        <p>Only verified accounts can access the game. Email sign-up and Google sign-in are both supported.</p>
+      </article>
+      <article class="note">
+        <h2>Fair play policy</h2>
+        <p>Cheats, abnormal gains, and account sharing are blocked. Suspicious activity will be reviewed automatically.</p>
+      </article>
+      <article class="note">
+        <h2>Play anywhere</h2>
+        <p>Start the game from desktop or mobile. For the best experience, enable pop-ups for this site.</p>
+      </article>
+    </div>
+  </main>
+  <footer>
+    &copy; SIU Studio. All rights reserved.
+  </footer>
+</body>
+</html>
