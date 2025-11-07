@@ -372,6 +372,43 @@
       background: linear-gradient(180deg,#00ffa8,#00d2ff); color:#002018; }
     #migrate-start[disabled]{ opacity:.6; cursor:not-allowed; }
 
+    /* PC 팝업 안내 게이트 */
+    #popup-gate {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(2,6,12,0.70), rgba(2,6,12,0.85));
+      backdrop-filter: blur(4px);
+      z-index: 3700;
+    }
+    #popup-gate.show { display: flex; }
+    #popup-gate .gate-card {
+      width: min(520px, 92vw);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(10,12,18,0.66));
+      padding: 18px;
+      box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+      color: #eaf6ff;
+      text-align: center;
+    }
+    #popup-gate .gate-card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+    #popup-gate .gate-card p {
+      margin: 6px 0;
+      font-size: 14px;
+      color: #cfe6ff;
+      line-height: 1.6;
+    }
+    #popup-gate-count {
+      font-weight: 800;
+      color: #ffd36e;
+    }
+
     /* 이용약관 & 정지 오버레이 */
     .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center;
       background: linear-gradient(180deg, rgba(2,6,12,.60), rgba(2,6,12,.80)); backdrop-filter: blur(4px); z-index:3650; }
@@ -387,6 +424,19 @@
   </style>
 </head>
 <body>
+  <!-- PC 팝업 안내 게이트 -->
+  <div id="popup-gate" aria-hidden="true">
+    <div class="gate-card" role="alertdialog" aria-modal="true" aria-labelledby="popup-gate-title">
+      <h3 id="popup-gate-title">PC에서는 팝업 허용이 필요해요</h3>
+      <p>컴퓨터에서 게임을 실행할 때는 <b>팝업을 허용</b>해야 새 창으로 열 수 있어요.</p>
+      <p>팝업이 차단되어 <span style="white-space:nowrap;">게임을 표시할 수 없습니다.</span></p>
+      <p><span id="popup-gate-count">5</span>초 후 메뉴 화면으로 이동합니다.</p>
+      <div class="overlay-actions" style="justify-content:center; margin-top:16px;">
+        <button id="popup-gate-back" class="spinbtn" type="button">바로 이동하기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 부팅 중 오버레이 (최초 1회만) -->
   <div id="boot-overlay" aria-hidden="false">
     <div class="card" role="status" aria-live="polite" aria-atomic="true">
@@ -1497,6 +1547,17 @@
     let security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
     let securityDirty = false;
 
+    const TOS_ACCEPT_PREFIX = 'siu_tos_ok_';
+    function markLocalTosAccepted(id) {
+      if (!id) return;
+      try { localStorage.setItem(`${TOS_ACCEPT_PREFIX}${id}`, '1'); } catch {}
+    }
+    function hasLocalTosAccepted(id) {
+      if (!id) return false;
+      try { return localStorage.getItem(`${TOS_ACCEPT_PREFIX}${id}`) === '1'; }
+      catch { return false; }
+    }
+
     // 임계값
     const SEC_WARN_LEVEL = 20;
     const SEC_BAN_LEVEL  = 30;
@@ -1544,6 +1605,14 @@
           security = { ...security, ...v };
         }
       } catch {}
+      if (uid) {
+        if (security.tosAccepted) {
+          markLocalTosAccepted(uid);
+        } else if (hasLocalTosAccepted(uid)) {
+          security.tosAccepted = true;
+          securityDirty = true;
+        }
+      }
       markTosViolationFlag();
       await saveSecurity();
     }
@@ -2274,6 +2343,7 @@
     tosAgree?.addEventListener('change', ()=>{ tosAccept.disabled = !tosAgree.checked; });
     tosAccept?.addEventListener('click', async ()=>{
       security.tosAccepted = true; securityDirty = true;
+      if (uid) markLocalTosAccepted(uid);
       await saveSecurity();
       showTosOverlay(false);
       showToast('✅ 이용약관에 동의되었습니다. 공정한 플레이를 부탁드려요!', null, null, 3500);
@@ -2790,23 +2860,69 @@
   <script>
     (function(){
       const gate = document.getElementById('popup-gate');
-      if (!gate) {
-        window.__PLAY_ALLOWED = (function(){
-          function isMobileStrict(){
-            try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
-            const ua = navigator.userAgent || '';
-            if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
-            if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
-            const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-            const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
-            return (coarse && !canHover);
-          }
-          function isPopup(){ try { if (window.opener && !window.opener.closed) return true; } catch {} try { if (['gameWindow','siuGame','popup'].includes(window.name)) return true; } catch {} return false; }
-          return isMobileStrict() || isPopup();
-        })();
-        if (window.__PLAY_ALLOWED){ ['top-bar','container'].forEach(id => { const el=document.getElementById(id); if(el) el.style.visibility='visible'; }); }
+      const countdownEl = gate ? gate.querySelector('#popup-gate-count') : null;
+      const backBtn     = gate ? gate.querySelector('#popup-gate-back') : null;
+
+      function isMobileStrict(){
+        try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
+        const ua = navigator.userAgent || '';
+        if (/(Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|IEMobile|Mobile)/i.test(ua)) return true;
+        if (/Mac/.test(navigator.platform || '') && (navigator.maxTouchPoints || 0) > 1) return true;
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+        return (coarse && !canHover);
+      }
+      function isPopup(){
+        try { if (window.opener && !window.opener.closed) return true; } catch {}
+        try { if (['gameWindow','siuGame','popup'].includes(window.name)) return true; } catch {}
+        return false;
+      }
+
+      const playAllowed = isMobileStrict() || isPopup();
+      window.__PLAY_ALLOWED = playAllowed;
+
+      if (playAllowed) {
+        ['top-bar','container'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.visibility = 'visible';
+        });
+        if (gate) {
+          gate.classList.remove('show');
+          gate.setAttribute('aria-hidden', 'true');
+        }
         return;
       }
+
+      const redirect = () => { window.location.href = '/index.html'; };
+
+      if (!gate) {
+        alert('팝업이 차단되어 게임을 열 수 없습니다. 메뉴 화면으로 이동합니다.');
+        redirect();
+        return;
+      }
+
+      gate.classList.add('show');
+      gate.setAttribute('aria-hidden', 'false');
+
+      let remaining = 5;
+      if (countdownEl) countdownEl.textContent = String(remaining);
+
+      const tick = setInterval(() => {
+        remaining -= 1;
+        if (remaining < 0) remaining = 0;
+        if (countdownEl) countdownEl.textContent = String(remaining);
+        if (remaining <= 0) {
+          clearInterval(tick);
+          redirect();
+        }
+      }, 1000);
+
+      const goHome = () => {
+        clearInterval(tick);
+        redirect();
+      };
+
+      backBtn && backBtn.addEventListener('click', goHome);
     })();
   </script>
 
