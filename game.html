@@ -788,8 +788,7 @@
       signInWithEmailAndPassword,
       sendEmailVerification,
       GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-      sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
-      EmailAuthProvider, linkWithCredential
+      createUserWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
       getDatabase, ref, onValue, runTransaction, update, get
@@ -808,12 +807,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
-
-    // ✅ 인증 링크 회귀 목적지 설정(현재 페이지로)
-    const actionCodeSettings = {
-      url: location.origin + location.pathname,
-      handleCodeInApp: true
-    };
 
     /* ======================
        공통 상태 / 경로
@@ -2246,11 +2239,11 @@
     const signupBtnEl = document.getElementById('signup-btn');
     const tosCheckbox = document.getElementById('tos-checkbox');
     const privacyCheckbox = document.getElementById('privacy-checkbox');
-    let __emailLinkMode = false;
+    const verifyInfoEl = document.getElementById('verify-info');
 
     function updateSignupAvailability() {
       if (!signupBtnEl) return;
-      const allow = (!!tosCheckbox?.checked && !!privacyCheckbox?.checked) || __emailLinkMode;
+      const allow = !!tosCheckbox?.checked && !!privacyCheckbox?.checked;
       signupBtnEl.disabled = !allow;
     }
 
@@ -2260,14 +2253,17 @@
       if (mode === 'signup') {
         tabLogin.classList.remove('active'); tabSignup.classList.add('active');
         signupExtra.style.display = 'block'; loginBtn.style.display='none'; signupBtnEl.style.display='block';
-        signupBtnEl.textContent = '회원가입(인증 메일 보내기)';
+        signupBtnEl.textContent = '회원가입';
       } else {
         tabLogin.classList.add('active'); tabSignup.classList.remove('active');
         signupExtra.style.display = 'none'; loginBtn.style.display='block'; signupBtnEl.style.display='none';
         signupBtnEl.disabled = false;
-        __emailLinkMode = false;
       }
-      showAuthStatus(''); document.getElementById('verify-info').textContent = '';
+      showAuthStatus('');
+      if (verifyInfoEl) {
+        verifyInfoEl.textContent = '';
+        verifyInfoEl.classList.remove('show');
+      }
       try { history.replaceState(null, '', (currentAuthMode === 'signup' ? '/signup' : '/login') + (location.hash || '')); } catch {}
       updateSignupAvailability();
     }
@@ -2323,104 +2319,55 @@
       }
     });
 
-    /* ========= 이메일 링크 회원가입 ========= */
-    async function beginEmailLinkSignup() {
+    async function handleSignup() {
       showAuthStatus('');
+      if (verifyInfoEl) {
+        verifyInfoEl.textContent = '';
+        verifyInfoEl.classList.remove('show');
+      }
+
       const email = document.getElementById('email').value.trim();
+      const pw = document.getElementById('password').value;
+      const pw2 = document.getElementById('password-confirm').value;
       const agreeTerms = document.getElementById('tos-checkbox')?.checked;
       const agreePrivacy = document.getElementById('privacy-checkbox')?.checked;
 
       if (!email) { showAuthStatus('이메일을 입력하세요.'); return; }
+      if (!pw || !pw2) { showAuthStatus('비밀번호를 입력하세요.'); return; }
+      if (pw !== pw2) { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
       if (!agreeTerms || !agreePrivacy) {
         showAuthStatus('이용약관과 개인정보 처리방침에 모두 동의해야 회원가입 가능합니다.');
         return;
       }
 
+      signupBtnEl.disabled = true;
       try {
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        try { localStorage.setItem('signupEmail', email); } catch {}
-        showAuthStatus('📧 인증 메일을 보냈습니다. 메일의 링크를 누르면 가입이 완료됩니다.', false);
-        document.getElementById('password')?.setAttribute('disabled','true');
-        document.getElementById('password-confirm')?.setAttribute('disabled','true');
-        signupBtnEl.textContent = '메일 전송됨 – 링크로 돌아오면 비번 설정';
-        signupBtnEl.disabled = true;
-      } catch (err) {
-        const code = err?.code || '';
-        const msg =
-          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
-          code === 'auth/missing-android-pkg-name' || code === 'auth/missing-continue-uri' || code === 'auth/unauthorized-continue-uri'
-            ? '인증 링크 설정이 올바르지 않습니다. 콘솔의 Authorized domains를 확인하세요.' :
-          '인증 메일 전송에 실패했습니다. 잠시 후 다시 시도하세요.';
-        showAuthStatus(msg);
-        signupBtnEl.disabled = false;
-        updateSignupAvailability();
-      }
-    }
-
-    async function completeEmailLinkIfNeeded() {
-      if (!isSignInWithEmailLink(auth, window.location.href)) return;
-      __emailLinkMode = true;
-      setAuthMode('signup');
-      document.getElementById('auth-title').textContent = '이메일 확인됨 – 비밀번호 설정';
-      document.getElementById('password')?.removeAttribute('disabled');
-      document.getElementById('password-confirm')?.removeAttribute('disabled');
-      document.getElementById('signup-extra').style.display = 'block';
-      signupBtnEl.textContent = '비밀번호 설정 완료하기';
-      signupBtnEl.disabled = false;
-      updateSignupAvailability();
-
-      let email = null;
-      try { email = localStorage.getItem('signupEmail'); } catch {}
-      if (!email) email = prompt('가입에 사용한 이메일을 입력하세요') || '';
-      email = email.trim();
-      if (!email) { showAuthStatus('이메일을 확인할 수 없습니다. 다시 시도해주세요.'); return; }
-
-      try {
-        await signInWithEmailLink(auth, email, window.location.href);
-        try { localStorage.setItem('signupEmail', email); } catch {}
-        showAuthStatus('✅ 이메일 인증 완료! 이제 비밀번호를 설정하세요.', false);
-      } catch (err) {
-        const code = err?.code || '';
-        const msg =
-          code === 'auth/invalid-action-code' ? '유효하지 않은 링크입니다. 다시 요청해 주세요.' :
-          code === 'auth/expired-action-code' ? '링크 유효기간이 지났습니다. 다시 요청해 주세요.' :
-          '링크 확인 중 오류가 발생했습니다.';
-        showAuthStatus(msg);
-      }
-    }
-
-    async function finalizePassword() {
-      const email = (localStorage.getItem('signupEmail') || '').trim();
-      const pw  = document.getElementById('password').value;
-      const pw2 = document.getElementById('password-confirm').value;
-
-      if (!pw || !pw2) { showAuthStatus('비밀번호를 입력하세요.'); return; }
-      if (pw !== pw2)   { showAuthStatus('비밀번호가 일치하지 않습니다.'); return; }
-      if (!auth.currentUser) { showAuthStatus('세션이 만료되었습니다. 링크를 다시 열어주세요.'); return; }
-
-      try {
-        await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(email, pw));
-        showAuthStatus('🔐 비밀번호 설정 완료! 이제 로그인 탭에서 로그인하세요.', false);
-        await auth.signOut();
+        const cred = await createUserWithEmailAndPassword(auth, email, pw);
+        try { await sendEmailVerification(cred.user); } catch {}
+        showAuthStatus('');
+        if (verifyInfoEl) {
+          verifyInfoEl.textContent = '✅ 계정이 생성되었습니다. 이메일로 전송된 인증 링크를 확인한 후 로그인해 주세요.';
+          verifyInfoEl.classList.add('show');
+        }
+        try { await auth.signOut(); } catch {}
         setAuthMode('login');
       } catch (err) {
         const code = err?.code || '';
         const msg =
-          code === 'auth/provider-already-linked' ? '이미 비밀번호가 설정된 계정입니다. 로그인해 주세요.' :
-          code === 'auth/credential-already-in-use' ? '이미 사용 중인 자격증명입니다.' :
+          code === 'auth/email-already-in-use' ? '이미 등록된 이메일입니다. 로그인 또는 비밀번호 찾기를 이용해 주세요.' :
+          code === 'auth/invalid-email' ? '이메일 형식이 올바르지 않습니다.' :
           code === 'auth/weak-password' ? '비밀번호가 너무 약합니다.' :
-          '비밀번호 설정에 실패했습니다. 잠시 후 다시 시도하세요.';
+          code === 'auth/network-request-failed' ? '네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.' :
+          '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.';
         showAuthStatus(msg);
+      } finally {
+        updateSignupAvailability();
       }
     }
 
     signupBtnEl?.addEventListener('click', async (e) => {
       e.preventDefault();
-      if (__emailLinkMode) {
-        finalizePassword();
-      } else {
-        beginEmailLinkSignup();
-      }
+      await handleSignup();
     });
 
     tosCheckbox?.addEventListener('change', updateSignupAvailability);
@@ -2666,8 +2613,6 @@
         setAuthMode(currentAuthMode);
       }
     });
-
-    completeEmailLinkIfNeeded();
 
     // 부팅 오버레이 페일세이프
     setTimeout(() => {
