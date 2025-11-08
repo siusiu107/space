@@ -981,16 +981,77 @@
     function convertResources(maxCount = null) {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
-      if (count > 0) {
-        const resOut = count * 10;
-        state.resources -= resOut;
-        auditSpend('res', resOut);
+      if (count <= 0) return false;
 
-        const coinMul = activeBuffFactor('coin');
-        const inc = count * coinMul;
-        state.coins += inc;
-        auditGain('coin', inc);
-      }
+      const resOut = count * 10;
+      state.resources -= resOut;
+      auditSpend('res', resOut);
+
+      const coinMul = activeBuffFactor('coin');
+      const inc = count * coinMul;
+      state.coins += inc;
+      auditGain('coin', inc);
+      return true;
+    }
+
+    function attachHoldRepeat(target, action, options = {}) {
+      const btn = typeof target === 'string' ? document.getElementById(target) : target;
+      if (!btn) return;
+
+      const initialDelay = options.initialDelay ?? 350;
+      const repeatInterval = options.repeatInterval ?? 90;
+      let holdTimeout = null;
+      let repeatTimer = null;
+      let pointerActive = false;
+
+      const clearTimers = () => {
+        if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+        if (repeatTimer) { clearInterval(repeatTimer); repeatTimer = null; }
+      };
+
+      const invoke = () => {
+        const result = action();
+        return result !== false;
+      };
+
+      const stop = () => {
+        pointerActive = false;
+        clearTimers();
+      };
+
+      const start = ev => {
+        if (ev.button !== undefined && ev.button !== 0) return;
+        pointerActive = true;
+        if (!invoke()) {
+          pointerActive = false;
+          return;
+        }
+        clearTimers();
+        holdTimeout = setTimeout(() => {
+          repeatTimer = setInterval(() => {
+            if (!invoke()) stop();
+          }, repeatInterval);
+        }, initialDelay);
+        ev.preventDefault();
+      };
+
+      btn.addEventListener('pointerdown', start);
+      btn.addEventListener('pointerup', stop);
+      btn.addEventListener('pointerleave', stop);
+      btn.addEventListener('pointercancel', stop);
+      btn.addEventListener('contextmenu', ev => {
+        if (pointerActive) ev.preventDefault();
+      });
+      btn.addEventListener('click', ev => {
+        if (ev.detail !== 0) return; // 키보드 클릭 외에는 pointerdown으로 처리
+        invoke();
+      });
+      btn.addEventListener('keydown', ev => {
+        if (ev.key === ' ' || ev.key === 'Enter') {
+          ev.preventDefault();
+          invoke();
+        }
+      });
     }
 
     async function ensureInitialData(refObj) {
@@ -2116,7 +2177,12 @@
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
-      document.getElementById('convert-button').addEventListener('click', () => { if (!ensureReady()) return; convertResources(1); save(); updateUI(); });
+      attachHoldRepeat('convert-button', () => {
+        if (!ensureReady()) return false;
+        if (!convertResources(1)) return false;
+        save(); updateUI();
+        return true;
+      });
       document.getElementById('auto-convert-buy').addEventListener('click', () => {
         if (!ensureReady()) return;
         if (!state.autoConvertBought && state.coins >= 100) {
@@ -2126,46 +2192,46 @@
           save(); updateUI();
         }
       });
-      document.getElementById('hire-worker').addEventListener('click', () => {
-        if (!ensureReady()) return;
+      attachHoldRepeat('hire-worker', () => {
+        if (!ensureReady()) return false;
         const cost = getWorkerCost();
-        if (state.coins >= cost) {
-          state.coins -= cost;
-          auditSpend('coin', cost);
-          state.workerCount++;
-          save(); updateUI();
-        }
+        if (state.coins < cost) return false;
+        state.coins -= cost;
+        auditSpend('coin', cost);
+        state.workerCount++;
+        save(); updateUI();
+        return true;
       });
-      document.getElementById('hire-conversion').addEventListener('click', () => {
-        if (!ensureReady()) return;
+      attachHoldRepeat('hire-conversion', () => {
+        if (!ensureReady()) return false;
         const cost = getConversionCost();
-        if (state.coins >= cost) {
-          state.coins -= cost;
-          auditSpend('coin', cost);
-          state.conversionCount++;
-          save(); updateUI();
-        }
+        if (state.coins < cost) return false;
+        state.coins -= cost;
+        auditSpend('coin', cost);
+        state.conversionCount++;
+        save(); updateUI();
+        return true;
       });
-      document.getElementById('upgrade-ship').addEventListener('click', () => {
-        if (!ensureReady()) return;
-        if (state.coins >= state.shipUpgradeCost) {
-          const cost = state.shipUpgradeCost;
-          state.coins -= cost;
-          auditSpend('coin', cost);
-          state.shipLevel++;
-          state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
-          save(); updateUI(); renderPlanets();
-        }
+      attachHoldRepeat('upgrade-ship', () => {
+        if (!ensureReady()) return false;
+        if (state.coins < state.shipUpgradeCost) return false;
+        const cost = state.shipUpgradeCost;
+        state.coins -= cost;
+        auditSpend('coin', cost);
+        state.shipLevel++;
+        state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
+        save(); updateUI(); renderPlanets();
+        return true;
       });
 
-      document.getElementById('click-upgrade').addEventListener('click', () => {
-        if (!ensureReady()) return;
-        if (state.coins >= clickUpgradeCost){
-          state.coins -= clickUpgradeCost;
-          auditSpend('coin', clickUpgradeCost);
-          state.clickPower = (state.clickPower||1) + 1;
-          save(); updateUI();
-        }
+      attachHoldRepeat('click-upgrade', () => {
+        if (!ensureReady()) return false;
+        if (state.coins < clickUpgradeCost) return false;
+        state.coins -= clickUpgradeCost;
+        auditSpend('coin', clickUpgradeCost);
+        state.clickPower = (state.clickPower||1) + 1;
+        save(); updateUI();
+        return true;
       });
 
       document.querySelectorAll('#bottom-nav .tab').forEach(tab => tab.addEventListener('click', () => {
