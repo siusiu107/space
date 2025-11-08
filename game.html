@@ -2707,8 +2707,8 @@
       }
       if (action === 'download') {
         if (window.__IS_EMBEDDED_APP) return;
-        const proceed = confirm('앱 다운로드를 위해 onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
-        if (proceed) { location.href = 'https://www.onestore.co.kr'; }
+        const proceed = confirm('앱 다운로드를 위해 m.onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
+        if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
       }
       if (action === 'resume')   { customMenu.style.display='none'; }
       if (action === 'rank')     { location.href='/ranking.html'; }
@@ -2758,8 +2758,8 @@
         }
         if (action === 'download') {
           if (window.__IS_EMBEDDED_APP) { closeSide(); return; }
-          const proceed = confirm('앱 다운로드를 위해 onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
-          if (proceed) { location.href = 'https://www.onestore.co.kr'; }
+          const proceed = confirm('앱 다운로드를 위해 m.onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
+          if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
         }
         if (action === 'rank')     { location.href='/ranking.html'; }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
