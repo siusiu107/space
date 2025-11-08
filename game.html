@@ -964,18 +964,27 @@
     /* ========= 기본 데이터 & 유틸 ========= */
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
-      clickPower:1, shipLevel:1, shipUpgradeCost:20,
+      clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
       workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
       _lastUpdated: 0
     };
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
     const initialConversionCost=50, conversionCostGrowth=1.3;
-    const clickUpgradeCost=15;
+    const initialClickUpgradeCost=15, clickUpgradeGrowth=1.2;
 
     function getWorkerCost()   { return Math.floor(initialWorkerCost   * Math.pow(workerCostGrowth, state.workerCount)); }
     function getWorkerPower()  { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
     function getConversionCost(){ return Math.floor(initialConversionCost * Math.pow(conversionCostGrowth, state.conversionCount)); }
+    function ensureClickUpgradeCost(){
+      const sanitized = Math.max(1, Math.round(state.clickUpgradeCost ?? initialClickUpgradeCost));
+      if (state.clickUpgradeCost !== sanitized) state.clickUpgradeCost = sanitized;
+      return sanitized;
+    }
+    function getNextClickUpgradeCost(currentCost){
+      const base = currentCost ?? initialClickUpgradeCost;
+      return Math.max(1, Math.round(base * clickUpgradeGrowth));
+    }
 
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null) {
@@ -2057,8 +2066,9 @@
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
 
       const clickUp = document.getElementById('click-upgrade');
-      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickUpgradeCost)}코인)`; 
-      clickUp.disabled  = state.coins < clickUpgradeCost;
+      const clickCost = ensureClickUpgradeCost();
+      clickUp.innerText = `클릭 업그레이드 (${formatKR(clickCost)}코인)`;
+      clickUp.disabled  = state.coins < clickCost;
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
       const autoBtn = document.getElementById('auto-convert-buy');
@@ -2088,6 +2098,7 @@
             coins: state.coins,
             eventCoins: state.eventCoins,
             clickPower: state.clickPower,
+            clickUpgradeCost: state.clickUpgradeCost,
             shipLevel: state.shipLevel,
             shipUpgradeCost: state.shipUpgradeCost,
             workerCount: state.workerCount,
@@ -2226,10 +2237,12 @@
 
       attachHoldRepeat('click-upgrade', () => {
         if (!ensureReady()) return false;
-        if (state.coins < clickUpgradeCost) return false;
-        state.coins -= clickUpgradeCost;
-        auditSpend('coin', clickUpgradeCost);
+        const cost = ensureClickUpgradeCost();
+        if (state.coins < cost) return false;
+        state.coins -= cost;
+        auditSpend('coin', cost);
         state.clickPower = (state.clickPower||1) + 1;
+        state.clickUpgradeCost = getNextClickUpgradeCost(cost);
         save(); updateUI();
         return true;
       });
