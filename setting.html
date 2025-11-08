@@ -190,6 +190,7 @@
       <span>태양계 정복: 우주 생존 클릭커 · v0.1.0</span>
       <span class="copy">ⓒ 2025. siustudio All rights reserved.</span>
       <button id="btn-policy" class="btn secondary tiny" aria-haspopup="dialog" aria-controls="policy">이용약관</button>
+      <button id="btn-privacy" class="btn secondary tiny" aria-haspopup="dialog" aria-controls="policy">개인정보 처리방침</button>
     </footer>
   </div>
 
@@ -205,18 +206,18 @@
     </div>
   </div>
 
-  <!-- 사이트 이용약관(Privacy) 모달 : /privacy를 iframe으로 표시 -->
+  <!-- 사이트 이용약관/개인정보 처리방침 모달 -->
   <div id="policy" aria-modal="true" role="dialog">
     <div class="panel">
       <div class="head">
-        <h3 style="margin:0">이용약관</h3>
+        <h3 id="policy-title" style="margin:0">이용약관</h3>
         <div style="display:flex; gap:6px">
-          <a href="/privacy" target="_blank" rel="noopener" class="btn secondary tiny" title="새 탭에서 열기">새 탭</a>
+          <a id="policy-newtab" href="/terms" target="_blank" rel="noopener" class="btn secondary tiny" title="새 탭에서 열기">새 탭</a>
           <button id="policy-close" class="btn secondary tiny">닫기</button>
         </div>
       </div>
-      <iframe id="policy-iframe" src="/privacy" title="이용약관" loading="lazy"></iframe>
-      <p class="muted" style="font-size:12px;margin-top:8px">동일 도메인 정책에 따라 /privacy 페이지가 프레임 내에 표시됩니다.</p>
+      <iframe id="policy-iframe" src="/terms" title="이용약관" loading="lazy"></iframe>
+      <p class="muted" style="font-size:12px;margin-top:8px">동일 도메인 정책에 따라 문서가 프레임 내에 표시됩니다.</p>
     </div>
   </div>
 
@@ -435,13 +436,36 @@
 
     /* --- policy modal open/close --- */
     const btnPolicy   = document.getElementById('btn-policy');
+    const btnPrivacy  = document.getElementById('btn-privacy');
     const policyModal = document.getElementById('policy');
     const policyClose = document.getElementById('policy-close');
+    const policyTitle = document.getElementById('policy-title');
+    const policyIframe = document.getElementById('policy-iframe');
+    const policyNewTab = document.getElementById('policy-newtab');
 
-    function openPolicy(){ policyModal.style.display = 'flex'; }
-    function closePolicy(){ policyModal.style.display = 'none'; }
+    const policyMap = {
+      terms: { title: '이용약관', url: '/terms' },
+      privacy: { title: '개인정보 처리방침', url: '/privacy' }
+    };
 
-    btnPolicy?.addEventListener('click', openPolicy);
+    function openPolicy(type = 'terms'){
+      const { title, url } = policyMap[type] || policyMap.terms;
+      if (policyTitle) policyTitle.textContent = title;
+      if (policyIframe) {
+        policyIframe.src = url;
+        policyIframe.title = title;
+      }
+      if (policyNewTab) {
+        policyNewTab.href = url;
+        policyNewTab.title = `${title} 새 탭에서 열기`;
+        policyNewTab.setAttribute('aria-label', `${title} 새 탭에서 열기`);
+      }
+      if (policyModal) policyModal.style.display = 'flex';
+    }
+    function closePolicy(){ if (policyModal) policyModal.style.display = 'none'; }
+
+    btnPolicy?.addEventListener('click', () => openPolicy('terms'));
+    btnPrivacy?.addEventListener('click', () => openPolicy('privacy'));
     policyClose?.addEventListener('click', closePolicy);
     // 오버레이 클릭 시 닫기
     policyModal?.addEventListener('click', (e)=>{ if(e.target === policyModal) closePolicy(); });
