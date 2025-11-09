@@ -238,8 +238,10 @@
 
     /* 우클릭 메뉴 */
     #custom-menu { position: fixed; display: none; background: rgba(30,30,30,0.90); border: 1px solid #555; border-radius: 6px; padding: 8px 0; z-index: 2000; font-size: 14px; color: #fff; min-width: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; display:flex; justify-content:space-between; gap:10px; }
+    #custom-menu .menu-item { padding: 6px 12px; cursor: pointer; display:flex; justify-content:space-between; gap:10px; align-items:center; }
     #custom-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .count-badge { display:inline-flex; align-items:center; justify-content:center; min-width:20px; padding:2px 6px; border-radius:999px; background:#ff7a9a; color:#fff; font-size:11px; font-weight:700; }
+    .count-badge.hidden { display:none; }
     #attendance-left { opacity:.9; color:#9fdcff; font-variant-numeric: tabular-nums; }
 
     /* 바텀 내비 */
@@ -318,6 +320,112 @@
     #daily-title{ margin:0 0 8px; font-size:18px; display:flex; justify-content:space-between; align-items:center; gap:6px; }
     #daily-info{ margin:6px 0 10px; font-size:12px; color:#cfe6ff; min-height:36px; }
     #daily-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
+
+    /* ===== 우편함 오버레이 ===== */
+    #mail-overlay{
+      position:fixed; inset:0; z-index:3600;
+      display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(4,8,16,0.55), rgba(4,8,16,0.78));
+      backdrop-filter: blur(6px);
+      opacity:0; pointer-events:none; transition:opacity .22s ease;
+      padding:18px;
+    }
+    #mail-overlay.show{ opacity:1; pointer-events:auto; }
+    #mail-card{
+      width:min(860px, 96vw);
+      background: linear-gradient(180deg, rgba(18,24,36,0.95), rgba(10,16,28,0.96));
+      border:1px solid rgba(160,210,255,0.18);
+      border-radius:18px;
+      box-shadow:0 26px 60px rgba(0,0,0,0.45);
+      color:#e6f4ff;
+      display:flex; flex-direction:column; gap:16px;
+      padding:20px 22px;
+      max-height:92vh;
+    }
+    #mail-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    #mail-head h3{ margin:0; font-size:20px; }
+    #mail-close{
+      border:none; background:rgba(255,255,255,0.08);
+      color:#f2fbff; border-radius:8px; padding:6px 10px;
+      cursor:pointer; font-size:14px;
+    }
+    #mail-close:hover{ background:rgba(255,255,255,0.15); }
+    #mail-content{ display:flex; gap:16px; flex-wrap:wrap; }
+    #mail-list{
+      flex:1 1 280px; max-height:360px; overflow-y:auto;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .mail-item{
+      display:flex; flex-direction:column; gap:6px;
+      padding:10px 12px; border-radius:12px; text-align:left;
+      border:1px solid rgba(159,220,255,0.18);
+      background:rgba(255,255,255,0.04);
+      color:#e8f7ff; cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .mail-item:hover{ transform:translateY(-2px); }
+    .mail-item.unread{ border-color:rgba(0,212,255,0.45); background:rgba(0,212,255,0.14); }
+    .mail-item.selected{ box-shadow:0 0 0 2px rgba(0,212,255,0.55); }
+    .mail-item .mail-subject{ font-weight:700; font-size:14px; color:#f5fbff; }
+    .mail-item .mail-preview{ font-size:12px; color:#b7d8ff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .mail-item .mail-meta{ display:flex; justify-content:space-between; gap:8px; font-size:11px; color:#8fb9ff; }
+    #mail-detail{
+      flex:2 1 360px; min-height:280px; max-height:360px;
+      background:rgba(8,12,20,0.55);
+      border:1px solid rgba(159,220,255,0.18);
+      border-radius:12px; padding:16px;
+      overflow:auto; display:flex; flex-direction:column; gap:12px;
+    }
+    #mail-detail h4{ margin:0; font-size:16px; }
+    #mail-detail .mail-meta-line{ font-size:12px; color:#9fc8ff; margin-top:4px; }
+    #mail-detail .mail-body{ white-space:pre-wrap; line-height:1.6; color:#d8ecff; }
+    .mail-empty{ text-align:center; color:#9fc8ff; margin:40px auto; font-size:14px; }
+    #mail-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:auto; }
+    #mail-actions button{
+      border:none; border-radius:10px; padding:10px 14px; font-weight:700;
+      cursor:pointer; color:#00121a;
+      background:linear-gradient(90deg,#00c0ff,#00a2ff);
+    }
+    #mail-actions button.secondary{
+      background:rgba(0,0,0,0.25); color:#e6f4ff; border:1px solid rgba(159,220,255,0.30);
+    }
+    #mail-actions button:disabled{ opacity:0.55; cursor:not-allowed; }
+    #mail-rewards{ font-size:13px; color:#cfe6ff; display:flex; flex-direction:column; gap:4px; }
+    #mail-rewards span{ display:flex; align-items:center; gap:6px; }
+    #mail-compose-section{
+      border-top:1px solid rgba(159,220,255,0.18);
+      padding-top:12px; display:none; flex-direction:column; gap:10px;
+    }
+    #mail-compose-section.show{ display:flex; }
+    #mail-compose-section h4{ margin:0; font-size:15px; }
+    #mail-compose-section .mail-hint{ margin:0; font-size:12px; color:#90baff; }
+    .mail-field{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:#cfe6ff; }
+    #mail-compose-section input,
+    #mail-compose-section textarea,
+    #mail-compose-section select{
+      background:rgba(6,10,20,0.55);
+      border:1px solid rgba(159,220,255,0.25);
+      border-radius:10px;
+      color:#e9f6ff;
+      padding:8px 10px;
+      font-size:13px;
+    }
+    #mail-compose-section textarea{ min-height:90px; resize:vertical; }
+    .mail-compose-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+    #mail-compose-send{
+      align-self:flex-end;
+      border:none; border-radius:10px;
+      padding:10px 16px; font-weight:700; font-size:13px;
+      color:#00121a; cursor:pointer;
+      background:linear-gradient(90deg,#00f2ff,#00b6ff);
+      box-shadow:0 10px 24px rgba(0,160,255,0.22);
+    }
+    #mail-compose-send:hover{ filter:brightness(1.05); }
+    @media (max-width:720px){
+      #mail-card{ max-height:94vh; }
+      #mail-list{ max-height:240px; }
+      #mail-detail{ min-height:200px; max-height:260px; }
+    }
 
     .tabbar{ display:flex; gap:6px; margin:8px 0 10px; flex-wrap:wrap; }
     .tbtn{ padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#eaf6ff; cursor:pointer; font-weight:800; }
@@ -643,6 +751,10 @@
     <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
     <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
     <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
+    <div class="menu-item" data-action="mail">
+      <span>✉️ 우편함</span>
+      <span class="count-badge hidden" id="mail-unread-badge">0</span>
+    </div>
     <div class="menu-item" data-action="attendance">
       <span>📅 출석 보상</span>
       <span id="attendance-left">-</span>
@@ -659,12 +771,79 @@
       <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
       <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
       <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
+      <button class="side-item" data-action="mail">
+        <span><span class="icon">✉️</span>우편함</span>
+        <span class="side-right" id="mail-unread-side">-</span>
+      </button>
       <button class="side-item" data-action="attendance">
         <span><span class="icon">📅</span>출석 보상</span>
         <span class="side-right" id="attendance-left-side">-</span>
       </button>
     </nav>
   </aside>
+
+  <div id="mail-overlay" aria-hidden="true">
+    <div id="mail-card" role="dialog" aria-modal="true" aria-labelledby="mail-title">
+      <div id="mail-head">
+        <h3 id="mail-title">✉️ 우편함</h3>
+        <button id="mail-close" aria-label="우편함 닫기">✕</button>
+      </div>
+      <div id="mail-content">
+        <div id="mail-list" role="listbox" aria-label="받은 우편 목록"></div>
+        <div id="mail-detail" role="region" aria-live="polite"></div>
+      </div>
+      <div id="mail-compose-section" aria-live="polite">
+        <h4>관리자 우편 보내기</h4>
+        <p class="mail-hint">수신 경로 예시: <code>users/server1/your-id</code></p>
+        <label class="mail-field">
+          <span>수신 경로</span>
+          <input type="text" id="mail-compose-target" placeholder="users/serverX/player-id" autocomplete="off" />
+        </label>
+        <label class="mail-field">
+          <span>제목</span>
+          <input type="text" id="mail-compose-subject" maxlength="80" placeholder="제목을 입력하세요" />
+        </label>
+        <label class="mail-field">
+          <span>내용</span>
+          <textarea id="mail-compose-body" placeholder="내용을 입력하세요"></textarea>
+        </label>
+        <div class="mail-compose-grid">
+          <label class="mail-field">
+            <span>자원</span>
+            <input type="number" id="mail-compose-res" min="0" step="1" value="0" />
+          </label>
+          <label class="mail-field">
+            <span>코인</span>
+            <input type="number" id="mail-compose-coin" min="0" step="1" value="0" />
+          </label>
+          <label class="mail-field">
+            <span>이벤트코인</span>
+            <input type="number" id="mail-compose-ecoin" min="0" step="1" value="0" />
+          </label>
+        </div>
+        <div class="mail-compose-grid">
+          <label class="mail-field">
+            <span>버프 종류</span>
+            <select id="mail-compose-buff-type">
+              <option value="">없음</option>
+              <option value="all">전체 생산</option>
+              <option value="coin">코인 생산</option>
+              <option value="res">자원 생산</option>
+            </select>
+          </label>
+          <label class="mail-field">
+            <span>버프 배율(xN)</span>
+            <input type="number" id="mail-compose-buff-mult" min="0" step="0.1" value="1" />
+          </label>
+          <label class="mail-field">
+            <span>버프 지속(분)</span>
+            <input type="number" id="mail-compose-buff-min" min="0" step="1" value="0" />
+          </label>
+        </div>
+        <button id="mail-compose-send" type="button">📨 우편 발송</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 출석/슬롯 오버레이 -->
   <div id="daily-overlay" aria-hidden="true">
@@ -828,6 +1007,12 @@
     let rankingUnlocked = false;
     let bootDone = false;
 
+    const MAIL_ADMIN_EMAIL = 'siu46852579@gmail.com';
+    let mailboxRef = null;
+    let mailboxUnsubscribe = null;
+    let mailboxCache = [];
+    let selectedMailId = null;
+
     
     /* 🔒 3초 부트 스킵 전용 타임스탬프 (요청사항) */
     const AUDIT_BOOT_TS = Date.now();
@@ -960,6 +1145,393 @@
       const s = n.toFixed(decimalsForUnits).replace(/\.0+$|(\.\d*[1-9])0+$/, '$1');
       return (neg ? '-' : '') + s + units[u];
     }
+
+    function escapeHTML(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatMailDate(ts) {
+      if (!ts) return '';
+      try {
+        return new Date(ts).toLocaleString('ko-KR');
+      } catch { return ''; }
+    }
+
+    function updateMailBadges() {
+      const unread = mailboxCache.filter(m => !m.readAt).length;
+      const badge = document.getElementById('mail-unread-badge');
+      if (badge) {
+        if (unread > 0) {
+          badge.textContent = unread > 99 ? '99+' : String(unread);
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+      const side = document.getElementById('mail-unread-side');
+      if (side) {
+        if (unread > 0) {
+          side.textContent = unread > 99 ? '99+' : String(unread);
+          side.style.opacity = '1';
+        } else {
+          side.textContent = '-';
+          side.style.opacity = '0.65';
+        }
+      }
+    }
+
+    function generateMailId() {
+      return `mail_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function buildMailRewardsHtml(mail) {
+      const rewards = mail?.rewards;
+      const rows = [];
+      const resAmt = Number(rewards?.resources ?? rewards?.res ?? 0);
+      if (resAmt > 0) rows.push(`<span>🪨 자원 +${formatKR(resAmt)}</span>`);
+      const coinAmt = Number(rewards?.coins ?? rewards?.coin ?? 0);
+      if (coinAmt > 0) rows.push(`<span>💰 코인 +${formatKR(coinAmt)}</span>`);
+      const ecoAmt = Number(rewards?.eventCoins ?? rewards?.eco ?? rewards?.ecoins ?? 0);
+      if (ecoAmt > 0) rows.push(`<span>🎟️ 이벤트코인 +${formatKR(ecoAmt)}</span>`);
+      const buffList = Array.isArray(rewards?.buffs)
+        ? rewards.buffs
+        : rewards?.buff ? [rewards.buff] : [];
+      buffList.forEach(b => {
+        if (!b) return;
+        const type = b.type || b.kind;
+        const mult = Number(b.value ?? b.mult ?? b.bmult ?? 0);
+        const durMs = Number(b.duration ?? b.durationMs ?? b.dur ?? 0);
+        if (!type || mult <= 0 || durMs <= 0) return;
+        const minutes = Math.max(1, Math.round(durMs / 60000));
+        rows.push(`<span>🚀 버프(${type}) ×${(1 + mult).toFixed(2)} / ${minutes}분</span>`);
+      });
+      if (!rows.length) return '<span>보상 없음</span>';
+      return rows.join('');
+    }
+
+    function renderMailList() {
+      const listEl = document.getElementById('mail-list');
+      if (!listEl) return;
+      if (!mailboxCache.length) {
+        listEl.innerHTML = '<div class="mail-empty">받은 우편이 없습니다.</div>';
+        return;
+      }
+      const html = mailboxCache.map(mail => {
+        const unread = !mail.readAt;
+        const selected = selectedMailId === mail.id;
+        const preview = escapeHTML((mail.body || '').replace(/\s+/g, ' ').trim().slice(0, 40));
+        const sent = formatMailDate(mail.sentAt);
+        return `
+          <button type="button" class="mail-item${unread ? ' unread' : ''}${selected ? ' selected' : ''}" data-mail-id="${mail.id}">
+            <div class="mail-subject">${escapeHTML(mail.subject || '제목 없음')}</div>
+            <div class="mail-preview">${preview || '내용 없음'}</div>
+            <div class="mail-meta"><span>${escapeHTML(mail.from || '시스템')}</span><span>${sent}</span></div>
+          </button>`;
+      }).join('');
+      listEl.innerHTML = html;
+      Array.from(listEl.querySelectorAll('.mail-item')).forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-mail-id');
+          selectMail(id);
+        });
+      });
+    }
+
+    function renderMailDetail(mail) {
+      const detail = document.getElementById('mail-detail');
+      if (!detail) return;
+      if (!mail) {
+        detail.innerHTML = '<div class="mail-empty">우편을 선택하세요.</div>';
+        return;
+      }
+      const sent = formatMailDate(mail.sentAt);
+      const read = mail.readAt ? formatMailDate(mail.readAt) : null;
+      const claimed = mail.claimedAt ? formatMailDate(mail.claimedAt) : null;
+      const bodyHtml = escapeHTML(mail.body || '').replace(/\n/g, '<br/>');
+      const rewardsHtml = buildMailRewardsHtml(mail);
+      const hasRewards = !!mail.rewards && rewardsHtml !== '<span>보상 없음</span>';
+      const statusParts = [`발송: ${sent || '-'}`];
+      if (read) statusParts.push(`읽음: ${read}`);
+      if (claimed) statusParts.push(`보상 수령: ${claimed}`);
+      const claimDisabled = !hasRewards || !!mail.claimedAt;
+      const claimLabel = mail.claimedAt ? '수령 완료' : '보상 받기';
+      detail.innerHTML = `
+        <div>
+          <h4>${escapeHTML(mail.subject || '제목 없음')}</h4>
+          <div class="mail-meta-line">보낸 사람: ${escapeHTML(mail.from || '시스템')} • ${statusParts.join(' • ')}</div>
+        </div>
+        <div class="mail-body">${bodyHtml || '내용이 없습니다.'}</div>
+        <div id="mail-rewards">${rewardsHtml}</div>
+        <div id="mail-actions">
+          <button type="button" class="secondary" id="mail-delete-btn">삭제</button>
+          <button type="button" id="mail-claim-btn" ${claimDisabled ? 'disabled' : ''}>${claimLabel}</button>
+        </div>`;
+      detail.querySelector('#mail-delete-btn')?.addEventListener('click', () => deleteMail(mail.id));
+      if (!claimDisabled) {
+        detail.querySelector('#mail-claim-btn')?.addEventListener('click', () => claimMailReward(mail.id));
+      }
+    }
+
+    function selectMail(mailId) {
+      if (!mailId) {
+        selectedMailId = null;
+        renderMailList();
+        renderMailDetail(null);
+        updateMailBadges();
+        return;
+      }
+      let mail = mailboxCache.find(m => m.id === mailId);
+      if (!mail) {
+        selectedMailId = null;
+        renderMailList();
+        renderMailDetail(null);
+        updateMailBadges();
+        return;
+      }
+      selectedMailId = mailId;
+      if (!mail.readAt) {
+        const now = Date.now();
+        mailboxCache = mailboxCache.map(m => m.id === mailId ? { ...m, readAt: m.readAt || now } : m);
+        mail = mailboxCache.find(m => m.id === mailId) || mail;
+        markMailAsRead(mailId);
+      }
+      renderMailList();
+      renderMailDetail(mail);
+      updateMailBadges();
+    }
+
+    async function markMailAsRead(mailId) {
+      if (!uid || !userBasePath) return;
+      try {
+        await update(ref(db), { [`${userBasePath}/mailbox/${mailId}/readAt`]: Date.now() });
+      } catch (err) {
+        console.warn('markMailAsRead 실패', err);
+      }
+    }
+
+    function applyMailRewards(mail) {
+      if (!mail?.rewards) return [];
+      const rewards = mail.rewards || {};
+      const applied = [];
+      const resAmt = Math.max(0, Math.floor(Number(rewards.resources ?? rewards.res ?? 0)));
+      if (resAmt > 0) {
+        registerAuditIntent('res', resAmt, 8000);
+        state.resources += resAmt;
+        auditAdd('res', resAmt);
+        applied.push(`자원 ${formatKR(resAmt)}`);
+      }
+      const coinAmt = Math.max(0, Math.floor(Number(rewards.coins ?? rewards.coin ?? 0)));
+      if (coinAmt > 0) {
+        registerAuditIntent('coin', coinAmt, 8000);
+        state.coins += coinAmt;
+        auditGain('coin', coinAmt);
+        applied.push(`코인 ${formatKR(coinAmt)}`);
+      }
+      const ecoAmt = Math.max(0, Math.floor(Number(rewards.eventCoins ?? rewards.eco ?? rewards.ecoins ?? 0)));
+      if (ecoAmt > 0) {
+        registerAuditIntent('eco', ecoAmt, 8000);
+        state.eventCoins = (state.eventCoins || 0) + ecoAmt;
+        auditGain('eco', ecoAmt);
+        applied.push(`이벤트코인 ${formatKR(ecoAmt)}`);
+      }
+      const buffList = Array.isArray(rewards.buffs)
+        ? rewards.buffs
+        : rewards.buff ? [rewards.buff] : [];
+      buffList.forEach(b => {
+        if (!b) return;
+        const type = b.type || b.kind;
+        const mult = Number(b.value ?? b.mult ?? b.bmult ?? 0);
+        const durMs = Number(b.duration ?? b.durationMs ?? b.dur ?? 0);
+        if (!type || mult <= 0 || durMs <= 0) return;
+        addTempBuff(type, mult, durMs);
+        const minutes = Math.max(1, Math.round(durMs / 60000));
+        applied.push(`버프(${type}) x${(1 + mult).toFixed(2)} / ${minutes}분`);
+      });
+      if (applied.length > 0) {
+        save();
+        updateUI();
+        renderPlanets();
+      }
+      return applied;
+    }
+
+    async function claimMailReward(mailId) {
+      if (!uid || !userBasePath) { showToast('로그인 후 이용하세요.'); return; }
+      const mailPath = ref(db, `${userBasePath}/mailbox/${mailId}`);
+      let alreadyClaimed = false;
+      try {
+        const res = await runTransaction(mailPath, current => {
+          if (!current) return current;
+          if (current.claimedAt) { alreadyClaimed = true; return current; }
+          const next = { ...current };
+          const now = Date.now();
+          next.claimedAt = now;
+          if (!next.readAt) next.readAt = now;
+          return next;
+        });
+        if (!res.snapshot.exists()) {
+          showToast('우편이 존재하지 않습니다.', null, null, 2600);
+          return;
+        }
+        if (alreadyClaimed) {
+          showToast('이미 수령한 우편입니다.', null, null, 2600);
+          return;
+        }
+        const finalMail = { id: mailId, ...(res.snapshot.val() || {}) };
+        const rewards = applyMailRewards(finalMail);
+        mailboxCache = mailboxCache.map(m => m.id === mailId ? { ...m, readAt: finalMail.readAt, claimedAt: finalMail.claimedAt } : m);
+        renderMailList();
+        renderMailDetail(mailboxCache.find(m => m.id === mailId) || finalMail);
+        updateMailBadges();
+        if (rewards && rewards.length) {
+          showToast(`🎁 보상을 수령했습니다! (${rewards.join(', ')})`, null, null, 4200);
+        } else {
+          showToast('보상을 확인했습니다.', null, null, 3200);
+        }
+      } catch (err) {
+        console.error('claimMailReward 오류', err);
+        showToast('보상 수령에 실패했습니다. 다시 시도해주세요.', null, null, 3200);
+      }
+    }
+
+    async function deleteMail(mailId) {
+      if (!uid || !userBasePath) { showToast('로그인 후 이용하세요.'); return; }
+      const ok = confirm('해당 우편을 삭제할까요? 보상을 받았다면 삭제해도 안전합니다.');
+      if (!ok) return;
+      try {
+        await update(ref(db), { [`${userBasePath}/mailbox/${mailId}`]: null });
+        mailboxCache = mailboxCache.filter(m => m.id !== mailId);
+        if (selectedMailId === mailId) {
+          selectedMailId = null;
+          renderMailDetail(null);
+        }
+        renderMailList();
+        updateMailBadges();
+        showToast('우편을 삭제했습니다.', null, null, 2600);
+      } catch (err) {
+        console.error('deleteMail 오류', err);
+        showToast('우편 삭제에 실패했습니다.', null, null, 3000);
+      }
+    }
+
+    function openMailOverlay() {
+      if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return; }
+      const overlay = document.getElementById('mail-overlay');
+      if (!overlay) return;
+      hideAllOverlays();
+      overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden', 'false');
+      if (!selectedMailId && mailboxCache.length) {
+        selectMail(mailboxCache[0].id);
+      } else {
+        renderMailList();
+        const current = selectedMailId ? mailboxCache.find(m => m.id === selectedMailId) : null;
+        renderMailDetail(current);
+      }
+      updateMailBadges();
+      const targetInput = document.getElementById('mail-compose-target');
+      if (targetInput && targetInput.value.trim() === '' && userBasePath) {
+        targetInput.value = userBasePath;
+      }
+    }
+
+    function closeMailOverlay() {
+      const overlay = document.getElementById('mail-overlay');
+      if (!overlay) return;
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    function updateMailComposeVisibility(user) {
+      const section = document.getElementById('mail-compose-section');
+      if (!section) return;
+      const isAdmin = !!user && String(user.email || '').toLowerCase() === MAIL_ADMIN_EMAIL;
+      section.classList.toggle('show', isAdmin);
+      if (isAdmin) {
+        const targetInput = document.getElementById('mail-compose-target');
+        if (targetInput && userBasePath) targetInput.value = userBasePath;
+      }
+    }
+
+    async function sendAdminMail() {
+      if (!auth?.currentUser || String(auth.currentUser.email || '').toLowerCase() !== MAIL_ADMIN_EMAIL) {
+        showToast('우편 발송 권한이 없습니다.', null, null, 3200);
+        return;
+      }
+      const targetInput = document.getElementById('mail-compose-target');
+      const subjectInput = document.getElementById('mail-compose-subject');
+      const bodyInput = document.getElementById('mail-compose-body');
+      const resInput = document.getElementById('mail-compose-res');
+      const coinInput = document.getElementById('mail-compose-coin');
+      const ecoInput = document.getElementById('mail-compose-ecoin');
+      const buffTypeSel = document.getElementById('mail-compose-buff-type');
+      const buffMultInput = document.getElementById('mail-compose-buff-mult');
+      const buffMinInput = document.getElementById('mail-compose-buff-min');
+
+      if (!targetInput || !subjectInput || !bodyInput) return;
+
+      const targetRaw = (targetInput.value || '').trim().replace(/\/+$/g, '');
+      const targetPath = targetRaw || userBasePath;
+      if (!targetPath || !/^users\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+$/.test(targetPath)) {
+        showToast('수신 경로 형식을 확인해주세요. (예: users/server1/player-id)', null, null, 3600);
+        return;
+      }
+
+      const subject = subjectInput.value.trim() || '제목 없음';
+      const body = bodyInput.value.trim();
+      const resAmt = Math.max(0, Math.floor(Number(resInput?.value ?? 0)));
+      const coinAmt = Math.max(0, Math.floor(Number(coinInput?.value ?? 0)));
+      const ecoAmt = Math.max(0, Math.floor(Number(ecoInput?.value ?? 0)));
+      const buffType = buffTypeSel?.value || '';
+      const buffMultRaw = Number(buffMultInput?.value ?? 0);
+      const buffMinutes = Math.max(0, Math.floor(Number(buffMinInput?.value ?? 0)));
+
+      const rewards = {};
+      let rewardCount = 0;
+      if (resAmt > 0) { rewards.resources = resAmt; rewardCount++; }
+      if (coinAmt > 0) { rewards.coins = coinAmt; rewardCount++; }
+      if (ecoAmt > 0) { rewards.eventCoins = ecoAmt; rewardCount++; }
+      if (buffType && buffMultRaw > 1 && buffMinutes > 0) {
+        rewards.buffs = [{ type: buffType, value: buffMultRaw - 1, duration: buffMinutes * 60000 }];
+        rewardCount++;
+      }
+
+      const payload = {
+        subject,
+        body,
+        from: MAIL_ADMIN_EMAIL,
+        sentAt: Date.now()
+      };
+      if (rewardCount > 0) payload.rewards = rewards;
+
+      try {
+        await update(ref(db), { [`${targetPath}/mailbox/${generateMailId()}`]: payload });
+        showToast('우편을 발송했습니다.', null, null, 3200);
+        if (targetInput) targetInput.value = targetPath;
+      } catch (err) {
+        console.error('sendAdminMail 오류', err);
+        showToast('우편 발송에 실패했습니다. 잠시 후 다시 시도해주세요.', null, null, 3600);
+      }
+    }
+
+    document.getElementById('mail-close')?.addEventListener('click', closeMailOverlay);
+    document.getElementById('mail-compose-send')?.addEventListener('click', sendAdminMail);
+    document.getElementById('mail-overlay')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeMailOverlay();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMailOverlay();
+    });
+    renderMailList();
+    renderMailDetail(null);
+    updateMailBadges();
+    window.openMailOverlay = openMailOverlay;
+    window.closeMailOverlay = closeMailOverlay;
 
     /* ========= 기본 데이터 & 유틸 ========= */
     const defaultData = {
@@ -1790,6 +2362,7 @@
       try{ showBanOverlay(false); }catch{}
       try{ showTosOverlay(false); }catch{}
       try{ showMigrateOverlay(false); }catch{}
+      try{ closeMailOverlay(); }catch{}
       try{
         const ov = document.getElementById('daily-overlay');
         if (ov){ ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); }
@@ -2488,6 +3061,28 @@
 
     // 데이터 바인딩
     async function proceedWithDataBinding(){
+      if (mailboxUnsubscribe) { try { mailboxUnsubscribe(); } catch {} mailboxUnsubscribe = null; }
+      mailboxCache = [];
+      selectedMailId = null;
+      renderMailList();
+      renderMailDetail(null);
+      updateMailBadges();
+      mailboxRef = ref(db, `${userBasePath}/mailbox`);
+      mailboxUnsubscribe = onValue(mailboxRef, snap => {
+        const raw = snap.exists() ? snap.val() : {};
+        const entries = Object.entries(raw || {}).map(([id, mail]) => ({ id, ...(mail || {}) }));
+        entries.sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0));
+        mailboxCache = entries;
+        if (selectedMailId && !mailboxCache.some(m => m.id === selectedMailId)) {
+          selectedMailId = null;
+        }
+        renderMailList();
+        const current = selectedMailId ? mailboxCache.find(m => m.id === selectedMailId) : null;
+        renderMailDetail(current || null);
+        updateMailBadges();
+      });
+      updateMailComposeVisibility(auth.currentUser || null);
+
       try {
         const rankSnap = await get(ref(db), `${userBasePath}/meta/rankingUnlocked`);
         rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
@@ -2562,6 +3157,15 @@
       setBootVisible(false);
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
+      if (mailboxUnsubscribe) { try{ mailboxUnsubscribe(); }catch{} mailboxUnsubscribe=null; }
+      mailboxRef = null;
+      mailboxCache = [];
+      selectedMailId = null;
+      renderMailList();
+      renderMailDetail(null);
+      updateMailBadges();
+      closeMailOverlay();
+      updateMailComposeVisibility(null);
 
       if (user) {
         clearSupportCtx();
@@ -2579,6 +3183,7 @@
         uid = user.uid;
         loadBuffs();
         renderBuffStatus();
+        updateMailComposeVisibility(user);
 
         try {
           const cacheRaw = localStorage.getItem(`gd_cache_${uid}`);
@@ -2791,6 +3396,7 @@
       }
       if (action === 'resume')   { customMenu.style.display='none'; }
       if (action === 'rank')     { location.href='/ranking.html'; }
+      if (action === 'mail')     { customMenu.style.display='none'; try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
@@ -2841,6 +3447,7 @@
           if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
         }
         if (action === 'rank')     { location.href='/ranking.html'; }
+        if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
         if (action === 'resume')   { /* 닫기만 */ }
         closeSide();
