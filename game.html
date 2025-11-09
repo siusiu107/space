@@ -2780,7 +2780,9 @@
             save(); updateUI(); renderPlanets();
             if (p.name === '화성' && !rankingUnlocked) {
               rankingUnlocked = true;
-              try { await update(ref(db), { [`${userBasePath}/meta/rankingUnlocked`]: true }); } catch{}
+              try {
+                await update(ref(db, `${userBasePath}/meta`), { rankingUnlocked: true });
+              } catch{}
               showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{ location.href='/ranking.html'; });
             }
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
@@ -3149,7 +3151,7 @@
       updateMailComposeVisibility(auth.currentUser || null);
 
       try {
-        const rankSnap = await get(ref(db), `${userBasePath}/meta/rankingUnlocked`);
+        const rankSnap = await get(ref(db, `${userBasePath}/meta/rankingUnlocked`));
         rankingUnlocked = !!(rankSnap.exists() ? rankSnap.val() : false);
       } catch { rankingUnlocked = false; }
 
