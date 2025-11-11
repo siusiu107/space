@@ -333,8 +333,9 @@
     #shop-overlay.show{ opacity:1; pointer-events:auto; }
     #shop-overlay.loading #shop-loading{ opacity:1; visibility:visible; }
     #shop-card{
-      width:min(920px, 96vw);
+      width:min(1024px, 96vw);
       max-height:92vh;
+      height:min(880px, 92vh);
       border-radius:18px;
       border:1px solid rgba(160,220,255,0.18);
       background: linear-gradient(180deg, rgba(16,24,40,0.95), rgba(8,14,26,0.97));
@@ -361,12 +362,13 @@
       position:relative;
       flex:1;
       min-height:420px;
+      height:100%;
       border-radius:12px;
       overflow:hidden;
       border:1px solid rgba(120,180,255,0.18);
       background:rgba(0,0,0,0.35);
     }
-    #shop-frame{ width:100%; height:100%; border:0; }
+    #shop-frame{ width:100%; height:100%; border:0; display:block; }
     #shop-loading{
       position:absolute;
       inset:0;
@@ -1632,6 +1634,63 @@
         notifyShopBalanceChange(state.eventCoins || 0);
       }
       if (data.type === 'shop-purchase-success') {
+        let newBalance = null;
+        const balanceKeys = ['balance', 'newBalance', 'eventCoinsBalance', 'remaining', 'total'];
+        for (const key of balanceKeys) {
+          if (newBalance !== null) break;
+          if (key in data && data[key] !== undefined && data[key] !== null) {
+            const parsed = Number(data[key]);
+            if (!Number.isNaN(parsed)) newBalance = parsed;
+          }
+        }
+        if (newBalance === null && typeof data.eventCoins === 'number') {
+          const candidate = Number(data.eventCoins);
+          if (!Number.isNaN(candidate) && candidate >= (state.eventCoins || 0)) {
+            newBalance = candidate;
+          }
+        }
+
+        let credited = 0;
+        const creditKeys = ['delta', 'credit', 'amount', 'add', 'purchased', 'qty', 'quantity', 'increase', 'eventCoinsDelta', 'eco', 'ecoin'];
+        for (const key of creditKeys) {
+          if (key in data && data[key] !== undefined && data[key] !== null) {
+            const parsed = Number(data[key]);
+            if (!Number.isNaN(parsed)) {
+              credited = parsed;
+              break;
+            }
+          }
+        }
+        if (!credited && newBalance === null && typeof data.eventCoins === 'number') {
+          const parsed = Number(data.eventCoins);
+          if (!Number.isNaN(parsed)) credited = parsed;
+        }
+
+        let applied = false;
+        const currentEco = Math.floor(state.eventCoins || 0);
+        if (newBalance !== null && Number.isFinite(newBalance)) {
+          const normalized = Math.max(0, Math.floor(newBalance));
+          const gain = normalized - currentEco;
+          if (gain > 0) {
+            registerAuditIntent('eco', gain, 12000);
+            auditGain('eco', gain);
+          }
+          state.eventCoins = normalized;
+          applied = true;
+        } else if (credited > 0 && Number.isFinite(credited)) {
+          const gain = Math.max(0, Math.floor(credited));
+          if (gain > 0) {
+            registerAuditIntent('eco', gain, 12000);
+            auditGain('eco', gain);
+            state.eventCoins = currentEco + gain;
+            applied = true;
+          }
+        }
+
+        if (applied) {
+          save();
+          updateUI();
+        }
         showToast('이벤트코인 구매가 완료되었습니다! 잠시 후 잔액이 반영됩니다.', null, null, 3200);
       }
     });
