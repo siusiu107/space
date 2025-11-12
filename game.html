@@ -815,7 +815,6 @@
   <div id="custom-menu">
     <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
     <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
-    <div class="menu-item" data-action="shop"><span>🛒 이벤트코인 상점</span></div>
     <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
     <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
     <div class="menu-item" data-action="mail">
@@ -3738,10 +3737,6 @@
         if (window.__IS_EMBEDDED_APP) return;
         const proceed = confirm('앱 다운로드를 위해 onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
         if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
-      }
-      if (action === 'shop') {
-        customMenu.style.display='none';
-        try { window.openShopOverlay && window.openShopOverlay(); } catch {}
       }
       if (action === 'resume')   { customMenu.style.display='none'; }
       if (action === 'rank')     { location.href='/ranking.html'; }
