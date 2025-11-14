@@ -205,6 +205,19 @@
       cursor: pointer; font-weight: 700;
     }
     #settings-btn:hover { filter: brightness(1.08); }
+    #guest-login-btn {
+      display: none;
+      margin-left: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(0,180,255,0.18), rgba(0,120,255,0.24));
+      border: 1px solid rgba(0,200,255,0.45);
+      color: #001624;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,140,255,0.18);
+    }
+    #guest-login-btn:hover { filter: brightness(1.08); }
 
     /* 새 버프 버튼 */
     #buff-btn{
@@ -770,6 +783,7 @@
       <!-- 버프 버튼으로 교체 -->
       <button id="buff-btn" aria-label="현재 버프 보기">버프(0)</button>
       <span id="suspicion-badge" title="핵 사용 의심도">의심도: 0</span>
+      <button id="guest-login-btn" type="button" aria-label="게스트에서 로그인 화면으로 이동">🔐 로그인</button>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
   </div>
@@ -1095,6 +1109,7 @@
     const GUEST_PROFILE_KEY = 'siu_guest_profile_v1';
     let guestMode = false;
     let guestTransferPreference = 'none';
+    let guestAutoStartSuppressed = false;
 
     function readGuestProfile() {
       try {
@@ -2235,6 +2250,7 @@
     }
 
     /* ====== 여기서부터 룰렛 템플릿 ====== */
+    const ROULETTE_AUDIT_WINDOW_MS = 15000;
 
     const TPL_DAILY = [
       { key:'coin_cur_06', type:'coin', currentCoinMul:0.6, icon:'💰', color:'#00E5FF', w:0.35 },
@@ -2246,24 +2262,24 @@
     ];
 
     const TPL_PREMIUM = [
-      { key:'coin_cur_1',  type:'coin', currentCoinMul:1.0, icon:'💰', color:'#00E5FF', w:0.28 },
-      { key:'coin_cur_2',  type:'coin', currentCoinMul:2.0, icon:'💰', color:'#4DFFB5', w:0.20 },
-      { key:'coin_x5_5',   type:'coin', coinMul:5.5,       icon:'💰', color:'#32C6FF', w:0.09 },
-      { key:'all_x2_10m',  type:'buff', bkind:'all',  bmult:1.0, bdur:10*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
-      { key:'res_x3_7m',   type:'buff', bkind:'res',  bmult:2.0, bdur:7*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.13 },
-      { key:'coinbuf_x3_5m', type:'buff', bkind:'coin', bmult:2.0, bdur:5*60*1000, icon:'🪙', color:'#FFD0A8', w:0.09 },
-      { key:'eco_3',       type:'ecoin', val:3,       icon:'🎟️', color:'#FF9E3D', w:0.03 }
+      { key:'coin_cur_1',  type:'coin', currentCoinMul:1.4, icon:'💰', color:'#00E5FF', w:0.26 },
+      { key:'coin_cur_2',  type:'coin', currentCoinMul:2.8, icon:'💰', color:'#4DFFB5', w:0.20 },
+      { key:'coin_x5_5',   type:'coin', coinMul:7.5,       icon:'💰', color:'#32C6FF', w:0.10 },
+      { key:'all_x2_10m',  type:'buff', bkind:'all',  bmult:1.4, bdur:12*60*1000, icon:'🚀', color:'#8AE1FF', w:0.18 },
+      { key:'res_x3_7m',   type:'buff', bkind:'res',  bmult:2.6, bdur:9*60*1000,  icon:'⚡', color:'#FFA8FF', w:0.12 },
+      { key:'coinbuf_x3_5m', type:'buff', bkind:'coin', bmult:2.5, bdur:7*60*1000, icon:'🪙', color:'#FFD0A8', w:0.09 },
+      { key:'eco_3',       type:'ecoin', val:5,       icon:'🎟️', color:'#FF9E3D', w:0.05 }
     ];
 
     const TPL_ECOIN = [
-      { key:'coin_cur_5',  type:'coin', currentCoinMul:5.0,  icon:'💰', color:'#00E5FF', w:0.27 },
-      { key:'coin_cur_10', type:'coin', currentCoinMul:10.0, icon:'💰', color:'#4DFFB5', w:0.20 },
-      { key:'coin_cur_20', type:'coin', currentCoinMul:20.0, icon:'💰', color:'#32C6FF', w:0.12 },
-      { key:'all_x3_15m',  type:'buff', bkind:'all',  bmult:2.0, bdur:15*60*1000, icon:'🚀', color:'#8AE1FF', w:0.16 },
-      { key:'res_x5_12m',  type:'buff', bkind:'res',  bmult:4.0,  bdur:12*60*1000, icon:'⚡', color:'#FFA8FF', w:0.12 },
-      { key:'eco_8',       type:'ecoin', val:8,       icon:'🎟️', color:'#FFBE5C', w:0.07 },
-      { key:'eco_12',      type:'ecoin', val:12,      icon:'🎟️', color:'#FF9E3D', w:0.04 },
-      { key:'eco_20',      type:'ecoin', val:20,      icon:'🎟️', color:'#FF7AE1', w:0.02 }
+      { key:'coin_cur_5',  type:'coin', currentCoinMul:7.0,  icon:'💰', color:'#00E5FF', w:0.26 },
+      { key:'coin_cur_10', type:'coin', currentCoinMul:14.0, icon:'💰', color:'#4DFFB5', w:0.20 },
+      { key:'coin_cur_20', type:'coin', currentCoinMul:28.0, icon:'💰', color:'#32C6FF', w:0.12 },
+      { key:'all_x3_15m',  type:'buff', bkind:'all',  bmult:2.5, bdur:18*60*1000, icon:'🚀', color:'#8AE1FF', w:0.16 },
+      { key:'res_x5_12m',  type:'buff', bkind:'res',  bmult:4.5,  bdur:15*60*1000, icon:'⚡', color:'#FFA8FF', w:0.11 },
+      { key:'eco_8',       type:'ecoin', val:12,      icon:'🎟️', color:'#FFBE5C', w:0.07 },
+      { key:'eco_12',      type:'ecoin', val:18,      icon:'🎟️', color:'#FF9E3D', w:0.05 },
+      { key:'eco_20',      type:'ecoin', val:28,      icon:'🎟️', color:'#FF7AE1', w:0.03 }
     ];
 
     function materializeItems(tpl, mode){
@@ -2277,7 +2293,7 @@
             awardCoin: amt,
             label: `현재코인 ×${it.currentCoinMul} (= ${formatKR(amt)})`,
             onWin:()=>{
-              registerAuditIntent('coin', amt);
+              registerAuditIntent('coin', amt, ROULETTE_AUDIT_WINDOW_MS);
               state.coins += amt;
               auditGain('coin', amt);
             }
@@ -2290,7 +2306,7 @@
             awardCoin: amt,
             label:`코인 ${formatKR(amt)}`,
             onWin:()=>{
-              registerAuditIntent('coin', amt);
+              registerAuditIntent('coin', amt, ROULETTE_AUDIT_WINDOW_MS);
               state.coins += amt;
               auditGain('coin', amt);
             }
@@ -2302,7 +2318,7 @@
             awardEcoin: it.val,
             label:`이벤트코인 ×${it.val}`,
             onWin:()=>{
-              registerAuditIntent('eco', it.val);
+              registerAuditIntent('eco', it.val, ROULETTE_AUDIT_WINDOW_MS);
               state.eventCoins = (state.eventCoins||0) + it.val;
               auditGain('eco', it.val);
             }
@@ -2352,6 +2368,7 @@
     }
 
     let isSpinning = false;
+    let lastRouletteAwardAt = 0;
 
     function spinSlot(items, picked){
       const rowH=56;
@@ -2532,6 +2549,7 @@
       isSpinning = true; updateSpinButtons();
       await spinSlot(activeItems, picked);
       picked.onWin();
+      lastRouletteAwardAt = Date.now();
 
       try{
         const delta = deltaFrom(before);
@@ -2640,6 +2658,12 @@
       guestStartBtn.textContent = hasGuestProfile() ? '게스트로 계속하기' : '게스트로 시작하기';
     }
 
+    function updateGuestUiState() {
+      if (guestLoginBtn) {
+        guestLoginBtn.style.display = guestMode ? 'inline-flex' : 'none';
+      }
+    }
+
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
@@ -2659,6 +2683,7 @@
         hideAllOverlays();
         guestMode = true;
         guestTransferPreference = 'none';
+        guestAutoStartSuppressed = false;
         loadGuestProfileIntoState();
         security.tosAccepted = true;
         security.banned = false;
@@ -2676,6 +2701,7 @@
         renderPlanets();
         updateMailBadges();
         refreshGuestButton();
+        updateGuestUiState();
         persistGuestProfile();
       } catch (err) {
         console.error('guest start failed', err);
@@ -3012,6 +3038,11 @@
         (spikeCoin > EPS ? spikeCoin * 1.6 : 0);
 
       let score = (baseUnknown + baseSpike) * (1 + 0.6*mag + 0.8*ratioBoost);
+      if (lastRouletteAwardAt && (now - lastRouletteAwardAt) < 12000) {
+        const ecoSafe = unknownEco <= EPS;
+        const spikeSafe = spikeRes <= EPS && spikeCoin <= EPS;
+        score *= ecoSafe && spikeSafe ? 0.35 : 0.6;
+      }
 
       if (score > UNKNOWN_THRESH){
         const add = Math.min(24, Math.max(2, Math.ceil(score)));
@@ -3339,6 +3370,7 @@
     const loginBtn  = document.getElementById('login-btn');
     const signupBtnEl = document.getElementById('signup-btn');
     const guestStartBtn = document.getElementById('guest-start-btn');
+    const guestLoginBtn = document.getElementById('guest-login-btn');
     const tosCheckbox = document.getElementById('tos-checkbox');
     const privacyCheckbox = document.getElementById('privacy-checkbox');
     const verifyInfoEl = document.getElementById('verify-info');
@@ -3384,13 +3416,20 @@
       setAuthMode('login');
       showAuthStatus('');
       refreshGuestButton();
+      updateGuestUiState();
     }
 
     function requireLoginForFeature() {
       if (uid) return true;
       if (guestMode) {
         const wantsLogin = confirm(LOGIN_PROMPT_MESSAGE);
-        if (wantsLogin) showLoginScreen();
+        if (wantsLogin) {
+          try { persistGuestProfile(); } catch {}
+          guestAutoStartSuppressed = true;
+          guestMode = false;
+          updateGuestUiState();
+          showLoginScreen();
+        }
         return false;
       }
       showAuthStatus('로그인 후 이용하세요.');
@@ -3403,6 +3442,16 @@
 
     guestStartBtn?.addEventListener('click', () => {
       startGuestMode();
+    });
+
+    guestLoginBtn?.addEventListener('click', () => {
+      if (guestMode) {
+        try { persistGuestProfile(); } catch {}
+      }
+      guestAutoStartSuppressed = true;
+      guestMode = false;
+      updateGuestUiState();
+      showLoginScreen();
     });
 
     document.getElementById('settings-btn').addEventListener('click', () => {
@@ -3521,6 +3570,7 @@
     privacyCheckbox?.addEventListener('change', updateSignupAvailability);
     updateSignupAvailability();
     refreshGuestButton();
+    updateGuestUiState();
 
     // TOS 동의
     const tosAgree = document.getElementById('tos-agree');
@@ -3689,9 +3739,11 @@
 
       if (user) {
         guestMode = false;
+        guestAutoStartSuppressed = false;
         clearSupportCtx();
         hideAllOverlays();
         security.banned = false;
+        updateGuestUiState();
 
         const isPasswordProvider = (user.providerData || []).some(p => p.providerId === 'password');
         if (isPasswordProvider && !user.emailVerified) {
@@ -3819,6 +3871,11 @@
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
         setAuthMode(currentAuthMode);
         refreshGuestButton();
+        updateGuestUiState();
+
+        if (!guestAutoStartSuppressed && hasGuestProfile()) {
+          startGuestMode();
+        }
       }
     });
 
