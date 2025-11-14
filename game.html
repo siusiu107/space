@@ -708,6 +708,7 @@
 
     <button id="login-btn" class="primary-btn">로그인</button>
     <button id="signup-btn" class="ghost-btn" style="display:none">회원가입</button>
+    <button id="guest-start-btn" class="ghost-btn" style="margin-top:10px;">게스트로 시작하기</button>
 
     <button id="google-btn" aria-label="구글로 계속하기 (권장)" class="google-btn">
       <span class="g-icon" aria-hidden="true">
@@ -1091,6 +1092,23 @@
     let rankingUnlocked = false;
     let bootDone = false;
 
+    const GUEST_PROFILE_KEY = 'siu_guest_profile_v1';
+    let guestMode = false;
+    let guestTransferPreference = 'none';
+
+    function readGuestProfile() {
+      try {
+        const raw = localStorage.getItem(GUEST_PROFILE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+    function hasGuestProfile() {
+      try {
+        const profile = readGuestProfile();
+        return !!(profile && typeof profile === 'object' && profile.state);
+      } catch { return false; }
+    }
+
     const MAIL_ADMIN_EMAIL = 'siu46852579@gmail.com';
     let mailboxRef = null;
     let mailboxUnsubscribe = null;
@@ -1149,7 +1167,7 @@
     /* ======================
        버프 저장/적용/표시
        ====================== */
-    function buffStorageKey(){ return `siu_buffs_${uid||'anon'}`; }
+    function buffStorageKey(){ return guestMode ? 'siu_buffs_guest' : `siu_buffs_${uid||'anon'}`; }
     function ensureFx(){ if(!window.fx) window.fx={}; if(!window.fx.buffs) window.fx.buffs=[]; }
     function persistBuffs(){
       ensureFx();
@@ -1455,7 +1473,11 @@
     }
 
     async function claimMailReward(mailId) {
-      if (!uid || !userBasePath) { showToast('로그인 후 이용하세요.'); return; }
+      if (!uid || !userBasePath) {
+        if (!requireLoginForFeature()) return;
+        showToast('로그인 후 이용하세요.', null, null, 2800);
+        return;
+      }
       const mailPath = ref(db, `${userBasePath}/mailbox/${mailId}`);
       let alreadyClaimed = false;
       try {
@@ -1494,7 +1516,11 @@
     }
 
     async function deleteMail(mailId) {
-      if (!uid || !userBasePath) { showToast('로그인 후 이용하세요.'); return; }
+      if (!uid || !userBasePath) {
+        if (!requireLoginForFeature()) return;
+        showToast('로그인 후 이용하세요.', null, null, 2800);
+        return;
+      }
       const ok = confirm('해당 우편을 삭제할까요? 보상을 받았다면 삭제해도 안전합니다.');
       if (!ok) return;
       try {
@@ -1550,6 +1576,7 @@
 
     async function openShopOverlay() {
       if (!uid || !auth?.currentUser) {
+        if (!requireLoginForFeature()) return;
         showToast('로그인 후 이용하세요.', null, null, 2800);
         return;
       }
@@ -1695,7 +1722,9 @@
     });
 
     function openMailOverlay() {
-      if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return; }
+      if (!uid) {
+        if (!requireLoginForFeature()) return;
+      }
       const overlay = document.getElementById('mail-overlay');
       if (!overlay) return;
       hideAllOverlays();
@@ -1880,6 +1909,37 @@
       workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
       _lastUpdated: 0
     };
+    function writeGuestProfile(profile) {
+      try { localStorage.setItem(GUEST_PROFILE_KEY, JSON.stringify(profile)); }
+      catch (err) { console.warn('guest profile save error', err); }
+    }
+    function persistGuestProfile() {
+      if (!guestMode) return;
+      try {
+        const now = Date.now();
+        const snapshot = JSON.parse(JSON.stringify({ ...state }));
+        if (!snapshot || typeof snapshot !== 'object') return;
+        if (!snapshot._lastUpdated) snapshot._lastUpdated = now;
+        writeGuestProfile({
+          state: snapshot,
+          rankingUnlocked: !!rankingUnlocked,
+          lastSavedAt: now
+        });
+      } catch (err) {
+        console.warn('guest persist failed', err);
+      }
+    }
+    function applyGuestProfile(profile) {
+      const rawState = (profile && typeof profile === 'object' && profile.state && typeof profile.state === 'object')
+        ? profile.state
+        : null;
+      state = { ...defaultData, ...(rawState || {}) };
+      rankingUnlocked = !!(profile && profile.rankingUnlocked);
+    }
+    function loadGuestProfileIntoState() {
+      const profile = readGuestProfile();
+      applyGuestProfile(profile || {});
+    }
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
     const initialConversionCost=50, conversionCostGrowth=1.3;
@@ -1985,9 +2045,15 @@
     }
 
     function save() {
+      if (!window.__PLAY_ALLOWED) return;
+      if (guestMode) {
+        const now = Date.now();
+        state._lastUpdated = now;
+        persistGuestProfile();
+        return;
+      }
       if (!uid || !dataRef) return;
       if (isInitialSync) return;
-      if (!window.__PLAY_ALLOWED) return;
       const now = Date.now();
       state._lastUpdated = now;
       localLastWrite = now;
@@ -2569,6 +2635,11 @@
       authErrorEl.style.color = isError ? '#ffdede' : '#dfffe8';
     }
 
+    function refreshGuestButton() {
+      if (!guestStartBtn) return;
+      guestStartBtn.textContent = hasGuestProfile() ? '게스트로 계속하기' : '게스트로 시작하기';
+    }
+
     function showGameUI() {
       try {
         authContainer.classList.add('hidden');
@@ -2581,6 +2652,34 @@
           });
         }, 300);
       } catch (e) { console.error('showGameUI error', e); }
+    }
+
+    function startGuestMode() {
+      try {
+        hideAllOverlays();
+        guestMode = true;
+        guestTransferPreference = 'none';
+        loadGuestProfileIntoState();
+        security.tosAccepted = true;
+        security.banned = false;
+        securityDirty = false;
+        ensureFx();
+        loadBuffs();
+        renderBuffStatus();
+        renderSecurityBadge();
+        setBootVisible(false);
+        bootDone = true;
+        showAuthStatus('');
+        showGameUI();
+        updateUI();
+        auditInit();
+        renderPlanets();
+        updateMailBadges();
+        refreshGuestButton();
+        persistGuestProfile();
+      } catch (err) {
+        console.error('guest start failed', err);
+      }
     }
 
     /* ===========================
@@ -3057,10 +3156,15 @@
             save(); updateUI(); renderPlanets();
             if (p.name === '화성' && !rankingUnlocked) {
               rankingUnlocked = true;
-              try {
-                await update(ref(db, `${userBasePath}/meta`), { rankingUnlocked: true });
-              } catch{}
-              showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{ location.href='/ranking.html'; });
+              if (uid && userBasePath) {
+                try {
+                  await update(ref(db, `${userBasePath}/meta`), { rankingUnlocked: true });
+                } catch{}
+              }
+              showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{
+                if (!requireLoginForFeature()) return;
+                location.href='/ranking.html';
+              });
             }
             if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
           }
@@ -3083,16 +3187,17 @@
 
     function ensureReady() {
       if (!window.__PLAY_ALLOWED) { showAuthStatus('PC에서는 팝업으로만 실행됩니다. 팝업으로 다시 열어주세요.'); return false; }
-      if (!uid) { showAuthStatus('로그인 후 이용하세요.'); return false; }
-      if (isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
-      if (!security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
-      if (security.banned){ showBanOverlay(true); showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
+      if (!uid && !guestMode) { showAuthStatus('로그인 후 이용하세요.'); return false; }
+      if (!guestMode && isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
+      if (!guestMode && !security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
+      if (!guestMode && security.banned){ showBanOverlay(true); showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
     }
 
     function wireGame() {
       document.getElementById('ore').addEventListener('click', e => {
-        if (!uid || isInitialSync || !window.__PLAY_ALLOWED) return;
+        if (!window.__PLAY_ALLOWED) return;
+        if (!guestMode && (!uid || isInitialSync)) return;
         if (security.banned){ showBanOverlay(true); return; }
 
         if (!ensureReady()) return;
@@ -3191,7 +3296,7 @@
 
       // 메인 루프
       window.__gameTimer = setInterval(async () => {
-        if (!uid || isInitialSync) return;
+        if (!guestMode && (!uid || isInitialSync)) return;
 
         if (window.__PLAY_ALLOWED && !security.banned) {
           pruneExpiredBuffs();
@@ -3233,6 +3338,7 @@
     const signupExtra = document.getElementById('signup-extra');
     const loginBtn  = document.getElementById('login-btn');
     const signupBtnEl = document.getElementById('signup-btn');
+    const guestStartBtn = document.getElementById('guest-start-btn');
     const tosCheckbox = document.getElementById('tos-checkbox');
     const privacyCheckbox = document.getElementById('privacy-checkbox');
     const verifyInfoEl = document.getElementById('verify-info');
@@ -3264,8 +3370,40 @@
       updateSignupAvailability();
     }
 
+    const LOGIN_PROMPT_MESSAGE = '랭킹이랑 우편함등 로그인이 필요한 서비스는 로그인후 사용 가능합니다! 로그인 하시겠습니까?';
+    const GUEST_OVERWRITE_PROMPT = '이 기기에 저장된 게스트 데이터가 있습니다. 로그인하면 계정 데이터에 덮어쓰시겠습니까? 확인을 누르면 덮어쓰기, 취소를 누르면 기존 데이터를 유지합니다.';
+
+    function showLoginScreen() {
+      hideAllOverlays();
+      authContainer.style.display = 'block';
+      authContainer.classList.remove('hidden');
+      ['top-bar','container'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.visibility = 'hidden';
+      });
+      setAuthMode('login');
+      showAuthStatus('');
+      refreshGuestButton();
+    }
+
+    function requireLoginForFeature() {
+      if (uid) return true;
+      if (guestMode) {
+        const wantsLogin = confirm(LOGIN_PROMPT_MESSAGE);
+        if (wantsLogin) showLoginScreen();
+        return false;
+      }
+      showAuthStatus('로그인 후 이용하세요.');
+      return false;
+    }
+    window.requireLoginForFeature = requireLoginForFeature;
+
     tabLogin.addEventListener('click',  () => { hideAllOverlays(); setAuthMode('login');  showAuthStatus(''); });
     tabSignup.addEventListener('click', () => { hideAllOverlays(); setAuthMode('signup'); showAuthStatus(''); });
+
+    guestStartBtn?.addEventListener('click', () => {
+      startGuestMode();
+    });
 
     document.getElementById('settings-btn').addEventListener('click', () => {
       try { history.replaceState(null, '', '/설정' + (location.hash || '')); } catch {}
@@ -3286,6 +3424,11 @@
 
     loginBtn.addEventListener('click', async () => {
       showAuthStatus('');
+      guestTransferPreference = 'none';
+      if (hasGuestProfile()) {
+        const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
+        guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
+      }
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       if (!email || !password) { showAuthStatus('이메일과 비밀번호를 모두 입력하세요.'); return; }
@@ -3312,6 +3455,7 @@
             '로그인 중 문제가 발생하였습니다. 나중에 다시 시도하세요';
           showAuthStatus(msg);
         }
+        guestTransferPreference = 'none';
       }
     });
 
@@ -3336,6 +3480,12 @@
         return;
       }
 
+      guestTransferPreference = 'none';
+      if (hasGuestProfile()) {
+        const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
+        guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
+      }
+
       signupBtnEl.disabled = true;
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, pw);
@@ -3356,6 +3506,7 @@
           code === 'auth/network-request-failed' ? '네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.' :
           '회원가입 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.';
         showAuthStatus(msg);
+        guestTransferPreference = 'none';
       } finally {
         updateSignupAvailability();
       }
@@ -3369,6 +3520,7 @@
     tosCheckbox?.addEventListener('change', updateSignupAvailability);
     privacyCheckbox?.addEventListener('change', updateSignupAvailability);
     updateSignupAvailability();
+    refreshGuestButton();
 
     // TOS 동의
     const tosAgree = document.getElementById('tos-agree');
@@ -3433,6 +3585,8 @@
       } catch { rankingUnlocked = false; }
 
       dataRef = ref(db, `${userBasePath}/gameData`);
+      const shouldApplyGuest = guestTransferPreference === 'overwrite' && hasGuestProfile();
+      const guestProfile = shouldApplyGuest ? readGuestProfile() : null;
       isInitialSync = true;
       try {
         const saved = localStorage.getItem(`lastWrite_${uid}`);
@@ -3443,6 +3597,28 @@
       await loadSecurity();
 
       saveSupportCtx({ banned: false });
+
+      if (shouldApplyGuest && guestProfile && guestProfile.state) {
+        try {
+          const now = Date.now();
+          const merged = { ...defaultData, ...(guestProfile.state || {}) };
+          merged._lastUpdated = now;
+          await update(dataRef, { ...merged });
+          localLastWrite = now;
+          try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch {}
+          try { localStorage.setItem(`gd_cache_${uid}`, JSON.stringify(merged)); } catch {}
+          if (guestProfile.rankingUnlocked && uid && userBasePath) {
+            try { await update(ref(db), { [`${userBasePath}/meta/rankingUnlocked`]: true }); }
+            catch {}
+            rankingUnlocked = true;
+          }
+        } catch (err) {
+          console.error('guest data merge failed', err);
+        }
+        guestTransferPreference = 'none';
+      } else {
+        guestTransferPreference = 'none';
+      }
 
       const syncStart = Date.now();
       initialSyncStart = syncStart;
@@ -3512,6 +3688,7 @@
       updateMailComposeVisibility(null);
 
       if (user) {
+        guestMode = false;
         clearSupportCtx();
         hideAllOverlays();
         security.banned = false;
@@ -3617,6 +3794,8 @@
         }
 
       } else {
+        guestMode = false;
+        guestTransferPreference = 'none';
         uid = null; dataRef = null;
         userServerKey = null; userIdKey = null; userBasePath = null;
         dailyUnlocked = false; rankingUnlocked = false;
@@ -3639,6 +3818,7 @@
         setTimeout(() => authContainer.classList.remove('hidden'), 16);
         ['top-bar','container'].forEach(id => document.getElementById(id).style.visibility = 'hidden');
         setAuthMode(currentAuthMode);
+        refreshGuestButton();
       }
     });
 
@@ -3656,6 +3836,11 @@
 
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
+      guestTransferPreference = 'none';
+      if (hasGuestProfile()) {
+        const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
+        guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
+      }
       const provider = new GoogleAuthProvider();
       try {
         await signInWithPopup(auth, provider);
@@ -3667,6 +3852,7 @@
           if (handleAuthError(err2)) return;
           showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
         }
+        guestTransferPreference = 'none';
       }
     });
 
@@ -3678,7 +3864,12 @@
     });
 
     setInterval(renderBuffStatus, 1000);
-    window.openDailyManual = function(){ checkDailyAndMaybeShow().then(()=>openDailyOverlay()); }
+    window.openDailyManual = function(){
+      if (!uid) {
+        if (!requireLoginForFeature()) return;
+      }
+      checkDailyAndMaybeShow().then(()=>openDailyOverlay());
+    }
   </script>
   
   <!-- 우클릭 커스텀 메뉴 -->
@@ -3739,7 +3930,10 @@
         if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
       }
       if (action === 'resume')   { customMenu.style.display='none'; }
-      if (action === 'rank')     { location.href='/ranking.html'; }
+      if (action === 'rank')     {
+        customMenu.style.display='none';
+        if (requireLoginForFeature()) { location.href='/ranking.html'; }
+      }
       if (action === 'mail')     { customMenu.style.display='none'; try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
@@ -3791,7 +3985,7 @@
           if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
         }
         if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
-        if (action === 'rank')     { location.href='/ranking.html'; }
+        if (action === 'rank')     { if (requireLoginForFeature()) { location.href='/ranking.html'; } }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
         if (action === 'resume')   { /* 닫기만 */ }
