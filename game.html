@@ -1184,6 +1184,8 @@
     let guestMode = false;
     let guestTransferPreference = 'none';
     let guestAutoStartSuppressed = false;
+    let pendingGuestCleanup = false;
+    let pendingGuestRemovalNotice = false;
 
     function readGuestProfile() {
       try {
@@ -1196,6 +1198,10 @@
         const profile = readGuestProfile();
         return !!(profile && typeof profile === 'object' && profile.state);
       } catch { return false; }
+    }
+    function clearGuestProfile() {
+      try { localStorage.removeItem(GUEST_PROFILE_KEY); } catch {}
+      try { localStorage.removeItem('siu_buffs_guest'); } catch {}
     }
 
     const MAIL_ADMIN_EMAIL = 'siu46852579@gmail.com';
@@ -1251,6 +1257,12 @@
         if(btn){ btn.onclick = () => { try{ onAction(); }catch{} hideToast(); }; }
       }
       toastTimer = setTimeout(hideToast, ttlMs);
+    }
+
+    function maybeNotifyGuestRemoval() {
+      if (!pendingGuestRemovalNotice || !bootDone) return;
+      showToast('👋 게스트 데이터가 삭제되었어요. 로그인한 계정으로 안전하게 플레이를 이어가세요!', null, null, 4200);
+      pendingGuestRemovalNotice = false;
     }
 
     /* ======================
@@ -3744,6 +3756,13 @@
         guestTransferPreference = 'none';
       }
 
+      if (pendingGuestCleanup) {
+        clearGuestProfile();
+        refreshGuestButton();
+        pendingGuestRemovalNotice = true;
+        pendingGuestCleanup = false;
+      }
+
       const syncStart = Date.now();
       initialSyncStart = syncStart;
 
@@ -3774,6 +3793,7 @@
           bootDone = true;
           auditInit();
           renderSecurityBadge();
+          maybeNotifyGuestRemoval();
 
           if (!security.tosAccepted){ showTosOverlay(true); }
           if (security.banned){ showBanOverlay(true); }
@@ -3819,6 +3839,10 @@
         security.banned = false;
         updateGuestUiState();
 
+        if (hasGuestProfile()) {
+          pendingGuestCleanup = true;
+        }
+
         const isPasswordProvider = (user.providerData || []).some(p => p.providerId === 'password');
         if (isPasswordProvider && !user.emailVerified) {
           try { await sendEmailVerification(user); } catch {}
@@ -3841,6 +3865,7 @@
             updateUI();
             renderPlanets();
             bootDone = true;
+            maybeNotifyGuestRemoval();
           }
         } catch {}
 
@@ -3922,6 +3947,8 @@
       } else {
         guestMode = false;
         guestTransferPreference = 'none';
+        pendingGuestCleanup = false;
+        pendingGuestRemovalNotice = false;
         uid = null; dataRef = null;
         userServerKey = null; userIdKey = null; userBasePath = null;
         dailyUnlocked = false; rankingUnlocked = false;
@@ -3946,10 +3973,6 @@
         setAuthMode(currentAuthMode);
         refreshGuestButton();
         updateGuestUiState();
-
-        if (!guestAutoStartSuppressed && hasGuestProfile()) {
-          startGuestMode();
-        }
       }
     });
 
