@@ -4317,6 +4317,11 @@
           gate.classList.remove('show');
           gate.setAttribute('aria-hidden', 'true');
         }
+        if (typeof window.__DEFER_INIT === 'function') {
+          try { window.__DEFER_INIT(); }
+          catch (e) { console.error(e); }
+          window.__DEFER_INIT = null;
+        }
       };
 
       const playAllowed = isMobileStrict() || isPopup();
@@ -4477,6 +4482,13 @@
       if (adminPwEl) {
         adminPwEl.addEventListener('input', () => { if (adminError) adminError.textContent = ''; });
       }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.code === 'Digit1') {
+          e.preventDefault();
+          showAdminLogin();
+        }
+      });
 
       backBtn && backBtn.addEventListener('mousedown', startHold);
       backBtn && backBtn.addEventListener('touchstart', startHold, { passive: true });
