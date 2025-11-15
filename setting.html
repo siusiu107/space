@@ -61,6 +61,7 @@
     .item .title{ font-weight:800; }
     .item .desc{ font-size:12px; color:var(--muted); }
     .item .right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .item .right .status-text{ font-size:12px; color:var(--muted); }
 
     /* 버튼 */
     .btn{
@@ -154,6 +155,21 @@
       <h1>⚙️ 설정</h1>
       <p class="sub">실제로 제공되는 설정만 표시합니다.</p>
 
+      <!-- 언어 -->
+      <div class="item">
+        <div class="left">
+          <div>🌐</div>
+          <div>
+            <div class="title">언어</div>
+            <div class="desc">표시 언어를 변경합니다. 아래 버튼을 눌러 원하는 언어를 선택하세요.</div>
+          </div>
+        </div>
+        <div class="right">
+          <div class="gtranslate_wrapper" aria-label="언어 선택 도구"></div>
+          <div id="language-status" class="status-text">현재 언어: 한국어</div>
+        </div>
+      </div>
+
       <!-- 계정 -->
       <div class="item">
         <div class="left">
@@ -221,6 +237,56 @@
     </div>
   </div>
 
+  <script>
+    (function(){
+      const fallback = 'ko';
+      const supported = ['ko','es','en'];
+      const host = (location.hostname || '').replace(/^www\./, '');
+
+      function readStored(){
+        try{
+          const saved = localStorage.getItem('preferredLanguage');
+          return supported.includes(saved) ? saved : fallback;
+        }catch{return fallback;}
+      }
+
+      function setCookie(lang){
+        const value = `/ko/${lang}`;
+        const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
+        document.cookie = `googtrans=${value}; expires=${expires}; path=/`;
+        if(host){
+          document.cookie = `googtrans=${value}; expires=${expires}; path=/; domain=.${host}`;
+        }
+      }
+
+      const lang = readStored();
+      window.gtranslateSettings = {
+        default_language: lang,
+        detect_browser_language: true,
+        languages: ['ko','es','en'],
+        wrapper_selector: '.gtranslate_wrapper',
+        alt_flags: { en: 'usa' }
+      };
+      setCookie(lang);
+
+      window.__preferredLanguage = {
+        supported,
+        fallback,
+        host,
+        setCookie,
+        readStored
+      };
+
+      window.addEventListener('storage', (event)=>{
+        if(event.key === 'preferredLanguage' && event.newValue){
+          const next = supported.includes(event.newValue) ? event.newValue : fallback;
+          setCookie(next);
+        }
+      });
+    })();
+  </script>
+  <script src="https://cdn.gtranslate.net/widgets/latest/popup.js" defer></script>
+
   <!-- Firebase + App Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -271,6 +337,49 @@
     const accountDesc = document.getElementById('account-desc');
     const signoutBtn  = document.getElementById('signout-btn');
     const resetBtn    = document.getElementById('reset-btn');
+    const languageStatus = document.getElementById('language-status');
+
+    const languageNames = { ko: '한국어', en: 'English', es: 'Español' };
+
+    function getPreferredLanguage(){
+      try{
+        const saved = localStorage.getItem('preferredLanguage');
+        if (saved && window.__preferredLanguage?.supported?.includes(saved)) return saved;
+      }catch{}
+      return window.__preferredLanguage?.fallback || 'ko';
+    }
+
+    function updateLanguageStatus(lang){
+      if(!languageStatus) return;
+      const name = languageNames[lang] || lang?.toUpperCase() || '한국어';
+      languageStatus.textContent = `현재 언어: ${name}`;
+    }
+
+    updateLanguageStatus(getPreferredLanguage());
+
+    function persistLanguage(lang){
+      if(!lang) return;
+      const supported = window.__preferredLanguage?.supported || [];
+      const target = supported.includes(lang) ? lang : (window.__preferredLanguage?.fallback || 'ko');
+      try{ localStorage.setItem('preferredLanguage', target); }catch{}
+      try{ window.__preferredLanguage?.setCookie?.(target); }catch{}
+      updateLanguageStatus(target);
+    }
+
+    let lastLang = null;
+    setInterval(()=>{
+      let current = null;
+      try{
+        if (typeof window.GTranslateGetCurrentLang === 'function'){
+          current = window.GTranslateGetCurrentLang() || null;
+        }
+      }catch{}
+      if(!current) current = getPreferredLanguage();
+      if(current && current !== lastLang){
+        lastLang = current;
+        persistLanguage(current);
+      }
+    }, 1000);
 
     /* ===== 샤딩/아이디키 유틸 ===== */
     let uid = null;
