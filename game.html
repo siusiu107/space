@@ -1964,22 +1964,51 @@
       } catch (err) { console.error('초기화 트랜잭션 에러:', err); }
     }
 
-    function save() {
+    const SAVE_DEBOUNCE_MS = 450;
+    let saveTimer = null;
+    let lastSaveAt = 0;
+
+    function performSaveNow() {
       if (!window.__PLAY_ALLOWED) return;
+      const now = Date.now();
+      state._lastUpdated = now;
       if (guestMode) {
-        const now = Date.now();
-        state._lastUpdated = now;
         persistGuestProfile();
+        lastSaveAt = now;
         return;
       }
       if (!uid || !dataRef) return;
       if (isInitialSync) return;
-      const now = Date.now();
-      state._lastUpdated = now;
       localLastWrite = now;
+      lastSaveAt = now;
       try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch {}
       update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
     }
+
+    function save(forceImmediate = false) {
+      if (forceImmediate) {
+        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        performSaveNow();
+        return;
+      }
+      const now = Date.now();
+      const elapsed = now - lastSaveAt;
+      if (elapsed >= SAVE_DEBOUNCE_MS) {
+        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        performSaveNow();
+        return;
+      }
+      if (saveTimer) return;
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        performSaveNow();
+      }, SAVE_DEBOUNCE_MS - elapsed);
+    }
+
+    window.addEventListener('pagehide', () => save(true));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') save(true);
+    });
 
     /* ========= 새 키 규칙 ========= */
     function encodeEmailToKey(email){
@@ -3005,7 +3034,11 @@
       }
     }
 
-    function updateUI() {
+    const scheduleUiFrame = typeof requestAnimationFrame === 'function'
+      ? cb => requestAnimationFrame(cb)
+      : cb => setTimeout(cb, 16);
+
+    function renderUIContents() {
       pruneExpiredBuffs();
       document.getElementById('score').innerText  = `자원: ${formatKR(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${formatKR(state.coins)}`;
@@ -3060,6 +3093,26 @@
       } catch {}
     }
 
+    let uiRenderScheduled = false;
+    let uiRenderDirty = false;
+    function updateUI(forceImmediate = false) {
+      if (forceImmediate) {
+        uiRenderDirty = false;
+        uiRenderScheduled = false;
+        renderUIContents();
+        return;
+      }
+      uiRenderDirty = true;
+      if (uiRenderScheduled) return;
+      uiRenderScheduled = true;
+      scheduleUiFrame(() => {
+        uiRenderScheduled = false;
+        if (!uiRenderDirty) return;
+        uiRenderDirty = false;
+        renderUIContents();
+      });
+    }
+
     function renderPlanets() {
       const planets = [
         {name:'달',cost:100,requiredShipLevel:1},
@@ -3108,13 +3161,33 @@
       });
     }
 
+    const oreParticlePool = [];
+    const ORE_PARTICLES_PER_CLICK = 8;
+    const ORE_PARTICLE_POOL_LIMIT = 120;
+    let activeOreParticles = 0;
+
+    function createOreParticle() {
+      const frag = document.createElement('img');
+      frag.src = '/images/ore.png';
+      frag.alt = '';
+      frag.className = 'ore-frag';
+      frag.addEventListener('animationend', () => {
+        frag.remove();
+        activeOreParticles = Math.max(0, activeOreParticles - 1);
+        if (oreParticlePool.length < ORE_PARTICLE_POOL_LIMIT) {
+          oreParticlePool.push(frag);
+        }
+      });
+      return frag;
+    }
+
     function spawnParticles(x,y) {
       const container = document.getElementById('ore-container');
-      for (let i = 0; i < 12; i++){
-        const frag = document.createElement('img');
-        frag.src = '/images/ore.png';
-        frag.alt = '';
-        frag.className = 'ore-frag';
+      if (!container) return;
+      const available = Math.max(0, ORE_PARTICLE_POOL_LIMIT - activeOreParticles);
+      const count = Math.min(ORE_PARTICLES_PER_CLICK, available);
+      for (let i = 0; i < count; i++){
+        const frag = oreParticlePool.pop() || createOreParticle();
         const dx = (Math.random() - 0.5) * 220;
         const dy = (Math.random() - 0.5) * 200;
         const startScale = 0.45 + Math.random() * 0.25;
@@ -3129,8 +3202,12 @@
         frag.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
         frag.style.left = x+'px';
         frag.style.top = y+'px';
+        frag.style.animation = 'none';
+        // restart animation (force reflow)
+        void frag.offsetWidth;
+        frag.style.animation = '';
         container.appendChild(frag);
-        setTimeout(()=>frag.remove(), 800);
+        activeOreParticles++;
       }
     }
 
@@ -3680,7 +3757,7 @@
           // 이 부분도 이제 freeze 안 함
           await fetchDaily();
 
-          if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+          if (window.__PLAY_ALLOWED) { updateUI(true); renderPlanets(); }
           isInitialSync = false;
           showGameUI();
 
@@ -3707,11 +3784,11 @@
             state = { ...defaultData, ...server };
           } else {
             state = { ...defaultData, ...server, ...state };
-            try { if (JSON.stringify(server) !== JSON.stringify(state)) save(); }
-            catch { save(); }
+            try { if (JSON.stringify(server) !== JSON.stringify(state)) save(true); }
+            catch { save(true); }
           }
         }
-        if (window.__PLAY_ALLOWED) { updateUI(); renderPlanets(); }
+        if (window.__PLAY_ALLOWED) { updateUI(true); renderPlanets(); }
       });
     }
 
