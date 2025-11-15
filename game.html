@@ -245,8 +245,26 @@
     .tab-content { display:none; margin-top:12px; }
     .tab-content.active { display:block; }
 
-    .particle { position:absolute; width:6px; height:6px; background:#ffd700; border-radius:50%; opacity:.8; animation:floatUp .8s ease-out forwards; pointer-events:none; }
-    @keyframes floatUp { to { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; } }
+    .ore-frag {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      pointer-events: none;
+      opacity: .95;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+      transform: translate(-50%, -50%) scale(var(--start-scale, .55)) rotate(var(--start-rot, 0deg));
+      animation: oreScatter .72s ease-out forwards;
+    }
+    @keyframes oreScatter {
+      0% {
+        opacity: .95;
+        transform: translate(-50%, -50%) scale(var(--start-scale, .55)) rotate(var(--start-rot, 0deg));
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(var(--end-scale, .28)) rotate(var(--rot, 0deg));
+      }
+    }
     #ore { width:200px; cursor:pointer; }
 
     /* 우클릭 메뉴 */
@@ -3088,14 +3106,28 @@
     }
 
     function spawnParticles(x,y) {
-      for (let i=15;i>0;i--){
-        const span = document.createElement('span');
-        span.className='particle';
-        span.style.setProperty('--dx',(Math.random()-0.5)*100+'px');
-        span.style.setProperty('--dy',(Math.random()-1)*100+'px');
-        span.style.left = x+'px'; span.style.top = y+'px';
-        document.getElementById('ore-container').appendChild(span);
-        setTimeout(()=>span.remove(),800);
+      const container = document.getElementById('ore-container');
+      for (let i = 0; i < 12; i++){
+        const frag = document.createElement('img');
+        frag.src = '/images/ore.png';
+        frag.alt = '';
+        frag.className = 'ore-frag';
+        const dx = (Math.random() - 0.5) * 220;
+        const dy = (Math.random() - 0.5) * 200;
+        const startScale = 0.45 + Math.random() * 0.25;
+        const endScale = startScale * (0.35 + Math.random() * 0.25);
+        const startRot = (Math.random() - 0.5) * 20;
+        const rot = (Math.random() - 0.5) * 260;
+        frag.style.setProperty('--dx', `${dx}px`);
+        frag.style.setProperty('--dy', `${dy}px`);
+        frag.style.setProperty('--start-scale', startScale.toFixed(2));
+        frag.style.setProperty('--end-scale', endScale.toFixed(2));
+        frag.style.setProperty('--start-rot', `${startRot.toFixed(2)}deg`);
+        frag.style.setProperty('--rot', `${rot.toFixed(2)}deg`);
+        frag.style.left = x+'px';
+        frag.style.top = y+'px';
+        container.appendChild(frag);
+        setTimeout(()=>frag.remove(), 800);
       }
     }
 
