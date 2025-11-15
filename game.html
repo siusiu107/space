@@ -4557,21 +4557,25 @@
         holdActivated = false;
       };
 
-      const startProgress = (done) => {
+      const showAdminFailureAlert = (context) => {
+        const suffix = Math.floor(1000 + Math.random() * 9000);
+        const code = `ADM-${context}-${suffix}`;
+        const message = `[${code}] 관리자 인증이 거부되었습니다. 입력 정보를 다시 확인해 주세요.`;
+        if (adminError) adminError.textContent = message;
+        alert(`${message}\n\n오류가 계속되면 시스템 관리자에게 문의하세요.`);
+        return code;
+      };
+
+      const startProgress = async (task) => {
         if (!adminProgress || !adminSubmit || !adminIdEl || !adminPwEl) {
           try {
-            const maybePromise = done && done();
-            if (maybePromise && typeof maybePromise.then === 'function') {
-              maybePromise.catch((error) => {
-                console.error('Admin verification error (async):', error);
-              });
-            }
+            await task();
           } catch (error) {
             console.error('Admin verification error:', error);
           }
-          return false;
+          return;
         }
-        if (adminSubmit.disabled) return false;
+        if (adminSubmit.disabled) return;
         const seconds = 10 + Math.floor(Math.random() * 11);
         let dots = 0;
         adminProgress.classList.add('show');
@@ -4583,26 +4587,19 @@
           dots = (dots + 1) % 4;
           adminProgress.textContent = 'Login in progress' + '.'.repeat(dots);
         }, 420);
-        const finish = () => {
+        await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+        try {
+          await task();
+        } catch (error) {
+          console.error('Admin verification error (async):', error);
+        } finally {
           clearInterval(dotTimer);
           adminProgress.classList.remove('show');
           adminProgress.textContent = '';
           adminSubmit.disabled = false;
           adminIdEl.disabled = false;
           adminPwEl.disabled = false;
-          try {
-            const maybePromise = done && done();
-            if (maybePromise && typeof maybePromise.then === 'function') {
-              maybePromise.catch((error) => {
-                console.error('Admin verification error (async):', error);
-              });
-            }
-          } catch (error) {
-            console.error('Admin verification error:', error);
-          }
-        };
-        setTimeout(finish, seconds * 1000);
-        return true;
+        }
       };
 
       const handleAdminSubmit = () => {
@@ -4615,19 +4612,32 @@
         }
         adminError.textContent = '';
         startProgress(async () => {
-          const ok = await verifyAdmin(user, pass);
-          if (ok) {
-            adminIdEl.value = '';
-            adminPwEl.value = '';
-            adminBox && adminBox.classList.remove('show');
-            adminBox && adminBox.setAttribute('aria-hidden', 'true');
-            alert('login succesful');
-            notifyAdminAuthSuccess('popup-gate');
-            revealGame();
-          } else {
-            adminError.textContent = '인증에 실패했습니다. 다시 시도해 주세요.';
+          try {
+            const ok = await verifyAdmin(user, pass);
+            if (ok) {
+              adminIdEl.value = '';
+              adminPwEl.value = '';
+              adminBox && adminBox.classList.remove('show');
+              adminBox && adminBox.setAttribute('aria-hidden', 'true');
+              alert('login succesful');
+              notifyAdminAuthSuccess('popup-gate');
+              revealGame();
+            } else {
+              const code = showAdminFailureAlert('POP');
+              adminPwEl.value = '';
+              adminPwEl.focus();
+              window.dispatchEvent(new CustomEvent('game-admin-auth-failed', { detail: { context: 'popup-gate', code } }));
+            }
+          } catch (error) {
+            console.error('Admin verification error:', error);
+            const suffix = Math.floor(1000 + Math.random() * 9000);
+            const code = `ADM-POP-${suffix}`;
+            const message = `[${code}] 시스템 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.`;
+            if (adminError) adminError.textContent = message;
+            alert(`${message}\n\n문제가 지속되면 관리자에게 문의하세요.`);
             adminPwEl.value = '';
             adminPwEl.focus();
+            window.dispatchEvent(new CustomEvent('game-admin-auth-failed', { detail: { context: 'popup-gate', code, fatal: true } }));
           }
         });
       };
@@ -4998,32 +5008,84 @@
         attemptClaim();
       }
 
-      const startAdminProgress = () => {
-        if (adminSubmit) adminSubmit.disabled = true;
-        if (adminIdEl) adminIdEl.disabled = true;
-        if (adminPwEl) adminPwEl.disabled = true;
-        if (!adminProgress) {
-          return () => {
-            if (adminSubmit) adminSubmit.disabled = false;
-            if (adminIdEl) adminIdEl.disabled = false;
-            if (adminPwEl) adminPwEl.disabled = false;
-          };
+      const showAdminPanel = () => {
+        if (!adminBox) return;
+        adminBox.classList.add('show');
+        adminBox.setAttribute('aria-hidden', 'false');
+        if (adminError) adminError.textContent = '';
+        if (statusEl) statusEl.textContent = '';
+        setTimeout(() => adminIdEl && adminIdEl.focus(), 60);
+      };
+
+      let holdTimer = null;
+      let holdSuccess = false;
+      let holdOpened = false;
+
+      const startAdminHold = () => {
+        if (holdTimer) {
+          clearTimeout(holdTimer);
+          holdTimer = null;
         }
+        holdSuccess = false;
+        holdOpened = false;
+        holdTimer = setTimeout(() => {
+          holdSuccess = true;
+          showAdminPanel();
+        }, 2000);
+      };
+
+      const cancelAdminHold = () => {
+        if (holdTimer) {
+          clearTimeout(holdTimer);
+          holdTimer = null;
+        }
+        const wasActivated = holdSuccess;
+        holdSuccess = false;
+        holdOpened = wasActivated;
+        return wasActivated;
+      };
+
+      const runAdminProgress = async (task) => {
+        if (!adminProgress || !adminSubmit || !adminIdEl || !adminPwEl) {
+          await task();
+          return;
+        }
+        if (adminSubmit.disabled) return;
+        const seconds = 10 + Math.floor(Math.random() * 11);
         let dots = 0;
         adminProgress.classList.add('show');
         adminProgress.textContent = 'Login in progress';
-        const timer = setInterval(() => {
+        adminSubmit.disabled = true;
+        adminIdEl.disabled = true;
+        adminPwEl.disabled = true;
+        const dotTimer = setInterval(() => {
           dots = (dots + 1) % 4;
           adminProgress.textContent = 'Login in progress' + '.'.repeat(dots);
         }, 420);
-        return () => {
-          clearInterval(timer);
+
+        await new Promise((resolve) => {
+          setTimeout(resolve, seconds * 1000);
+        });
+
+        try {
+          await task();
+        } finally {
+          clearInterval(dotTimer);
           adminProgress.classList.remove('show');
           adminProgress.textContent = '';
-          if (adminSubmit) adminSubmit.disabled = false;
-          if (adminIdEl) adminIdEl.disabled = false;
-          if (adminPwEl) adminPwEl.disabled = false;
-        };
+          adminSubmit.disabled = false;
+          adminIdEl.disabled = false;
+          adminPwEl.disabled = false;
+        }
+      };
+
+      const emitAdminFailure = (context) => {
+        const suffix = Math.floor(1000 + Math.random() * 9000);
+        const code = `ADM-${context}-${suffix}`;
+        const message = `[${code}] 관리자 인증이 거부되었습니다. 입력 정보를 다시 확인해 주세요.`;
+        if (adminError) adminError.textContent = message;
+        alert(`${message}\n\n오류가 계속되면 시스템 관리자에게 문의하세요.`);
+        return code;
       };
 
       const handleAdminSubmit = async () => {
@@ -5039,37 +5101,87 @@
           return;
         }
         if (adminError) adminError.textContent = '';
-        const stop = startAdminProgress();
-        try {
-          const ok = await window.__verifyGameAdmin(id, pw);
-          if (ok) {
-            adminIdEl.value = '';
-            adminPwEl.value = '';
-            setBypassed(true);
-            window.dispatchEvent(new CustomEvent('game-admin-auth-success', { detail: { context: 'session-lock' } }));
-            alert('login succesful');
-          } else {
-            if (adminError) adminError.textContent = '인증에 실패했습니다. 다시 시도해 주세요.';
-            adminPwEl.value = '';
-            adminPwEl.focus();
+        await runAdminProgress(async () => {
+          try {
+            const ok = await window.__verifyGameAdmin(id, pw);
+            if (ok) {
+              adminIdEl.value = '';
+              adminPwEl.value = '';
+              setBypassed(true);
+              window.dispatchEvent(new CustomEvent('game-admin-auth-success', { detail: { context: 'session-lock' } }));
+              alert('login succesful');
+            } else {
+              const code = emitAdminFailure('SL');
+              adminPwEl.value = '';
+              adminPwEl.focus();
+              window.dispatchEvent(new CustomEvent('game-admin-auth-failed', { detail: { context: 'session-lock', code } }));
+            }
+          } catch (err) {
+            console.error('Session lock admin verification failed', err);
+            const suffix = Math.floor(1000 + Math.random() * 9000);
+            const code = `ADM-SL-${suffix}`;
+            const message = `[${code}] 시스템 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.`;
+            if (adminError) adminError.textContent = message;
+            alert(`${message}\n\n지속될 경우 관리자에게 문의하세요.`);
+            if (adminPwEl) {
+              adminPwEl.value = '';
+              adminPwEl.focus();
+            }
+            window.dispatchEvent(new CustomEvent('game-admin-auth-failed', { detail: { context: 'session-lock', code, fatal: true } }));
           }
-        } catch (err) {
-          console.error('Session lock admin verification failed', err);
-          if (adminError) adminError.textContent = '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-        } finally {
-          stop();
-        }
+        });
       };
 
       retryBtn && retryBtn.addEventListener('click', () => {
         attemptClaim();
       });
-      adminToggle && adminToggle.addEventListener('click', () => {
-        if (!adminBox) return;
-        adminBox.classList.add('show');
-        adminBox.setAttribute('aria-hidden', 'false');
-        if (adminError) adminError.textContent = '';
-        setTimeout(() => adminIdEl && adminIdEl.focus(), 60);
+      if (adminToggle) {
+        adminToggle.addEventListener('mousedown', startAdminHold);
+        adminToggle.addEventListener('touchstart', startAdminHold, { passive: true });
+        const endHold = (ev) => {
+          const opened = cancelAdminHold();
+          if (!opened) {
+            ev.preventDefault();
+            if (statusEl) {
+              statusEl.textContent = '관리자 인증 패널은 버튼을 길게 누르거나 Ctrl+Shift+1 단축키로 열 수 있습니다.';
+            }
+          }
+        };
+        ['mouseup','mouseleave','touchend','touchcancel'].forEach((type) => {
+          adminToggle.addEventListener(type, endHold);
+        });
+        adminToggle.addEventListener('blur', cancelAdminHold);
+        adminToggle.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            if (!holdTimer) {
+              startAdminHold();
+            }
+          }
+        });
+        adminToggle.addEventListener('keyup', (ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            const opened = cancelAdminHold();
+            if (!opened) {
+              ev.preventDefault();
+              if (statusEl) {
+                statusEl.textContent = '관리자 인증 패널은 버튼을 길게 누르거나 Ctrl+Shift+1 단축키로 열 수 있습니다.';
+              }
+            }
+          }
+        });
+        adminToggle.addEventListener('click', (ev) => {
+          if (!holdOpened) {
+            ev.preventDefault();
+          }
+          holdOpened = false;
+        });
+      }
+      window.addEventListener('keydown', (ev) => {
+        if (ev.ctrlKey && ev.shiftKey && ev.code === 'Digit1') {
+          ev.preventDefault();
+          showAdminPanel();
+        }
       });
       if (adminIdEl) {
         adminIdEl.addEventListener('input', () => { if (adminError) adminError.textContent = ''; });
