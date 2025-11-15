@@ -334,72 +334,6 @@
     #daily-info{ margin:6px 0 10px; font-size:12px; color:#cfe6ff; min-height:36px; }
     #daily-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
 
-    /* ===== 상점 오버레이 ===== */
-    #shop-overlay{
-      position:fixed; inset:0; z-index:3625;
-      display:flex; align-items:center; justify-content:center;
-      background: linear-gradient(180deg, rgba(6,10,20,0.60), rgba(6,10,20,0.82));
-      backdrop-filter: blur(6px);
-      opacity:0; pointer-events:none; transition:opacity .22s ease;
-      padding:18px;
-    }
-    #shop-overlay.show{ opacity:1; pointer-events:auto; }
-    #shop-overlay.loading #shop-loading{ opacity:1; visibility:visible; }
-    #shop-card{
-      width:min(1024px, 96vw);
-      max-height:92vh;
-      height:min(880px, 92vh);
-      border-radius:18px;
-      border:1px solid rgba(160,220,255,0.18);
-      background: linear-gradient(180deg, rgba(16,24,40,0.95), rgba(8,14,26,0.97));
-      box-shadow:0 28px 68px rgba(0,0,0,0.46);
-      color:#e6f4ff;
-      display:flex; flex-direction:column; gap:12px;
-      padding:20px 22px;
-      position:relative;
-    }
-    #shop-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    #shop-title{ margin:0; font-size:20px; }
-    #shop-close{
-      border:none;
-      background:rgba(255,255,255,0.10);
-      color:#f2fbff;
-      border-radius:8px;
-      padding:6px 10px;
-      cursor:pointer;
-      font-size:14px;
-    }
-    #shop-close:hover{ background:rgba(255,255,255,0.18); }
-    #shop-hint{ margin:0; font-size:13px; color:#bcdfff; }
-    #shop-frame-wrap{
-      position:relative;
-      flex:1;
-      min-height:420px;
-      height:100%;
-      border-radius:12px;
-      overflow:hidden;
-      border:1px solid rgba(120,180,255,0.18);
-      background:rgba(0,0,0,0.35);
-    }
-    #shop-frame{ width:100%; height:100%; border:0; display:block; }
-    #shop-loading{
-      position:absolute;
-      inset:0;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:12px;
-      background:rgba(4,10,20,0.62);
-      color:#cde8ff;
-      font-size:14px;
-      opacity:0;
-      visibility:hidden;
-      transition:opacity .18s ease;
-      pointer-events:none;
-    }
-    #shop-loading .spinner{ width:40px; height:40px; border-width:3px; }
-
     /* ===== 우편함 오버레이 ===== */
     #mail-overlay{
       position:fixed; inset:0; z-index:3600;
@@ -998,7 +932,6 @@
     <nav class="side-items">
       <button class="side-item" data-action="menu"><span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span></button>
       <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
-      <button class="side-item" data-action="shop"><span class="icon">🛒</span><span>이벤트코인 상점</span></button>
       <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
       <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
       <button class="side-item" data-action="mail">
@@ -1011,23 +944,6 @@
       </button>
     </nav>
   </aside>
-
-  <div id="shop-overlay" aria-hidden="true">
-    <div id="shop-card" role="dialog" aria-modal="true" aria-labelledby="shop-title">
-      <div id="shop-head">
-        <h3 id="shop-title">🛒 이벤트코인 상점</h3>
-        <button id="shop-close" aria-label="상점 닫기">✕</button>
-      </div>
-      <p id="shop-hint">이벤트코인을 구매하려면 아래 상점에서 상품을 선택하세요.</p>
-      <div id="shop-frame-wrap">
-        <div id="shop-loading">
-          <div class="spinner"></div>
-          <p>상점을 불러오는 중...</p>
-        </div>
-        <iframe id="shop-frame" title="이벤트코인 상점" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
-      </div>
-    </div>
-  </div>
 
   <div id="mail-overlay" aria-hidden="true">
     <div id="mail-card" role="dialog" aria-modal="true" aria-labelledby="mail-title">
@@ -1283,16 +1199,6 @@
     let mailboxUnsubscribe = null;
     let mailboxCache = [];
     let selectedMailId = null;
-
-    const SHOP_BASE_URL = 'https://shop-ecru-one.vercel.app/';
-    const SHOP_EMBED_URL = SHOP_BASE_URL.includes('?') ? `${SHOP_BASE_URL}&embed=1` : `${SHOP_BASE_URL}?embed=1`;
-    const SHOP_ORIGIN = (() => {
-      try { return new URL(SHOP_BASE_URL).origin; }
-      catch { return 'https://shop-ecru-one.vercel.app'; }
-    })();
-    let shopOverlayOpen = false;
-    let shopFrameWindow = null;
-    let shopFrameInitialized = false;
 
     
     /* 🔒 3초 부트 스킵 전용 타임스탬프 (요청사항) */
@@ -1713,188 +1619,6 @@
         showToast('우편 삭제에 실패했습니다.', null, null, 3000);
       }
     }
-
-    async function buildShopContextPayload() {
-      if (!uid || !auth?.currentUser) return null;
-      const user = auth.currentUser;
-      const payload = {
-        type: 'shop-context',
-        uid,
-        server: userServerKey || null,
-        idKey: userIdKey || null,
-        eventCoins: state.eventCoins || 0,
-        coins: state.coins || 0,
-        resources: state.resources || 0,
-        displayName: user.displayName || null,
-        email: user.email || null,
-        timestamp: Date.now()
-      };
-      try {
-        payload.idToken = await user.getIdToken(true);
-      } catch (err) {
-        console.warn('상점 토큰 발급 실패', err);
-        payload.idTokenError = String(err?.message || err) || 'token-error';
-      }
-      return payload;
-    }
-
-    async function sendShopContext(targetWin) {
-      if (!targetWin) return;
-      const payload = await buildShopContextPayload();
-      if (!payload) return;
-      try {
-        targetWin.postMessage(payload, SHOP_ORIGIN);
-      } catch (err) {
-        console.warn('상점 컨텍스트 전송 실패', err);
-      }
-    }
-
-    async function openShopOverlay() {
-      if (!uid || !auth?.currentUser) {
-        if (!requireLoginForFeature()) return;
-        showToast('로그인 후 이용하세요.', null, null, 2800);
-        return;
-      }
-      const overlay = document.getElementById('shop-overlay');
-      const frame = document.getElementById('shop-frame');
-      if (!overlay || !frame) return;
-      hideAllOverlays();
-      overlay.classList.add('show', 'loading');
-      overlay.setAttribute('aria-hidden', 'false');
-      shopOverlayOpen = true;
-      if (!shopFrameInitialized) {
-        frame.src = SHOP_EMBED_URL;
-        shopFrameInitialized = true;
-      } else {
-        overlay.classList.add('loading');
-      }
-      shopFrameWindow = frame.contentWindow || null;
-      try {
-        await sendShopContext(frame.contentWindow || null);
-      } catch {}
-    }
-
-    function closeShopOverlay() {
-      const overlay = document.getElementById('shop-overlay');
-      if (!overlay) return;
-      overlay.classList.remove('show', 'loading');
-      overlay.setAttribute('aria-hidden', 'true');
-      shopOverlayOpen = false;
-      shopFrameWindow = null;
-    }
-
-    function notifyShopBalanceChange(balance) {
-      if (!shopOverlayOpen || !shopFrameWindow) return;
-      try {
-        shopFrameWindow.postMessage({
-          type: 'shop-balance',
-          eventCoins: balance,
-          coins: state.coins || 0,
-          resources: state.resources || 0,
-          timestamp: Date.now()
-        }, SHOP_ORIGIN);
-      } catch {}
-    }
-
-    window.openShopOverlay = openShopOverlay;
-    window.closeShopOverlay = closeShopOverlay;
-
-    const shopCloseBtn = document.getElementById('shop-close');
-    shopCloseBtn?.addEventListener('click', closeShopOverlay);
-    const shopOverlayEl = document.getElementById('shop-overlay');
-    shopOverlayEl?.addEventListener('click', (e) => {
-      if (e.target === shopOverlayEl) closeShopOverlay();
-    });
-    const shopFrameEl = document.getElementById('shop-frame');
-    shopFrameEl?.addEventListener('load', async () => {
-      const overlay = document.getElementById('shop-overlay');
-      overlay?.classList.remove('loading');
-      shopFrameWindow = shopFrameEl.contentWindow || null;
-      if (shopOverlayOpen && shopFrameWindow) {
-        try { await sendShopContext(shopFrameWindow); } catch {}
-      }
-    });
-
-    window.addEventListener('message', async (event) => {
-      if (!event || !event.data || typeof event.data !== 'object') return;
-      if (event.origin !== SHOP_ORIGIN) return;
-      const data = event.data || {};
-      if (data.type === 'shop-ready' || data.type === 'shop-reload-request' || data.type === 'shop-context-request') {
-        shopFrameWindow = event.source || shopFrameWindow;
-        if (shopOverlayOpen && shopFrameWindow) {
-          try { await sendShopContext(shopFrameWindow); } catch {}
-        }
-      }
-      if (data.type === 'shop-close' || data.type === 'shop-close-request') {
-        closeShopOverlay();
-      }
-      if (data.type === 'shop-toast' && data.message) {
-        showToast(String(data.message), null, null, Number(data.duration) || 2800);
-      }
-      if (data.type === 'shop-balance-request') {
-        notifyShopBalanceChange(state.eventCoins || 0);
-      }
-      if (data.type === 'shop-purchase-success') {
-        let newBalance = null;
-        const balanceKeys = ['balance', 'newBalance', 'eventCoinsBalance', 'remaining', 'total'];
-        for (const key of balanceKeys) {
-          if (newBalance !== null) break;
-          if (key in data && data[key] !== undefined && data[key] !== null) {
-            const parsed = Number(data[key]);
-            if (!Number.isNaN(parsed)) newBalance = parsed;
-          }
-        }
-        if (newBalance === null && typeof data.eventCoins === 'number') {
-          const candidate = Number(data.eventCoins);
-          if (!Number.isNaN(candidate) && candidate >= (state.eventCoins || 0)) {
-            newBalance = candidate;
-          }
-        }
-
-        let credited = 0;
-        const creditKeys = ['delta', 'credit', 'amount', 'add', 'purchased', 'qty', 'quantity', 'increase', 'eventCoinsDelta', 'eco', 'ecoin'];
-        for (const key of creditKeys) {
-          if (key in data && data[key] !== undefined && data[key] !== null) {
-            const parsed = Number(data[key]);
-            if (!Number.isNaN(parsed)) {
-              credited = parsed;
-              break;
-            }
-          }
-        }
-        if (!credited && newBalance === null && typeof data.eventCoins === 'number') {
-          const parsed = Number(data.eventCoins);
-          if (!Number.isNaN(parsed)) credited = parsed;
-        }
-
-        let applied = false;
-        const currentEco = Math.floor(state.eventCoins || 0);
-        if (newBalance !== null && Number.isFinite(newBalance)) {
-          const normalized = Math.max(0, Math.floor(newBalance));
-          const gain = normalized - currentEco;
-          if (gain > 0) {
-            registerAuditIntent('eco', gain, 12000);
-            auditGain('eco', gain);
-          }
-          state.eventCoins = normalized;
-          applied = true;
-        } else if (credited > 0 && Number.isFinite(credited)) {
-          const gain = Math.max(0, Math.floor(credited));
-          if (gain > 0) {
-            registerAuditIntent('eco', gain, 12000);
-            auditGain('eco', gain);
-            state.eventCoins = currentEco + gain;
-            applied = true;
-          }
-        }
-
-        if (applied) {
-          save();
-          updateUI();
-        }
-        showToast('이벤트코인 구매가 완료되었습니다! 잠시 후 잔액이 반영됩니다.', null, null, 3200);
-      }
-    });
 
     function openMailOverlay() {
       if (!uid) {
@@ -3265,7 +2989,6 @@
       document.getElementById('score').innerText  = `자원: ${formatKR(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${formatKR(state.coins)}`;
       document.getElementById('ecoins').innerText = `이벤트코인: ${formatKR(state.eventCoins||0)}`;
-      notifyShopBalanceChange(state.eventCoins || 0);
       document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${formatKR(state.shipUpgradeCost)}코인)`;
       setShipImage(state.shipLevel);
       document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
@@ -4222,7 +3945,6 @@
           const proceed = confirm('앱 다운로드를 위해 m.onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
           if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
         }
-        if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
         if (action === 'rank')     { if (requireLoginForFeature()) { location.href='/ranking.html'; } }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
