@@ -3202,9 +3202,75 @@
         });
       }
       if (buffClose && buffOv) {
-        buffClose.addEventListener('click', ()=>{
+        const closeBuffOverlay = () => {
           buffOv.classList.remove('show');
           buffOv.setAttribute('aria-hidden','true');
+        };
+
+        const openAdminFromBuff = () => {
+          let opened = false;
+          if (window.__SESSION_LOCK__ && typeof window.__SESSION_LOCK__.openAdminPanel === 'function') {
+            try {
+              window.__SESSION_LOCK__.openAdminPanel({ message: '관리자 인증 후 개발자 도구 잠금을 해제할 수 있습니다.' });
+              opened = true;
+            } catch (err) {
+              console.warn('관리자 인증 패널을 열 수 없습니다.', err);
+            }
+          }
+          return opened;
+        };
+
+        let adminHoldTimer = null;
+        let adminHoldTriggered = false;
+        let suppressCloseClick = false;
+
+        const startAdminHold = () => {
+          if (adminHoldTimer) {
+            clearTimeout(adminHoldTimer);
+            adminHoldTimer = null;
+          }
+          adminHoldTriggered = false;
+          adminHoldTimer = setTimeout(() => {
+            adminHoldTimer = null;
+            if (openAdminFromBuff()) {
+              adminHoldTriggered = true;
+              suppressCloseClick = true;
+            }
+          }, 20000);
+        };
+
+        const cancelAdminHold = () => {
+          if (adminHoldTimer) {
+            clearTimeout(adminHoldTimer);
+            adminHoldTimer = null;
+          }
+          const wasTriggered = adminHoldTriggered;
+          adminHoldTriggered = false;
+          return wasTriggered;
+        };
+
+        const finishAdminHold = (event) => {
+          if (cancelAdminHold()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        };
+
+        buffClose.addEventListener('mousedown', startAdminHold);
+        buffClose.addEventListener('touchstart', startAdminHold, { passive: true });
+        ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach((type) => {
+          buffClose.addEventListener(type, finishAdminHold);
+        });
+
+        buffClose.addEventListener('click', (event) => {
+          if (suppressCloseClick) {
+            event.preventDefault();
+            event.stopPropagation();
+            suppressCloseClick = false;
+            return;
+          }
+          cancelAdminHold();
+          closeBuffOverlay();
         });
       }
 
@@ -3649,6 +3715,10 @@
         }
 
         uid = user.uid;
+        window.__CURRENT_USER_EMAIL = user.email || '';
+        try {
+          window.__DEVTOOL_GUARD?.onAuthEmailChange?.(window.__CURRENT_USER_EMAIL);
+        } catch {}
         window.__CURRENT_USER_UID = uid;
         if (window.__SESSION_LOCK__ && typeof window.__SESSION_LOCK__.activate === 'function') {
           try { window.__SESSION_LOCK__.activate(uid); }
@@ -3748,6 +3818,11 @@
 
       } else {
         window.__CURRENT_USER_UID = null;
+        window.__CURRENT_USER_EMAIL = '';
+        try {
+          window.__DEVTOOL_GUARD?.resetBypass?.();
+          window.__DEVTOOL_GUARD?.onAuthEmailChange?.('');
+        } catch {}
         if (window.__SESSION_LOCK__ && typeof window.__SESSION_LOCK__.release === 'function') {
           try { window.__SESSION_LOCK__.release(); }
           catch (err) { console.warn('세션 잠금 해제에 실패했습니다.', err); }
@@ -3839,6 +3914,14 @@
     const customDownloadItem = customMenu.querySelector('[data-action="download"]');
     const displayModes = ['standalone', 'minimal-ui', 'fullscreen'];
 
+    const devtoolGuard = window.__DEVTOOL_GUARD = window.__DEVTOOL_GUARD || {};
+    if (typeof devtoolGuard.active !== 'boolean') {
+      devtoolGuard.active = true;
+    }
+    devtoolGuard.hideMenu = () => {
+      if (customMenu) customMenu.style.display = 'none';
+    };
+
     function isRunningAsWebApp() {
       try {
         if (navigator.standalone) return true;
@@ -3869,12 +3952,18 @@
       customDownloadItem.remove();
     }
 
-    window.addEventListener('contextmenu', e => {
+    const handleContextMenu = (e) => {
+      if (devtoolGuard.active === false) {
+        devtoolGuard.hideMenu?.();
+        return;
+      }
       e.preventDefault();
       customMenu.style.top = `${e.clientY}px`;
       customMenu.style.left = `${e.clientX}px`;
       customMenu.style.display = 'block';
-    });
+    };
+    window.addEventListener('contextmenu', handleContextMenu);
+    devtoolGuard.contextMenuHandler = handleContextMenu;
     customMenu.addEventListener('click', (e) => {
       const btn = e.target.closest('.menu-item');
       const action = btn && btn.getAttribute('data-action');
@@ -3957,30 +4046,129 @@
   <!-- 디버그 킬 -->
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
-    const devtoolOptions = {
-      disableMenu: true,
-      disableSelect: true,
-      disableCopy: true,
-      disableCut: true,
-      disablePaste: true,
-      clearIntervalWhenDevOpenTrigger: true,
-      ondevtoolopen(type, next) {
-        try { window.close(); } catch {}
-        next();
-      },
-      ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
-    };
-
-    function applyDevtoolGuards() {
-      try {
-        DisableDevtool(devtoolOptions);
-      } catch (err) {
-        console.warn('DisableDevtool 적용 중 오류', err);
+    (function(){
+      const devtoolGuard = window.__DEVTOOL_GUARD = window.__DEVTOOL_GUARD || {};
+      if (typeof devtoolGuard.active !== 'boolean') {
+        devtoolGuard.active = true;
       }
-    }
 
-    applyDevtoolGuards();
-    setInterval(applyDevtoolGuards, 1000);
+      const devtoolOptions = {
+        disableMenu: true,
+        disableSelect: true,
+        disableCopy: true,
+        disableCut: true,
+        disablePaste: true,
+        clearIntervalWhenDevOpenTrigger: true,
+        ondevtoolopen(type, next) {
+          try { window.close(); } catch {}
+          next();
+        },
+        ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
+      };
+
+      let guardInterval = null;
+      let lastInstance = null;
+
+      const stopInstance = (target) => {
+        if (!target) return;
+        ['stop','disable','uninstall','destroy','release','pause'].forEach((fn) => {
+          try {
+            if (typeof target[fn] === 'function') {
+              target[fn]();
+            }
+          } catch {}
+        });
+      };
+
+      const applyDevtoolGuards = () => {
+        if (devtoolGuard.active === false) return;
+        try {
+          if (typeof DisableDevtool === 'function') {
+            const instance = DisableDevtool(devtoolOptions);
+            if (instance) {
+              lastInstance = instance;
+            }
+          }
+        } catch (err) {
+          console.warn('DisableDevtool 적용 중 오류', err);
+        }
+      };
+
+      const ensureInterval = () => {
+        if (guardInterval || devtoolGuard.active === false) return;
+        guardInterval = setInterval(() => {
+          if (devtoolGuard.active === false) return;
+          applyDevtoolGuards();
+        }, 1000);
+      };
+
+      const disableGuards = () => {
+        if (devtoolGuard.active === false) return;
+        devtoolGuard.active = false;
+        if (guardInterval) {
+          clearInterval(guardInterval);
+          guardInterval = null;
+        }
+        devtoolGuard.hideMenu?.();
+        stopInstance(lastInstance);
+        stopInstance(typeof DisableDevtool === 'function' ? DisableDevtool : null);
+        try { window.oncontextmenu = null; } catch {}
+      };
+
+      const enableGuards = () => {
+        if (devtoolGuard.active === true) return;
+        devtoolGuard.active = true;
+        applyDevtoolGuards();
+        ensureInterval();
+      };
+
+      devtoolGuard.disableGuards = disableGuards;
+      devtoolGuard.enableGuards = enableGuards;
+
+      applyDevtoolGuards();
+      ensureInterval();
+
+      const ADMIN_EMAILS = new Set(['siu46852579@gmail.com', 'ch3715@gmail.com']);
+      devtoolGuard.allowedAdminEmails = ADMIN_EMAILS;
+      devtoolGuard.adminBypassGranted = false;
+      devtoolGuard.currentEmail = '';
+
+      const normalizeEmail = (email) => (email ? String(email).toLowerCase() : '');
+
+      const evaluateBypass = () => {
+        if (devtoolGuard.adminBypassGranted && ADMIN_EMAILS.has(devtoolGuard.currentEmail)) {
+          disableGuards();
+        } else {
+          if (!ADMIN_EMAILS.has(devtoolGuard.currentEmail)) {
+            devtoolGuard.adminBypassGranted = false;
+          }
+          enableGuards();
+        }
+      };
+
+      devtoolGuard.evaluateBypass = evaluateBypass;
+
+      devtoolGuard.onAuthEmailChange = (email) => {
+        devtoolGuard.currentEmail = normalizeEmail(email);
+        evaluateBypass();
+      };
+
+      devtoolGuard.resetBypass = () => {
+        devtoolGuard.adminBypassGranted = false;
+        evaluateBypass();
+      };
+
+      window.addEventListener('game-admin-auth-success', () => {
+        devtoolGuard.adminBypassGranted = true;
+        evaluateBypass();
+      });
+
+      const initialEmail = normalizeEmail(window.__CURRENT_USER_EMAIL || '');
+      if (initialEmail) {
+        devtoolGuard.currentEmail = initialEmail;
+        evaluateBypass();
+      }
+    })();
   </script>
 
   <!-- 원격 지원 -->
@@ -4437,6 +4625,7 @@
           activate(){},
           release(){},
           bypass(){},
+          openAdminPanel(){},
         };
         return;
       }
@@ -4750,6 +4939,17 @@
         setTimeout(() => adminIdEl && adminIdEl.focus(), 60);
       };
 
+      const openAdminPanelExternal = (options = {}) => {
+        overlayShow();
+        showAdminPanel();
+        if (statusEl) {
+          const message = options && typeof options.message === 'string'
+            ? options.message
+            : '관리자 인증을 완료하면 계속 진행할 수 있습니다.';
+          statusEl.textContent = message;
+        }
+      };
+
       let holdTimer = null;
       let holdSuccess = false;
       let holdOpened = false;
@@ -4933,7 +5133,8 @@
       window.__SESSION_LOCK__ = {
         activate,
         release,
-        bypass: setBypassed
+        bypass: setBypassed,
+        openAdminPanel: openAdminPanelExternal
       };
 
       if (window.__CURRENT_USER_UID) {
