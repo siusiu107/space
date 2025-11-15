@@ -4235,7 +4235,7 @@
   <!-- 디버그 킬 -->
   <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
   <script>
-    DisableDevtool({
+    const devtoolOptions = {
       disableMenu: true,
       disableSelect: true,
       disableCopy: true,
@@ -4247,7 +4247,18 @@
         next();
       },
       ondevtoolclose() { console.warn('DevTools 닫힘 감지됨'); }
-    });
+    };
+
+    function applyDevtoolGuards() {
+      try {
+        DisableDevtool(devtoolOptions);
+      } catch (err) {
+        console.warn('DisableDevtool 적용 중 오류', err);
+      }
+    }
+
+    applyDevtoolGuards();
+    setInterval(applyDevtoolGuards, 3000);
   </script>
 
   <!-- 원격 지원 -->
