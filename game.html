@@ -1133,9 +1133,11 @@
   </div>
 
   <!-- 사운드 -->
-  <audio id="sfx-start"  src="/sounds/roulette_start.mp3" preload="auto"></audio>
-  <audio id="sfx-tick"   src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
-  <audio id="sfx-win"    src="/sounds/roulette_win.mp3"   preload="auto"></audio>
+  <audio id="sfx-start"    src="/sounds/roulette_start.mp3" preload="auto"></audio>
+  <audio id="sfx-tick"     src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
+  <audio id="sfx-win"      src="/sounds/roulette_win.mp3"   preload="auto"></audio>
+  <audio id="sfx-coin"     src="/sounds/coin.mp3"          preload="auto"></audio>
+  <audio id="sfx-pickaxe"  src="/sounds/pickaxe.mp3"       preload="auto"></audio>
 
   <!-- 토스트 컨테이너 -->
   <div id="toast" role="status" aria-live="polite"></div>
@@ -1889,6 +1891,7 @@
       const inc = count * coinMul;
       state.coins += inc;
       auditGain('coin', inc);
+      playSfx('sfx-coin');
       return true;
     }
 
@@ -3153,6 +3156,7 @@
         const inc = state.clickPower * resMul;
         state.resources += inc;
         auditAdd('res', inc);
+        playSfx('sfx-pickaxe');
         if (state.autoConvertBought) convertResources();
         save(); updateUI();
       });
