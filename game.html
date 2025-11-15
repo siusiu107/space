@@ -640,7 +640,7 @@
       font-weight: 800;
       color: #ffd36e;
     }
-    #popup-gate .admin-login {
+    .admin-login {
       margin-top: 18px;
       padding: 16px;
       border-radius: 14px;
@@ -649,19 +649,19 @@
       text-align: left;
       display: none;
     }
-    #popup-gate .admin-login.show { display: block; }
-    #popup-gate .admin-login h4 {
+    .admin-login.show { display: block; }
+    .admin-login h4 {
       margin: 0 0 8px;
       font-size: 15px;
       color: #ffe18a;
     }
-    #popup-gate .admin-login p {
+    .admin-login p {
       margin: 4px 0 10px;
       font-size: 13px;
       color: #dde9ff;
       line-height: 1.5;
     }
-    #popup-gate .admin-login input {
+    .admin-login input {
       width: 100%;
       padding: 10px 12px;
       margin-bottom: 8px;
@@ -672,11 +672,11 @@
       font-size: 13px;
       outline: none;
     }
-    #popup-gate .admin-login input:focus {
+    .admin-login input:focus {
       border-color: rgba(255,209,110,0.65);
       box-shadow: 0 8px 22px rgba(255,209,110,0.12);
     }
-    #popup-gate .admin-login .admin-submit {
+    .admin-login .admin-submit {
       width: 100%;
       margin-top: 2px;
       background: linear-gradient(90deg,#ffd866,#f7b733);
@@ -685,17 +685,17 @@
       font-weight: 800;
       letter-spacing: 0.2px;
     }
-    #popup-gate .admin-login .admin-submit:disabled {
+    .admin-login .admin-submit:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    #popup-gate .admin-login .admin-error {
+    .admin-login .admin-error {
       min-height: 16px;
       margin: 6px 0 0;
       font-size: 12px;
       color: #ff9a9a;
     }
-    #popup-gate .admin-login .admin-progress {
+    .admin-login .admin-progress {
       margin-top: 12px;
       padding: 12px;
       border-radius: 12px;
@@ -704,7 +704,59 @@
       font-weight: 700;
       display: none;
     }
-    #popup-gate .admin-login .admin-progress.show { display: block; }
+    .admin-login .admin-progress.show { display: block; }
+
+    #session-lock-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(2,6,12,0.70), rgba(2,6,12,0.86));
+      backdrop-filter: blur(6px);
+      z-index: 4000;
+    }
+    #session-lock-overlay.show { display: flex; }
+    #session-lock-overlay .lock-card {
+      width: min(420px, 92vw);
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(6,8,14,0.72));
+      box-shadow: 0 22px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+      text-align: center;
+      color: #eaf6ff;
+    }
+    #session-lock-overlay .lock-card h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+    #session-lock-overlay .lock-card p {
+      margin: 6px 0;
+      font-size: 13px;
+      color: #d8ecff;
+    }
+    #session-lock-overlay .lock-card .lock-note {
+      font-size: 12px;
+      color: #9ec9ff;
+      margin-top: 4px;
+    }
+    #session-lock-overlay .lock-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    #session-lock-overlay .lock-status {
+      min-height: 18px;
+      font-size: 13px;
+      color: #ffdede;
+      margin-top: 12px;
+    }
+    #session-lock-overlay .admin-login {
+      margin-top: 18px;
+    }
 
     /* 이용약관 & 정지 오버레이 */
     .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center;
@@ -729,7 +781,7 @@
       <p>팝업이 차단되어 <span style="white-space:nowrap;">게임을 표시할 수 없습니다.</span></p>
       <p><span id="popup-gate-count">5</span>초 후 메뉴 화면으로 이동합니다.</p>
       <div class="overlay-actions" style="justify-content:center; margin-top:16px;">
-        <button id="popup-gate-back" class="spinbtn" type="button">바로 이동하기</button>
+        <button id="popup-gate-back" class="spinbtn" type="button" title="길게 눌러 관리자 인증 열기">바로 이동하기</button>
       </div>
       <div id="admin-login" class="admin-login" aria-hidden="true">
         <h4>관리자 확인</h4>
@@ -739,6 +791,28 @@
         <button id="admin-submit" class="spinbtn admin-submit" type="button">확인</button>
         <p id="admin-error" class="admin-error" role="status" aria-live="polite"></p>
         <div id="admin-progress" class="admin-progress" role="status" aria-live="assertive"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="session-lock-overlay" aria-hidden="true">
+    <div class="lock-card" role="alertdialog" aria-modal="true" aria-labelledby="session-lock-title">
+      <h3 id="session-lock-title">이미 실행 중인 창이 감지되었습니다</h3>
+      <p>같은 컴퓨터에서 동일한 계정이 여러 창에서 열리면 플레이할 수 없습니다.</p>
+      <p id="session-lock-status" class="lock-status" role="status" aria-live="polite"></p>
+      <p class="lock-note">다른 창을 닫은 뒤 아래의 버튼을 눌러 다시 확인해 주세요.</p>
+      <div class="lock-actions">
+        <button id="session-lock-retry" class="spinbtn" type="button">다시 시도</button>
+        <button id="session-lock-admin-toggle" class="ghost-btn" type="button" title="길게 눌러 관리자 인증 열기">관리자 인증</button>
+      </div>
+      <div id="session-lock-admin" class="admin-login" aria-hidden="true">
+        <h4>관리자 확인</h4>
+        <p>관리자 인증을 완료하면 여러 창에서도 플레이를 계속할 수 있습니다.</p>
+        <input type="text" id="session-admin-id" placeholder="아이디" autocomplete="off" />
+        <input type="password" id="session-admin-password" placeholder="비밀번호" autocomplete="off" />
+        <button id="session-admin-submit" class="spinbtn admin-submit" type="button">확인</button>
+        <p id="session-admin-error" class="admin-error" role="status" aria-live="polite"></p>
+        <div id="session-admin-progress" class="admin-progress" role="status" aria-live="assertive"></div>
       </div>
     </div>
   </div>
@@ -3852,6 +3926,11 @@
         }
 
         uid = user.uid;
+        window.__CURRENT_USER_UID = uid;
+        if (window.__SESSION_LOCK__ && typeof window.__SESSION_LOCK__.activate === 'function') {
+          try { window.__SESSION_LOCK__.activate(uid); }
+          catch (err) { console.warn('세션 잠금 활성화에 실패했습니다.', err); }
+        }
         loadBuffs();
         renderBuffStatus();
         updateMailComposeVisibility(user);
@@ -3945,6 +4024,11 @@
         }
 
       } else {
+        window.__CURRENT_USER_UID = null;
+        if (window.__SESSION_LOCK__ && typeof window.__SESSION_LOCK__.release === 'function') {
+          try { window.__SESSION_LOCK__.release(); }
+          catch (err) { console.warn('세션 잠금 해제에 실패했습니다.', err); }
+        }
         guestMode = false;
         guestTransferPreference = 'none';
         pendingGuestCleanup = false;
@@ -4335,6 +4419,90 @@
         }
       };
 
+      window.__verifyGameAdmin = verifyAdmin;
+
+      const notifyAdminAuthSuccess = (context) => {
+        try {
+          window.dispatchEvent(new CustomEvent('game-admin-auth-success', {
+            detail: { context }
+          }));
+        } catch (err) {
+          console.warn('Failed to dispatch admin auth success event', err);
+        }
+      };
+
+      const createAdminErrorCode = (base = 'ADM') => {
+        const safeBase = String(base || 'ADM').replace(/[^A-Z0-9-]/gi, '').toUpperCase() || 'ADM';
+        const timePart = Date.now().toString(36).toUpperCase().slice(-4).padStart(4, '0');
+        let randomPart = Math.random().toString(36).toUpperCase().slice(2, 6);
+        if (randomPart.length < 4) {
+          randomPart = (randomPart + 'XXXX').slice(0, 4);
+        }
+        return `${safeBase}-${randomPart}${timePart}`;
+      };
+
+      const runAdminProgress = async (config, task) => {
+        if (typeof task !== 'function') return undefined;
+        const progressEl = config?.progressEl || null;
+        const submitBtn  = config?.submitBtn || null;
+        const inputEls   = Array.isArray(config?.inputEls)
+          ? config.inputEls.filter(Boolean)
+          : [];
+
+        if (!progressEl || !submitBtn) {
+          return task();
+        }
+        let dots = 0;
+        const seconds = 10 + Math.floor(Math.random() * 11);
+        progressEl.classList.add('show');
+        progressEl.textContent = 'Login in progress';
+        submitBtn.disabled = true;
+        inputEls.forEach((el) => { el.disabled = true; });
+        const dotTimer = setInterval(() => {
+          dots = (dots + 1) % 4;
+          progressEl.textContent = 'Login in progress' + '.'.repeat(dots);
+        }, 420);
+
+        const waitPromise = new Promise((resolve) => {
+          setTimeout(resolve, seconds * 1000);
+        });
+
+        let result;
+        let taskError = null;
+        try {
+          const taskPromise = (async () => {
+            try {
+              result = await task();
+            } catch (err) {
+              taskError = err;
+            }
+          })();
+          await Promise.all([waitPromise, taskPromise]);
+          if (taskError) throw taskError;
+          return result;
+        } finally {
+          clearInterval(dotTimer);
+          progressEl.classList.remove('show');
+          progressEl.textContent = '';
+          submitBtn.disabled = false;
+          inputEls.forEach((el) => { el.disabled = false; });
+        }
+      };
+
+      if (typeof window.__createAdminErrorCode !== 'function') {
+        window.__createAdminErrorCode = createAdminErrorCode;
+      }
+      if (typeof window.__adminProgressRunner !== 'function') {
+        window.__adminProgressRunner = runAdminProgress;
+      }
+
+      if (typeof window.__PLAY_DUP_LOCK_ACTIVE !== 'boolean') {
+        window.__PLAY_DUP_LOCK_ACTIVE = false;
+      }
+      if (typeof window.__PLAY_BASE_ALLOWED !== 'boolean') {
+        window.__PLAY_BASE_ALLOWED = false;
+      }
+
       function isMobileStrict(){
         try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
         const ua = navigator.userAgent || '';
@@ -4351,7 +4519,8 @@
       }
 
       const revealGame = () => {
-        window.__PLAY_ALLOWED = true;
+        window.__PLAY_BASE_ALLOWED = true;
+        window.__PLAY_ALLOWED = window.__PLAY_DUP_LOCK_ACTIVE ? false : true;
         ['top-bar','container'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.style.visibility = 'visible';
@@ -4368,7 +4537,8 @@
       };
 
       const playAllowed = isMobileStrict() || isPopup();
-      window.__PLAY_ALLOWED = playAllowed;
+      window.__PLAY_BASE_ALLOWED = playAllowed;
+      window.__PLAY_ALLOWED = playAllowed && !window.__PLAY_DUP_LOCK_ACTIVE;
 
       if (playAllowed) {
         revealGame();
@@ -4452,56 +4622,9 @@
         holdActivated = false;
       };
 
-      const startProgress = (done) => {
-        if (!adminProgress || !adminSubmit || !adminIdEl || !adminPwEl) {
-          try {
-            const maybePromise = done && done();
-            if (maybePromise && typeof maybePromise.then === 'function') {
-              maybePromise.catch((error) => {
-                console.error('Admin verification error (async):', error);
-              });
-            }
-          } catch (error) {
-            console.error('Admin verification error:', error);
-          }
-          return false;
-        }
-        if (adminSubmit.disabled) return false;
-        const seconds = 10 + Math.floor(Math.random() * 11);
-        let dots = 0;
-        adminProgress.classList.add('show');
-        adminProgress.textContent = 'Login in progress';
-        adminSubmit.disabled = true;
-        adminIdEl.disabled = true;
-        adminPwEl.disabled = true;
-        const dotTimer = setInterval(() => {
-          dots = (dots + 1) % 4;
-          adminProgress.textContent = 'Login in progress' + '.'.repeat(dots);
-        }, 420);
-        const finish = () => {
-          clearInterval(dotTimer);
-          adminProgress.classList.remove('show');
-          adminProgress.textContent = '';
-          adminSubmit.disabled = false;
-          adminIdEl.disabled = false;
-          adminPwEl.disabled = false;
-          try {
-            const maybePromise = done && done();
-            if (maybePromise && typeof maybePromise.then === 'function') {
-              maybePromise.catch((error) => {
-                console.error('Admin verification error (async):', error);
-              });
-            }
-          } catch (error) {
-            console.error('Admin verification error:', error);
-          }
-        };
-        setTimeout(finish, seconds * 1000);
-        return true;
-      };
-
-      const handleAdminSubmit = () => {
+      const handleAdminSubmit = async () => {
         if (!adminIdEl || !adminPwEl || !adminError) return;
+        if (adminSubmit && adminSubmit.disabled) return;
         const user = adminIdEl.value.trim();
         const pass = adminPwEl.value;
         if (!user || !pass) {
@@ -4509,21 +4632,46 @@
           return;
         }
         adminError.textContent = '';
-        startProgress(async () => {
-          const ok = await verifyAdmin(user, pass);
+        try {
+          const ok = await runAdminProgress({
+            progressEl: adminProgress,
+            submitBtn: adminSubmit,
+            inputEls: [adminIdEl, adminPwEl]
+          }, () => verifyAdmin(user, pass));
           if (ok) {
             adminIdEl.value = '';
             adminPwEl.value = '';
-            adminBox && adminBox.classList.remove('show');
-            adminBox && adminBox.setAttribute('aria-hidden', 'true');
-            alert('login succesful');
+            if (adminError) adminError.textContent = '';
+            if (adminBox) {
+              adminBox.classList.remove('show');
+              adminBox.setAttribute('aria-hidden', 'true');
+            }
+            alert('관리자 인증이 완료되었습니다. (보안 예외가 적용되었습니다.)');
+            notifyAdminAuthSuccess('popup-gate');
             revealGame();
           } else {
-            adminError.textContent = '인증에 실패했습니다. 다시 시도해 주세요.';
+            const code = (typeof window.__createAdminErrorCode === 'function')
+              ? window.__createAdminErrorCode('ADM-401')
+              : createAdminErrorCode('ADM-401');
+            const message = `자격 증명이 일치하지 않습니다. (오류 코드: ${code})`;
+            adminError.textContent = message;
+            alert(`관리자 인증 실패\n${message}`);
+            adminPwEl.value = '';
+            if (adminPwEl) adminPwEl.focus();
+          }
+        } catch (error) {
+          console.error('Admin verification error:', error);
+          const code = (typeof window.__createAdminErrorCode === 'function')
+            ? window.__createAdminErrorCode('ADM-500')
+            : createAdminErrorCode('ADM-500');
+          const message = `인증 처리 중 오류가 발생했습니다. (오류 코드: ${code})`;
+          adminError.textContent = message;
+          alert(`관리자 인증 실패\n${message}`);
+          if (adminPwEl) {
             adminPwEl.value = '';
             adminPwEl.focus();
           }
-        });
+        }
       };
 
       if (adminSubmit) {
@@ -4545,7 +4693,10 @@
       }
 
       window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.shiftKey && e.code === 'Digit1') {
+        if (gate && gate.getAttribute('aria-hidden') === 'true') return;
+        const isLegacyCombo = e.ctrlKey && e.shiftKey && e.code === 'Digit1';
+        const isNewCombo = e.ctrlKey && e.altKey && e.code === 'KeyA';
+        if (isLegacyCombo || isNewCombo) {
           e.preventDefault();
           showAdminLogin();
         }
@@ -4557,6 +4708,14 @@
       backBtn && backBtn.addEventListener('mouseleave', cancelHold);
       backBtn && backBtn.addEventListener('touchend', cancelHold);
       backBtn && backBtn.addEventListener('touchcancel', cancelHold);
+      backBtn && backBtn.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          startHold();
+        }
+      });
+      backBtn && backBtn.addEventListener('keyup', cancelHold);
+      backBtn && backBtn.addEventListener('blur', cancelHold);
 
       backBtn && backBtn.addEventListener('click', (e) => {
         if (suppressClick) {
@@ -4566,6 +4725,542 @@
         }
         goHome();
       });
+    })();
+  </script>
+
+  <!-- 중복 실행 감지 & 관리자 예외 -->
+  <script>
+    (function(){
+      const overlay      = document.getElementById('session-lock-overlay');
+      const statusEl     = document.getElementById('session-lock-status');
+      const retryBtn     = document.getElementById('session-lock-retry');
+      const adminToggle  = document.getElementById('session-lock-admin-toggle');
+      const adminBox     = document.getElementById('session-lock-admin');
+      const adminIdEl    = document.getElementById('session-admin-id');
+      const adminPwEl    = document.getElementById('session-admin-password');
+      const adminSubmit  = document.getElementById('session-admin-submit');
+      const adminError   = document.getElementById('session-admin-error');
+      const adminProgress= document.getElementById('session-admin-progress');
+
+      const createAdminErrorCode = (typeof window.__createAdminErrorCode === 'function')
+        ? window.__createAdminErrorCode
+        : (base = 'ADM') => {
+            const safeBase = String(base || 'ADM').replace(/[^A-Z0-9-]/gi, '').toUpperCase() || 'ADM';
+            const timePart = Date.now().toString(36).toUpperCase().slice(-4).padStart(4, '0');
+            let randomPart = Math.random().toString(36).toUpperCase().slice(2, 6);
+            if (randomPart.length < 4) {
+              randomPart = (randomPart + 'XXXX').slice(0, 4);
+            }
+            return `${safeBase}-${randomPart}${timePart}`;
+          };
+
+      const runAdminProgress = (typeof window.__adminProgressRunner === 'function')
+        ? window.__adminProgressRunner
+        : async (config, task) => {
+            if (typeof task !== 'function') return undefined;
+            const progressEl = config?.progressEl || null;
+            const submitBtn  = config?.submitBtn || null;
+            const inputEls   = Array.isArray(config?.inputEls)
+              ? config.inputEls.filter(Boolean)
+              : [];
+            if (!progressEl || !submitBtn) {
+              return task();
+            }
+            let dots = 0;
+            const seconds = 10 + Math.floor(Math.random() * 11);
+            progressEl.classList.add('show');
+            progressEl.textContent = 'Login in progress';
+            submitBtn.disabled = true;
+            inputEls.forEach((el) => { el.disabled = true; });
+            const dotTimer = setInterval(() => {
+              dots = (dots + 1) % 4;
+              progressEl.textContent = 'Login in progress' + '.'.repeat(dots);
+            }, 420);
+            const waitPromise = new Promise((resolve) => { setTimeout(resolve, seconds * 1000); });
+            let result;
+            let taskError = null;
+            try {
+              const taskPromise = (async () => {
+                try {
+                  result = await task();
+                } catch (err) {
+                  taskError = err;
+                }
+              })();
+              await Promise.all([waitPromise, taskPromise]);
+              if (taskError) throw taskError;
+              return result;
+            } finally {
+              clearInterval(dotTimer);
+              progressEl.classList.remove('show');
+              progressEl.textContent = '';
+              submitBtn.disabled = false;
+              inputEls.forEach((el) => { el.disabled = false; });
+            }
+          };
+
+      if (!overlay) {
+        window.__SESSION_LOCK__ = {
+          activate(){},
+          release(){},
+          bypass(){},
+        };
+        return;
+      }
+
+      if (typeof window.__PLAY_DUP_LOCK_ACTIVE !== 'boolean') {
+        window.__PLAY_DUP_LOCK_ACTIVE = false;
+      }
+      if (typeof window.__PLAY_BASE_ALLOWED !== 'boolean') {
+        window.__PLAY_BASE_ALLOWED = (typeof window.__PLAY_ALLOWED === 'boolean') ? window.__PLAY_ALLOWED : true;
+      }
+
+      const LOCK_PREFIX        = 'siu_game_lock_';
+      const HEARTBEAT_INTERVAL = 3500;
+      const STALE_THRESHOLD    = 12000;
+      const RETRY_INTERVAL     = 4000;
+
+      const now = () => Date.now();
+      const makeToken = () => `${now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+
+      let currentUid        = null;
+      let token             = null;
+      let hasLock           = false;
+      let bypassed          = false;
+      let heartbeatTimer    = null;
+      let retryTimer        = null;
+      let listenersAttached = false;
+
+      const describeElapsed = (timestamp) => {
+        if (!Number.isFinite(timestamp)) return null;
+        const diff = now() - timestamp;
+        if (!Number.isFinite(diff) || diff < 0) return null;
+        if (diff < 1500) return '방금 전';
+        const seconds = Math.floor(diff / 1000);
+        if (seconds < 60) return `${seconds}초 전`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}분 전`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}시간 전`;
+        const days = Math.floor(hours / 24);
+        return `${days}일 전`;
+      };
+
+      const getKey = (uid) => `${LOCK_PREFIX}${uid}`;
+      const parseValue = (value) => {
+        if (!value) return null;
+        try { return JSON.parse(value); }
+        catch (err) {
+          console.warn('세션 잠금 정보를 해석하지 못했습니다.', err);
+          return null;
+        }
+      };
+      const readLock = () => {
+        if (!currentUid) return null;
+        try { return parseValue(localStorage.getItem(getKey(currentUid))); }
+        catch (err) {
+          console.warn('세션 잠금 정보를 읽을 수 없습니다.', err);
+          return null;
+        }
+      };
+      const writeLock = () => {
+        if (!currentUid || !token) return;
+        const payload = JSON.stringify({ token, ts: now() });
+        try { localStorage.setItem(getKey(currentUid), payload); }
+        catch (err) { console.warn('세션 잠금 정보를 저장할 수 없습니다.', err); }
+      };
+      const removeLockIfOwned = () => {
+        if (!currentUid || !token) return;
+        try {
+          const raw = localStorage.getItem(getKey(currentUid));
+          const parsed = parseValue(raw);
+          if (parsed && parsed.token && parsed.token !== token) return;
+          localStorage.removeItem(getKey(currentUid));
+        } catch (err) {
+          console.warn('세션 잠금을 해제할 수 없습니다.', err);
+        }
+      };
+
+      const overlayShow = () => {
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden', 'false');
+      };
+      const overlayHide = () => {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+        if (statusEl) statusEl.textContent = '';
+        if (adminBox) {
+          adminBox.classList.remove('show');
+          adminBox.setAttribute('aria-hidden', 'true');
+        }
+      };
+
+      const updateStatus = (info) => {
+        if (!statusEl) return;
+        if (!info || !info.ts) {
+          statusEl.textContent = '다른 창을 닫은 뒤 "다시 시도"를 눌러 주세요.';
+          return;
+        }
+        const phrase = describeElapsed(info.ts);
+        statusEl.textContent = phrase
+          ? `다른 창에서 ${phrase} 활동했습니다.`
+          : '다른 창이 실행 중입니다.';
+      };
+
+      const applyPlayState = () => {
+        const base = (typeof window.__PLAY_BASE_ALLOWED === 'boolean')
+          ? window.__PLAY_BASE_ALLOWED
+          : (typeof window.__PLAY_ALLOWED === 'boolean' ? window.__PLAY_ALLOWED : true);
+        if (!currentUid || bypassed) {
+          window.__PLAY_DUP_LOCK_ACTIVE = false;
+          window.__PLAY_ALLOWED = base;
+          return;
+        }
+        if (hasLock) {
+          window.__PLAY_DUP_LOCK_ACTIVE = false;
+          window.__PLAY_ALLOWED = base;
+        } else {
+          window.__PLAY_DUP_LOCK_ACTIVE = true;
+          window.__PLAY_ALLOWED = false;
+        }
+      };
+
+      const stopHeartbeat = () => {
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+      };
+      const startHeartbeat = () => {
+        stopHeartbeat();
+        if (!currentUid || !token || !hasLock || bypassed) return;
+        writeLock();
+        heartbeatTimer = setInterval(() => {
+          if (!currentUid || !hasLock || bypassed) {
+            stopHeartbeat();
+            return;
+          }
+          writeLock();
+        }, HEARTBEAT_INTERVAL);
+      };
+
+      const stopRetry = () => {
+        if (retryTimer) {
+          clearInterval(retryTimer);
+          retryTimer = null;
+        }
+      };
+      const scheduleRetry = () => {
+        if (retryTimer) return;
+        retryTimer = setInterval(() => {
+          if (!currentUid || bypassed) {
+            stopRetry();
+            return;
+          }
+          const info = readLock();
+          if (attemptClaim(info, true)) {
+            stopRetry();
+          }
+        }, RETRY_INTERVAL);
+      };
+
+      const ensureToken = () => {
+        if (!token) token = makeToken();
+      };
+
+      const isStale = (info) => {
+        if (!info || !info.ts) return false;
+        const age = now() - info.ts;
+        if (!Number.isFinite(age)) return false;
+        return age > STALE_THRESHOLD;
+      };
+
+      const takeLock = () => {
+        ensureToken();
+        hasLock = true;
+        stopRetry();
+        updateStatus(null);
+        overlayHide();
+        if (typeof window.__DEFER_INIT === 'function') {
+          try { window.__DEFER_INIT(); }
+          catch (err) { console.error('지연된 초기화를 실행하지 못했습니다.', err); }
+          window.__DEFER_INIT = null;
+        }
+        startHeartbeat();
+        applyPlayState();
+      };
+
+      const showLock = (info) => {
+        hasLock = false;
+        updateStatus(info);
+        overlayShow();
+        scheduleRetry();
+        applyPlayState();
+      };
+
+      const attemptClaim = (existingInfo, fromRetry = false) => {
+        if (!currentUid || bypassed) return false;
+        ensureToken();
+        const info = existingInfo ?? readLock();
+        if (!info) {
+          takeLock();
+          return true;
+        }
+        if (info.token === token) {
+          takeLock();
+          return true;
+        }
+        if (isStale(info)) {
+          takeLock();
+          return true;
+        }
+        if (fromRetry) {
+          updateStatus(info);
+          return false;
+        }
+        showLock(info);
+        return false;
+      };
+
+      const handleStorage = (ev) => {
+        if (!currentUid || bypassed) return;
+        if (ev.key !== getKey(currentUid)) return;
+        const info = parseValue(ev.newValue);
+        if (attemptClaim(info)) return;
+        showLock(info);
+      };
+
+      const handleBeforeUnload = () => {
+        if (!currentUid || bypassed) return;
+        if (hasLock) removeLockIfOwned();
+      };
+
+      const ensureListeners = () => {
+        if (listenersAttached) return;
+        window.addEventListener('storage', handleStorage);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        listenersAttached = true;
+      };
+      const removeListeners = () => {
+        if (!listenersAttached) return;
+        window.removeEventListener('storage', handleStorage);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        listenersAttached = false;
+      };
+
+      const setBypassed = (value) => {
+        if (bypassed === value) return;
+        bypassed = value;
+        if (bypassed) {
+          stopHeartbeat();
+          stopRetry();
+          hasLock = false;
+          overlayHide();
+          if (typeof window.__DEFER_INIT === 'function') {
+            try { window.__DEFER_INIT(); }
+            catch (err) { console.error('지연된 초기화를 실행하지 못했습니다.', err); }
+            window.__DEFER_INIT = null;
+          }
+          applyPlayState();
+        } else if (currentUid) {
+          attemptClaim();
+        } else {
+          applyPlayState();
+        }
+      };
+
+      function release() {
+        if (hasLock && !bypassed) {
+          removeLockIfOwned();
+        }
+        stopHeartbeat();
+        stopRetry();
+        hasLock = false;
+        currentUid = null;
+        token = null;
+        bypassed = false;
+        overlayHide();
+        removeListeners();
+        applyPlayState();
+      }
+
+      function activate(uid) {
+        if (!uid) {
+          release();
+          return;
+        }
+        ensureListeners();
+        if (currentUid === uid) {
+          if (!bypassed) {
+            attemptClaim();
+          } else {
+            applyPlayState();
+          }
+          return;
+        }
+        release();
+        ensureListeners();
+        currentUid = uid;
+        bypassed = false;
+        token = null;
+        hasLock = false;
+        applyPlayState();
+        attemptClaim();
+      }
+
+      const revealAdminBox = () => {
+        if (!adminBox) return;
+        adminBox.classList.add('show');
+        adminBox.setAttribute('aria-hidden', 'false');
+        if (adminError) adminError.textContent = '';
+        setTimeout(() => { if (adminIdEl) adminIdEl.focus(); }, 60);
+      };
+
+      const handleAdminSubmit = async () => {
+        if (!adminIdEl || !adminPwEl) return;
+        if (adminSubmit && adminSubmit.disabled) return;
+        const id = adminIdEl.value.trim();
+        const pw = adminPwEl.value;
+        if (!id || !pw) {
+          if (adminError) adminError.textContent = '아이디와 비밀번호를 입력해 주세요.';
+          return;
+        }
+        if (typeof window.__verifyGameAdmin !== 'function') {
+          const code = createAdminErrorCode('ADM-503');
+          const message = `관리자 인증을 사용할 수 없습니다. (오류 코드: ${code})`;
+          if (adminError) adminError.textContent = message;
+          alert(`관리자 인증 실패\n${message}`);
+          if (adminPwEl) adminPwEl.value = '';
+          return;
+        }
+        if (adminError) adminError.textContent = '';
+        try {
+          const ok = await runAdminProgress({
+            progressEl: adminProgress,
+            submitBtn: adminSubmit,
+            inputEls: [adminIdEl, adminPwEl]
+          }, () => window.__verifyGameAdmin(id, pw));
+          if (ok) {
+            adminIdEl.value = '';
+            adminPwEl.value = '';
+            setBypassed(true);
+            if (adminError) adminError.textContent = '';
+            if (adminBox) {
+              adminBox.classList.remove('show');
+              adminBox.setAttribute('aria-hidden', 'true');
+            }
+            window.dispatchEvent(new CustomEvent('game-admin-auth-success', { detail: { context: 'session-lock' } }));
+            alert('관리자 인증이 완료되었습니다. (동시 실행 예외가 허용되었습니다.)');
+          } else {
+            const code = createAdminErrorCode('ADM-401');
+            const message = `자격 증명이 일치하지 않습니다. (오류 코드: ${code})`;
+            if (adminError) adminError.textContent = message;
+            alert(`관리자 인증 실패\n${message}`);
+            adminPwEl.value = '';
+            if (adminPwEl) adminPwEl.focus();
+          }
+        } catch (err) {
+          console.error('Session lock admin verification failed', err);
+          const code = createAdminErrorCode('ADM-500');
+          const message = `인증 처리 중 오류가 발생했습니다. (오류 코드: ${code})`;
+          if (adminError) adminError.textContent = message;
+          alert(`관리자 인증 실패\n${message}`);
+          if (adminPwEl) {
+            adminPwEl.value = '';
+            adminPwEl.focus();
+          }
+        }
+      };
+
+      retryBtn && retryBtn.addEventListener('click', () => {
+        attemptClaim();
+      });
+
+      let adminHoldTimer = null;
+      let adminHoldActivated = false;
+      let adminHoldSuppressClick = false;
+      const ADMIN_HOLD_DURATION = 2000;
+
+      const beginAdminHold = () => {
+        if (!adminToggle) return;
+        if (!overlay || overlay.getAttribute('aria-hidden') === 'true') return;
+        if (adminHoldTimer) clearTimeout(adminHoldTimer);
+        adminHoldActivated = false;
+        adminHoldTimer = setTimeout(() => {
+          adminHoldActivated = true;
+          adminHoldSuppressClick = true;
+          revealAdminBox();
+        }, ADMIN_HOLD_DURATION);
+      };
+
+      const cancelAdminHold = () => {
+        if (adminHoldTimer) {
+          clearTimeout(adminHoldTimer);
+          adminHoldTimer = null;
+        }
+        if (!adminHoldActivated) {
+          adminHoldSuppressClick = false;
+        }
+        adminHoldActivated = false;
+      };
+
+      if (adminToggle) {
+        adminToggle.addEventListener('mousedown', beginAdminHold);
+        adminToggle.addEventListener('touchstart', beginAdminHold, { passive: true });
+        adminToggle.addEventListener('mouseup', cancelAdminHold);
+        adminToggle.addEventListener('mouseleave', cancelAdminHold);
+        adminToggle.addEventListener('touchend', cancelAdminHold);
+        adminToggle.addEventListener('touchcancel', cancelAdminHold);
+        adminToggle.addEventListener('keydown', (ev) => {
+          if (ev.code === 'Space' || ev.code === 'Enter') {
+            ev.preventDefault();
+            beginAdminHold();
+          }
+        });
+        adminToggle.addEventListener('keyup', cancelAdminHold);
+        adminToggle.addEventListener('blur', cancelAdminHold);
+        adminToggle.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          if (adminHoldSuppressClick) {
+            adminHoldSuppressClick = false;
+          }
+        });
+      }
+
+      window.addEventListener('keydown', (ev) => {
+        if (!overlay || overlay.getAttribute('aria-hidden') === 'true') return;
+        const isLegacyCombo = ev.ctrlKey && ev.shiftKey && ev.code === 'Digit1';
+        const isNewCombo = ev.ctrlKey && ev.altKey && ev.code === 'KeyA';
+        if (isLegacyCombo || isNewCombo) {
+          ev.preventDefault();
+          revealAdminBox();
+        }
+      });
+      if (adminIdEl) {
+        adminIdEl.addEventListener('input', () => { if (adminError) adminError.textContent = ''; });
+      }
+      if (adminPwEl) {
+        adminPwEl.addEventListener('input', () => { if (adminError) adminError.textContent = ''; });
+      }
+      adminSubmit && adminSubmit.addEventListener('click', handleAdminSubmit);
+      adminPwEl && adminPwEl.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          handleAdminSubmit();
+        }
+      });
+
+      window.__SESSION_LOCK__ = {
+        activate,
+        release,
+        bypass: setBypassed
+      };
+
+      if (window.__CURRENT_USER_UID) {
+        activate(window.__CURRENT_USER_UID);
+      } else {
+        applyPlayState();
+      }
     })();
   </script>
 
