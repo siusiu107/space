@@ -95,6 +95,7 @@
       border:1px solid rgba(115,255,207,.55); background:rgba(115,255,207,.14); color:#dff;
       font-size:12px; font-weight:800;
     }
+    .gtranslate_wrapper{ display:none !important; }
 
     /* 아래 고정 내 순위 카드 */
     #my-rank-card{
@@ -154,8 +155,51 @@
       .my-rank-num{ min-width:36px; height:36px; font-size:14px; }
     }
   </style>
+
+  <script>
+    (function(){
+      const fallback = 'ko';
+      const supported = ['ko','es','en'];
+      const host = (location.hostname || '').replace(/^www\./, '');
+
+      function readStored(){
+        try{
+          const saved = localStorage.getItem('preferredLanguage');
+          return supported.includes(saved) ? saved : fallback;
+        }catch{return fallback;}
+      }
+
+      function setCookie(lang){
+        const value = `/ko/${lang}`;
+        const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
+        document.cookie = `googtrans=${value}; expires=${expires}; path=/`;
+        if(host){
+          document.cookie = `googtrans=${value}; expires=${expires}; path=/; domain=.${host}`;
+        }
+      }
+
+      const lang = readStored();
+      window.gtranslateSettings = {
+        default_language: lang,
+        detect_browser_language: true,
+        languages: ['ko','es','en'],
+        wrapper_selector: '.gtranslate_wrapper',
+        alt_flags: { en: 'usa' }
+      };
+      setCookie(lang);
+
+      window.addEventListener('storage', (event)=>{
+        if(event.key === 'preferredLanguage' && event.newValue){
+          const next = supported.includes(event.newValue) ? event.newValue : fallback;
+          setCookie(next);
+        }
+      });
+    })();
+  </script>
+  <script src="https://cdn.gtranslate.net/widgets/latest/popup.js" defer></script>
 </head>
 <body>
+  <div class="gtranslate_wrapper" aria-hidden="true"></div>
   <!-- 최초 닉네임 생성 -->
   <div id="nickname-prompt" aria-modal="true" role="dialog">
     <div class="panel">
