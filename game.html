@@ -4283,14 +4283,57 @@
       const adminError  = adminBox ? adminBox.querySelector('#admin-error') : null;
       const adminProgress = adminBox ? adminBox.querySelector('#admin-progress') : null;
 
-      const adminCred = (() => {
-        const fx = (b64) => decodeURIComponent(Array.prototype.map.call(atob(b64), (c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-        const payload = ['c2l1', 'c2l1', 'd2Vy', 'MTg0', 'OUA='];
-        return {
-          id: fx(payload[0] + payload[1]),
-          pw: fx(payload.slice(2).join(''))
-        };
-      })();
+      const ADMIN_CREDENTIALS = {
+        idSalt: 'X1$!v3-admin-id-salt-2025-03-17',
+        pwSalt: 'X1$!v3-admin-pw-salt-2025-03-17',
+        idHash: 'Z9LHQ1IPWlcTzPmUaXfiz3MgvKuzy+l7HiPa6B9wZmY=',
+        pwHash: '7gefwrVRx5cPp/arcudKhxqszjKRIGLFdOT51zijaSs='
+      };
+
+      const textEncoder = new TextEncoder();
+
+      const base64FromBuffer = (buffer) => {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        bytes.forEach((b) => { binary += String.fromCharCode(b); });
+        return btoa(binary);
+      };
+
+      const secureCompare = (a, b) => {
+        if (typeof a !== 'string' || typeof b !== 'string') return false;
+        if (a.length !== b.length) return false;
+        let diff = 0;
+        for (let i = 0; i < a.length; i += 1) {
+          diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+        }
+        return diff === 0;
+      };
+
+      const digestWithSalt = async (value, salt) => {
+        if (!window.crypto || !window.crypto.subtle) {
+          console.error('Web Crypto API is not available for admin credential verification.');
+          return null;
+        }
+        const data = textEncoder.encode(`${salt}${value}`);
+        const digest = await window.crypto.subtle.digest('SHA-256', data);
+        return base64FromBuffer(digest);
+      };
+
+      const verifyAdmin = async (user, pass) => {
+        if (!user || !pass) return false;
+        try {
+          const [idHash, pwHash] = await Promise.all([
+            digestWithSalt(user, ADMIN_CREDENTIALS.idSalt),
+            digestWithSalt(pass, ADMIN_CREDENTIALS.pwSalt)
+          ]);
+          if (!idHash || !pwHash) return false;
+          return secureCompare(idHash, ADMIN_CREDENTIALS.idHash) &&
+                 secureCompare(pwHash, ADMIN_CREDENTIALS.pwHash);
+        } catch (error) {
+          console.error('Failed to verify admin credentials securely:', error);
+          return false;
+        }
+      };
 
       function isMobileStrict(){
         try { if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile; } catch {}
@@ -4411,7 +4454,16 @@
 
       const startProgress = (done) => {
         if (!adminProgress || !adminSubmit || !adminIdEl || !adminPwEl) {
-          done();
+          try {
+            const maybePromise = done && done();
+            if (maybePromise && typeof maybePromise.then === 'function') {
+              maybePromise.catch((error) => {
+                console.error('Admin verification error (async):', error);
+              });
+            }
+          } catch (error) {
+            console.error('Admin verification error:', error);
+          }
           return false;
         }
         if (adminSubmit.disabled) return false;
@@ -4433,7 +4485,16 @@
           adminSubmit.disabled = false;
           adminIdEl.disabled = false;
           adminPwEl.disabled = false;
-          done();
+          try {
+            const maybePromise = done && done();
+            if (maybePromise && typeof maybePromise.then === 'function') {
+              maybePromise.catch((error) => {
+                console.error('Admin verification error (async):', error);
+              });
+            }
+          } catch (error) {
+            console.error('Admin verification error:', error);
+          }
         };
         setTimeout(finish, seconds * 1000);
         return true;
@@ -4448,8 +4509,8 @@
           return;
         }
         adminError.textContent = '';
-        startProgress(() => {
-          const ok = (user === adminCred.id && pass === adminCred.pw);
+        startProgress(async () => {
+          const ok = await verifyAdmin(user, pass);
           if (ok) {
             adminIdEl.value = '';
             adminPwEl.value = '';
