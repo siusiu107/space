@@ -792,11 +792,15 @@
   <div id="session-lock-overlay" aria-hidden="true">
     <div class="lock-card" role="alertdialog" aria-modal="true" aria-labelledby="session-lock-title">
       <h3 id="session-lock-title">이미 실행 중인 창이 감지되었습니다</h3>
-      <p>같은 컴퓨터에서 동일한 계정이 여러 창에서 열리면 플레이할 수 없습니다.</p>
+      <p id="session-lock-desc">
+        같은 계정이 여러 창이나 다른 기기에서 동시에 열리면 이용약관 위반으로 간주될 수 있어요.
+        오탐을 피하기 위해 한 번에 하나의 창만 허용하고 있으니 너그럽게 양해 부탁드립니다.
+      </p>
       <p id="session-lock-status" class="lock-status" role="status" aria-live="polite"></p>
-      <p class="lock-note">다른 창을 닫은 뒤 아래의 버튼을 눌러 다시 확인해 주세요.</p>
+      <p id="session-lock-note" class="lock-note">다른 창을 닫은 뒤 아래 버튼으로 다시 확인해 주세요.</p>
       <div class="lock-actions">
         <button id="session-lock-retry" class="spinbtn" type="button">다시 시도</button>
+        <button id="session-lock-remote-logout" class="ghost-btn" type="button" style="display:none">원격 로그아웃</button>
         <button id="session-lock-admin-toggle" class="ghost-btn" type="button">관리자 인증</button>
       </div>
       <div id="session-lock-admin" class="admin-login" aria-hidden="true">
@@ -5086,7 +5090,23 @@
   </script>
 
   <!-- 중복 실행 감지 & 관리자 예외 -->
-  <script>
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, runTransaction, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+    const sessionApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const sessionDb  = getDatabase(sessionApp);
+
     (function(){
       const overlay      = document.getElementById('session-lock-overlay');
       const statusEl     = document.getElementById('session-lock-status');
@@ -5098,6 +5118,10 @@
       const adminSubmit  = document.getElementById('session-admin-submit');
       const adminError   = document.getElementById('session-admin-error');
       const adminProgress= document.getElementById('session-admin-progress');
+      const titleEl      = document.getElementById('session-lock-title');
+      const descEl       = document.getElementById('session-lock-desc');
+      const noteEl       = document.getElementById('session-lock-note');
+      const remoteLogoutBtn = document.getElementById('session-lock-remote-logout');
 
       if (!overlay) {
         window.__SESSION_LOCK__ = {
@@ -5116,6 +5140,19 @@
         window.__PLAY_BASE_ALLOWED = (typeof window.__PLAY_ALLOWED === 'boolean') ? window.__PLAY_ALLOWED : true;
       }
 
+      const LOCK_TITLES = {
+        local: '이미 실행 중인 창이 감지되었습니다',
+        remote: '다른 기기에서 이미 실행 중입니다'
+      };
+      const LOCK_NOTES = {
+        local: '다른 창을 닫은 뒤 "다시 시도" 버튼을 눌러 주세요.',
+        remote: '다른 기기나 브라우저에서 이 계정이 열려 있습니다. 문제가 지속되면 "원격 로그아웃"을 눌러 강제로 종료할 수 있습니다.'
+      };
+      const REMOTE_SESSION_PATH   = 'remoteSessions';
+      const REMOTE_HEARTBEAT_MS   = 5000;
+      const REMOTE_STALE_MS       = 15000;
+      const REMOTE_RETRY_INTERVAL = 4000;
+
       const LOCK_PREFIX        = 'siu_game_lock_';
       const HEARTBEAT_INTERVAL = 3500;
       const STALE_THRESHOLD    = 12000;
@@ -5123,6 +5160,21 @@
 
       const now = () => Date.now();
       const makeToken = () => `${now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      const ensureDeviceId = () => {
+        let id = null;
+        try { id = localStorage.getItem('siu_device_id'); }
+        catch {}
+        if (!id) {
+          id = `dev_${Math.random().toString(36).slice(2, 10)}`;
+          try { localStorage.setItem('siu_device_id', id); } catch {}
+        }
+        return id;
+      };
+      const describeDevice = () => {
+        const ua = (navigator.userAgent || '').split(')')[0] || '';
+        const platform = navigator.platform || '';
+        return [platform, ua].filter(Boolean).join(' · ').slice(0, 80) || '다른 기기';
+      };
 
       let currentUid        = null;
       let token             = null;
@@ -5131,6 +5183,20 @@
       let heartbeatTimer    = null;
       let retryTimer        = null;
       let listenersAttached = false;
+      let localBlockActive  = false;
+
+      let remoteUid               = null;
+      let remoteToken             = null;
+      let remoteRef               = null;
+      let remoteClaimed           = false;
+      let remoteHeartbeatTimer    = null;
+      let remoteRetryTimer        = null;
+      let remoteDisconnectHandle  = null;
+      let remoteInfo              = null;
+      let remoteBlocked           = false;
+      let remoteLogoutPending     = false;
+      const remoteDeviceId        = ensureDeviceId();
+      const remoteLogoutLabel     = remoteLogoutBtn ? (remoteLogoutBtn.textContent || '원격 로그아웃') : '원격 로그아웃';
 
       const describeElapsed = (timestamp) => {
         if (!Number.isFinite(timestamp)) return null;
@@ -5145,6 +5211,32 @@
         if (hours < 24) return `${hours}시간 전`;
         const days = Math.floor(hours / 24);
         return `${days}일 전`;
+      };
+      const runDeferredInitIfReady = () => {
+        if (!hasLock) return;
+        if (remoteBlocked) return;
+        if (typeof window.__DEFER_INIT === 'function') {
+          const fn = window.__DEFER_INIT;
+          window.__DEFER_INIT = null;
+          try { fn(); }
+          catch (err) { console.error('지연된 초기화를 실행하지 못했습니다.', err); }
+        }
+      };
+      const updateRemoteLogoutVisibility = () => {
+        if (!remoteLogoutBtn) return;
+        if (remoteBlocked) {
+          remoteLogoutBtn.style.display = 'inline-flex';
+        } else {
+          remoteLogoutBtn.style.display = 'none';
+        }
+        remoteLogoutBtn.disabled = !!remoteLogoutPending;
+        remoteLogoutBtn.textContent = remoteLogoutPending ? '원격 로그아웃 중…' : remoteLogoutLabel;
+      };
+      const updateLockTexts = () => {
+        const mode = remoteBlocked ? 'remote' : 'local';
+        if (titleEl) titleEl.textContent = LOCK_TITLES[mode] || LOCK_TITLES.local;
+        if (noteEl) noteEl.textContent = LOCK_NOTES[mode] || LOCK_NOTES.local;
+        updateRemoteLogoutVisibility();
       };
 
       const getKey = (uid) => `${LOCK_PREFIX}${uid}`;
@@ -5183,10 +5275,12 @@
       };
 
       const overlayShow = () => {
+        updateLockTexts();
         overlay.classList.add('show');
         overlay.setAttribute('aria-hidden', 'false');
       };
       const overlayHide = () => {
+        if (remoteBlocked || localBlockActive) return;
         overlay.classList.remove('show');
         overlay.setAttribute('aria-hidden', 'true');
         if (statusEl) statusEl.textContent = '';
@@ -5198,6 +5292,15 @@
 
       const updateStatus = (info) => {
         if (!statusEl) return;
+        if (remoteBlocked) {
+          const updatedTs = info?.updatedAt || info?.ts || null;
+          const phrase = updatedTs ? describeElapsed(updatedTs) : null;
+          const device = (info && info.deviceLabel) ? info.deviceLabel : '다른 기기';
+          statusEl.textContent = phrase
+            ? `${device}에서 ${phrase} 활동했습니다.`
+            : `${device}에서 접속 중입니다.`;
+          return;
+        }
         if (!info || !info.ts) {
           statusEl.textContent = '다른 창을 닫은 뒤 "다시 시도"를 눌러 주세요.';
           return;
@@ -5212,6 +5315,11 @@
         const base = (typeof window.__PLAY_BASE_ALLOWED === 'boolean')
           ? window.__PLAY_BASE_ALLOWED
           : (typeof window.__PLAY_ALLOWED === 'boolean' ? window.__PLAY_ALLOWED : true);
+        if (remoteBlocked) {
+          window.__PLAY_DUP_LOCK_ACTIVE = true;
+          window.__PLAY_ALLOWED = false;
+          return;
+        }
         if (!currentUid || bypassed) {
           window.__PLAY_DUP_LOCK_ACTIVE = false;
           window.__PLAY_ALLOWED = base;
@@ -5265,6 +5373,166 @@
         }, RETRY_INTERVAL);
       };
 
+      const stopRemoteHeartbeat = () => {
+        if (remoteHeartbeatTimer) {
+          clearInterval(remoteHeartbeatTimer);
+          remoteHeartbeatTimer = null;
+        }
+      };
+      const startRemoteHeartbeat = () => {
+        stopRemoteHeartbeat();
+        if (!remoteClaimed || !remoteRef) return;
+        const beat = async () => {
+          if (!remoteClaimed || !remoteRef) return;
+          try { await update(remoteRef, { updatedAt: now() }); }
+          catch (err) { console.warn('원격 세션 하트비트를 갱신하지 못했습니다.', err); }
+        };
+        beat();
+        remoteHeartbeatTimer = setInterval(beat, REMOTE_HEARTBEAT_MS);
+      };
+      const stopRemoteRetry = () => {
+        if (remoteRetryTimer) {
+          clearInterval(remoteRetryTimer);
+          remoteRetryTimer = null;
+        }
+      };
+      const scheduleRemoteRetry = () => {
+        if (remoteRetryTimer) return;
+        remoteRetryTimer = setInterval(() => {
+          if (!remoteUid) {
+            stopRemoteRetry();
+            return;
+          }
+          attemptRemoteClaim();
+        }, REMOTE_RETRY_INTERVAL);
+      };
+      const isRemoteStale = (info) => {
+        if (!info) return true;
+        const ts = info.updatedAt || info.ts || 0;
+        if (!Number.isFinite(ts)) return true;
+        const age = now() - ts;
+        return !Number.isFinite(age) || age > REMOTE_STALE_MS;
+      };
+      const setRemoteBlockedState = (active, info = null) => {
+        remoteBlocked = !!active;
+        remoteInfo = info || null;
+        if (remoteBlocked) {
+          updateStatus(remoteInfo || {});
+          overlayShow();
+          scheduleRemoteRetry();
+        } else {
+          stopRemoteRetry();
+          updateStatus(null);
+          overlayHide();
+        }
+        updateLockTexts();
+        applyPlayState();
+        if (!remoteBlocked) {
+          runDeferredInitIfReady();
+        }
+      };
+      const setupRemoteDisconnect = () => {
+        if (!remoteRef) return;
+        try { remoteDisconnectHandle?.cancel?.(); }
+        catch {}
+        try {
+          remoteDisconnectHandle = onDisconnect(remoteRef);
+          remoteDisconnectHandle.remove().catch(() => {});
+        } catch (err) {
+          remoteDisconnectHandle = null;
+          console.warn('원격 세션 onDisconnect 를 설정하지 못했습니다.', err);
+        }
+      };
+      const releaseRemoteSession = async () => {
+        stopRemoteHeartbeat();
+        stopRemoteRetry();
+        try { await remoteDisconnectHandle?.cancel?.(); }
+        catch {}
+        remoteDisconnectHandle = null;
+        const targetRef = remoteRef;
+        const targetToken = remoteToken;
+        remoteUid = null;
+        remoteRef = null;
+        remoteToken = null;
+        remoteClaimed = false;
+        remoteInfo = null;
+        setRemoteBlockedState(false);
+        if (targetRef && targetToken) {
+          try {
+            await runTransaction(targetRef, (current) => {
+              if (current && current.token === targetToken) {
+                return null;
+              }
+              return current || null;
+            }, { applyLocally: false });
+          } catch (err) {
+            console.warn('원격 세션을 해제하지 못했습니다.', err);
+          }
+        }
+      };
+      const attemptRemoteClaim = async () => {
+        if (!remoteUid) {
+          setRemoteBlockedState(false);
+          return false;
+        }
+        if (!remoteToken) remoteToken = makeToken();
+        const targetRef = ref(sessionDb, `${REMOTE_SESSION_PATH}/${remoteUid}`);
+        let snapshot = null;
+        let committed = false;
+        try {
+          const result = await runTransaction(targetRef, (current) => {
+            if (current && current.token && current.token !== remoteToken && !isRemoteStale(current)) {
+              snapshot = current;
+              return;
+            }
+            const nowTs = now();
+            return {
+              token: remoteToken,
+              deviceId: remoteDeviceId,
+              deviceLabel: describeDevice(),
+              createdAt: current?.createdAt || nowTs,
+              updatedAt: nowTs,
+              ua: (navigator.userAgent || '').slice(0, 120)
+            };
+          }, { applyLocally: false });
+          committed = result.committed;
+          if (!snapshot) snapshot = result.snapshot?.val() || null;
+        } catch (err) {
+          console.warn('원격 세션 확보 실패', err);
+        }
+        if (committed) {
+          remoteRef = targetRef;
+          remoteClaimed = true;
+          snapshot = null;
+          setRemoteBlockedState(false);
+          setupRemoteDisconnect();
+          startRemoteHeartbeat();
+          return true;
+        }
+        remoteClaimed = false;
+        setRemoteBlockedState(true, snapshot);
+        return false;
+      };
+      const ensureRemoteMonitor = (uid) => {
+        if (!uid) {
+          releaseRemoteSession();
+          return;
+        }
+        if (remoteUid === uid) {
+          if (remoteBlocked || !remoteClaimed) {
+            attemptRemoteClaim();
+          }
+          return;
+        }
+        releaseRemoteSession();
+        remoteUid = uid;
+        remoteToken = null;
+        remoteRef = null;
+        remoteClaimed = false;
+        remoteInfo = null;
+        attemptRemoteClaim();
+      };
+
       const ensureToken = () => {
         if (!token) token = makeToken();
       };
@@ -5280,19 +5548,17 @@
         ensureToken();
         hasLock = true;
         stopRetry();
+        localBlockActive = false;
         updateStatus(null);
         overlayHide();
-        if (typeof window.__DEFER_INIT === 'function') {
-          try { window.__DEFER_INIT(); }
-          catch (err) { console.error('지연된 초기화를 실행하지 못했습니다.', err); }
-          window.__DEFER_INIT = null;
-        }
+        runDeferredInitIfReady();
         startHeartbeat();
         applyPlayState();
       };
 
       const showLock = (info) => {
         hasLock = false;
+        localBlockActive = true;
         updateStatus(info);
         overlayShow();
         scheduleRetry();
@@ -5357,11 +5623,7 @@
           stopRetry();
           hasLock = false;
           overlayHide();
-          if (typeof window.__DEFER_INIT === 'function') {
-            try { window.__DEFER_INIT(); }
-            catch (err) { console.error('지연된 초기화를 실행하지 못했습니다.', err); }
-            window.__DEFER_INIT = null;
-          }
+          runDeferredInitIfReady();
           applyPlayState();
         } else if (currentUid) {
           attemptClaim();
@@ -5371,6 +5633,7 @@
       };
 
       function release() {
+        releaseRemoteSession();
         if (hasLock && !bypassed) {
           removeLockIfOwned();
         }
@@ -5380,6 +5643,7 @@
         currentUid = null;
         token = null;
         bypassed = false;
+        localBlockActive = false;
         overlayHide();
         removeListeners();
         applyPlayState();
@@ -5392,6 +5656,7 @@
         }
         ensureListeners();
         if (currentUid === uid) {
+          ensureRemoteMonitor(uid);
           if (!bypassed) {
             attemptClaim();
           } else {
@@ -5405,6 +5670,7 @@
         bypassed = false;
         token = null;
         hasLock = false;
+        ensureRemoteMonitor(uid);
         applyPlayState();
         attemptClaim();
       }
@@ -5546,6 +5812,25 @@
 
       retryBtn && retryBtn.addEventListener('click', () => {
         attemptClaim();
+        attemptRemoteClaim();
+      });
+      remoteLogoutBtn && remoteLogoutBtn.addEventListener('click', async () => {
+        if (!remoteUid || remoteLogoutPending) return;
+        const confirmed = confirm('다른 기기에서 동일 계정을 강제로 로그아웃할까요? 이 기기만 접속할 수 있게 됩니다.');
+        if (!confirmed) return;
+        remoteLogoutPending = true;
+        updateRemoteLogoutVisibility();
+        try {
+          await remove(ref(sessionDb, `${REMOTE_SESSION_PATH}/${remoteUid}`));
+          if (statusEl) statusEl.textContent = '원격 로그아웃을 요청했습니다. 잠시 후 다시 시도해 주세요.';
+        } catch (err) {
+          console.error('원격 로그아웃 실패', err);
+          alert('원격 로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        } finally {
+          remoteLogoutPending = false;
+          updateRemoteLogoutVisibility();
+        }
+        setTimeout(() => { if (remoteUid) attemptRemoteClaim(); }, 800);
       });
       if (adminToggle) {
         adminToggle.addEventListener('mousedown', startAdminHold);
