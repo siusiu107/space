@@ -1229,6 +1229,18 @@
        공통 상태 / 경로
        ====================== */
     const SUPPORT_EMAIL = 'appeals@siustudio.kro.kr';
+    const perkState = {
+      tier: 0,
+      resourceMult: 1,
+      coinMult: 1,
+      productionMult: 1
+    };
+    function resetPerkState(){
+      perkState.tier = 0;
+      perkState.resourceMult = 1;
+      perkState.coinMult = 1;
+      perkState.productionMult = 1;
+    }
 
     let state = {};
     let uid = null;
@@ -1272,8 +1284,38 @@
     const MAIL_ADMIN_EMAIL = 'siu46852579@gmail.com';
     let mailboxRef = null;
     let mailboxUnsubscribe = null;
+    let perkUnsubscribe = null;
     let mailboxCache = [];
     let selectedMailId = null;
+
+    function subscribePickaxePerk(serverKey, userIdKey){
+      if (perkUnsubscribe) {
+        try { perkUnsubscribe(); } catch {}
+        perkUnsubscribe = null;
+      }
+      if (!serverKey || !userIdKey) {
+        resetPerkState();
+        return;
+      }
+      const perkRef = ref(db, `users/${serverKey}/${userIdKey}/perks/pickaxe`);
+      perkUnsubscribe = onValue(perkRef, snap => {
+        if (!snap.exists()) {
+          resetPerkState();
+          return;
+        }
+        const val = snap.val() || {};
+        perkState.tier = Number(val.tier || 0) || 0;
+        perkState.resourceMult = Number(val.resourceMult || 1) || 1;
+        perkState.coinMult = Number(val.coinMult || 1) || 1;
+        perkState.productionMult = Number(val.productionMult || 1) || 1;
+        if (val.src) {
+          console.debug?.('[perk] pickaxe perk updated from', val.src, perkState);
+        }
+      }, err => {
+        console.warn('pickaxe perk listen error', err);
+        resetPerkState();
+      });
+    }
 
     
     /* 🔒 3초 부트 스킵 전용 타임스탬프 (요청사항) */
@@ -1588,17 +1630,19 @@
       const applied = [];
       const resAmt = Math.max(0, Math.floor(Number(rewards.resources ?? rewards.res ?? 0)));
       if (resAmt > 0) {
-        registerAuditIntent('res', resAmt, 8000);
-        state.resources += resAmt;
-        auditAdd('res', resAmt);
-        applied.push(`자원 ${formatKR(resAmt)}`);
+        const finalResAmt = resAmt * (perkState.resourceMult || 1);
+        registerAuditIntent('res', finalResAmt, 8000);
+        state.resources += finalResAmt;
+        auditAdd('res', finalResAmt);
+        applied.push(`자원 ${formatKR(finalResAmt)}`);
       }
       const coinAmt = Math.max(0, Math.floor(Number(rewards.coins ?? rewards.coin ?? 0)));
       if (coinAmt > 0) {
-        registerAuditIntent('coin', coinAmt, 8000);
-        state.coins += coinAmt;
-        auditGain('coin', coinAmt);
-        applied.push(`코인 ${formatKR(coinAmt)}`);
+        const finalCoinAmt = coinAmt * (perkState.coinMult || 1);
+        registerAuditIntent('coin', finalCoinAmt, 8000);
+        state.coins += finalCoinAmt;
+        auditGain('coin', finalCoinAmt);
+        applied.push(`코인 ${formatKR(finalCoinAmt)}`);
       }
       const ecoAmt = Math.max(0, Math.floor(Number(rewards.eventCoins ?? rewards.eco ?? rewards.ecoins ?? 0)));
       if (ecoAmt > 0) {
@@ -1943,7 +1987,8 @@
       auditSpend('res', resOut);
 
       const coinMul = activeBuffFactor('coin');
-      const inc = count * coinMul;
+      const perkCoinMul = perkState.coinMult || 1;
+      const inc = count * coinMul * perkCoinMul;
       state.coins += inc;
       auditGain('coin', inc);
       playSfx('sfx-coin');
@@ -2282,9 +2327,10 @@
             awardCoin: amt,
             label: `현재코인 ×${it.currentCoinMul} (= ${formatKR(amt)})`,
             onWin:()=>{
-              registerAuditIntent('coin', amt, ROULETTE_AUDIT_WINDOW_MS);
-              state.coins += amt;
-              auditGain('coin', amt);
+              const finalAmt = amt * (perkState.coinMult || 1);
+              registerAuditIntent('coin', finalAmt, ROULETTE_AUDIT_WINDOW_MS);
+              state.coins += finalAmt;
+              auditGain('coin', finalAmt);
             }
           };
         }
@@ -2295,9 +2341,10 @@
             awardCoin: amt,
             label:`코인 ${formatKR(amt)}`,
             onWin:()=>{
-              registerAuditIntent('coin', amt, ROULETTE_AUDIT_WINDOW_MS);
-              state.coins += amt;
-              auditGain('coin', amt);
+              const finalAmt = amt * (perkState.coinMult || 1);
+              registerAuditIntent('coin', finalAmt, ROULETTE_AUDIT_WINDOW_MS);
+              state.coins += finalAmt;
+              auditGain('coin', finalAmt);
             }
           };
         }
@@ -3285,7 +3332,8 @@
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
         const resMul = activeBuffFactor('res');
-        const inc = state.clickPower * resMul;
+        const perkResMul = perkState.resourceMult || 1;
+        const inc = state.clickPower * resMul * perkResMul;
         state.resources += inc;
         auditAdd('res', inc);
         playSfx('sfx-pickaxe');
@@ -3450,17 +3498,23 @@
           pruneExpiredBuffs();
 
           // 자원 알바
+          const prodMul = perkState.productionMult || 1;
+          const perkResMul = perkState.resourceMult || 1;
+          const perkCoinMul = perkState.coinMult || 1;
+
           let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res');
           if (state.workerCount > 0) {
-            state.resources += workerGain;
-            auditAdd('res', workerGain);
+            const finalWorkerGain = workerGain * prodMul * perkResMul;
+            state.resources += finalWorkerGain;
+            auditAdd('res', finalWorkerGain);
           }
 
           // 코인 알바
           let convGain = state.conversionCount * activeBuffFactor('coin');
           if (state.conversionCount > 0) {
-            state.coins += convGain;
-            auditAdd('coin', convGain);
+            const finalConvGain = convGain * prodMul * perkCoinMul;
+            state.coins += finalConvGain;
+            auditAdd('coin', finalConvGain);
           }
 
           // 자동 변환
@@ -3853,6 +3907,7 @@
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
       if (mailboxUnsubscribe) { try{ mailboxUnsubscribe(); }catch{} mailboxUnsubscribe=null; }
+      subscribePickaxePerk(null, null);
       mailboxRef = null;
       mailboxCache = [];
       selectedMailId = null;
@@ -3918,6 +3973,7 @@
           userServerKey = fallbackServer;
           userIdKey     = makeIdKeyFromUser(user);
           userBasePath  = `users/${userServerKey}/${userIdKey}`;
+          subscribePickaxePerk(userServerKey, userIdKey);
           try {
             await update(ref(db), {
               [`userServerMap/${uid}`]: {
@@ -3936,6 +3992,7 @@
         userServerKey = plan.server;
         userIdKey     = makeIdKeyFromUser(user);
         userBasePath  = `users/${userServerKey}/${userIdKey}`;
+        subscribePickaxePerk(userServerKey, userIdKey);
 
         saveSupportCtx({ banned: false });
 
