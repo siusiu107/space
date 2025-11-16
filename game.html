@@ -717,57 +717,6 @@
       text-align: center;
       color: #eaf6ff;
     }
-    #js-hard-block-overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: linear-gradient(180deg, rgba(2,4,10,0.85), rgba(3,6,16,0.92));
-      backdrop-filter: blur(6px);
-      z-index: 5000;
-    }
-    #js-hard-block-overlay.show { display: flex; }
-    #js-hard-block-overlay .block-card {
-      width: min(420px, 94vw);
-      padding: 22px;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: linear-gradient(180deg, rgba(10,12,22,0.96), rgba(4,6,12,0.98));
-      box-shadow: 0 28px 70px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.03);
-      color: #e8f6ff;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    #js-hard-block-overlay .block-card h3 {
-      margin: 0;
-      font-size: 19px;
-      color: #ffb6c1;
-    }
-    #js-hard-block-overlay .block-card p {
-      margin: 0;
-      font-size: 14px;
-      color: #d2e8ff;
-      line-height: 1.5;
-    }
-    #js-hard-block-overlay .block-card .device-label {
-      font-size: 13px;
-      color: #8fb9ff;
-    }
-    #js-hard-block-overlay .block-card button {
-      margin-top: 4px;
-      border: none;
-      border-radius: 10px;
-      padding: 11px;
-      font-weight: 700;
-      background: linear-gradient(90deg,#ff7c7c,#ff416c);
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 0 10px 30px rgba(255,65,108,0.35);
-    }
     #session-lock-overlay .lock-card h3 {
       margin: 0 0 12px;
       font-size: 18px;
@@ -863,15 +812,6 @@
         <p id="session-admin-error" class="admin-error" role="status" aria-live="polite"></p>
         <div id="session-admin-progress" class="admin-progress" role="status" aria-live="assertive"></div>
       </div>
-    </div>
-  </div>
-
-  <div id="js-hard-block-overlay" aria-hidden="true">
-    <div class="block-card" role="alertdialog" aria-modal="true" aria-labelledby="js-hard-block-title">
-      <h3 id="js-hard-block-title">다른 기기에서 실행이 감지되었습니다</h3>
-      <p id="js-hard-block-desc">보안을 위해 현재 창의 스크립트 실행을 중단했습니다.</p>
-      <p id="js-hard-block-device" class="device-label" role="status" aria-live="polite"></p>
-      <button id="js-hard-block-reload" type="button">새로고침</button>
     </div>
   </div>
 
@@ -5182,10 +5122,6 @@
       const descEl       = document.getElementById('session-lock-desc');
       const noteEl       = document.getElementById('session-lock-note');
       const remoteLogoutBtn = document.getElementById('session-lock-remote-logout');
-      const hardBlockOverlay  = document.getElementById('js-hard-block-overlay');
-      const hardBlockDescEl   = document.getElementById('js-hard-block-desc');
-      const hardBlockDeviceEl = document.getElementById('js-hard-block-device');
-      const hardBlockReloadBtn= document.getElementById('js-hard-block-reload');
 
       if (!overlay) {
         window.__SESSION_LOCK__ = {
@@ -5275,66 +5211,6 @@
         if (hours < 24) return `${hours}시간 전`;
         const days = Math.floor(hours / 24);
         return `${days}일 전`;
-      };
-      const describeHardBlockDevice = (info) => {
-        const label = (info && info.deviceLabel) ? info.deviceLabel : '다른 기기';
-        const ts = info?.updatedAt || info?.ts || null;
-        const phrase = describeElapsed(ts);
-        return phrase ? `${label} · ${phrase} 활동` : label;
-      };
-      const disableTimingApis = () => {
-        try {
-          const highest = window.setTimeout(() => {}, 0);
-          for (let id = highest; id >= 0; id -= 1) {
-            clearTimeout(id);
-            clearInterval(id);
-          }
-        } catch {}
-        try {
-          window.setTimeout = () => 0;
-          window.setInterval = () => 0;
-        } catch {}
-        try {
-          window.requestAnimationFrame = () => 0;
-        } catch {}
-        try {
-          window.requestIdleCallback = () => 0;
-        } catch {}
-      };
-      const disableNetworkApis = () => {
-        try {
-          const rejected = () => Promise.reject(new Error('js blocked by multi-device guard'));
-          if (typeof window.fetch === 'function') {
-            window.fetch = rejected;
-          }
-        } catch {}
-        try {
-          const BlockedXHR = function () {
-            throw new Error('XMLHttpRequest blocked');
-          };
-          BlockedXHR.prototype = window.XMLHttpRequest ? window.XMLHttpRequest.prototype : {};
-          window.XMLHttpRequest = BlockedXHR;
-        } catch {}
-        try {
-          if (navigator.sendBeacon) {
-            navigator.sendBeacon = () => false;
-          }
-        } catch {}
-      };
-      const showHardBlockOverlay = (info) => {
-        if (!hardBlockOverlay) return;
-        if (hardBlockDeviceEl) {
-          hardBlockDeviceEl.textContent = describeHardBlockDevice(info);
-        }
-        if (hardBlockDescEl && info) {
-          const ts = info.updatedAt || info.ts || null;
-          const phrase = describeElapsed(ts);
-          if (phrase) {
-            hardBlockDescEl.textContent = `${phrase} 다른 기기 활동이 감지되어 스크립트를 중단했습니다.`;
-          }
-        }
-        hardBlockOverlay.classList.add('show');
-        hardBlockOverlay.setAttribute('aria-hidden', 'false');
       };
       const runDeferredInitIfReady = () => {
         if (!hasLock) return;
@@ -5530,28 +5406,6 @@
           attemptRemoteClaim();
         }, REMOTE_RETRY_INTERVAL);
       };
-      function hardBlockJsExecution(info) {
-        if (window.__GAME_JS_HARD_BLOCKED) return;
-        window.__GAME_JS_HARD_BLOCKED = true;
-        try { stopHeartbeat(); } catch {}
-        try { stopRetry(); } catch {}
-        try { stopRemoteHeartbeat(); } catch {}
-        try { stopRemoteRetry(); } catch {}
-        disableTimingApis();
-        disableNetworkApis();
-        showHardBlockOverlay(info);
-        localBlockActive = false;
-        remoteBlocked = true;
-        try {
-          if (overlay) {
-            overlay.classList.remove('show');
-            overlay.setAttribute('aria-hidden', 'true');
-          }
-        } catch {}
-        window.__PLAY_DUP_LOCK_ACTIVE = true;
-        window.__PLAY_ALLOWED = false;
-        try { applyPlayState(); } catch {}
-      }
       const isRemoteStale = (info) => {
         if (!info) return true;
         const ts = info.updatedAt || info.ts || 0;
@@ -5560,19 +5414,19 @@
         return !Number.isFinite(age) || age > REMOTE_STALE_MS;
       };
       const setRemoteBlockedState = (active, info = null) => {
-        if (window.__GAME_JS_HARD_BLOCKED) {
-          remoteBlocked = true;
-          if (!remoteInfo) remoteInfo = info || null;
-          return;
-        }
         remoteBlocked = !!active;
         remoteInfo = info || null;
         if (remoteBlocked) {
-          hardBlockJsExecution(remoteInfo || {});
+          updateStatus(remoteInfo);
+          overlayShow();
+          updateLockTexts();
+          applyPlayState();
           return;
         }
         stopRemoteRetry();
-        updateStatus(null);
+        if (!localBlockActive) {
+          updateStatus(null);
+        }
         overlayHide();
         updateLockTexts();
         applyPlayState();
@@ -6040,10 +5894,6 @@
           handleAdminSubmit();
         }
       });
-      hardBlockReloadBtn && hardBlockReloadBtn.addEventListener('click', () => {
-        location.reload();
-      });
-
       window.__SESSION_LOCK__ = {
         activate,
         release,
