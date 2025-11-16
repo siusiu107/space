@@ -237,54 +237,7 @@
     </div>
   </div>
 
-  <script>
-    (function(){
-      const fallback = 'ko';
-      const supported = ['ko','es','en'];
-      const host = (location.hostname || '').replace(/^www\./, '');
-
-      function readStored(){
-        try{
-          const saved = localStorage.getItem('preferredLanguage');
-          return supported.includes(saved) ? saved : fallback;
-        }catch{return fallback;}
-      }
-
-      function setCookie(lang){
-        const value = `/ko/${lang}`;
-        const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
-        document.cookie = `googtrans=${value}; expires=${expires}; path=/`;
-        if(host){
-          document.cookie = `googtrans=${value}; expires=${expires}; path=/; domain=.${host}`;
-        }
-      }
-
-      const lang = readStored();
-      window.gtranslateSettings = {
-        default_language: lang,
-        detect_browser_language: true,
-        languages: ['ko','es','en'],
-        wrapper_selector: '.gtranslate_wrapper',
-        alt_flags: { en: 'usa' }
-      };
-      setCookie(lang);
-
-      window.__preferredLanguage = {
-        supported,
-        fallback,
-        host,
-        setCookie,
-        readStored
-      };
-
-      window.addEventListener('storage', (event)=>{
-        if(event.key === 'preferredLanguage' && event.newValue){
-          const next = supported.includes(event.newValue) ? event.newValue : fallback;
-          setCookie(next);
-        }
-      });
-    })();
-  </script>
+  <script src="language.js"></script>
   <script src="https://cdn.gtranslate.net/widgets/latest/popup.js" defer></script>
 
   <!-- Firebase + App Scripts -->
@@ -339,15 +292,8 @@
     const resetBtn    = document.getElementById('reset-btn');
     const languageStatus = document.getElementById('language-status');
 
+    const languageManager = window.LanguageSync;
     const languageNames = { ko: '한국어', en: 'English', es: 'Español' };
-
-    function getPreferredLanguage(){
-      try{
-        const saved = localStorage.getItem('preferredLanguage');
-        if (saved && window.__preferredLanguage?.supported?.includes(saved)) return saved;
-      }catch{}
-      return window.__preferredLanguage?.fallback || 'ko';
-    }
 
     function updateLanguageStatus(lang){
       if(!languageStatus) return;
@@ -355,18 +301,18 @@
       languageStatus.textContent = `현재 언어: ${name}`;
     }
 
-    updateLanguageStatus(getPreferredLanguage());
+    updateLanguageStatus(languageManager?.getCurrentLanguage?.() || 'ko');
+    window.addEventListener('preferredLanguageChange', (event)=>{
+      const lang = event.detail?.lang;
+      if(lang) updateLanguageStatus(lang);
+    });
 
     function persistLanguage(lang){
       if(!lang) return;
-      const supported = window.__preferredLanguage?.supported || [];
-      const target = supported.includes(lang) ? lang : (window.__preferredLanguage?.fallback || 'ko');
-      try{ localStorage.setItem('preferredLanguage', target); }catch{}
-      try{ window.__preferredLanguage?.setCookie?.(target); }catch{}
-      updateLanguageStatus(target);
+      languageManager?.setLanguage?.(lang);
     }
 
-    let lastLang = null;
+    let lastLang = languageManager?.getCurrentLanguage?.() || null;
     setInterval(()=>{
       let current = null;
       try{
@@ -374,7 +320,7 @@
           current = window.GTranslateGetCurrentLang() || null;
         }
       }catch{}
-      if(!current) current = getPreferredLanguage();
+      if(!current) current = languageManager?.getCurrentLanguage?.();
       if(current && current !== lastLang){
         lastLang = current;
         persistLanguage(current);

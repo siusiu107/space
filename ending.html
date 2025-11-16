@@ -105,46 +105,7 @@
     .gtranslate_wrapper{ display:none !important; }
   </style>
 
-  <script>
-    (function(){
-      const fallback = 'ko';
-      const supported = ['ko','es','en'];
-      const host = (location.hostname || '').replace(/^www\./, '');
-
-      function readStored(){
-        try{
-          const saved = localStorage.getItem('preferredLanguage');
-          return supported.includes(saved) ? saved : fallback;
-        }catch{return fallback;}
-      }
-
-      function setCookie(lang){
-        const value = `/ko/${lang}`;
-        const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
-        document.cookie = `googtrans=${value}; expires=${expires}; path=/`;
-        if(host){
-          document.cookie = `googtrans=${value}; expires=${expires}; path=/; domain=.${host}`;
-        }
-      }
-
-      const lang = readStored();
-      window.gtranslateSettings = {
-        default_language: lang,
-        detect_browser_language: true,
-        languages: ['ko','es','en'],
-        wrapper_selector: '.gtranslate_wrapper',
-        alt_flags: { en: 'usa' }
-      };
-      setCookie(lang);
-
-      window.addEventListener('storage', (event)=>{
-        if(event.key === 'preferredLanguage' && event.newValue){
-          const next = supported.includes(event.newValue) ? event.newValue : fallback;
-          setCookie(next);
-        }
-      });
-    })();
-  </script>
+  <script src="language.js"></script>
   <script src="https://cdn.gtranslate.net/widgets/latest/popup.js" defer></script>
 </head>
 <body>
