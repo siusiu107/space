@@ -1225,6 +1225,185 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
+    class SessionLogger {
+      constructor() {
+        this.fileHandle = null;
+        this.queue = [];
+        this.ready = false;
+        this.supportsFsAccess = !!(navigator?.storage?.getDirectory);
+        this.fallbackKey = 'siu_session_log_fallback';
+        this.init();
+      }
+
+      async init() {
+        if (this.supportsFsAccess) {
+          try {
+            const root = await navigator.storage.getDirectory();
+            const dir = await root.getDirectoryHandle('logs', { create: true });
+            const name = `session-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+            this.fileHandle = await dir.getFileHandle(name, { create: true });
+          } catch (err) {
+            console.warn('세션 로그 파일을 생성하지 못했습니다.', err);
+            this.fileHandle = null;
+          }
+        }
+        this.ready = true;
+        if (this.queue.length) {
+          const pending = [...this.queue];
+          this.queue.length = 0;
+          for (const line of pending) {
+            await this._write(line);
+          }
+        }
+        this.log('세션 로거가 초기화되었습니다.');
+      }
+
+      async _write(line) {
+        if (this.fileHandle) {
+          try {
+            const file = await this.fileHandle.getFile();
+            const writable = await this.fileHandle.createWritable({ keepExistingData: true });
+            await writable.seek(file.size);
+            await writable.write(line);
+            await writable.close();
+            return;
+          } catch (err) {
+            console.warn('파일 로그 기록에 실패하여 fallback 을 사용합니다.', err);
+            this.fileHandle = null;
+          }
+        }
+        try {
+          const prev = localStorage.getItem(this.fallbackKey) || '';
+          const next = (prev + line).slice(-20000);
+          localStorage.setItem(this.fallbackKey, next);
+        } catch {}
+      }
+
+      async log(message) {
+        const line = `[${new Date().toISOString()}] ${message}\n`;
+        if (!this.ready) {
+          this.queue.push(line);
+          return;
+        }
+        await this._write(line);
+      }
+    }
+
+    class RecoveryManager {
+      constructor(logger, snapshotProvider) {
+        this.logger = logger;
+        this.snapshotProvider = snapshotProvider;
+        this.key = 'siu_recovery_points_v1';
+        this.interval = 180000; // 3분
+        this.maxPoints = 20;
+        this.timer = null;
+      }
+
+      start() {
+        this.stop();
+        this.safeCreate('initial-visit');
+        this.timer = setInterval(() => this.safeCreate('interval'), this.interval);
+      }
+
+      stop() {
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+      }
+
+      resume() {
+        if (this.timer) return;
+        this.safeCreate('resume');
+        this.timer = setInterval(() => this.safeCreate('interval'), this.interval);
+      }
+
+      safeCreate(reason) {
+        try {
+          this.createPoint(reason);
+        } catch (err) {
+          this.logger?.log?.(`복구 지점 생성 실패(${reason}): ${err?.message || err}`);
+        }
+      }
+
+      createPoint(reason = 'auto') {
+        if (typeof localStorage === 'undefined') return;
+        const payload = {
+          ts: Date.now(),
+          reason,
+          localStorage: this.snapshotLocalStorage(),
+          state: this.snapshotState()
+        };
+        let points = [];
+        try {
+          const raw = localStorage.getItem(this.key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) points = parsed;
+          }
+        } catch {}
+        points.unshift(payload);
+        if (points.length > this.maxPoints) points = points.slice(0, this.maxPoints);
+        try {
+          localStorage.setItem(this.key, JSON.stringify(points));
+          this.logger?.log?.(`복구 지점을 생성했습니다. (${reason})`);
+        } catch (err) {
+          this.logger?.log?.(`복구 지점 저장 실패: ${err?.message || err}`);
+        }
+      }
+
+      snapshotLocalStorage() {
+        const snapshot = {};
+        if (typeof localStorage === 'undefined') return snapshot;
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key) snapshot[key] = localStorage.getItem(key);
+          }
+        } catch (err) {
+          this.logger?.log?.(`localStorage 스냅샷 실패: ${err?.message || err}`);
+        }
+        return snapshot;
+      }
+
+      snapshotState() {
+        if (typeof this.snapshotProvider !== 'function') return null;
+        try {
+          const src = this.snapshotProvider();
+          if (!src || typeof src !== 'object') return null;
+          return JSON.parse(JSON.stringify(src));
+        } catch (err) {
+          this.logger?.log?.(`게임 상태 스냅샷 실패: ${err?.message || err}`);
+          return null;
+        }
+      }
+    }
+
+    const sessionLogger = new SessionLogger();
+    window.__SESSION_LOGGER__ = sessionLogger;
+
+    const describeReason = (reason) => {
+      if (!reason) return 'no reason';
+      if (typeof reason === 'string') return reason.slice(0, 400);
+      if (reason instanceof Error) {
+        return `${reason.name || 'Error'}: ${(reason.message || '').slice(0, 400)}`;
+      }
+      try {
+        return JSON.stringify(reason).slice(0, 400);
+      } catch {
+        return String(reason).slice(0, 400);
+      }
+    };
+
+    sessionLogger.log('게임 클라이언트 초기화 시작');
+
+    window.addEventListener('error', (event) => {
+      sessionLogger.log(`window error: ${event?.message || 'unknown'} (${event?.filename || 'n/a'}:${event?.lineno || 0})`);
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      sessionLogger.log(`unhandled rejection: ${describeReason(event?.reason)}`);
+    });
+
     /* ======================
        공통 상태 / 경로
        ====================== */
@@ -1256,6 +1435,10 @@
     let dailyUnlocked = false;
     let rankingUnlocked = false;
     let bootDone = false;
+
+    const recoveryManager = new RecoveryManager(sessionLogger, () => state);
+    window.__RECOVERY_MANAGER__ = recoveryManager;
+    recoveryManager.start();
 
     const GUEST_PROFILE_KEY = 'siu_guest_profile_v1';
     let guestMode = false;
@@ -2072,8 +2255,11 @@
       if (!window.__PLAY_ALLOWED) return;
       const now = Date.now();
       state._lastUpdated = now;
+      sessionLogger?.log?.('저장 루틴이 호출되었습니다.');
       if (guestMode) {
         persistGuestProfile();
+        recoveryManager?.safeCreate?.('guest-save');
+        sessionLogger?.log?.('게스트 프로필을 저장했습니다.');
         lastSaveAt = now;
         return;
       }
@@ -2082,7 +2268,13 @@
       localLastWrite = now;
       lastSaveAt = now;
       try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch {}
-      update(dataRef, { ...state }).catch(err => console.error('저장 에러:', err));
+      update(dataRef, { ...state })
+        .then(() => sessionLogger?.log?.('실시간 데이터 저장 완료'))
+        .catch(err => {
+          console.error('저장 에러:', err);
+          sessionLogger?.log?.(`저장 에러: ${err?.message || err}`);
+        });
+      recoveryManager?.safeCreate?.('sync-save');
     }
 
     function save(forceImmediate = false) {
@@ -2105,9 +2297,20 @@
       }, SAVE_DEBOUNCE_MS - elapsed);
     }
 
-    window.addEventListener('pagehide', () => save(true));
+    window.addEventListener('pagehide', () => {
+      sessionLogger?.log?.('pagehide 이벤트 감지, 즉시 저장합니다.');
+      save(true);
+      recoveryManager?.safeCreate?.('pagehide');
+      recoveryManager?.stop?.();
+    });
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') save(true);
+      sessionLogger?.log?.(`visibilitychange: ${document.visibilityState}`);
+      if (document.visibilityState === 'hidden') {
+        recoveryManager?.safeCreate?.('hidden');
+        save(true);
+      } else if (document.visibilityState === 'visible') {
+        recoveryManager?.resume?.();
+      }
     });
 
     /* ========= 새 키 규칙 ========= */
@@ -3902,6 +4105,9 @@
     }
 
     onAuthStateChanged(auth, async user => {
+      sessionLogger?.log?.(user
+        ? `인증 상태 업데이트: ${(user.email || user.uid || 'unknown')}`
+        : '인증이 해제되었습니다.');
       hideAllOverlays();
       setBootVisible(false);
       showAuthStatus('');
