@@ -5092,7 +5092,7 @@
   <!-- 중복 실행 감지 & 관리자 예외 -->
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getDatabase, ref, runTransaction, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, runTransaction, update, remove, onDisconnect, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -5421,6 +5421,7 @@
           overlayShow();
           updateLockTexts();
           applyPlayState();
+          scheduleRemoteRetry();
           return;
         }
         stopRemoteRetry();
@@ -5431,6 +5432,53 @@
         updateLockTexts();
         applyPlayState();
         runDeferredInitIfReady();
+      };
+
+      let remoteWatcherStop = null;
+      const detachRemoteWatcher = () => {
+        if (typeof remoteWatcherStop === 'function') {
+          try { remoteWatcherStop(); }
+          catch {}
+        }
+        remoteWatcherStop = null;
+      };
+      const attachRemoteWatcher = (uid) => {
+        detachRemoteWatcher();
+        if (!uid) return;
+        const watchRef = ref(sessionDb, `${REMOTE_SESSION_PATH}/${uid}`);
+        const handleSnapshot = (snapshot) => {
+          if (!remoteUid || remoteUid !== uid) return;
+          const data = snapshot?.val() || null;
+          if (!remoteClaimed) {
+            if (remoteBlocked) {
+              remoteInfo = data || null;
+              updateStatus(remoteInfo);
+            }
+            return;
+          }
+          if (data && remoteToken && data.token === remoteToken) {
+            remoteInfo = data;
+            if (remoteBlocked) {
+              setRemoteBlockedState(false, data);
+            }
+            return;
+          }
+          stopRemoteHeartbeat();
+          try { remoteDisconnectHandle?.cancel?.(); }
+          catch {}
+          remoteDisconnectHandle = null;
+          remoteClaimed = false;
+          remoteRef = null;
+          remoteToken = null;
+          if (data && !isRemoteStale(data)) {
+            setRemoteBlockedState(true, data);
+          } else {
+            setRemoteBlockedState(true, null);
+          }
+        };
+        remoteWatcherStop = onValue(watchRef, handleSnapshot, (err) => {
+          console.warn('원격 세션 상태를 구독하지 못했습니다.', err);
+        });
       };
       const setupRemoteDisconnect = () => {
         if (!remoteRef) return;
@@ -5445,6 +5493,7 @@
         }
       };
       const releaseRemoteSession = async () => {
+        detachRemoteWatcher();
         stopRemoteHeartbeat();
         stopRemoteRetry();
         try { await remoteDisconnectHandle?.cancel?.(); }
@@ -5520,6 +5569,9 @@
           return;
         }
         if (remoteUid === uid) {
+          if (!remoteWatcherStop) {
+            attachRemoteWatcher(uid);
+          }
           if (remoteBlocked || !remoteClaimed) {
             attemptRemoteClaim();
           }
@@ -5531,6 +5583,7 @@
         remoteRef = null;
         remoteClaimed = false;
         remoteInfo = null;
+        attachRemoteWatcher(uid);
         attemptRemoteClaim();
       };
 
