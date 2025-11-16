@@ -1961,7 +1961,7 @@
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
     const initialConversionCost=50, conversionCostGrowth=1.3;
-    const initialClickUpgradeCost=15, clickUpgradeGrowth=1.2;
+    const initialClickUpgradeCost=15, clickUpgradeIncrement=3;
 
     function getWorkerCost()   { return Math.floor(initialWorkerCost   * Math.pow(workerCostGrowth, state.workerCount)); }
     function getWorkerPower()  { return initialWorkerPower * Math.pow(workerPowerGrowth, state.workerCount); }
@@ -1973,7 +1973,7 @@
     }
     function getNextClickUpgradeCost(currentCost){
       const base = currentCost ?? initialClickUpgradeCost;
-      return Math.max(1, Math.round(base * clickUpgradeGrowth));
+      return Math.max(1, Math.round(base + clickUpgradeIncrement));
     }
 
     // 🔄 변환(증가/지출 장부 반영)
