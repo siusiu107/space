@@ -154,13 +154,39 @@
       }
       #env-panel h3 { font-size: 12px; }
       #env-panel dl { grid-template-columns: 90px 1fr; gap: 3px 6px; font-size: 10px; }
-      #env-panel .muted { font-size: 9px; }
+    #env-panel .muted { font-size: 9px; }
 
       /* 라이센스/컨택 패널도 소형화 */
       .panel { width: 92%; max-width: 420px; padding: 20px; }
       .panel h2 { font-size: 20px; }
       .panel p, .panel ul li { font-size: 12px; }
       .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; }
+    }
+
+    #multi-device-warning {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translate(-50%, -10px);
+      background: rgba(220, 53, 69, 0.92);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: .4px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
+      z-index: 11000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    #multi-device-warning.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
     }
   </style>
 </head>
@@ -224,6 +250,10 @@
     </div>
     <dl id="env-list"><!-- JS에서 채웁니다 --></dl>
     <p class="muted" style="margin-top:8px;">* 일부 값은 브라우저/OS 정책으로 비공개이거나 근사치일 수 있습니다.</p>
+  </div>
+
+  <div id="multi-device-warning" role="status" aria-live="polite">
+    다른 기기에서 새로 접속했습니다. 새로 연 기기에서 게임을 계속 이용해 주세요.
   </div>
 
   <!-- 패널 토글 -->
@@ -516,7 +546,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-    import { getDatabase, ref, get, runTransaction, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getDatabase, ref, get, runTransaction, update, set, onDisconnect, onValue, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
@@ -532,6 +562,120 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+
+    const DEVICE_STORAGE_KEY = 'siu__device_id';
+    function generateId(prefix) {
+      const rand = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${prefix}-${Math.random().toString(36).slice(2, 11)}`;
+      if (rand.startsWith(prefix)) return rand;
+      return `${prefix}-${rand}`;
+    }
+
+    function getPersistentDeviceId() {
+      try {
+        const existing = localStorage.getItem(DEVICE_STORAGE_KEY);
+        if (existing) return existing;
+        const created = generateId('device');
+        localStorage.setItem(DEVICE_STORAGE_KEY, created);
+        return created;
+      } catch {
+        return generateId('device');
+      }
+    }
+
+    const deviceId = getPersistentDeviceId();
+    const sessionId = generateId('session');
+    const sessionConnectedAt = Date.now();
+
+    const multiDeviceBanner = document.getElementById('multi-device-warning');
+    function updateMultiDeviceBanner(shouldShow) {
+      if (!multiDeviceBanner) return;
+      multiDeviceBanner.classList.toggle('active', !!shouldShow);
+      multiDeviceBanner.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    }
+    updateMultiDeviceBanner(false);
+
+    let stopPresenceWatcher = null;
+
+    function cleanupPresenceWatcher() {
+      if (typeof stopPresenceWatcher === 'function') {
+        stopPresenceWatcher();
+        stopPresenceWatcher = null;
+      }
+      updateMultiDeviceBanner(false);
+    }
+
+    async function startPresenceWatcher(user) {
+      cleanupPresenceWatcher();
+      if (!user) return;
+
+      const basePath = `presence/${user.uid}`;
+      const myRef = ref(db, `${basePath}/${deviceId}`);
+      const payload = {
+        deviceId,
+        sessionId,
+        connectedAt: sessionConnectedAt,
+        lastActiveAt: Date.now(),
+      };
+
+      try {
+        await set(myRef, payload);
+        onDisconnect(myRef).remove();
+      } catch (err) {
+        console.warn('실시간 접속 정보 등록 실패:', err);
+        return;
+      }
+
+      let destroyed = false;
+      const heartbeat = setInterval(() => {
+        update(myRef, { lastActiveAt: Date.now() }).catch(() => {});
+      }, 15000);
+
+      const watchRef = ref(db, basePath);
+      const unsubscribe = onValue(watchRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        const entries = Object.values(data)
+          .map((entry) => ({
+            deviceId: entry?.deviceId,
+            sessionId: entry?.sessionId,
+            connectedAt: Number(entry?.connectedAt) || 0,
+          }))
+          .filter((entry) => entry.deviceId && entry.sessionId);
+
+        if (!entries.length) {
+          updateMultiDeviceBanner(false);
+          return;
+        }
+
+        const hasOtherDevices = entries.some((entry) => entry.deviceId !== deviceId);
+        let newest = entries[0];
+        for (const entry of entries.slice(1)) {
+          if (entry.connectedAt > newest.connectedAt) {
+            newest = entry;
+          } else if (entry.connectedAt === newest.connectedAt && entry.sessionId > newest.sessionId) {
+            newest = entry;
+          }
+        }
+
+        const isNewest = newest.deviceId === deviceId && newest.sessionId === sessionId;
+        updateMultiDeviceBanner(hasOtherDevices && !isNewest);
+      }, (error) => {
+        console.warn('접속 정보 구독 실패:', error);
+      });
+
+      stopPresenceWatcher = () => {
+        if (destroyed) return;
+        destroyed = true;
+        clearInterval(heartbeat);
+        unsubscribe();
+        try { onDisconnect(myRef).cancel(); } catch {}
+        try { remove(myRef); } catch {}
+      };
+
+      window.addEventListener('beforeunload', () => {
+        try { onDisconnect(myRef).cancel(); } catch {}
+        try { remove(myRef); } catch {}
+      }, { once: true });
+    }
 
     function sanitizeIdKey(raw) {
       const s = (raw || '').toString().trim().toLowerCase();
@@ -587,6 +731,7 @@
       if (!user) {
         window.__setAuthStatus?.('비로그인');
         window.__updateServerInfo?.({ server: '-', id: '(로그인 필요)' });
+        cleanupPresenceWatcher();
         return;
       }
       window.__setAuthStatus?.('로그인');
@@ -597,6 +742,7 @@
         console.warn('서버 매핑 조회 실패:', e);
         window.__updateServerInfo?.({ server: '(조회 실패)', id: '-' });
       }
+      startPresenceWatcher(user);
     });
   </script>
 
