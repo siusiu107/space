@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>세션 로그 관리자</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top, #0b1b33, #030712 65%);
+      color: #e6f5ff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    main {
+      width: min(1080px, 96vw);
+      background: rgba(6, 11, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+    .status {
+      margin: 4px 0 18px;
+      font-size: 14px;
+      color: #a8c7ff;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: linear-gradient(135deg, #00c6ff, #0066ff);
+      color: #001124;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(0, 102, 255, 0.25);
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      gap: 16px;
+    }
+    .log-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      max-height: 420px;
+      overflow: auto;
+    }
+    .log-list li {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+    }
+    .log-list li:last-child { border-bottom: none; }
+    .log-list li.active {
+      background: rgba(0, 198, 255, 0.15);
+      color: #fff;
+    }
+    .log-viewer {
+      background: #050b14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 16px;
+      min-height: 360px;
+      white-space: pre-wrap;
+      overflow: auto;
+      font-family: 'Fira Code', 'Menlo', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    #not-found {
+      text-align: center;
+    }
+    #not-found h2 {
+      font-size: 64px;
+      margin: 0 0 8px;
+    }
+    #not-found p {
+      margin: 0;
+      color: #94a3b8;
+    }
+    @media (max-width: 780px) {
+      .layout { grid-template-columns: 1fr; }
+      .log-list { max-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <main id="admin-app" hidden>
+    <h1>세션 로그 관리자</h1>
+    <p class="status" id="status-text">Firebase 인증 상태 확인 중…</p>
+    <div class="actions">
+      <button id="refresh-btn" type="button">🔄 새로고침</button>
+      <button id="clear-btn" type="button">🧹 가장 오래된 로그 삭제</button>
+    </div>
+    <div class="layout">
+      <ul id="log-list" class="log-list" aria-label="로그 파일 목록"></ul>
+      <pre id="log-viewer" class="log-viewer" aria-live="polite">왼쪽에서 로그 파일을 선택하세요.</pre>
+    </div>
+  </main>
+  <section id="not-found" aria-live="polite" hidden>
+    <div>
+      <h2>404</h2>
+      <p>요청하신 페이지를 찾을 수 없습니다.</p>
+    </div>
+  </section>
+  <script type="module">
+    import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k',
+      authDomain: 'siu-studio.firebaseapp.com',
+      databaseURL: 'https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app',
+      projectId: 'siu-studio',
+      storageBucket: 'siu-studio.appspot.com',
+      messagingSenderId: '830887143444',
+      appId: '1:830887143444:web:70b45fc12140e893c31f01',
+      measurementId: 'G-1Y090YJDB6'
+    };
+
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const ADMIN_EMAIL = 'siu46852579@gmail.com';
+
+    const appEl = document.getElementById('admin-app');
+    const notFoundEl = document.getElementById('not-found');
+    const statusText = document.getElementById('status-text');
+    const listEl = document.getElementById('log-list');
+    const viewerEl = document.getElementById('log-viewer');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const clearBtn = document.getElementById('clear-btn');
+
+    const handles = new Map();
+
+    function showNotFound() {
+      appEl.hidden = true;
+      notFoundEl.hidden = false;
+    }
+
+    function showApp() {
+      appEl.hidden = false;
+      notFoundEl.hidden = true;
+    }
+
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
+
+    async function readLogsDirectory() {
+      if (!navigator.storage?.getDirectory) {
+        listEl.innerHTML = '<li>브라우저가 로그 파일 시스템을 지원하지 않습니다.</li>';
+        return [];
+      }
+      try {
+        const root = await navigator.storage.getDirectory();
+        const dir = await root.getDirectoryHandle('logs');
+        const entries = [];
+        for await (const entry of dir.entries()) {
+          const [name, handle] = entry;
+          if (handle.kind === 'file') {
+            entries.push({ name, handle });
+          }
+        }
+        return entries.sort((a, b) => b.name.localeCompare(a.name));
+      } catch (err) {
+        console.warn('로그 디렉터리 접근 실패', err);
+        listEl.innerHTML = '<li>저장된 로그를 찾을 수 없습니다.</li>';
+        return [];
+      }
+    }
+
+    async function renderLogList() {
+      const entries = await readLogsDirectory();
+      handles.clear();
+      listEl.innerHTML = '';
+      if (!entries.length) {
+        listEl.innerHTML = '<li>생성된 로그 파일이 없습니다.</li>';
+        return;
+      }
+      entries.forEach(({ name, handle }) => {
+        handles.set(name, handle);
+        const item = document.createElement('li');
+        item.textContent = name;
+        item.dataset.name = name;
+        item.addEventListener('click', () => openLog(name, item));
+        listEl.appendChild(item);
+      });
+    }
+
+    async function openLog(name, itemEl) {
+      listEl.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+      itemEl?.classList.add('active');
+      const handle = handles.get(name);
+      if (!handle) {
+        viewerEl.textContent = '파일 핸들을 찾을 수 없습니다.';
+        return;
+      }
+      try {
+        const file = await handle.getFile();
+        viewerEl.textContent = await file.text();
+      } catch (err) {
+        viewerEl.textContent = '로그를 불러오는 중 오류가 발생했습니다.';
+        console.error('로그 읽기 실패', err);
+      }
+    }
+
+    async function removeOldestLog() {
+      if (!navigator.storage?.getDirectory) return;
+      try {
+        const root = await navigator.storage.getDirectory();
+        const dir = await root.getDirectoryHandle('logs');
+        const files = [];
+        for await (const entry of dir.entries()) {
+          const [name, handle] = entry;
+          if (handle.kind === 'file') files.push({ name, handle });
+        }
+        if (!files.length) return;
+        files.sort((a, b) => a.name.localeCompare(b.name));
+        await dir.removeEntry(files[0].name, { recursive: false });
+        await renderLogList();
+      } catch (err) {
+        console.error('로그 삭제 실패', err);
+      }
+    }
+
+    refreshBtn.addEventListener('click', renderLogList);
+    clearBtn.addEventListener('click', removeOldestLog);
+
+    onAuthStateChanged(auth, async (user) => {
+      const email = (user?.email || '').toLowerCase();
+      if (!user || email !== ADMIN_EMAIL) {
+        showNotFound();
+        setStatus('권한이 없어 접근할 수 없습니다.');
+        return;
+      }
+      showApp();
+      setStatus(`로그인됨: ${email}`);
+      await renderLogList();
+    });
+  </script>
+</body>
+</html>
