@@ -5743,6 +5743,7 @@
             const nowTs = now();
             if (current && current.token && current.token !== remoteToken && !isRemoteStale(current)) {
               snapshot = current;
+              return undefined; // 충돌 시 기존 세션을 유지하고 트랜잭션을 중단
             }
             return {
               token: remoteToken,
