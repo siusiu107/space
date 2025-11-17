@@ -5234,6 +5234,7 @@
       const noteEl       = document.getElementById('session-lock-note');
       const remoteLogoutBtn = document.getElementById('session-lock-remote-logout');
       const hardBlockOverlay  = document.getElementById('js-hard-block-overlay');
+      const hardBlockTitleEl  = document.getElementById('js-hard-block-title');
       const hardBlockDescEl   = document.getElementById('js-hard-block-desc');
       const hardBlockDeviceEl = document.getElementById('js-hard-block-device');
       const hardBlockErrorEl  = document.getElementById('js-hard-block-error');
@@ -5375,17 +5376,35 @@
           }
         } catch {}
       };
-      const showHardBlockOverlay = (info) => {
+      const showHardBlockOverlay = (info = {}) => {
         if (!hardBlockOverlay) return;
+        const source = info?.blockSource === 'local' ? 'local' : 'remote';
+        if (hardBlockTitleEl) {
+          hardBlockTitleEl.textContent = source === 'local'
+            ? '같은 기기에서 중복 실행이 감지되었습니다'
+            : '다른 기기에서 실행이 감지되었습니다';
+        }
         if (hardBlockDeviceEl) {
-          hardBlockDeviceEl.textContent = describeHardBlockDevice(info);
+          if (source === 'local') {
+            const ts = info?.ts || info?.updatedAt || null;
+            const phrase = describeElapsed(ts);
+            hardBlockDeviceEl.textContent = phrase
+              ? `현재 기기 · ${phrase} 활동`
+              : '현재 기기';
+          } else {
+            hardBlockDeviceEl.textContent = describeHardBlockDevice(info);
+          }
         }
         if (hardBlockDescEl) {
-          const ts = info?.updatedAt || info?.ts || null;
-          const phrase = describeElapsed(ts);
-          const device = (info && info.deviceLabel) ? info.deviceLabel : '다른 기기';
-          const timeText = phrase ? `${phrase} ` : '';
-          hardBlockDescEl.textContent = `${timeText}${device}에서 새로운 접속이 감지되어 현재 창의 실행을 중단했습니다. 같은 계정이 여러 창에서 동시에 열리면 이용약관 위반으로 간주될 수 있어요. 오탐을 피하기 위해 한 번에 하나의 창만 허용하고 있으니 너그럽게 양해 부탁드립니다.`;
+          if (source === 'local') {
+            hardBlockDescEl.textContent = '같은 기기에서 동일 계정이 여러 창에서 실행되어 현재 창의 스크립트를 완전히 중단했습니다. 모든 창을 닫은 뒤 새로고침해 주세요.';
+          } else {
+            const ts = info?.updatedAt || info?.ts || null;
+            const phrase = describeElapsed(ts);
+            const device = (info && info.deviceLabel) ? info.deviceLabel : '다른 기기';
+            const timeText = phrase ? `${phrase} ` : '';
+            hardBlockDescEl.textContent = `${timeText}${device}에서 새로운 접속이 감지되어 현재 창의 실행을 중단했습니다. 같은 계정이 여러 창에서 동시에 열리면 이용약관 위반으로 간주될 수 있어요. 오탐을 피하기 위해 한 번에 하나의 창만 허용하고 있으니 너그럽게 양해 부탁드립니다.`;
+          }
         }
         if (hardBlockErrorEl) {
           const code = info?.errorCode || makeHardBlockErrorCode();
@@ -5541,20 +5560,6 @@
           retryTimer = null;
         }
       };
-      const scheduleRetry = () => {
-        if (retryTimer) return;
-        retryTimer = setInterval(() => {
-          if (!currentUid || bypassed) {
-            stopRetry();
-            return;
-          }
-          const info = readLock();
-          if (attemptClaim(info, true)) {
-            stopRetry();
-          }
-        }, RETRY_INTERVAL);
-      };
-
       const stopRemoteHeartbeat = () => {
         if (remoteHeartbeatTimer) {
           clearInterval(remoteHeartbeatTimer);
@@ -5669,6 +5674,9 @@
           const enriched = remoteInfo ? { ...remoteInfo } : {};
           if (!enriched.errorCode) {
             enriched.errorCode = makeHardBlockErrorCode();
+          }
+          if (!enriched.blockSource) {
+            enriched.blockSource = 'remote';
           }
           remoteInfo = enriched;
           hardBlockJsExecution(enriched);
@@ -5812,12 +5820,18 @@
       };
 
       const showLock = (info) => {
-        hasLock = false;
         localBlockActive = true;
-        updateStatus(info);
-        overlayShow();
-        scheduleRetry();
-        applyPlayState();
+        const enriched = {
+          ...(info || {}),
+          blockSource: 'local'
+        };
+        if (!enriched.ts) {
+          enriched.ts = now();
+        }
+        if (!enriched.deviceLabel) {
+          enriched.deviceLabel = '현재 기기';
+        }
+        hardBlockJsExecution(enriched);
       };
 
       const attemptClaim = (existingInfo, fromRetry = false) => {
@@ -5835,10 +5849,6 @@
         if (isStale(info)) {
           takeLock();
           return true;
-        }
-        if (fromRetry) {
-          updateStatus(info);
-          return false;
         }
         showLock(info);
         return false;
