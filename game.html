@@ -1559,6 +1559,7 @@
     let dataRef = null;
     let dataUnsubscribe = null;
     let localLastWrite = 0;
+    let lastSyncedServerStamp = 0;
     let isInitialSync = false;
 
     let userServerKey = null;
@@ -4279,6 +4280,8 @@
 
       dataUnsubscribe = onValue(dataRef, async snap => {
         const server = snap.exists() ? snap.val() : null;
+        const rawStamp = Number(server?._lastUpdated);
+        const serverStamp = Number.isFinite(rawStamp) ? rawStamp : 0;
         const loadTime = Date.now() - syncStart;
 
         // 이전 코드에서 여기서 auditFreeze(...) 하던 거 전부 제거
@@ -4302,6 +4305,7 @@
           await checkDailyAndMaybeShow();
           updateAttendanceLabels();
           bootDone = true;
+          lastSyncedServerStamp = serverStamp || 0;
           auditInit();
           renderSecurityBadge();
           maybeNotifyGuestRemoval();
@@ -4314,7 +4318,7 @@
         if (!server) {
           state = { ...defaultData };
         } else {
-          const serverLast = server._lastUpdated || 0;
+          const serverLast = serverStamp;
           if (serverLast >= (localLastWrite || 0)) {
             state = { ...defaultData, ...server };
           } else {
@@ -4323,7 +4327,17 @@
             catch { save(true); }
           }
         }
+        const prevSynced = lastSyncedServerStamp || 0;
+        const isNewServerState = serverStamp && serverStamp !== prevSynced;
+        const remoteMutation = isNewServerState && serverStamp > (localLastWrite || 0);
         if (window.__PLAY_ALLOWED) { updateUI(true); renderPlanets(); }
+        if (remoteMutation) {
+          auditInit();
+          auditIntent = { res:0, coin:0, eco:0, until:0 };
+          localLastWrite = serverStamp;
+          try { localStorage.setItem(`lastWrite_${uid}`, String(serverStamp)); } catch {}
+        }
+        lastSyncedServerStamp = serverStamp || prevSynced;
       });
     }
 
