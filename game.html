@@ -4514,6 +4514,25 @@
       const closeBtn = document.getElementById('shop-close');
       if (!overlay || !frame) return;
 
+      function isStandaloneWebApp(){
+        try {
+          if (navigator.standalone) return true;
+        } catch {}
+        const modes = ['standalone','minimal-ui','fullscreen'];
+        return modes.some(mode => {
+          try {
+            return window.matchMedia(`(display-mode: ${mode})`).matches;
+          } catch {
+            return false;
+          }
+        });
+      }
+
+      function shouldUseChromeDeeplink(){
+        if (window.__IS_EMBEDDED_APP) return true;
+        return isStandaloneWebApp();
+      }
+
       function emitShopError(info, extraDetail = null){
         let detail = {};
         if (typeof info === 'string') {
@@ -4630,7 +4649,7 @@
       }
 
       function openShopOverlay(){
-        if (window.__IS_EMBEDDED_APP) {
+        if (shouldUseChromeDeeplink()) {
           openShopExternally();
           return;
         }
