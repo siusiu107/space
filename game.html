@@ -4514,25 +4514,6 @@
       const closeBtn = document.getElementById('shop-close');
       if (!overlay || !frame) return;
 
-      function isStandaloneWebApp(){
-        try {
-          if (navigator.standalone) return true;
-        } catch {}
-        const modes = ['standalone','minimal-ui','fullscreen'];
-        return modes.some(mode => {
-          try {
-            return window.matchMedia(`(display-mode: ${mode})`).matches;
-          } catch {
-            return false;
-          }
-        });
-      }
-
-      function shouldUseChromeDeeplink(){
-        if (window.__IS_EMBEDDED_APP) return true;
-        return isStandaloneWebApp();
-      }
-
       function emitShopError(info, extraDetail = null){
         let detail = {};
         if (typeof info === 'string') {
@@ -4561,98 +4542,7 @@
         }
       }
 
-      function openShopExternally(){
-        const targetUrl = SHOP_URL;
-        const ua = (navigator.userAgent || '').toLowerCase();
-        let attempted = false;
-        let stopWatch = null;
-
-        const monitorFailure = () => {
-          if (!window.__IS_EMBEDDED_APP || stopWatch) return;
-          let resolved = false;
-          const onVisibility = () => {
-            if (document.visibilityState === 'hidden') {
-              resolved = true;
-              cleanup();
-            }
-          };
-          document.addEventListener('visibilitychange', onVisibility);
-          const timer = setTimeout(() => {
-            if (!resolved) {
-              cleanup();
-              emitShopError({
-                message: '크롬에서 공식 상점을 열 수 없습니다. 설치 또는 외부 브라우저 허용 상태를 확인해주세요.',
-                manualMessage: '크롬에서 다음 사이트로 이동하세요',
-                copyUrl: targetUrl
-              });
-            }
-          }, 2000);
-          function cleanup(){
-            document.removeEventListener('visibilitychange', onVisibility);
-            clearTimeout(timer);
-            stopWatch = null;
-          }
-          stopWatch = cleanup;
-        };
-
-        const markAttempted = () => {
-          attempted = true;
-          monitorFailure();
-        };
-
-        const tryAndroidBridge = () => {
-          try {
-            if (window.AndroidBridge) {
-              const candidates = ['openChrome', 'openExternalUrl', 'openExternal', 'openBrowser', 'openUrl'];
-              for (const key of candidates) {
-                if (typeof window.AndroidBridge[key] === 'function') {
-                  window.AndroidBridge[key](targetUrl);
-                  markAttempted();
-                  return true;
-                }
-              }
-            }
-          } catch {}
-          return false;
-        };
-
-        if (tryAndroidBridge()) return;
-
-        try {
-          if (/android/.test(ua)) {
-            const urlObj = new URL(targetUrl);
-            const sanitized = `${urlObj.host}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
-            const scheme = (urlObj.protocol || 'https:').replace(':', '') || 'https';
-            const intentUrl = `intent://${sanitized}#Intent;scheme=${scheme};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(targetUrl)};end`;
-            window.location.href = intentUrl;
-            markAttempted();
-          } else if (/(iphone|ipad|ipod)/.test(ua)) {
-            const chromeUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
-            window.location.href = chromeUrl;
-            markAttempted();
-          }
-        } catch {}
-
-        if (!attempted) {
-          try {
-            const popup = window.open(targetUrl, '_blank', 'noopener,noreferrer');
-            if (popup) {
-              attempted = true;
-            }
-          } catch {}
-        }
-
-        if (!attempted) {
-          stopWatch?.();
-          emitShopError('공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.');
-        }
-      }
-
       function openShopOverlay(){
-        if (shouldUseChromeDeeplink()) {
-          openShopExternally();
-          return;
-        }
         ensureShopLoaded();
         try { hideAllOverlays(); } catch {}
         overlay.classList.add('show');
