@@ -202,7 +202,45 @@
     .bar-group { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow:hidden; }
     .bar-group img { width:16px; height:16px; }
     .bar-group span { white-space: nowrap; }
-    #ship-img{ width:16px; height:16px; }
+    #ship-img{
+      width:140px; max-width:60vw;
+      height:auto;
+      margin:0 auto 10px;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.35));
+    }
+    .ship-panel{
+      margin:0 auto;
+      padding:16px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(5,9,18,0.55));
+      box-shadow: 0 18px 44px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+      max-width:360px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      text-align:center;
+    }
+    .ship-panel h2{
+      margin:0;
+      font-size:18px;
+      color:#e9f7ff;
+    }
+    .ship-panel p{
+      margin:0;
+      color:#bcd8ee;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .ship-panel .ship-status{
+      font-size:15px;
+      font-weight:700;
+      color:var(--accent);
+    }
+    .ship-panel .general{
+      width:100%;
+      max-width:none;
+    }
 
     #settings-btn {
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
@@ -996,9 +1034,6 @@
       <span id="ecoins">이벤트코인: 0</span>
     </div>
     <div class="bar-group">
-      <img id="ship-img" src="/images/ship-level1.png" alt="Ship" />
-      <span id="ship-level">1렙 (20코인)</span>
-      <button id="upgrade-ship">업그레이드</button>
       <!-- 버프 버튼으로 교체 -->
       <button id="buff-btn" aria-label="현재 버프 보기">버프(0)</button>
       <span id="suspicion-badge" title="핵 사용 의심도">의심도: 0</span>
@@ -1027,6 +1062,16 @@
       <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
     </div>
 
+    <div id="ship-content" class="tab-content">
+      <div class="ship-panel" aria-live="polite">
+        <h2>우주선 제어실</h2>
+        <img id="ship-img" src="/images/ship-level1.png" alt="우주선" />
+        <div class="ship-status" id="ship-level">1렙 (20코인)</div>
+        <p>우주선을 업그레이드해 더 먼 행성과 새로운 콘텐츠를 개방하세요.</p>
+        <button id="upgrade-ship" class="general">우주선 업그레이드</button>
+      </div>
+    </div>
+
     <div id="upgrades-content" class="tab-content">
       <p>클릭당 자원: <span id="click-power">1</span></p>
       <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
@@ -1040,6 +1085,7 @@
     <nav id="bottom-nav" aria-label="게임 탭 내비게이션">
       <div class="tab active" data-tab="main"     role="button" tabindex="0"><span class="t-icon">🪨</span><span class="t-label">메인</span></div>
       <div class="tab"        data-tab="workers"  role="button" tabindex="0"><span class="t-icon">👩‍🚀</span><span class="t-label">우주인</span></div>
+      <div class="tab"        data-tab="ship"     role="button" tabindex="0"><span class="t-icon">🚀</span><span class="t-label">우주선</span></div>
       <div class="tab"        data-tab="upgrades" role="button" tabindex="0"><span class="t-icon">⚙️</span><span class="t-label">업그레이드</span></div>
       <div class="tab"        data-tab="planets"  role="button" tabindex="0"><span class="t-icon">🪐</span><span class="t-label">행성</span></div>
     </nav>
