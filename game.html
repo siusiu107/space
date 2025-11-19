@@ -1616,10 +1616,56 @@
       toastTimer = setTimeout(hideToast, ttlMs);
     }
 
+    function copyTextToClipboard(text) {
+      if (!text) return Promise.reject(new Error('empty'));
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          textarea.style.pointerEvents = 'none';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          textarea.remove();
+          if (ok) resolve();
+          else reject(new Error('copy-failed'));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
     window.addEventListener('shop-open-error', (event) => {
       const detail = event?.detail || {};
       const msg = detail.message || '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
-      showToast(msg, null, null, 3600);
+      const manualMessage = detail.copyUrl ? (detail.manualMessage || '크롬에서 다음 사이트로 이동하세요') : null;
+      const toastMessage = manualMessage ? `${msg}\n${manualMessage}` : msg;
+
+      const copyAction = detail.copyUrl ? () => {
+        copyTextToClipboard(detail.copyUrl)
+          .then(() => {
+            showToast('상점 주소를 복사했습니다. 크롬에서 붙여넣어 이동해주세요!', null, null, 3600);
+          })
+          .catch(() => {
+            try {
+              prompt('아래 주소를 길게 눌러 복사한 뒤 크롬 주소창에 붙여넣으세요.', detail.copyUrl);
+            } catch {}
+          });
+      } : null;
+
+      showToast(toastMessage, detail.copyUrl ? '주소 복사' : null, copyAction, detail.copyUrl ? 8000 : 3600);
+
+      if (manualMessage && detail.alert !== false) {
+        try {
+          alert(`${manualMessage}\n${detail.copyUrl}`);
+        } catch {}
+      }
     });
 
     function maybeNotifyGuestRemoval() {
@@ -4468,11 +4514,24 @@
       const closeBtn = document.getElementById('shop-close');
       if (!overlay || !frame) return;
 
-      function emitShopError(message){
+      function emitShopError(info, extraDetail = null){
+        let detail = {};
+        if (typeof info === 'string') {
+          detail.message = info;
+        } else if (info && typeof info === 'object') {
+          detail = { ...info };
+        }
+        if (extraDetail && typeof extraDetail === 'object') {
+          detail = { ...detail, ...extraDetail };
+        }
+        if (!detail.message) {
+          detail.message = '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
+        }
         try {
-          window.dispatchEvent(new CustomEvent('shop-open-error', { detail: { message } }));
+          window.dispatchEvent(new CustomEvent('shop-open-error', { detail }));
         } catch {
-          try { alert(message); } catch {}
+          const fallbackMessage = detail.manualMessage || detail.message;
+          try { alert(detail.copyUrl ? `${fallbackMessage}\n${detail.copyUrl}` : fallbackMessage); } catch {}
         }
       }
 
@@ -4502,7 +4561,11 @@
           const timer = setTimeout(() => {
             if (!resolved) {
               cleanup();
-              emitShopError('크롬에서 공식 상점을 열 수 없습니다. 설치 또는 외부 브라우저 허용 상태를 확인해주세요.');
+              emitShopError({
+                message: '크롬에서 공식 상점을 열 수 없습니다. 설치 또는 외부 브라우저 허용 상태를 확인해주세요.',
+                manualMessage: '크롬에서 다음 사이트로 이동하세요',
+                copyUrl: targetUrl
+              });
             }
           }, 2000);
           function cleanup(){
