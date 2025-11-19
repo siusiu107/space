@@ -85,7 +85,17 @@
       --glass-brd: rgba(255,255,255,0.08);
       --accent: #00d4ff;
     }
-    body { margin:0; padding:0; font-family:Inter, Arial, sans-serif; background:url('/images/space-bg.jpg') center/cover no-repeat; color:#fff; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      min-height: 100vh;
+    }
+    body {
+      font-family:Inter, Arial, sans-serif;
+      background:url('/images/space-bg.jpg') center center / cover no-repeat fixed;
+      color:#fff;
+    }
     body.game-hard-blocked #top-bar,
     body.game-hard-blocked #container { filter: grayscale(0.65); pointer-events:none; user-select:none; opacity:0.55; }
     body.game-hard-blocked #top-bar { opacity:0.35; }
