@@ -4469,7 +4469,44 @@
         }
       }
 
+      function openShopExternally(){
+        const targetUrl = SHOP_URL;
+        const ua = (navigator.userAgent || '').toLowerCase();
+        let attempted = false;
+
+        try {
+          if (/android/.test(ua)) {
+            const sanitized = targetUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            const intentUrl = `intent://${sanitized}/#Intent;scheme=https;package=com.android.chrome;end`;
+            window.location.href = intentUrl;
+            attempted = true;
+          } else if (/(iphone|ipad|ipod)/.test(ua)) {
+            const chromeUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
+            window.location.href = chromeUrl;
+            attempted = true;
+            setTimeout(() => {
+              try { window.location.href = targetUrl; } catch {}
+            }, 350);
+          }
+        } catch {}
+
+        if (!attempted) {
+          try {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+            attempted = true;
+          } catch {}
+        }
+
+        if (!attempted) {
+          try { window.location.href = targetUrl; } catch {}
+        }
+      }
+
       function openShopOverlay(){
+        if (window.__IS_EMBEDDED_APP) {
+          openShopExternally();
+          return;
+        }
         ensureShopLoaded();
         try { hideAllOverlays(); } catch {}
         overlay.classList.add('show');
