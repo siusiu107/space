@@ -1616,6 +1616,12 @@
       toastTimer = setTimeout(hideToast, ttlMs);
     }
 
+    window.addEventListener('shop-open-error', (event) => {
+      const detail = event?.detail || {};
+      const msg = detail.message || '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
+      showToast(msg, null, null, 3600);
+    });
+
     function maybeNotifyGuestRemoval() {
       if (!pendingGuestRemovalNotice || !bootDone) return;
       showToast('👋 게스트 데이터가 삭제되었어요. 로그인한 계정으로 안전하게 플레이를 이어가세요!', null, null, 4200);
@@ -4462,6 +4468,14 @@
       const closeBtn = document.getElementById('shop-close');
       if (!overlay || !frame) return;
 
+      function emitShopError(message){
+        try {
+          window.dispatchEvent(new CustomEvent('shop-open-error', { detail: { message } }));
+        } catch {
+          try { alert(message); } catch {}
+        }
+      }
+
       function ensureShopLoaded(){
         const current = frame.getAttribute('src');
         if (!current || current === 'about:blank') {
@@ -4473,32 +4487,82 @@
         const targetUrl = SHOP_URL;
         const ua = (navigator.userAgent || '').toLowerCase();
         let attempted = false;
+        let stopWatch = null;
+
+        const monitorFailure = () => {
+          if (!window.__IS_EMBEDDED_APP || stopWatch) return;
+          let resolved = false;
+          const onVisibility = () => {
+            if (document.visibilityState === 'hidden') {
+              resolved = true;
+              cleanup();
+            }
+          };
+          document.addEventListener('visibilitychange', onVisibility);
+          const timer = setTimeout(() => {
+            if (!resolved) {
+              cleanup();
+              emitShopError('크롬에서 공식 상점을 열 수 없습니다. 설치 또는 외부 브라우저 허용 상태를 확인해주세요.');
+            }
+          }, 2000);
+          function cleanup(){
+            document.removeEventListener('visibilitychange', onVisibility);
+            clearTimeout(timer);
+            stopWatch = null;
+          }
+          stopWatch = cleanup;
+        };
+
+        const markAttempted = () => {
+          attempted = true;
+          monitorFailure();
+        };
+
+        const tryAndroidBridge = () => {
+          try {
+            if (window.AndroidBridge) {
+              const candidates = ['openChrome', 'openExternalUrl', 'openExternal', 'openBrowser', 'openUrl'];
+              for (const key of candidates) {
+                if (typeof window.AndroidBridge[key] === 'function') {
+                  window.AndroidBridge[key](targetUrl);
+                  markAttempted();
+                  return true;
+                }
+              }
+            }
+          } catch {}
+          return false;
+        };
+
+        if (tryAndroidBridge()) return;
 
         try {
           if (/android/.test(ua)) {
-            const sanitized = targetUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-            const intentUrl = `intent://${sanitized}/#Intent;scheme=https;package=com.android.chrome;end`;
+            const urlObj = new URL(targetUrl);
+            const sanitized = `${urlObj.host}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+            const scheme = (urlObj.protocol || 'https:').replace(':', '') || 'https';
+            const intentUrl = `intent://${sanitized}#Intent;scheme=${scheme};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(targetUrl)};end`;
             window.location.href = intentUrl;
-            attempted = true;
+            markAttempted();
           } else if (/(iphone|ipad|ipod)/.test(ua)) {
             const chromeUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
             window.location.href = chromeUrl;
-            attempted = true;
-            setTimeout(() => {
-              try { window.location.href = targetUrl; } catch {}
-            }, 350);
+            markAttempted();
           }
         } catch {}
 
         if (!attempted) {
           try {
-            window.open(targetUrl, '_blank', 'noopener,noreferrer');
-            attempted = true;
+            const popup = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+            if (popup) {
+              attempted = true;
+            }
           } catch {}
         }
 
         if (!attempted) {
-          try { window.location.href = targetUrl; } catch {}
+          stopWatch?.();
+          emitShopError('공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.');
         }
       }
 
