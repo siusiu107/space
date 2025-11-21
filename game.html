@@ -4574,15 +4574,34 @@
     // 네이티브 WebView에서 전달받은 Google ID 토큰으로 Firebase 인증
     window.onNativeGoogleLogin = async function(idToken) {
       showAuthStatus('');
+
+      // 1) 토큰 들어왔는지 먼저 체크
+      console.log('[native] onNativeGoogleLogin called', idToken);
+      if (!idToken) {
+        showAuthStatus('앱에서 로그인 토큰을 받지 못했습니다 (idToken 없음)', false);
+        alert('네이티브에서 idToken이 전달되지 않았습니다.');
+        return;
+      }
+
       guestTransferPreference = 'none';
       const credential = GoogleAuthProvider.credential(idToken);
+
       try {
-        await signInWithCredential(auth, credential);
-        console.log('네이티브 구글 로그인 성공');
+        const userCred = await signInWithCredential(auth, credential);
+        console.log('[native] Firebase signInWithCredential OK', userCred.user?.uid);
+
+        showAuthStatus('구글 로그인 성공! 잠시 후 게임으로 이동합니다.', true);
+        // 여기서 필요하면 로그인 창 닫고 게임 화면 강제 갱신
+        // e.g. authContainer 숨기기, wireGame 재호출 등
       } catch (e) {
-        if (handleAuthError(e)) return;
-        console.error('네이티브 구글 로그인 실패', e);
-        alert('로그인에 실패했습니다. 다시 시도해 주세요.');
+        console.error('[native] Firebase signInWithCredential ERROR', e);
+
+        const code = e.code || 'unknown';
+        const msg  = e.message || '';
+        showAuthStatus(`네이티브 구글 로그인 에러: ${code}`, false);
+
+        // 에러 내용을 바로 볼 수 있게
+        alert(`네이티브 구글 로그인 에러:\n${code}\n${msg}`);
       }
     };
 
