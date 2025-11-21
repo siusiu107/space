@@ -4605,11 +4605,47 @@
       }
     };
 
+    // 🔥 URL 해시에서 네이티브 구글 로그인 토큰 읽어서 처리
+    async function handleNativeLoginFromHash() {
+      const hash = window.location.hash || '';
+      if (!hash.startsWith('#native-login:')) return;
+
+      try {
+        const encoded = hash.replace('#native-login:', '');
+        const idToken = decodeURIComponent(encoded);
+
+        console.log('[native-hash] idToken from hash', idToken);
+
+        if (!idToken) {
+          showAuthStatus('앱에서 로그인 토큰을 받지 못했습니다 (빈 토큰)', false);
+          return;
+        }
+
+        guestTransferPreference = 'none';
+        const credential = GoogleAuthProvider.credential(idToken);
+
+        const userCred = await signInWithCredential(auth, credential);
+        console.log('[native-hash] Firebase signInWithCredential OK', userCred.user?.uid);
+
+        showAuthStatus('구글 로그인 성공! 잠시 후 게임으로 이동합니다.', true);
+
+        // 한 번 쓰고 나면 해시는 지워줌 (새로고침 시 또 실행 안 되게)
+        window.location.hash = '';
+      } catch (e) {
+        console.error('[native-hash] signInWithCredential ERROR', e);
+        const code = e.code || 'unknown';
+        const msg  = e.message || '';
+        showAuthStatus(`네이티브 구글 로그인 에러: ${code}`, false);
+        alert(`네이티브 구글 로그인 에러:\n${code}\n${msg}`);
+      }
+    }
+
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
       renderBuffStatus();
       renderSecurityBadge();
+      handleNativeLoginFromHash();
     });
 
     setInterval(renderBuffStatus, 1000);
