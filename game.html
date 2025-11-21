@@ -1338,7 +1338,7 @@
       signInWithEmailAndPassword,
       sendEmailVerification,
       GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-      createUserWithEmailAndPassword
+      signInWithCredential, createUserWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
       getDatabase, ref, onValue, runTransaction, update, get
@@ -4538,6 +4538,11 @@
       }
     }, 4000);
 
+    function isAndroidWebView() {
+      const ua = navigator.userAgent || '';
+      return /Android/i.test(ua) && /; wv\)/i.test(ua);
+    }
+
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       guestTransferPreference = 'none';
@@ -4546,6 +4551,12 @@
         guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
       }
       const provider = new GoogleAuthProvider();
+
+      if (isAndroidWebView()) {
+        window.location.href = 'app://google-login';
+        return;
+      }
+
       try {
         await signInWithPopup(auth, provider);
       } catch (err) {
@@ -4559,6 +4570,21 @@
         guestTransferPreference = 'none';
       }
     });
+
+    // 네이티브 WebView에서 전달받은 Google ID 토큰으로 Firebase 인증
+    window.onNativeGoogleLogin = async function(idToken) {
+      showAuthStatus('');
+      guestTransferPreference = 'none';
+      const credential = GoogleAuthProvider.credential(idToken);
+      try {
+        await signInWithCredential(auth, credential);
+        console.log('네이티브 구글 로그인 성공');
+      } catch (e) {
+        if (handleAuthError(e)) return;
+        console.error('네이티브 구글 로그인 실패', e);
+        alert('로그인에 실패했습니다. 다시 시도해 주세요.');
+      }
+    };
 
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
