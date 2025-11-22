@@ -1344,7 +1344,7 @@
       signInWithEmailAndPassword,
       sendEmailVerification,
       GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-      signInWithCredential, createUserWithEmailAndPassword
+      createUserWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
       getDatabase, ref, onValue, runTransaction, update, get
@@ -4544,11 +4544,6 @@
       }
     }, 4000);
 
-    function isAndroidWebView() {
-      const ua = navigator.userAgent || '';
-      return /Android/i.test(ua) && /; wv\)/i.test(ua);
-    }
-
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       guestTransferPreference = 'none';
@@ -4557,11 +4552,6 @@
         guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
       }
       const provider = new GoogleAuthProvider();
-
-      if (isAndroidWebView()) {
-        window.location.href = 'app://google-login';
-        return;
-      }
 
       try {
         await signInWithPopup(auth, provider);
@@ -4577,80 +4567,11 @@
       }
     });
 
-    // 네이티브 WebView에서 전달받은 Google ID 토큰으로 Firebase 인증 + 강제 새로고침
-    window.onNativeGoogleLogin = async function (idToken) {
-      showAuthStatus('');
-
-      console.log('[native] onNativeGoogleLogin called', idToken);
-      if (!idToken) {
-        showAuthStatus('앱에서 로그인 토큰을 받지 못했습니다 (idToken 없음)', false);
-        alert('앱에서 로그인 토큰을 받지 못했습니다.');
-        return;
-      }
-
-      guestTransferPreference = 'none';
-      const credential = GoogleAuthProvider.credential(idToken);
-
-      try {
-        const userCred = await signInWithCredential(auth, credential);
-        console.log('[native] Firebase signInWithCredential OK', userCred.user?.uid);
-
-        showAuthStatus('구글 로그인 성공! 잠시 후 게임으로 이동합니다.', true);
-
-        // ✅ 여기서 페이지를 원래 주소로 강제 새로고침
-        //    (기존 onAuthStateChanged / boot 로직 그대로 다시 타게)
-        const cleanUrl = window.location.origin + window.location.pathname;
-        window.location.replace(cleanUrl);
-      } catch (e) {
-        console.error('[native] Firebase signInWithCredential ERROR', e);
-        const code = e.code || 'unknown';
-        const msg  = e.message || '';
-        showAuthStatus(`네이티브 구글 로그인 에러: ${code}`, false);
-        alert(`네이티브 구글 로그인 에러:\n${code}\n${msg}`);
-      }
-    };
-
-    // 🔥 URL 해시에서 네이티브 구글 로그인 토큰 읽어서 처리
-    async function handleNativeLoginFromHash() {
-      const hash = window.location.hash || '';
-      if (!hash.startsWith('#native-login:')) return;
-
-      try {
-        const encoded = hash.replace('#native-login:', '');
-        const idToken = decodeURIComponent(encoded);
-
-        console.log('[native-hash] idToken from hash', idToken);
-
-        if (!idToken) {
-          showAuthStatus('앱에서 로그인 토큰을 받지 못했습니다 (빈 토큰)', false);
-          return;
-        }
-
-        guestTransferPreference = 'none';
-        const credential = GoogleAuthProvider.credential(idToken);
-
-        const userCred = await signInWithCredential(auth, credential);
-        console.log('[native-hash] Firebase signInWithCredential OK', userCred.user?.uid);
-
-        showAuthStatus('구글 로그인 성공! 잠시 후 게임으로 이동합니다.', true);
-
-        // 한 번 쓰고 나면 해시는 지워줌 (새로고침 시 또 실행 안 되게)
-        window.location.hash = '';
-      } catch (e) {
-        console.error('[native-hash] signInWithCredential ERROR', e);
-        const code = e.code || 'unknown';
-        const msg  = e.message || '';
-        showAuthStatus(`네이티브 구글 로그인 에러: ${code}`, false);
-        alert(`네이티브 구글 로그인 에러:\n${code}\n${msg}`);
-      }
-    }
-
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
       else window.__DEFER_INIT = wireGame;
       renderBuffStatus();
       renderSecurityBadge();
-      handleNativeLoginFromHash();
     });
 
     setInterval(renderBuffStatus, 1000);
