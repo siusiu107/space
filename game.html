@@ -130,6 +130,9 @@
       backdrop-filter: blur(6px);
       transition: transform .36s cubic-bezier(.2,.9,.3,1), opacity .28s ease, visibility .28s;
       display:none;
+      max-height: min(92vh, 760px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     #auth-container.hidden { opacity:0; transform: translate(-50%, -46%) scale(.98); pointer-events:none; visibility:hidden; }
     #auth-container h2 { margin:0 0 12px; font-size:20px; color:#e8faff; letter-spacing:0.2px; }
@@ -165,6 +168,9 @@
       box-shadow:0 24px 70px rgba(0,0,0,0.55);
       padding:18px 20px 20px;
       display:flex; flex-direction:column; gap:14px; color:#e8f6ff;
+      max-height: min(92vh, 820px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     #policy-overlay .policy-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
     #policy-overlay .policy-header h3 { margin:0; font-size:18px; color:#f0fbff; }
