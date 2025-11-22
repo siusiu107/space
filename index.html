@@ -72,17 +72,51 @@
     .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
     .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
 
-    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
-    .overlay h1 { font-size: 64px; text-shadow: 0 0 10px rgba(244,180,0,0.8); margin-bottom: 20px; }
+    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; width: min(700px, 95%); }
+    .loading-card {
+      background: linear-gradient(135deg, rgba(10, 14, 34, 0.92), rgba(19, 22, 42, 0.9));
+      border: 1px solid rgba(244, 180, 0, 0.25);
+      border-radius: 18px;
+      padding: 28px 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      position: relative;
+      overflow: hidden;
+    }
+    .loading-card::before {
+      content: '';
+      position: absolute;
+      inset: -40% auto auto 10%;
+      width: 120%; height: 160%;
+      background: radial-gradient(circle at 20% 30%, rgba(255, 200, 64, 0.25), transparent 40%),
+                  radial-gradient(circle at 80% 20%, rgba(100, 180, 255, 0.2), transparent 45%);
+      filter: blur(8px);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .loading-card h1 { font-size: 42px; text-shadow: 0 0 20px rgba(244,180,0,0.6); margin-bottom: 10px; position: relative; z-index: 1; }
+    .loading-sub { color: #cfd3ff; opacity: .9; font-size: 15px; margin-bottom: 24px; letter-spacing: .2px; position: relative; z-index: 1; }
+    .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.08); color: #f4e9ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; position: relative; z-index: 1; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ffdd57; box-shadow: 0 0 12px rgba(255,221,87,0.9); animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.3); opacity: .45; } 100% { transform: scale(1); opacity: .9; } }
+    .progress-shell { position: relative; z-index: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 6px; margin-bottom: 14px; }
+    .progress-track { position: relative; height: 16px; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.35); }
+    .progress-fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, #f4b400, #ffdd57, #7cf7ff); transition: width 0.12s ease-out; box-shadow: 0 0 20px rgba(255,234,0,0.5); }
+    .progress-info { display: flex; justify-content: space-between; align-items: center; color: #fdf5d9; font-size: 13px; letter-spacing: .2px; margin-top: 6px; }
+    .loading-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 16px 0 20px; position: relative; z-index: 1; }
+    .chip { border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 12px; color: #e8eeff; font-size: 12px; text-align: center; letter-spacing: .3px; }
     .overlay a.start-btn {
-      display: inline-block; padding: 16px 32px; font-size: 20px;
-      background: linear-gradient(45deg, #f4b400, #ffea00); color: #000; text-decoration: none;
-      border-radius: 50px; box-shadow: 0 0 15px rgba(244,180,0,0.7);
-      transition: box-shadow 0.3s, transform 0.2s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 16px 36px; font-size: 18px; font-weight: 700; letter-spacing: .5px;
+      background: linear-gradient(120deg, #ffdf64, #f4b400 45%, #ff9f1c);
+      color: #000; text-decoration: none;
+      border-radius: 14px; box-shadow: 0 14px 35px rgba(244,180,0,0.45);
+      transition: box-shadow 0.25s, transform 0.2s, filter 0.2s;
       user-drag: none;
       -webkit-user-drag: none;
+      position: relative; z-index: 1;
     }
-    .overlay a.start-btn:hover { box-shadow: 0 0 25px rgba(255,234,0,0.9); transform: translateY(-5px); }
+    .overlay a.start-btn:hover { box-shadow: 0 18px 40px rgba(255,234,0,0.5); transform: translateY(-3px); }
+    .overlay a.start-btn.locked { pointer-events: none; filter: grayscale(0.7) brightness(0.7); box-shadow: none; cursor: not-allowed; }
 
     .panel {
       position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
@@ -137,8 +171,10 @@
       }
       .sidebar button { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
 
-      .overlay h1 { font-size: 28px; }
-      .overlay a.start-btn { padding: 9px 16px; font-size: 15px; border-radius: 18px; }
+      .loading-card { padding: 20px; }
+      .loading-card h1 { font-size: 28px; }
+      .loading-sub { font-size: 13px; margin-bottom: 16px; }
+      .overlay a.start-btn { padding: 12px 18px; font-size: 15px; border-radius: 12px; }
 
       /* 배지 더 작게 + 우하단 */
       #env-badge {
@@ -199,9 +235,26 @@
 
     <div class="content">
       <div class="overlay">
-        <h1>태양계정복</h1>
-        <!-- 드래그 방지 -->
-        <a href="game.html" id="start-btn" class="start-btn" draggable="false">게임 시작</a>
+        <div class="loading-card">
+          <div class="status-badge"><span class="status-dot"></span> Launching</div>
+          <h1>태양계정복 준비 중</h1>
+          <p class="loading-sub">행성 모듈을 온라인에 올리고 있습니다. 잠시만 기다려 주세요.</p>
+          <div class="progress-shell" aria-live="polite">
+            <div class="progress-track"><div id="progress-fill" class="progress-fill" aria-hidden="true"></div></div>
+            <div class="progress-info">
+              <span id="progress-status">시스템 부팅 중...</span>
+              <strong id="progress-percent">0%</strong>
+            </div>
+          </div>
+          <div class="loading-grid">
+            <div class="chip">행성 터널 초기화</div>
+            <div class="chip">자원 스트림 연결</div>
+            <div class="chip">조종 인터페이스 동기화</div>
+            <div class="chip">안전 프로토콜 인증</div>
+          </div>
+          <!-- 드래그 방지 -->
+          <a href="game.html" id="start-btn" class="start-btn locked" draggable="false" data-loading="true">게임 준비 중...</a>
+        </div>
       </div>
 
       <!-- 팝업 차단 안내 토스트 -->
@@ -240,6 +293,61 @@
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const startBtn = document.getElementById('start-btn');
+      const fillEl = document.getElementById('progress-fill');
+      const percentEl = document.getElementById('progress-percent');
+      const statusEl = document.getElementById('progress-status');
+
+      if (!startBtn || !fillEl || !percentEl || !statusEl) return;
+
+      const duration = (Math.random() * 5 + 6) * 1000; // 6~11초
+      const milestones = [
+        { pct: 0.18, text: '행성 항로 계산 중...' },
+        { pct: 0.42, text: '중력 보정 알고리즘 적용...' },
+        { pct: 0.65, text: '함선 에너지 캡슐 충전...' },
+        { pct: 0.82, text: '탑승 크루 체크인...' },
+        { pct: 1, text: '준비 완료! 발사 대기 중' }
+      ];
+
+      startBtn.classList.add('locked');
+      startBtn.dataset.loading = 'true';
+      startBtn.setAttribute('aria-disabled', 'true');
+
+      const started = performance.now();
+
+      function resolveStatus(ratio) {
+        const target = milestones.find(m => ratio <= m.pct) || milestones[milestones.length - 1];
+        return target.text;
+      }
+
+      function unlock() {
+        startBtn.classList.remove('locked');
+        startBtn.dataset.loading = 'false';
+        startBtn.removeAttribute('aria-disabled');
+        startBtn.textContent = '게임 시작';
+      }
+
+      function tick(now) {
+        const ratio = Math.min(1, (now - started) / duration);
+        const pct = Math.round(ratio * 100);
+
+        fillEl.style.width = `${pct}%`;
+        percentEl.textContent = `${pct}%`;
+        statusEl.textContent = resolveStatus(ratio);
+
+        if (ratio >= 1) {
+          unlock();
+          return;
+        }
+        requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    })();
+  </script>
 
   <!-- 환경 배지 & 연결정보 패널 -->
   <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
@@ -490,6 +598,10 @@
       startBtn.addEventListener('dragstart', function (e) { e.preventDefault(); });
 
       startBtn.addEventListener('click', function (e) {
+        if (startBtn.dataset.loading === 'true' || startBtn.classList.contains('locked')) {
+          e.preventDefault();
+          return;
+        }
         // Ctrl / Cmd / Shift / 가운데버튼 전부 무시
         if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) {
           e.preventDefault();
