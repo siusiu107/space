@@ -794,5 +794,54 @@
       }
     })();
   </script>
+
+  <script>
+    (function () {
+      const MY_HOST = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
+
+      function isInternal(url) {
+        try {
+          const u = new URL(url, window.location.href);
+
+          if (!u.host) return true;
+          if (u.host === window.location.host) return true;
+          if (u.host === MY_HOST) return true;
+
+          return false;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      function openExternal(url) {
+        if (
+          window.swingWebViewPlugin &&
+          swingWebViewPlugin.app &&
+          swingWebViewPlugin.app.methods &&
+          typeof swingWebViewPlugin.app.methods.doExternalOpen === 'function'
+        ) {
+          swingWebViewPlugin.app.methods.doExternalOpen(url);
+          return;
+        }
+
+        window.open(url, '_blank');
+      }
+
+      document.addEventListener('click', function (e) {
+        const a = e.target.closest('a');
+        if (!a) return;
+
+        const href = a.getAttribute('href');
+        if (!href) return;
+
+        if (isInternal(href)) {
+          return;
+        }
+
+        e.preventDefault();
+        openExternal(href);
+      });
+    })();
+  </script>
 </body>
 </html>
