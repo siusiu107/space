@@ -4762,16 +4762,11 @@
       }
 
       function openShopOverlay(){
-        if (isWebAppDisplayMode()) {
-          try { window.open(SHOP_URL, '_blank', 'noopener,noreferrer'); }
-          catch { location.href = SHOP_URL; }
-          return;
+        try {
+          window.open(SHOP_URL, '_blank', 'noopener,noreferrer');
+        } catch {
+          location.href = SHOP_URL;
         }
-        ensureShopLoaded();
-        try { hideAllOverlays(); } catch {}
-        overlay.classList.add('show');
-        overlay.setAttribute('aria-hidden', 'false');
-        try { closeBtn?.focus?.(); } catch {}
       }
 
       function closeShopOverlay(){
