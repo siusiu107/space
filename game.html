@@ -5,10 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>🌌 태양계 정복: 우주 생존 클릭커 🌌</title>
 
-  <!-- 최초 접속 시 /login으로 한번만 라우팅 -->
+  <!-- 최초 접속 시 /login으로 한번만 라우팅 (웹뷰/임베디드 앱은 주소 변경 생략) -->
   <script>
+    const __isEmbeddedApp__ = (() => {
+      try {
+        const ua = (navigator.userAgent || '').toLowerCase();
+        if (ua.includes('; wv') || ua.includes(' wv)') || ua.includes('wv)') || /\bwv\b/.test(ua)) return true;
+        if (/(iphone|ipad|ipod).+applewebkit(?!.*safari)/i.test(navigator.userAgent || '')) return true;
+        if (window.ReactNativeWebView || window.flutter_inappwebview || window.AndroidBridge) return true;
+        if (window.Capacitor && window.Capacitor.isNativePlatform) return true;
+        if (window.webkit && window.webkit.messageHandlers) return true;
+      } catch {}
+      return false;
+    })();
+
     try {
-      if (!sessionStorage.getItem('pmode_init')) {
+      if (!__isEmbeddedApp__ && !sessionStorage.getItem('pmode_init')) {
         history.replaceState(null, '', '/login' + (location.hash || ''));
         sessionStorage.setItem('pmode_init', '1');
       }
