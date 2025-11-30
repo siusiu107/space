@@ -4597,17 +4597,17 @@
         currentCode = data.code;
         areaEl.style.display = 'block';
         codeEl.textContent = currentCode;
-        statusEl.textContent = '코드를 복사하고, 열리는 로그인 화면에서 구글 로그인을 완료하세요.';
+        statusEl.textContent = '코드를 복사하고, 3초 후 열릴 로그인 화면에서 구글 로그인을 완료하세요.';
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(currentCode).then(() => {
-            statusEl.textContent = '코드가 클립보드에 복사되었습니다. 로그인 화면에서 자동으로 열립니다.';
+            statusEl.textContent = '코드가 클립보드에 복사되었습니다. 3초 후 로그인 화면이 자동으로 열립니다.';
           }).catch(() => {
           });
         }
 
         const loginUrl = AUTH_BASE_URL + '/login.html?code=' + encodeURIComponent(currentCode);
-        window.open(loginUrl, '_blank');
+        setTimeout(() => window.open(loginUrl, '_blank'), 3000);
 
         startPollingLoginStatus();
       } catch (err) {
