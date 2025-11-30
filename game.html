@@ -4026,111 +4026,34 @@
 
     const LOGIN_PROMPT_MESSAGE = '랭킹이랑 우편함등 로그인이 필요한 서비스는 로그인후 사용 가능합니다! 로그인 하시겠습니까?';
     const GUEST_OVERWRITE_PROMPT = '이 기기에 저장된 게스트 데이터가 있습니다. 로그인하면 계정 데이터에 덮어쓰시겠습니까? 확인을 누르면 덮어쓰기, 취소를 누르면 기존 데이터를 유지합니다.';
-    const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
 
-    let originalGoogleLoginHandler = null;
-    let currentCode = null;
-    let pollTimer = null;
-
-    function isAppWebView() {
-      const ua = (navigator.userAgent || '').toLowerCase();
-      const params = new URLSearchParams(window.location.search);
-      const fromAppParam = params.get('app') === '1';
-
-      const isAndroidWebView =
-        ua.includes('wv') || (ua.includes('version/') && ua.includes('android'));
-
-      const isAppilix = ua.includes('appilix');
-
-      return fromAppParam || isAndroidWebView || isAppilix;
-    }
-
-    async function startAppWebViewCodeLogin() {
-      try {
-        const res = await fetch(AUTH_BASE_URL + '/api/login-start', {
-          method: 'POST'
-        });
-        const data = await res.json();
-
-        if (!data || !data.code) {
-          alert('로그인 코드를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.');
-          return;
-        }
-
-        currentCode = data.code;
-
-        const codeArea = document.getElementById('codeArea');
-        const codeDisplay = document.getElementById('codeDisplay');
-        const codeStatus = document.getElementById('codeStatus');
-
-        if (codeArea && codeDisplay && codeStatus) {
-          codeArea.style.display = 'block';
-          codeDisplay.textContent = currentCode;
-          codeStatus.textContent = '코드가 복사되었습니다. 곧 브라우저에서 로그인 화면이 열립니다.';
-        }
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          try {
-            await navigator.clipboard.writeText(currentCode);
-          } catch (e) {
-            console.warn('클립보드 복사 실패:', e);
-          }
-        }
-
-        const loginUrl = AUTH_BASE_URL + '/login.html?code=' + encodeURIComponent(currentCode);
-        window.location.href = loginUrl;
-
-      } catch (err) {
-        console.error(err);
-        alert('로그인 코드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      }
-    }
-
-    function attachGoogleLoginHook() {
+    function setupGoogleLoginButton() {
       const btn = document.getElementById('google-btn');
-      if (!btn) return;
+      if (!btn || btn.dataset.googleHooked === '1') return;
 
-      if (!originalGoogleLoginHandler) {
-        originalGoogleLoginHandler = async (event) => {
-          showAuthStatus('');
-          guestTransferPreference = 'none';
-          if (hasGuestProfile()) {
-            const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
-            guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
-          }
-          const provider = new GoogleAuthProvider();
-
-          try {
-            await signInWithPopup(auth, provider);
-          } catch (err) {
-            if (handleAuthError(err)) return;
-            try {
-              await signInWithRedirect(auth, provider);
-            } catch (err2) {
-              if (handleAuthError(err2)) return;
-              showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
-            }
-            guestTransferPreference = 'none';
-          }
-        };
-      }
-
-      if (btn.dataset.googleHooked === '1') return;
       btn.dataset.googleHooked = '1';
 
-      btn.addEventListener('click', (event) => {
-        const inApp = isAppWebView();
-
-        if (!inApp) {
-          if (typeof originalGoogleLoginHandler === 'function') {
-            originalGoogleLoginHandler(event);
-          }
-          return;
+      btn.addEventListener('click', async () => {
+        showAuthStatus('');
+        guestTransferPreference = 'none';
+        if (hasGuestProfile()) {
+          const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
+          guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
         }
+        const provider = new GoogleAuthProvider();
 
-        event.preventDefault();
-        event.stopPropagation();
-        startAppWebViewCodeLogin();
+        try {
+          await signInWithPopup(auth, provider);
+        } catch (err) {
+          if (handleAuthError(err)) return;
+          try {
+            await signInWithRedirect(auth, provider);
+          } catch (err2) {
+            if (handleAuthError(err2)) return;
+            showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
+          }
+          guestTransferPreference = 'none';
+        }
       });
     }
 
@@ -4669,7 +4592,7 @@
       }
     }, 4000);
 
-    document.addEventListener('DOMContentLoaded', attachGoogleLoginHook);
+    document.addEventListener('DOMContentLoaded', setupGoogleLoginButton);
 
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
@@ -6562,6 +6485,93 @@
         openExternal(href);
       }, true); // 캡처 단계에서 먼저 처리
     })();
+  </script>
+
+  <script type="module">
+    // WebView(Appilix) 환경 감지
+    function isAppWebView() {
+      const ua = (navigator.userAgent || '').toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      const fromAppParam = params.get('app') === '1';
+
+      const isAndroidWebView =
+        ua.includes('wv') || (ua.includes('version/') && ua.includes('android'));
+
+      const isAppilix = ua.includes('appilix');
+
+      return fromAppParam || isAndroidWebView || isAppilix;
+    }
+
+    // 로그인 서버 주소
+    const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
+
+    let currentCode = null;
+
+    // 앱 전용 코드 로그인 시작
+    async function startAppCodeLogin() {
+      try {
+        // 1) 코드 발급 요청
+        const res = await fetch(AUTH_BASE_URL + '/api/login-start', {
+          method: 'POST'
+        });
+        const data = await res.json();
+
+        if (!data || !data.code) {
+          alert('로그인 코드를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
+
+        currentCode = data.code;
+
+        const codeArea    = document.getElementById('codeArea');
+        const codeDisplay = document.getElementById('codeDisplay');
+        const codeStatus  = document.getElementById('codeStatus');
+
+        if (codeArea && codeDisplay && codeStatus) {
+          codeArea.style.display = 'block';
+          codeDisplay.textContent = currentCode;
+          codeStatus.textContent =
+            '앱 전용 로그인 코드가 발급되었습니다. 잠시 후 로그인 화면이 열립니다.';
+        }
+
+        // 2) 코드 클립보드 복사 시도 (실패해도 그냥 무시)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(currentCode);
+          } catch (e) {
+            console.warn('클립보드 복사 실패:', e);
+          }
+        }
+
+        // 3) 코드가 포함된 로그인 페이지로 이동
+        // Appilix 설정에 의해 이 URL은 외부 브라우저에서 열릴 것이라고 가정
+        const loginUrl = AUTH_BASE_URL + '/login.html?code=' + encodeURIComponent(currentCode);
+        window.location.href = loginUrl;
+
+      } catch (err) {
+        console.error(err);
+        alert('로그인 코드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnCodeLogin = document.getElementById('btnCodeLogin');
+      if (!btnCodeLogin) return;
+
+      // 버튼 텍스트는 이미 "앱 전용"이라고 표시되어 있다고 가정
+      btnCodeLogin.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // 웹뷰가 아니면 경고만 띄우고 막기
+        if (!isAppWebView()) {
+          alert('이 기능은 앱(WebView) 전용입니다. 앱에서 실행할 때만 사용해주세요.');
+          return;
+        }
+
+        // 웹뷰일 때만 코드 로그인 플로우 실행
+        await startAppCodeLogin();
+      });
+    });
   </script>
 </body>
 </html>
