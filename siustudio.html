@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SIU Studio - 게임 개발자 소개</title>
+  <meta name="description" content="태양계정복을 만든 1인 인디 게임 개발자 SIU Studio의 소개 페이지입니다. 우주 생존 클릭커를 비롯한 작품과 개발 철학을 확인하세요.">
+  <meta name="keywords" content="SIU Studio, siustudio, 인디게임 개발자, 태양계정복, 소개">
+  <meta name="author" content="SIU Studio">
+  <meta property="og:title" content="SIU Studio - 게임 개발자 소개">
+  <meta property="og:description" content="태양계정복을 만든 SIU Studio의 비전과 개발 이야기를 만나보세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="background.jpg">
+  <meta property="og:url" content="https://xn--989a202a4ogwtc69p.siustudio.me/siustudio.html">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 20% 20%, rgba(255, 184, 0, 0.16), transparent 30%),
+             radial-gradient(circle at 80% 10%, rgba(124, 247, 255, 0.16), transparent 35%),
+             linear-gradient(135deg, #060814 0%, #0c1028 50%, #03060f 100%);
+      --card: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f7f8ff;
+      --muted: #cdd3f5;
+      --accent: #ffdf64;
+      --glow: rgba(255, 223, 100, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+    }
+
+    a { color: inherit; }
+
+    .wrap {
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 clamp(18px, 3vw, 28px) 64px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 0;
+    }
+
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 0.8px;
+      font-size: clamp(20px, 3vw, 26px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo span {
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .cta {
+      padding: 11px 16px;
+      border-radius: 12px;
+      background: linear-gradient(120deg, #ffdf64, #f4b400 50%, #ff9f1c);
+      color: #0c0c14;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(244, 180, 0, 0.45);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255, 223, 100, 0.5); }
+
+    main { flex: 1; }
+
+    .hero {
+      margin-top: 20px;
+      padding: clamp(22px, 4vw, 32px);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      display: grid;
+      grid-template-columns: minmax(260px, 2fr) minmax(200px, 1fr);
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: -40% -30% auto auto;
+      background: radial-gradient(circle at 50% 50%, var(--glow), transparent 60%);
+      transform: rotate(10deg);
+      pointer-events: none;
+    }
+
+    .subtitle { color: var(--muted); margin: 6px 0 16px; }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .tag {
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat .label { color: var(--muted); font-size: 13px; }
+    .stat .value { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; }
+
+    .pill { padding: 6px 10px; border-radius: 10px; background: rgba(255, 223, 100, 0.12); color: #ffe9a6; font-size: 12px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .card {
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 18px;
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h2 { margin: 0 0 12px; font-size: 20px; }
+    .card p { margin: 8px 0 12px; color: var(--muted); }
+
+    .list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+    .list li {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .timeline { border-left: 2px solid rgba(255, 255, 255, 0.1); padding-left: 12px; }
+    .timeline .year { font-weight: 700; color: var(--accent); }
+
+    .contact {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .contact .list li { align-items: center; }
+
+    footer {
+      padding: 14px clamp(18px, 3vw, 28px) 24px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(0, 0, 0, 0.4);
+      margin-top: 32px;
+    }
+
+    @media (max-width: 860px) {
+      .nav { flex-direction: column; align-items: flex-start; }
+      .hero { grid-template-columns: 1fr; }
+      .contact { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <div class="logo">SIU Studio <span>since 2023</span></div>
+      <a class="cta" href="main.html">🎮 게임으로 돌아가기</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="tags">
+          <span class="tag">1인 인디 개발</span>
+          <span class="tag">웹/모바일 멀티 플랫폼</span>
+          <span class="tag">우주 클릭커 · 시뮬레이션</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(30px, 4vw, 38px);">게임 개발자 SIU Studio</h1>
+        <p class="subtitle">"단순한 조작과 눈에 띄는 몰입감으로 더 많은 사람이 우주 여행을 즐길 수 있게 만들자"는 목표로, 태양계정복을 비롯한 다양한 인터랙티브 경험을 만들고 있습니다. 데이터 기반 밸런싱, 직관적인 UI, 가벼운 접근성을 추구합니다.</p>
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="label">대표작</span>
+            <span class="value">태양계정복</span>
+          </div>
+          <div class="stat">
+            <span class="label">주요 분야</span>
+            <span class="value">웹 · HTML5 · JavaScript</span>
+          </div>
+          <div class="stat">
+            <span class="label">사이드 연구</span>
+            <span class="value">게이미피케이션 · 접근성</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>개발 철학</h2>
+        <p>작은 아이디어라도 끝까지 다듬어 <strong>완성</strong>시키는 것을 가장 중요하게 생각합니다. 반복적인 플레이를 견디는 탄탄한 진행 구조, 감정선을 자극하는 음악·연출, 소셜 공유에 잘 어울리는 UI를 설계합니다.</p>
+        <ul class="list">
+          <li><span class="pill">Focus</span> 핵심 재미를 빠르게 전달하는 미니 루프 설계</li>
+          <li><span class="pill">Polish</span> 반복 플레이에도 지치지 않는 피드백 효과와 사운드</li>
+          <li><span class="pill">Trust</span> 이용자 피드백 기반 패치와 투명한 로그 공개</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="projects">
+      <div class="card">
+        <h2>대표 게임 & 프로젝트</h2>
+        <ul class="list">
+          <li>
+            <div>
+              <strong>태양계정복</strong> · 우주 생존 클릭커
+              <p>단계별로 발전하는 행성 정복 루프, 직관적인 터치 조작, 가벼운 웹 빌드로 누구나 바로 시작할 수 있는 것이 특징입니다.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>모바일용 경량 HTML 게임 실험</strong>
+              <p>기기 성능에 따라 애니메이션 밀도를 조절하고, 네트워크 지연을 고려한 로컬 우선 설계 연구를 진행하고 있습니다.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>게임 리텐션 도구 개발</strong>
+              <p>플레이 데이터 기반으로 튜토리얼 난이도와 보상 타이밍을 조정하는 내부 스크립트를 만들어 반복 실험 중입니다.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>기술 스택</h2>
+        <ul class="list">
+          <li><span class="pill">Front-end</span> JavaScript, HTML5 Canvas, CSS 애니메이션</li>
+          <li><span class="pill">Tools</span> Git, Webpack 번들링, 게임 사운드 디자인</li>
+          <li><span class="pill">DX</span> 자동화된 빌드 파이프라인, 단위 테스트 실험</li>
+          <li><span class="pill">Community</span> 피드백 폼, 플레이 로그 기반 업데이트</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="history">
+      <div class="card timeline">
+        <h2>연혁</h2>
+        <ul class="list">
+          <li><span class="pill year">2024</span> 태양계정복 정식 공개 및 랭킹 시스템 고도화</li>
+          <li><span class="pill year">2023</span> 우주 생존 클릭커 프로토타입 제작, 웹 퍼포먼스 최적화</li>
+          <li><span class="pill year">2022</span> 개인 스튜디오 SIU Studio 설립, 소규모 HTML 게임 제작</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>연락 · 협업</h2>
+        <p>새로운 아이디어나 협업 제안, 버그 제보를 언제든 환영합니다. 작은 피드백도 다음 업데이트를 만드는 큰 힘이 됩니다.</p>
+        <div class="contact">
+          <ul class="list">
+            <li><span class="pill">Email</span> contact@siustudio.me</li>
+            <li><span class="pill">Feedback</span> 메인 페이지 문의 링크 또는 게임 내 제보 기능</li>
+          </ul>
+          <ul class="list">
+            <li><span class="pill">Social</span> 커뮤니티 채널을 통해 개발 로그와 패치 공유 예정</li>
+            <li><span class="pill">Navigation</span> <a href="main.html" class="cta" style="padding: 8px 12px; box-shadow: none;">게임으로 이동</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © SIU Studio. 태양계정복을 즐겨주셔서 감사합니다. 앞으로도 더 나은 우주를 만들겠습니다.
+  </footer>
+</body>
+</html>
