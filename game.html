@@ -1015,6 +1015,12 @@
       <span class="g-text">구글로 계속하기 <small>(권장)</small></span>
     </button>
 
+    <div id="codeArea" style="display:none; margin-top: 8px;">
+      <p id="codeStatus" style="font-size: 0.9rem; color: #aaa; margin-bottom: 4px;"></p>
+      <div id="codeDisplay"
+           style="font-size: 24px; font-weight: bold; letter-spacing: 3px;"></div>
+    </div>
+
     <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
       <a id="find-pw" href="find.html" style="flex:1; max-width:320px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600;">비밀번호 찾기</a>
     </div>
@@ -1350,7 +1356,7 @@
 
   <!-- Firebase + 게임 로직 -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
     import {
       getAuth, onAuthStateChanged,
       signInWithEmailAndPassword,
@@ -1372,7 +1378,7 @@
       appId: "1:830887143444:web:70b45fc12140e893c31f01",
       measurementId: "G-1Y090YJDB6"
     };
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
@@ -4020,6 +4026,113 @@
 
     const LOGIN_PROMPT_MESSAGE = '랭킹이랑 우편함등 로그인이 필요한 서비스는 로그인후 사용 가능합니다! 로그인 하시겠습니까?';
     const GUEST_OVERWRITE_PROMPT = '이 기기에 저장된 게스트 데이터가 있습니다. 로그인하면 계정 데이터에 덮어쓰시겠습니까? 확인을 누르면 덮어쓰기, 취소를 누르면 기존 데이터를 유지합니다.';
+    const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
+
+    let originalGoogleLoginHandler = null;
+    let currentCode = null;
+    let pollTimer = null;
+
+    function isAppWebView() {
+      const ua = (navigator.userAgent || '').toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      const fromAppParam = params.get('app') === '1';
+
+      const isAndroidWebView =
+        ua.includes('wv') || (ua.includes('version/') && ua.includes('android'));
+
+      const isAppilix = ua.includes('appilix');
+
+      return fromAppParam || isAndroidWebView || isAppilix;
+    }
+
+    async function startAppWebViewCodeLogin() {
+      try {
+        const res = await fetch(AUTH_BASE_URL + '/api/login-start', {
+          method: 'POST'
+        });
+        const data = await res.json();
+
+        if (!data || !data.code) {
+          alert('로그인 코드를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
+
+        currentCode = data.code;
+
+        const codeArea = document.getElementById('codeArea');
+        const codeDisplay = document.getElementById('codeDisplay');
+        const codeStatus = document.getElementById('codeStatus');
+
+        if (codeArea && codeDisplay && codeStatus) {
+          codeArea.style.display = 'block';
+          codeDisplay.textContent = currentCode;
+          codeStatus.textContent = '코드가 복사되었습니다. 곧 브라우저에서 로그인 화면이 열립니다.';
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(currentCode);
+          } catch (e) {
+            console.warn('클립보드 복사 실패:', e);
+          }
+        }
+
+        const loginUrl = AUTH_BASE_URL + '/login.html?code=' + encodeURIComponent(currentCode);
+        window.location.href = loginUrl;
+
+      } catch (err) {
+        console.error(err);
+        alert('로그인 코드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }
+
+    function attachGoogleLoginHook() {
+      const btn = document.getElementById('google-btn');
+      if (!btn) return;
+
+      if (!originalGoogleLoginHandler) {
+        originalGoogleLoginHandler = async (event) => {
+          showAuthStatus('');
+          guestTransferPreference = 'none';
+          if (hasGuestProfile()) {
+            const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
+            guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
+          }
+          const provider = new GoogleAuthProvider();
+
+          try {
+            await signInWithPopup(auth, provider);
+          } catch (err) {
+            if (handleAuthError(err)) return;
+            try {
+              await signInWithRedirect(auth, provider);
+            } catch (err2) {
+              if (handleAuthError(err2)) return;
+              showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
+            }
+            guestTransferPreference = 'none';
+          }
+        };
+      }
+
+      if (btn.dataset.googleHooked === '1') return;
+      btn.dataset.googleHooked = '1';
+
+      btn.addEventListener('click', (event) => {
+        const inApp = isAppWebView();
+
+        if (!inApp) {
+          if (typeof originalGoogleLoginHandler === 'function') {
+            originalGoogleLoginHandler(event);
+          }
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        startAppWebViewCodeLogin();
+      });
+    }
 
     function showLoginScreen() {
       hideAllOverlays();
@@ -4556,28 +4669,7 @@
       }
     }, 4000);
 
-    document.getElementById('google-btn').addEventListener('click', async () => {
-      showAuthStatus('');
-      guestTransferPreference = 'none';
-      if (hasGuestProfile()) {
-        const wantsOverwrite = confirm(GUEST_OVERWRITE_PROMPT);
-        guestTransferPreference = wantsOverwrite ? 'overwrite' : 'skip';
-      }
-      const provider = new GoogleAuthProvider();
-
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (err) {
-        if (handleAuthError(err)) return;
-        try {
-          await signInWithRedirect(auth, provider);
-        } catch (err2) {
-          if (handleAuthError(err2)) return;
-          showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
-        }
-        guestTransferPreference = 'none';
-      }
-    });
+    document.addEventListener('DOMContentLoaded', attachGoogleLoginHook);
 
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
