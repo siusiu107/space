@@ -1015,6 +1015,20 @@
       <span class="g-text">구글로 계속하기 <small>(권장)</small></span>
     </button>
 
+    <button id="btnGoogleLoginCode" aria-label="구글 코드 로그인(앱 전용)" class="google-btn" type="button">
+      <span class="g-icon" aria-hidden="true">🔑</span>
+      <span class="g-text">구글 로그인(코드) <small>앱(WebView) 전용</small></span>
+    </button>
+
+    <div id="codeArea" style="display:none; margin-top: 8px;">
+      <p id="codeInfoText" style="font-size: 0.9rem; color: #ccc;">
+        앱 전용 코드 로그인을 준비 중입니다...
+      </p>
+      <div id="codeDisplay"
+           style="font-size: 32px; font-weight: bold; letter-spacing: 3px;"></div>
+      <p id="codeStatus" style="font-size: 0.9rem; color: #aaa;"></p>
+    </div>
+
     <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
       <a id="find-pw" href="find.html" style="flex:1; max-width:320px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.12); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)); color:#fff; font-weight:600;">비밀번호 찾기</a>
     </div>
@@ -1355,7 +1369,7 @@
       getAuth, onAuthStateChanged,
       signInWithEmailAndPassword,
       sendEmailVerification,
-      GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInWithCustomToken,
       createUserWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
     import {
@@ -1375,6 +1389,11 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getDatabase(app);
+
+    const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
+
+    let currentCode = null;
+    let pollTimer = null;
 
     class SessionLogger {
       constructor() {
@@ -4556,6 +4575,101 @@
       }
     }, 4000);
 
+    async function startCodeLoginFlow() {
+      const infoEl = document.getElementById('codeInfoText');
+      const codeEl = document.getElementById('codeDisplay');
+      const statusEl = document.getElementById('codeStatus');
+      const areaEl = document.getElementById('codeArea');
+
+      if (!infoEl || !codeEl || !statusEl || !areaEl) {
+        console.warn('code login elements not found');
+        return;
+      }
+
+      infoEl.textContent = '이 기능은 앱(WebView)에서 외부 브라우저로 로그인할 때 쓰는 옵션입니다.';
+
+      try {
+        const res = await fetch(AUTH_BASE_URL + '/api/login-start', {
+          method: 'POST'
+        });
+        const data = await res.json();
+
+        currentCode = data.code;
+        areaEl.style.display = 'block';
+        codeEl.textContent = currentCode;
+        statusEl.textContent = '코드를 복사하고, 열리는 로그인 화면에서 구글 로그인을 완료하세요.';
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(currentCode).then(() => {
+            statusEl.textContent = '코드가 클립보드에 복사되었습니다. 로그인 화면에서 자동으로 열립니다.';
+          }).catch(() => {
+          });
+        }
+
+        const loginUrl = AUTH_BASE_URL + '/login.html?code=' + encodeURIComponent(currentCode);
+        window.open(loginUrl, '_blank');
+
+        startPollingLoginStatus();
+      } catch (err) {
+        console.error(err);
+        alert('코드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }
+
+    function startPollingLoginStatus() {
+      if (!currentCode) return;
+      if (pollTimer) clearInterval(pollTimer);
+
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch(
+            AUTH_BASE_URL + '/api/login-status?code=' + encodeURIComponent(currentCode)
+          );
+          const data = await res.json();
+
+          const statusEl = document.getElementById('codeStatus');
+          if (!statusEl) return;
+
+          if (data.status === 'pending') {
+            statusEl.textContent = '로그인을 기다리는 중입니다...';
+          } else if (data.status === 'done') {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            statusEl.textContent = '로그인 완료! 계정 연결 중...';
+
+            if (data.customToken) {
+              try {
+                await signInWithCustomToken(auth, data.customToken);
+                statusEl.textContent =
+                  '로그인되었습니다! 게임을 계속 진행할 수 있습니다.';
+              } catch (err) {
+                console.error(err);
+                statusEl.textContent =
+                  'Firebase 로그인 중 오류가 발생했습니다. 다시 시도해주세요.';
+              }
+            } else {
+              statusEl.textContent = '토큰 정보가 없습니다. 다시 시도해주세요.';
+            }
+          } else if (data.status === 'expired') {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            statusEl.textContent = '코드가 만료되었습니다. 다시 시도해주세요.';
+          } else if (data.status === 'not_found') {
+            statusEl.textContent = '코드를 찾을 수 없습니다. 다시 시도해주세요.';
+          } else {
+            statusEl.textContent = '알 수 없는 상태입니다: ' + data.status;
+          }
+        } catch (err) {
+          console.error(err);
+          const statusEl = document.getElementById('codeStatus');
+          if (statusEl) {
+            statusEl.textContent =
+              '서버와 통신 중 오류가 발생했습니다. 잠시 후 다시 확인됩니다...';
+          }
+        }
+      }, 3000);
+    }
+
     document.getElementById('google-btn').addEventListener('click', async () => {
       showAuthStatus('');
       guestTransferPreference = 'none';
@@ -4578,6 +4692,11 @@
         guestTransferPreference = 'none';
       }
     });
+
+    const btnCode = document.getElementById('btnGoogleLoginCode');
+    if (btnCode) {
+      btnCode.addEventListener('click', startCodeLoginFlow);
+    }
 
     window.addEventListener('load', () => {
       if (window.__PLAY_ALLOWED) wireGame();
