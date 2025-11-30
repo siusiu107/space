@@ -4750,7 +4750,23 @@
         }
       }
 
+      function isWebAppDisplayMode(){
+        const modes = ['standalone', 'minimal-ui', 'fullscreen'];
+        try {
+          if (navigator.standalone) return true;
+        } catch {}
+        return modes.some((mode) => {
+          try { return window.matchMedia(`(display-mode: ${mode})`).matches; }
+          catch { return false; }
+        });
+      }
+
       function openShopOverlay(){
+        if (isWebAppDisplayMode()) {
+          try { window.open(SHOP_URL, '_blank', 'noopener,noreferrer'); }
+          catch { location.href = SHOP_URL; }
+          return;
+        }
         ensureShopLoaded();
         try { hideAllOverlays(); } catch {}
         overlay.classList.add('show');
