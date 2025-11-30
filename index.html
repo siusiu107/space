@@ -910,8 +910,8 @@
   <script>
     (function () {
       // 내부 도메인 규칙
-      const INTERNAL_HOST_SUFFIX = '.siustudio.kro.kr';      // *.siustudio.kro.kr
-      const MAIN_HOST = 'xn--989a202a4ogwtc69p.siustudio.kro.kr';
+      const INTERNAL_HOST_SUFFIX = '.siustudio.me';      // *.siustudio.me
+      const MAIN_HOST = 'xn--989a202a4ogwtc69p.siustudio.me';
 
       function isInternal(url) {
         try {
@@ -926,7 +926,7 @@
           // 메인 punycode 호스트
           if (u.host === MAIN_HOST) return true;
 
-            // *.siustudio.kro.kr 전부 내부로 취급
+            // *.siustudio.me 전부 내부로 취급
           if (u.host.endsWith(INTERNAL_HOST_SUFFIX)) return true;
 
           // 그 외는 모두 외부
