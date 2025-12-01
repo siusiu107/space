@@ -20,6 +20,11 @@
     })();
 
     try {
+      document.documentElement.dataset.embeddedApp = __isEmbeddedApp__ ? '1' : '0';
+      window.__IS_EMBEDDED_APP = __isEmbeddedApp__;
+    } catch {}
+
+    try {
       if (!__isEmbeddedApp__ && !sessionStorage.getItem('pmode_init')) {
         history.replaceState(null, '', '/login' + (location.hash || ''));
         sessionStorage.setItem('pmode_init', '1');
@@ -212,6 +217,9 @@
     .google-btn .g-icon { display:inline-flex; align-items:center; justify-content:center; }
     .google-btn .g-text { display:inline-flex; align-items:center; gap:6px; font-size:14px; }
     .google-btn small { font-weight:600; color:#666; font-size:11px; }
+    html[data-embedded-app="1"] #google-btn { display:none !important; }
+    html[data-embedded-app="0"] #btnGoogleLoginCode,
+    html[data-embedded-app="0"] #codeArea { display:none !important; }
 
     @media (max-width:420px){ #auth-container{ padding:16px; } .google-btn{ width:100%; } }
 
@@ -4826,11 +4834,27 @@
       return false;
     }
 
-    const isEmbeddedApp = isEmbeddedContainer();
+    const isEmbeddedApp =
+      typeof window.__IS_EMBEDDED_APP === 'boolean'
+        ? window.__IS_EMBEDDED_APP
+        : isEmbeddedContainer();
+
     window.__IS_EMBEDDED_APP = isEmbeddedApp;
+    try { document.documentElement.dataset.embeddedApp = isEmbeddedApp ? '1' : '0'; } catch {}
 
     if (isEmbeddedApp && customDownloadItem) {
       customDownloadItem.remove();
+    }
+
+    const googleBtn = document.getElementById('google-btn');
+    const googleCodeBtn = document.getElementById('btnGoogleLoginCode');
+    const googleCodeArea = document.getElementById('codeArea');
+
+    if (isEmbeddedApp) {
+      if (googleBtn) googleBtn.style.display = 'none';
+    } else {
+      if (googleCodeBtn) googleCodeBtn.style.display = 'none';
+      if (googleCodeArea) googleCodeArea.style.display = 'none';
     }
 
     const handleContextMenu = (e) => {
