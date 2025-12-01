@@ -533,42 +533,6 @@
     }
     #mail-compose-send:hover{ filter:brightness(1.05); }
 
-    /* ===== 상점 오버레이 ===== */
-    #shop-overlay{
-      position:fixed; inset:0; z-index:3650;
-      display:none; align-items:center; justify-content:center;
-      background:linear-gradient(180deg, rgba(4,8,16,0.58), rgba(4,8,16,0.82));
-      backdrop-filter:blur(7px);
-      padding:20px;
-    }
-    #shop-overlay.show{ display:flex; }
-    #shop-overlay .shop-card{
-      width:min(960px,96vw); height:min(720px,92vh);
-      background:linear-gradient(180deg, rgba(18,24,36,0.95), rgba(8,12,22,0.97));
-      border:1px solid rgba(160,210,255,0.18);
-      border-radius:18px;
-      box-shadow:0 30px 70px rgba(0,0,0,0.52);
-      padding:18px 20px;
-      display:flex; flex-direction:column; gap:14px;
-      color:#e6f7ff;
-    }
-    #shop-overlay .shop-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
-    #shop-overlay h3{ margin:0; font-size:18px; color:#f0fbff; }
-    #shop-overlay p{ margin:0; font-size:13px; color:#bed9f5; }
-    #shop-close{
-      border:none; border-radius:8px; padding:6px 12px;
-      background:rgba(0,0,0,0.25); color:#d9f2ff; font-weight:600; cursor:pointer;
-      transition:background .18s ease;
-    }
-    #shop-close:hover{ background:rgba(0,0,0,0.38); }
-    #shop-frame{
-      flex:1 1 auto; width:100%; border:none; border-radius:12px;
-      background:#ffffff; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);
-    }
-    @media (max-width:720px){
-      #shop-overlay .shop-card{ padding:16px; border-radius:14px; }
-      #shop-frame{ border-radius:10px; }
-    }
     @media (max-width:720px){
       #mail-card{ max-height:94vh; }
       #mail-list{ max-height:240px; }
@@ -1142,12 +1106,11 @@
   </div>
 
   <!-- 커스텀 메뉴 -->
-  <div id="custom-menu">
-    <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
-    <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
-    <div class="menu-item" data-action="shop"><span>🛒 공식 상점</span></div>
-    <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
-    <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
+    <div id="custom-menu">
+      <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
+      <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
+      <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
+      <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
     <div class="menu-item" data-action="mail">
       <span>✉️ 우편함</span>
       <span class="count-badge hidden" id="mail-unread-badge">0</span>
@@ -1166,7 +1129,6 @@
     <nav class="side-items">
       <button class="side-item" data-action="menu"><span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span></button>
       <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
-      <button class="side-item" data-action="shop"><span class="icon">🛒</span><span>공식 상점</span></button>
       <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
       <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
       <button class="side-item" data-action="mail">
@@ -1240,17 +1202,6 @@
         </div>
         <button id="mail-compose-send" type="button">📨 우편 발송</button>
       </div>
-    </div>
-  </div>
-
-  <div id="shop-overlay" aria-hidden="true">
-    <div class="shop-card" role="dialog" aria-modal="true" aria-labelledby="shop-title">
-      <div class="shop-head">
-        <h3 id="shop-title">🛒 공식 상점</h3>
-        <button id="shop-close" aria-label="상점 닫기">✕</button>
-      </div>
-      <p>페이앱 결제 모듈을 통해 이벤트코인 등을 구매할 수 있습니다.</p>
-      <iframe id="shop-frame" title="태양계 정복 공식 상점" loading="lazy" src="about:blank" allow="payment *"></iframe>
     </div>
   </div>
 
@@ -1742,33 +1693,6 @@
         }
       });
     }
-
-    window.addEventListener('shop-open-error', (event) => {
-      const detail = event?.detail || {};
-      const msg = detail.message || '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
-      const manualMessage = detail.copyUrl ? (detail.manualMessage || '크롬에서 다음 사이트로 이동하세요') : null;
-      const toastMessage = manualMessage ? `${msg}\n${manualMessage}` : msg;
-
-      const copyAction = detail.copyUrl ? () => {
-        copyTextToClipboard(detail.copyUrl)
-          .then(() => {
-            showToast('상점 주소를 복사했습니다. 크롬에서 붙여넣어 이동해주세요!', null, null, 3600);
-          })
-          .catch(() => {
-            try {
-              prompt('아래 주소를 길게 눌러 복사한 뒤 크롬 주소창에 붙여넣으세요.', detail.copyUrl);
-            } catch {}
-          });
-      } : null;
-
-      showToast(toastMessage, detail.copyUrl ? '주소 복사' : null, copyAction, detail.copyUrl ? 8000 : 3600);
-
-      if (manualMessage && detail.alert !== false) {
-        try {
-          alert(`${manualMessage}\n${detail.copyUrl}`);
-        } catch {}
-      }
-    });
 
     function maybeNotifyGuestRemoval() {
       if (!pendingGuestRemovalNotice || !bootDone) return;
@@ -4722,81 +4646,6 @@
     }
   </script>
 
-  <script>
-    (function(){
-      const SHOP_URL = 'https://shop.태양계정복.siustudio.me/';
-      const overlay = document.getElementById('shop-overlay');
-      const frame = document.getElementById('shop-frame');
-      const closeBtn = document.getElementById('shop-close');
-      if (!overlay || !frame) return;
-
-      function emitShopError(info, extraDetail = null){
-        let detail = {};
-        if (typeof info === 'string') {
-          detail.message = info;
-        } else if (info && typeof info === 'object') {
-          detail = { ...info };
-        }
-        if (extraDetail && typeof extraDetail === 'object') {
-          detail = { ...detail, ...extraDetail };
-        }
-        if (!detail.message) {
-          detail.message = '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
-        }
-        try {
-          window.dispatchEvent(new CustomEvent('shop-open-error', { detail }));
-        } catch {
-          const fallbackMessage = detail.manualMessage || detail.message;
-          try { alert(detail.copyUrl ? `${fallbackMessage}\n${detail.copyUrl}` : fallbackMessage); } catch {}
-        }
-      }
-
-      function ensureShopLoaded(){
-        const current = frame.getAttribute('src');
-        if (!current || current === 'about:blank') {
-          frame.setAttribute('src', SHOP_URL);
-        }
-      }
-
-      function isWebAppDisplayMode(){
-        const modes = ['standalone', 'minimal-ui', 'fullscreen'];
-        try {
-          if (navigator.standalone) return true;
-        } catch {}
-        return modes.some((mode) => {
-          try { return window.matchMedia(`(display-mode: ${mode})`).matches; }
-          catch { return false; }
-        });
-      }
-
-      function openShopOverlay(){
-        try {
-          window.open(SHOP_URL, '_blank', 'noopener,noreferrer');
-        } catch {
-          location.href = SHOP_URL;
-        }
-      }
-
-      function closeShopOverlay(){
-        overlay.classList.remove('show');
-        overlay.setAttribute('aria-hidden', 'true');
-      }
-
-      closeBtn?.addEventListener('click', closeShopOverlay);
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) closeShopOverlay();
-      });
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && overlay.classList.contains('show')) {
-          closeShopOverlay();
-        }
-      });
-
-      window.openShopOverlay = openShopOverlay;
-      window.closeShopOverlay = closeShopOverlay;
-    })();
-  </script>
-
   <!-- 우클릭 커스텀 메뉴 -->
   <script>
     const customMenu = document.getElementById('custom-menu');
@@ -4884,10 +4733,6 @@
         const proceed = confirm('앱 다운로드를 위해 onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
         if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
       }
-      if (action === 'shop') {
-        customMenu.style.display='none';
-        try { window.openShopOverlay && window.openShopOverlay(); } catch {}
-      }
       if (action === 'resume')   { customMenu.style.display='none'; }
       if (action === 'rank')     {
         customMenu.style.display='none';
@@ -4943,7 +4788,6 @@
           const proceed = confirm('앱 다운로드를 위해 m.onestore.co.kr 으로 이동합니다. 계속하시겠습니까?');
           if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
         }
-        if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
         if (action === 'rank')     { if (requireLoginForFeature()) { location.href='/ranking.html'; } }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
