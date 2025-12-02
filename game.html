@@ -430,7 +430,49 @@
     }
     #daily-title{ margin:0 0 8px; font-size:18px; display:flex; justify-content:space-between; align-items:center; gap:6px; }
     #daily-info{ margin:6px 0 10px; font-size:12px; color:#cfe6ff; min-height:36px; }
+    #slot-access-info{ margin:4px 0 10px; font-size:11px; color:#a8dcff; line-height:1.5; }
     #daily-actions{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
+
+    /* 퀘스트 오버레이 */
+    #quest-overlay{
+      position:fixed; inset:0; z-index:3600;
+      display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(4,8,16,0.55), rgba(4,8,16,0.78));
+      backdrop-filter: blur(6px);
+      opacity:0; pointer-events:none; transition:opacity .22s ease;
+      padding:18px;
+    }
+    #quest-overlay.show{ opacity:1; pointer-events:auto; }
+    #quest-card{
+      width:min(680px, 96vw);
+      background: linear-gradient(180deg, rgba(18,24,36,0.95), rgba(10,16,28,0.96));
+      border:1px solid rgba(160,210,255,0.18);
+      border-radius:18px;
+      box-shadow:0 26px 60px rgba(0,0,0,0.45);
+      color:#e6f4ff;
+      display:flex; flex-direction:column; gap:12px;
+      padding:18px 20px 20px;
+      max-height:92vh;
+    }
+    #quest-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    #quest-head h3{ margin:0; font-size:20px; }
+    #quest-close{ border:none; background:rgba(255,255,255,0.08); color:#f2fbff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:14px; }
+    #quest-close:hover{ background:rgba(255,255,255,0.15); }
+    .quest-tabbar{ display:flex; gap:8px; }
+    .qtab{ flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#dff2ff; font-weight:700; cursor:pointer; }
+    .qtab.active{ background:linear-gradient(120deg, rgba(0,214,255,0.18), rgba(0,122,255,0.24)); border-color:rgba(0,214,255,0.45); color:#001018; text-shadow:0 1px 10px rgba(0,214,255,0.35); }
+    #quest-panels{ display:flex; flex-direction:column; gap:12px; }
+    .quest-panel{ display:none; flex-direction:column; gap:10px; }
+    .quest-panel.active{ display:flex; }
+    .quest-desc{ margin:0; color:#cfe6ff; font-size:13px; }
+    .quest-list{ display:flex; flex-direction:column; gap:10px; }
+    .quest-item{ padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.10); background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); }
+    .quest-item.done{ border-color:rgba(0,214,255,0.40); box-shadow:0 0 0 1px rgba(0,214,255,0.12); }
+    .quest-title{ font-weight:800; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .quest-progress{ position:relative; margin-top:8px; background:rgba(255,255,255,0.08); height:12px; border-radius:999px; overflow:hidden; }
+    .quest-bar{ position:absolute; inset:0; width:0%; background:linear-gradient(90deg, #00c6ff, #7cf7ff); box-shadow:0 0 14px rgba(0,214,255,0.45); }
+    .quest-numbers{ margin-top:6px; color:#c5e6ff; font-size:12px; display:flex; justify-content:space-between; align-items:center; }
+    .quest-summary{ padding:10px 12px; background:rgba(255,255,255,0.06); border-radius:12px; border:1px solid rgba(255,255,255,0.08); color:#e9f6ff; font-size:13px; }
 
     /* ===== 우편함 오버레이 ===== */
     #mail-overlay{
@@ -1142,19 +1184,23 @@
   </div>
 
   <!-- 커스텀 메뉴 -->
-  <div id="custom-menu">
-    <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
-    <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
-    <div class="menu-item" data-action="shop"><span>🛒 공식 상점</span></div>
-    <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
-    <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
-    <div class="menu-item" data-action="mail">
-      <span>✉️ 우편함</span>
-      <span class="count-badge hidden" id="mail-unread-badge">0</span>
-    </div>
-    <div class="menu-item" data-action="attendance">
-      <span>📅 출석 보상</span>
-      <span id="attendance-left">-</span>
+    <div id="custom-menu">
+      <div class="menu-item" data-action="menu"><span>🎮 게임 메뉴로 돌아가기</span></div>
+      <div class="menu-item" data-action="download"><span>⬇️ 앱 다운로드</span></div>
+      <div class="menu-item" data-action="shop"><span>🛒 공식 상점</span></div>
+      <div class="menu-item" data-action="resume"><span>▶️ 게임 계속하기</span></div>
+      <div class="menu-item" data-action="rank"><span>🏆 랭킹 보기</span></div>
+      <div class="menu-item" data-action="mail">
+        <span>✉️ 우편함</span>
+        <span class="count-badge hidden" id="mail-unread-badge">0</span>
+      </div>
+      <div class="menu-item" data-action="quests">
+        <span>🗒️ 퀘스트</span>
+        <span class="count-badge hidden" id="quest-badge">!</span>
+      </div>
+      <div class="menu-item" data-action="attendance">
+        <span>📅 출석 보상</span>
+        <span id="attendance-left">-</span>
     </div>
   </div>
 
@@ -1172,6 +1218,10 @@
       <button class="side-item" data-action="mail">
         <span><span class="icon">✉️</span>우편함</span>
         <span class="side-right" id="mail-unread-side">-</span>
+      </button>
+      <button class="side-item" data-action="quests">
+        <span><span class="icon">🗒️</span>퀘스트</span>
+        <span class="side-right" id="quest-status-side">-</span>
       </button>
       <button class="side-item" data-action="attendance">
         <span><span class="icon">📅</span>출석 보상</span>
@@ -1264,11 +1314,12 @@
 
       <div class="tabbar">
         <button class="tbtn active" data-mode="daily">출석 슬롯(무료/일1회)</button>
-        <button class="tbtn" data-mode="premium">프리미엄 슬롯(이벤트코인 1)</button>
-        <button class="tbtn" data-mode="ecoin">이벤트코인 슬롯(10)</button>
+        <button class="tbtn" data-mode="premium">프리미엄 슬롯(일일 퀘스트)</button>
+        <button class="tbtn" data-mode="ecoin">이벤트코인 슬롯(주간 퀘스트)</button>
       </div>
 
       <div id="daily-info">확인 중…</div>
+      <div id="slot-access-info"></div>
 
       <div id="slot-wrap">
         <div class="slot-window">
@@ -1278,8 +1329,8 @@
 
       <div id="mode-row">
         <button id="spin-daily"   class="spinbtn spin-free">무료 출석 돌리기</button>
-        <button id="spin-premium" class="spinbtn spin-prem">프리미엄 돌리기(-EC 1)</button>
-        <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 돌리기(-EC 10)</button>
+        <button id="spin-premium" class="spinbtn spin-prem">프리미엄 돌리기(일일 퀘스트)</button>
+        <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 돌리기(주간 퀘스트)</button>
       </div>
 
       <div id="prob-panel"></div>
@@ -1303,6 +1354,32 @@
       <div id="migrate-progress">대기 중…</div>
       <div id="migrate-actions">
         <button id="migrate-start">마이그레이션 시작</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗒️ 퀘스트 오버레이 -->
+  <div id="quest-overlay" aria-hidden="true">
+    <div id="quest-card" role="dialog" aria-modal="true" aria-labelledby="quest-title">
+      <div id="quest-head">
+        <h3 id="quest-title">🗒️ 퀘스트</h3>
+        <button id="quest-close" aria-label="퀘스트 닫기">✕</button>
+      </div>
+      <div class="quest-tabbar">
+        <button class="qtab active" data-qtab="daily">일일 퀘스트</button>
+        <button class="qtab" data-qtab="weekly">주간 퀘스트</button>
+      </div>
+      <div id="quest-panels">
+        <div class="quest-panel active" data-panel="daily">
+          <p class="quest-desc">매일 00:00(KST) 초기화 · 성장도에 따라 목표가 상승하며 모든 과제를 완료하면 <b>프리미엄 슬롯</b> 1회가 열립니다.</p>
+          <div id="quest-daily-list" class="quest-list"></div>
+          <div class="quest-summary" id="quest-daily-summary"></div>
+        </div>
+        <div class="quest-panel" data-panel="weekly">
+          <p class="quest-desc">매주 일요일 12:00(KST) 초기화 · 성장도가 높을수록 목표가 커지며 모든 과제를 완료하면 <b>이벤트코인 슬롯</b> 1회가 열립니다.</p>
+          <div id="quest-weekly-list" class="quest-list"></div>
+          <div class="quest-summary" id="quest-weekly-summary"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2339,6 +2416,7 @@
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
       workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
+      quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
     };
     function writeGuestProfile(profile) {
@@ -2405,6 +2483,7 @@
       const inc = count * coinMul * perkCoinMul;
       state.coins += inc;
       auditGain('coin', inc);
+      applyQuestProgress('convert', count);
       playSfx('sfx-coin');
       return true;
     }
@@ -2698,6 +2777,131 @@
       return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
     }
 
+    const BASE_DAILY_QUESTS = [
+      { id:'collect_res',  title:'자원 800 채집',             unit:'res',    target:800 },
+      { id:'convert_ore',  title:'자원 변환(자동 포함) 15회', unit:'convert', target:15 },
+      { id:'hire_workers', title:'알바 2명 고용',             unit:'worker',  target:2 }
+    ];
+    const BASE_WEEKLY_QUESTS = [
+      { id:'earn_coin',     title:'코인 15,000 획득',        unit:'coin',   target:15000 },
+      { id:'upgrade_ship',  title:'우주선 2회 업그레이드',  unit:'ship',   target:2 },
+      { id:'explore_planet', title:'새 행성 1개 정복',       unit:'planet', target:1 }
+    ];
+
+    function computeQuestDifficultySnapshot(kind){
+      const planets     = state.ownedPlanets?.length || 0;
+      const ship        = Math.max(1, state.shipLevel || 1);
+      const workers     = state.workerCount || 0;
+      const converters  = state.conversionCount || 0;
+      const auto        = state.autoConvertBought ? 1 : 0;
+      const wealthScore = Math.log10(Math.max(1, (state.coins||0) + (state.resources||0)));
+      let raw = 1 + (workers * 0.05) + (converters * 0.08) + (ship * 0.12) + (planets * 0.28) + (auto * 0.25) + (wealthScore * 0.18);
+      if (kind === 'weekly') raw += planets * 0.12 + ship * 0.08 + converters * 0.05;
+      const cap = kind === 'weekly' ? 4.6 : 3.2;
+      return Math.min(cap, raw);
+    }
+
+    function weeklyAnchor(d=new Date()){
+      const t = kstDate(d);
+      const day = t.getDay(); // 0: Sun
+      const anchor = new Date(t);
+      anchor.setHours(12,0,0,0);
+      anchor.setDate(anchor.getDate() - day);
+      if (day === 0 && t < anchor) anchor.setDate(anchor.getDate() - 7);
+      return anchor;
+    }
+    function weeklyKey(d=new Date()){
+      const a = weeklyAnchor(d);
+      const y=a.getFullYear(), m=String(a.getMonth()+1).padStart(2,'0'), day=String(a.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}@12`;
+    }
+    function nextWeeklyReset(d=new Date()){
+      const a = weeklyAnchor(d);
+      const n = new Date(a);
+      n.setDate(a.getDate()+7);
+      return n;
+    }
+
+    function ensureQuestBuckets(){
+      if (!state.quests || typeof state.quests !== 'object') state.quests = {};
+      if (!state.quests.daily || typeof state.quests.daily !== 'object') state.quests.daily = {};
+      if (!state.quests.weekly || typeof state.quests.weekly !== 'object') state.quests.weekly = {};
+      if (!state.quests.daily.progress || typeof state.quests.daily.progress !== 'object') state.quests.daily.progress = {};
+      if (!state.quests.weekly.progress || typeof state.quests.weekly.progress !== 'object') state.quests.weekly.progress = {};
+    }
+    function syncQuestPeriods(){
+      ensureQuestBuckets();
+      const dKey = kstDayKey();
+      const wKey = weeklyKey();
+      if (state.quests.daily.key !== dKey) {
+        state.quests.daily = { key:dKey, progress:{}, completed:false, premiumUsed:false, completedAt:0, difficulty: computeQuestDifficultySnapshot('daily') };
+      }
+      if (state.quests.weekly.key !== wKey) {
+        state.quests.weekly = { key:wKey, progress:{}, completed:false, ecoinUsed:false, completedAt:0, difficulty: computeQuestDifficultySnapshot('weekly') };
+      }
+      if (!state.quests.daily.progress) state.quests.daily.progress = {};
+      if (!state.quests.weekly.progress) state.quests.weekly.progress = {};
+      if (!state.quests.daily.difficulty) state.quests.daily.difficulty = computeQuestDifficultySnapshot('daily');
+      if (!state.quests.weekly.difficulty) state.quests.weekly.difficulty = computeQuestDifficultySnapshot('weekly');
+    }
+    function questDifficulty(kind){
+      syncQuestPeriods();
+      const bucket = state?.quests?.[kind];
+      return Math.max(1, bucket?.difficulty || 1);
+    }
+    function questTasks(kind){
+      const base = kind === 'weekly' ? BASE_WEEKLY_QUESTS : BASE_DAILY_QUESTS;
+      const diff = questDifficulty(kind);
+      return base.map(task => ({
+        ...task,
+        target: Math.max(task.target, Math.round(task.target * diff))
+      }));
+    }
+    function questProgress(kind){ syncQuestPeriods(); return state?.quests?.[kind]?.progress || {}; }
+    function isQuestComplete(kind){
+      const tasks = questTasks(kind);
+      const prog = questProgress(kind);
+      return tasks.every(t => (prog[t.id] || 0) >= t.target);
+    }
+    function questRewardAvailable(kind){
+      syncQuestPeriods();
+      if (kind === 'daily') return isQuestComplete('daily') && !state.quests.daily.premiumUsed;
+      if (kind === 'weekly') return isQuestComplete('weekly') && !state.quests.weekly.ecoinUsed;
+      return false;
+    }
+
+    function applyQuestProgress(kind, amount = 1){
+      syncQuestPeriods();
+      const delta = Math.max(0, Number(amount) || 0);
+      if (!delta) return;
+
+      ['daily','weekly'].forEach(type => {
+        const qs = state.quests[type];
+        if (!qs.progress) qs.progress = {};
+        const tasks = questTasks(type).filter(t => t.unit === kind);
+        if (!tasks.length) return;
+
+        tasks.forEach(task => {
+          const prev = Number(qs.progress?.[task.id] || 0);
+          const next = Math.min(task.target, prev + delta);
+          qs.progress[task.id] = next;
+        });
+
+        const finished = isQuestComplete(type);
+        if (finished && !qs.completed){
+          qs.completed = true;
+          qs.completedAt = Date.now();
+          const msg = type === 'daily'
+            ? '✅ 일일 퀘스트 완료! 프리미엄 슬롯이 열렸어요.'
+            : '🌟 주간 퀘스트 완료! 이벤트코인 슬롯이 열렸어요.';
+          showToast(msg, '바로 보기', () => { try { openQuestOverlay(); } catch {} }, 5200);
+        }
+      });
+
+      renderQuestUI();
+      updateSpinButtons();
+    }
+
     /* ✅ 룰렛용 기본값은 유지하지만, 지금부터는 “현재 코인 기반” 보상이 우선 */
     function calcBaseCoin(){
       const rps = state.workerCount * getWorkerPower();
@@ -2868,6 +3072,20 @@
     const spinDailyBtn   = document.getElementById('spin-daily');
     const spinPremiumBtn = document.getElementById('spin-premium');
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
+    const questOverlay   = document.getElementById('quest-overlay');
+    const questCloseBtn  = document.getElementById('quest-close');
+    const questTabs      = Array.from(document.querySelectorAll('.qtab'));
+    const questPanels    = {
+      daily: document.querySelector('.quest-panel[data-panel="daily"]'),
+      weekly: document.querySelector('.quest-panel[data-panel="weekly"]')
+    };
+    const questDailyList   = document.getElementById('quest-daily-list');
+    const questWeeklyList  = document.getElementById('quest-weekly-list');
+    const questDailySummary= document.getElementById('quest-daily-summary');
+    const questWeeklySummary= document.getElementById('quest-weekly-summary');
+    const questBadge       = document.getElementById('quest-badge');
+    const questSideStatus  = document.getElementById('quest-status-side');
+    const slotAccessInfo   = document.getElementById('slot-access-info');
 
     let dailyCache = null;
     let currentMode = 'daily';
@@ -2906,12 +3124,128 @@
     }
     tabs.forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
 
+    function setQuestTab(tab){
+      questTabs.forEach(b=>b.classList.toggle('active', b.dataset.qtab===tab));
+      Object.entries(questPanels).forEach(([key, panel]) => {
+        if (!panel) return;
+        panel.classList.toggle('active', key === tab);
+      });
+    }
+    questTabs.forEach(b=>b.addEventListener('click', ()=>setQuestTab(b.dataset.qtab)));
+
+    function buildQuestList(kind, container){
+      if (!container) return;
+      const tasks = questTasks(kind);
+      const prog  = questProgress(kind);
+      const rows = tasks.map(task => {
+        const cur = Math.min(task.target, prog[task.id] || 0);
+        const pct = Math.min(100, (cur / task.target) * 100);
+        const done = cur >= task.target;
+        const curText = (task.unit === 'coin' || task.unit === 'res') ? formatKR(Math.floor(cur)) : Math.floor(cur);
+        const targetText = (task.unit === 'coin' || task.unit === 'res') ? formatKR(task.target) : task.target;
+        return `<div class="quest-item ${done?'done':''}">
+          <div class="quest-title">${done ? '✅' : '▫️'} ${task.title}</div>
+          <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div></div>
+          <div class="quest-numbers"><span>${curText} / ${targetText}</span><span>${pct.toFixed(0)}%</span></div>
+        </div>`;
+      }).join('');
+      container.innerHTML = rows || '<div class="quest-item">퀘스트 정보를 불러오지 못했습니다.</div>';
+    }
+
+    function questResetText(kind){
+      const now = kstDate();
+      const resetAt = kind === 'daily' ? nextResetKST(now) : nextWeeklyReset(now);
+      const left = Math.max(0, resetAt - now);
+      const label = kind === 'daily' ? '다음 초기화까지' : '다음 주간 초기화까지';
+      return `${label} ${fmtLeft(left)}`;
+    }
+
+    function renderQuestSummaries(){
+      if (questDailySummary){
+        const ready = questRewardAvailable('daily');
+        const done  = isQuestComplete('daily');
+        const used  = !!state.quests?.daily?.premiumUsed;
+        const msg = ready ? '프리미엄 슬롯 1회 사용 가능!'
+          : done && used ? '프리미엄 슬롯을 오늘 이미 사용했어요.'
+          : '모든 과제를 완료해 프리미엄 슬롯을 열어보세요.';
+        questDailySummary.innerHTML = `${msg}<br>${questResetText('daily')}`;
+      }
+      if (questWeeklySummary){
+        const ready = questRewardAvailable('weekly');
+        const done  = isQuestComplete('weekly');
+        const used  = !!state.quests?.weekly?.ecoinUsed;
+        const msg = ready ? '이벤트코인 슬롯 1회 사용 가능!'
+          : done && used ? '이벤트코인 슬롯을 이번 주 이미 사용했어요.'
+          : '모든 과제를 완료해 이벤트코인 슬롯을 열어보세요.';
+        questWeeklySummary.innerHTML = `${msg}<br>${questResetText('weekly')}`;
+      }
+    }
+
+    function renderQuestBadges(){
+      const dailyReady = questRewardAvailable('daily');
+      const weeklyReady = questRewardAvailable('weekly');
+      if (questBadge){
+        const visible = dailyReady || weeklyReady;
+        questBadge.classList.toggle('hidden', !visible);
+        questBadge.textContent = visible ? '!' : '·';
+      }
+      if (questSideStatus){
+        const label = dailyReady && weeklyReady ? '두 슬롯 준비'
+          : dailyReady ? '프리미엄 준비'
+          : weeklyReady ? '이벤트코인 준비'
+          : '진행 중';
+        questSideStatus.textContent = label;
+      }
+    }
+
+    function renderSlotAccess(){
+      if (!slotAccessInfo) return;
+      const dailyReady = questRewardAvailable('daily');
+      const weeklyReady = questRewardAvailable('weekly');
+      const dailyDone = isQuestComplete('daily');
+      const weeklyDone = isQuestComplete('weekly');
+      const dailyUsed = !!state.quests?.daily?.premiumUsed;
+      const weeklyUsed = !!state.quests?.weekly?.ecoinUsed;
+      const dailyText = dailyReady ? '프리미엄 슬롯 사용 가능 (일일 퀘스트 완료)'
+        : dailyDone && dailyUsed ? '프리미엄 슬롯 오늘 사용 완료'
+        : '프리미엄 슬롯: 일일 퀘스트 완료 필요';
+      const weeklyText = weeklyReady ? '이벤트코인 슬롯 사용 가능 (주간 퀘스트 완료)'
+        : weeklyDone && weeklyUsed ? '이벤트코인 슬롯 이번 주 사용 완료'
+        : '이벤트코인 슬롯: 주간 퀘스트 완료 필요';
+      slotAccessInfo.innerHTML = `${dailyText}<br>${weeklyText}`;
+    }
+
+    function renderQuestUI(){
+      syncQuestPeriods();
+      buildQuestList('daily', questDailyList);
+      buildQuestList('weekly', questWeeklyList);
+      renderQuestSummaries();
+      renderQuestBadges();
+      renderSlotAccess();
+    }
+
+    function openQuestOverlay(){
+      renderQuestUI();
+      setQuestTab('daily');
+      if (!questOverlay) return;
+      questOverlay.classList.add('show');
+      questOverlay.setAttribute('aria-hidden', 'false');
+    }
+    function closeQuestOverlay(){
+      if (!questOverlay) return;
+      questOverlay.classList.remove('show');
+      questOverlay.setAttribute('aria-hidden', 'true');
+    }
+    questCloseBtn?.addEventListener('click', closeQuestOverlay);
+    questOverlay?.addEventListener('click', (e) => { if (e.target === questOverlay) closeQuestOverlay(); });
+    window.openQuestOverlay = openQuestOverlay;
+
     function buildProbPanel(items, mode){
       const total=items.reduce((a,b)=>a+b.w,0)||1;
       const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
       const header = mode==='daily' ? '출석 슬롯 확률'
-                  : mode==='premium' ? '프리미엄 슬롯 확률(EC -1)'
-                  : '이벤트코인 슬롯 확률(EC -10)';
+                  : mode==='premium' ? '프리미엄 슬롯 확률(일일 퀘스트 보상)'
+                  : '이벤트코인 슬롯 확률(주간 퀘스트 보상)';
       probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
     }
     function buildRewardList(items){
@@ -2967,8 +3301,8 @@
     function updateSpinButtons(){
       const locked = isEventLocked();
       const canDaily   = dailyUnlocked && canClaimToday() && !isSpinning;
-      const canPremium = canSpendEC(1)  && !isSpinning;
-      const canEcoin   = canSpendEC(10) && !isSpinning;
+      const canPremium = questRewardAvailable('daily')  && !isSpinning;
+      const canEcoin   = questRewardAvailable('weekly') && !isSpinning;
 
       spinDailyBtn.disabled   = locked || !canDaily;
       spinPremiumBtn.disabled = locked || !canPremium;
@@ -2977,6 +3311,8 @@
       if (locked && dailyInfo){
         dailyInfo.innerHTML = '⚠️ 안전 점검으로 이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
       }
+
+      renderSlotAccess();
     }
 
     async function tryUnlockDaily(){
@@ -3007,14 +3343,20 @@
       }
 
       if (mode==='daily' && !dailyUnlocked) { refreshDailyInfo(false); return; }
-      if (mode==='premium' && !canSpendEC(1)) { dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 1)'; return; }
-      if (mode==='ecoin'   && !canSpendEC(10)){ dailyInfo.innerHTML='이벤트코인이 부족합니다. (필요: 10)'; return; }
+      if (mode==='premium' && !questRewardAvailable('daily')) {
+        dailyInfo.innerHTML='프리미엄 슬롯은 일일 퀘스트 완료 후 하루 1회만 사용할 수 있습니다.';
+        renderSlotAccess();
+        return;
+      }
+      if (mode==='ecoin'   && !questRewardAvailable('weekly')){
+        dailyInfo.innerHTML='이벤트코인 슬롯은 주간 퀘스트 완료 후 주 1회만 사용할 수 있습니다.';
+        renderSlotAccess();
+        return;
+      }
 
       setMode(mode);
       const picked = pickWeighted(activeItems);
       const before = makeDeltaSnapshot();
-      if (mode==='premium') { auditSpend('eco', 1);  state.eventCoins -= 1; }
-      if (mode==='ecoin')   { auditSpend('eco', 10); state.eventCoins -= 10; }
 
       isSpinning = true; updateSpinButtons();
       await spinSlot(activeItems, picked);
@@ -3034,9 +3376,15 @@
           dailyCache = { ...(dailyCache||{}), lastKey: today, streak, unlocked:true };
           dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
         } else {
-          dailyInfo.innerHTML = (mode==='premium')
-            ? `🎉 프리미엄 당첨: <b>${picked.label}</b>`
-            : `🎉 EC 슬롯 당첨: <b>${picked.label}</b>`;
+          if (mode==='premium'){
+            state.quests.daily.premiumUsed = true;
+            dailyInfo.innerHTML = `🎉 프리미엄 당첨: <b>${picked.label}</b><br>일일 퀘스트 보상 사용 완료`;
+          } else {
+            state.quests.weekly.ecoinUsed = true;
+            dailyInfo.innerHTML = `🎉 이벤트코인 슬롯 당첨: <b>${picked.label}</b><br>주간 보상 사용 완료`;
+          }
+          renderQuestUI();
+          save();
         }
       }catch(e){
         console.error(e);
@@ -3311,6 +3659,10 @@
         const bov = document.getElementById('buff-overlay');
         if (bov){ bov.classList.remove('show'); bov.setAttribute('aria-hidden','true'); }
       }catch{}
+      try{
+        const qov = document.getElementById('quest-overlay');
+        if (qov){ qov.classList.remove('show'); qov.setAttribute('aria-hidden','true'); }
+      }catch{}
     }
 
     // === 합법 증감 장부 ===
@@ -3330,6 +3682,8 @@
       const k = kind === 'coins' ? 'coin' : (kind === 'resources' ? 'res' : kind);
       if (!audit.recGain[k]) audit.recGain[k] = 0;
       audit.recGain[k] += Number(amount||0);
+      if (k === 'res') applyQuestProgress('res', amount);
+      if (k === 'coin') applyQuestProgress('coin', amount);
     }
     function auditSpend(kind, amount){
       const k = kind === 'coins' ? 'coin' : (kind === 'resources' ? 'res' : kind);
@@ -3576,6 +3930,7 @@
 
     function renderUIContents() {
       pruneExpiredBuffs();
+      syncQuestPeriods();
       document.getElementById('score').innerText  = `자원: ${formatKR(state.resources)}`;
       document.getElementById('coins').innerText  = `코인: ${formatKR(state.coins)}`;
       document.getElementById('ecoins').innerText = `이벤트코인: ${formatKR(state.eventCoins||0)}`;
@@ -3608,6 +3963,8 @@
       renderSecurityBadge();
       tryUnlockDaily();
       renderBuffStatus();
+      renderQuestUI();
+      updateSpinButtons();
 
       try {
         if (uid) {
@@ -3677,6 +4034,7 @@
             auditSpend('coin', p.cost);
             if (!state.ownedPlanets) state.ownedPlanets = [];
             state.ownedPlanets.push(i);
+            applyQuestProgress('planet', 1);
             save(); updateUI(); renderPlanets();
             if (p.name === '화성' && !rankingUnlocked) {
               rankingUnlocked = true;
@@ -3834,6 +4192,7 @@
         state.coins -= cost;
         auditSpend('coin', cost);
         state.workerCount++;
+        applyQuestProgress('worker', 1);
         save(); updateUI();
         return true;
       });
@@ -3855,6 +4214,7 @@
         auditSpend('coin', cost);
         state.shipLevel++;
         state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
+        applyQuestProgress('ship', 1);
         save(); updateUI(); renderPlanets();
         return true;
       });
@@ -4894,6 +5254,7 @@
         if (requireLoginForFeature()) { location.href='/ranking.html'; }
       }
       if (action === 'mail')     { customMenu.style.display='none'; try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
+      if (action === 'quests')   { customMenu.style.display='none'; try { window.openQuestOverlay && window.openQuestOverlay(); } catch {} }
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
     });
     window.addEventListener('click', e => { if (!customMenu.contains(e.target)) customMenu.style.display='none'; });
@@ -4946,6 +5307,7 @@
         if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
         if (action === 'rank')     { if (requireLoginForFeature()) { location.href='/ranking.html'; } }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
+        if (action === 'quests')   { try { window.openQuestOverlay && window.openQuestOverlay(); } catch {} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
         if (action === 'resume')   { /* 닫기만 */ }
         closeSide();
