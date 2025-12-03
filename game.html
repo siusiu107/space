@@ -2781,7 +2781,6 @@
       { id:'collect_res',   title:'자원 1,200 채집',                unit:'res',    target:1200 },
       { id:'convert_ore',   title:'자원 변환(자동 포함) 25회',      unit:'convert', target:25 },
       { id:'hire_workers',  title:'알바 3명 고용',                  unit:'worker',  target:3 },
-      { id:'check_ranking', title:'랭킹 한번 확인하기(쉬움)',        unit:'rank',    target:1 },
       { id:'ship_upgrade',  title:'우주선 1회 업그레이드(중간)',     unit:'ship',    target:1 }
     ];
     const BASE_WEEKLY_QUESTS = [
@@ -4048,7 +4047,6 @@
               }
               showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{
                 if (!requireLoginForFeature()) return;
-                applyQuestProgress('rank', 1);
                 location.href='/ranking.html';
               });
             }
@@ -5255,7 +5253,6 @@
       if (action === 'resume')   { customMenu.style.display='none'; }
       if (action === 'rank')     {
         customMenu.style.display='none';
-        if (uid) { applyQuestProgress('rank', 1); }
         location.href='/ranking.html';
       }
       if (action === 'mail')     { customMenu.style.display='none'; try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
@@ -5311,7 +5308,6 @@
         }
         if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
         if (action === 'rank')     {
-          if (uid) { applyQuestProgress('rank', 1); }
           location.href='/ranking.html';
         }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
