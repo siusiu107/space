@@ -2778,14 +2778,18 @@
     }
 
     const BASE_DAILY_QUESTS = [
-      { id:'collect_res',  title:'자원 800 채집',             unit:'res',    target:800 },
-      { id:'convert_ore',  title:'자원 변환(자동 포함) 15회', unit:'convert', target:15 },
-      { id:'hire_workers', title:'알바 2명 고용',             unit:'worker',  target:2 }
+      { id:'collect_res',   title:'자원 1,200 채집',                unit:'res',    target:1200 },
+      { id:'convert_ore',   title:'자원 변환(자동 포함) 25회',      unit:'convert', target:25 },
+      { id:'hire_workers',  title:'알바 3명 고용',                  unit:'worker',  target:3 },
+      { id:'check_ranking', title:'랭킹 한번 확인하기(쉬움)',        unit:'rank',    target:1 },
+      { id:'ship_upgrade',  title:'우주선 1회 업그레이드(중간)',     unit:'ship',    target:1 }
     ];
     const BASE_WEEKLY_QUESTS = [
-      { id:'earn_coin',     title:'코인 15,000 획득',        unit:'coin',   target:15000 },
-      { id:'upgrade_ship',  title:'우주선 2회 업그레이드',  unit:'ship',   target:2 },
-      { id:'explore_planet', title:'새 행성 1개 정복',       unit:'planet', target:1 }
+      { id:'earn_coin',      title:'코인 40,000 획득',                unit:'coin',    target:40000 },
+      { id:'upgrade_ship',   title:'우주선 4회 업그레이드',          unit:'ship',    target:4 },
+      { id:'explore_planet', title:'새 행성 2개 정복',               unit:'planet',  target:2 },
+      { id:'bulk_convert',   title:'자원 변환(자동 포함) 120회',     unit:'convert', target:120 },
+      { id:'weekly_ranking', title:'주간 동안 랭킹 3회 확인하기',     unit:'rank',    target:3 }
     ];
 
     function computeQuestDifficultySnapshot(kind){
@@ -4045,6 +4049,7 @@
               }
               showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{
                 if (!requireLoginForFeature()) return;
+                applyQuestProgress('rank', 1);
                 location.href='/ranking.html';
               });
             }
@@ -5249,10 +5254,13 @@
         try { window.openShopOverlay && window.openShopOverlay(); } catch {}
       }
       if (action === 'resume')   { customMenu.style.display='none'; }
-      if (action === 'rank')     {
-        customMenu.style.display='none';
-        if (requireLoginForFeature()) { location.href='/ranking.html'; }
-      }
+        if (action === 'rank')     {
+          customMenu.style.display='none';
+          if (requireLoginForFeature()) {
+            applyQuestProgress('rank', 1);
+            location.href='/ranking.html';
+          }
+        }
       if (action === 'mail')     { customMenu.style.display='none'; try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
       if (action === 'quests')   { customMenu.style.display='none'; try { window.openQuestOverlay && window.openQuestOverlay(); } catch {} }
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
@@ -5305,7 +5313,12 @@
           if (proceed) { location.href = 'https://m.onestore.co.kr/v2/ko-kr/app/0001002762'; }
         }
         if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
-        if (action === 'rank')     { if (requireLoginForFeature()) { location.href='/ranking.html'; } }
+        if (action === 'rank')     {
+          if (requireLoginForFeature()) {
+            applyQuestProgress('rank', 1);
+            location.href='/ranking.html';
+          }
+        }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
         if (action === 'quests')   { try { window.openQuestOverlay && window.openQuestOverlay(); } catch {} }
         if (action === 'attendance'){ try{ window.openDailyManual(); }catch{} }
