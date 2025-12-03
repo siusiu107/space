@@ -2788,8 +2788,7 @@
       { id:'earn_coin',      title:'코인 40,000 획득',                unit:'coin',    target:40000 },
       { id:'upgrade_ship',   title:'우주선 4회 업그레이드',          unit:'ship',    target:4 },
       { id:'explore_planet', title:'새 행성 2개 정복',               unit:'planet',  target:2 },
-      { id:'bulk_convert',   title:'자원 변환(자동 포함) 120회',     unit:'convert', target:120 },
-      { id:'weekly_ranking', title:'주간 동안 랭킹 3회 확인하기',     unit:'rank',    target:3 }
+      { id:'bulk_convert',   title:'자원 변환(자동 포함) 120회',     unit:'convert', target:120 }
     ];
 
     function computeQuestDifficultySnapshot(kind){
@@ -5254,13 +5253,11 @@
         try { window.openShopOverlay && window.openShopOverlay(); } catch {}
       }
       if (action === 'resume')   { customMenu.style.display='none'; }
-        if (action === 'rank')     {
-          customMenu.style.display='none';
-          if (requireLoginForFeature()) {
-            applyQuestProgress('rank', 1);
-            location.href='/ranking.html';
-          }
-        }
+      if (action === 'rank')     {
+        customMenu.style.display='none';
+        if (uid) { applyQuestProgress('rank', 1); }
+        location.href='/ranking.html';
+      }
       if (action === 'mail')     { customMenu.style.display='none'; try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
       if (action === 'quests')   { customMenu.style.display='none'; try { window.openQuestOverlay && window.openQuestOverlay(); } catch {} }
       if (action === 'attendance'){ customMenu.style.display='none'; try{ window.openDailyManual(); }catch{} }
@@ -5314,10 +5311,8 @@
         }
         if (action === 'shop')     { try { window.openShopOverlay && window.openShopOverlay(); } catch {} }
         if (action === 'rank')     {
-          if (requireLoginForFeature()) {
-            applyQuestProgress('rank', 1);
-            location.href='/ranking.html';
-          }
+          if (uid) { applyQuestProgress('rank', 1); }
+          location.href='/ranking.html';
         }
         if (action === 'mail')     { try { window.openMailOverlay && window.openMailOverlay(); } catch {} }
         if (action === 'quests')   { try { window.openQuestOverlay && window.openQuestOverlay(); } catch {} }
