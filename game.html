@@ -454,7 +454,7 @@
       padding:18px 20px 20px;
       max-height:92vh;
     }
-    #quest-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    #quest-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; touch-action:none; user-select:none; cursor:grab; }
     #quest-head h3{ margin:0; font-size:20px; }
     #quest-close{ border:none; background:rgba(255,255,255,0.08); color:#f2fbff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:14px; }
     #quest-close:hover{ background:rgba(255,255,255,0.15); }
@@ -2469,7 +2469,7 @@
     }
 
     // 🔄 변환(증가/지출 장부 반영)
-    function convertResources(maxCount = null) {
+    function convertResources(maxCount = null, source = 'manual') {
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
       if (count <= 0) return false;
@@ -2482,7 +2482,7 @@
       const perkCoinMul = perkState.coinMult || 1;
       const inc = count * coinMul * perkCoinMul;
       state.coins += inc;
-      auditGain('coin', inc);
+      auditGain('coin', inc, source === 'manual' ? 'manual' : 'auto');
       applyQuestProgress('convert', count);
       playSfx('sfx-coin');
       return true;
@@ -2778,16 +2778,19 @@
     }
 
     const BASE_DAILY_QUESTS = [
-      { id:'collect_res',   title:'자원 1,200 채집',                unit:'res',    target:1200 },
-      { id:'convert_ore',   title:'자원 변환(자동 포함) 25회',      unit:'convert', target:25 },
-      { id:'hire_workers',  title:'알바 3명 고용',                  unit:'worker',  target:3 },
-      { id:'ship_upgrade',  title:'우주선 1회 업그레이드(중간)',     unit:'ship',    target:1 }
+      { id:'collect_res',       title:'자원 1,200 채집',                unit:'res',         target:1200 },
+      { id:'convert_ore',       title:'자원 변환(자동 포함) 25회',      unit:'convert',     target:25 },
+      { id:'hire_workers',      title:'알바 3명 고용',                  unit:'worker',      target:3 },
+      { id:'ship_upgrade',      title:'우주선 1회 업그레이드(중간)',     unit:'ship',        target:1 },
+      { id:'coin_manual_daily', title:'직접 전환으로 코인 2,400 획득',   unit:'coin_manual', target:2400 },
+      { id:'coin_worker_daily', title:'알바로 코인 3,200 획득',          unit:'coin_worker', target:3200 }
     ];
     const BASE_WEEKLY_QUESTS = [
-      { id:'earn_coin',      title:'코인 40,000 획득',                unit:'coin',    target:40000 },
-      { id:'upgrade_ship',   title:'우주선 4회 업그레이드',          unit:'ship',    target:4 },
-      { id:'explore_planet', title:'새 행성 2개 정복',               unit:'planet',  target:2 },
-      { id:'bulk_convert',   title:'자원 변환(자동 포함) 120회',     unit:'convert', target:120 }
+      { id:'coin_manual_weekly', title:'직접 전환으로 코인 45,000 획득', unit:'coin_manual', target:45000 },
+      { id:'coin_worker_weekly', title:'알바로 코인 60,000 획득',        unit:'coin_worker', target:60000 },
+      { id:'upgrade_ship',       title:'우주선 4회 업그레이드',          unit:'ship',        target:4 },
+      { id:'explore_planet',     title:'새 행성 2개 정복',               unit:'planet',      target:2 },
+      { id:'bulk_convert',       title:'자원 변환(자동 포함) 120회',     unit:'convert',     target:120 }
     ];
 
     function computeQuestDifficultySnapshot(kind){
@@ -2851,12 +2854,23 @@
       const bucket = state?.quests?.[kind];
       return Math.max(1, bucket?.difficulty || 1);
     }
+    function questUnitScale(task, kind){
+      if (!task || (task.unit!=='coin_manual' && task.unit!=='coin_worker')) return 1;
+      const wealth = Math.log10(Math.max(10, (state.coins||0) + (state.resources||0)));
+      const clickScore = Math.max(1, state.clickPower || 1);
+      const workerScore = Math.max(1, state.conversionCount || 0);
+      let scale = 1 + (wealth * 0.25);
+      if (task.unit === 'coin_manual') scale += Math.min(2.4, clickScore * 0.15);
+      if (task.unit === 'coin_worker') scale += Math.min(3.0, workerScore * 0.22);
+      const cap = kind === 'weekly' ? 4.8 : 3.6;
+      return Math.min(cap, scale);
+    }
     function questTasks(kind){
       const base = kind === 'weekly' ? BASE_WEEKLY_QUESTS : BASE_DAILY_QUESTS;
       const diff = questDifficulty(kind);
       return base.map(task => ({
         ...task,
-        target: Math.max(task.target, Math.round(task.target * diff))
+        target: Math.max(task.target, Math.round(task.target * diff * questUnitScale(task, kind)))
       }));
     }
     function questProgress(kind){ syncQuestPeriods(); return state?.quests?.[kind]?.progress || {}; }
@@ -3075,6 +3089,8 @@
     const spinPremiumBtn = document.getElementById('spin-premium');
     const spinEcoinBtn   = document.getElementById('spin-ecoin');
     const questOverlay   = document.getElementById('quest-overlay');
+    const questCard      = document.getElementById('quest-card');
+    const questHead      = document.getElementById('quest-head');
     const questCloseBtn  = document.getElementById('quest-close');
     const questTabs      = Array.from(document.querySelectorAll('.qtab'));
     const questPanels    = {
@@ -3235,12 +3251,62 @@
     }
     function closeQuestOverlay(){
       if (!questOverlay) return;
+      if (questCard){ questCard.style.transform=''; questCard.style.transition=''; }
       questOverlay.classList.remove('show');
       questOverlay.setAttribute('aria-hidden', 'true');
     }
     questCloseBtn?.addEventListener('click', closeQuestOverlay);
     questOverlay?.addEventListener('click', (e) => { if (e.target === questOverlay) closeQuestOverlay(); });
     window.openQuestOverlay = openQuestOverlay;
+
+    function enableQuestDragClose(){
+      if (!questCard || !questHead) return;
+      let startY = 0;
+      let currentY = 0;
+      let dragging = false;
+
+      const resetPosition = () => {
+        questCard.style.transition = 'transform .22s ease';
+        questCard.style.transform = 'translateY(0)';
+        setTimeout(() => { questCard.style.transition = ''; }, 240);
+      };
+
+      const onPointerDown = (ev) => {
+        const y = ev.clientY ?? ev.touches?.[0]?.clientY;
+        if (y === undefined) return;
+        dragging = true;
+        startY = y;
+        currentY = y;
+        questCard.style.transition = 'none';
+      };
+
+      const onPointerMove = (ev) => {
+        if (!dragging) return;
+        const y = ev.clientY ?? ev.touches?.[0]?.clientY;
+        if (y === undefined) return;
+        currentY = y;
+        const delta = Math.max(0, currentY - startY);
+        questCard.style.transform = `translateY(${Math.min(delta, 160)}px)`;
+      };
+
+      const onPointerUp = () => {
+        if (!dragging) return;
+        const delta = Math.max(0, currentY - startY);
+        dragging = false;
+        if (delta > 120) {
+          questCard.style.transition = 'transform .18s ease';
+          questCard.style.transform = 'translateY(160px)';
+          setTimeout(() => closeQuestOverlay(), 140);
+          return;
+        }
+        resetPosition();
+      };
+
+      ['pointerdown','touchstart'].forEach(evt => questHead.addEventListener(evt, onPointerDown, { passive: true }));
+      ['pointermove','touchmove'].forEach(evt => questOverlay?.addEventListener(evt, onPointerMove, { passive: true }));
+      ['pointerup','pointercancel','touchend','touchcancel'].forEach(evt => questOverlay?.addEventListener(evt, onPointerUp, { passive: true }));
+    }
+    enableQuestDragClose();
 
     function buildProbPanel(items, mode){
       const total=items.reduce((a,b)=>a+b.w,0)||1;
@@ -3680,19 +3746,26 @@
       audit.recSpend = { res:0, coin:0, eco:0 };
       audit.lastAt = Date.now();
     }
-    function auditGain(kind, amount){
+    function trackCoinQuestProgress(amount, source = 'generic'){
+      const delta = Math.max(0, Number(amount) || 0);
+      if (!delta) return;
+      if (source === 'worker') { applyQuestProgress('coin_worker', delta); return; }
+      if (source === 'manual') { applyQuestProgress('coin_manual', delta); return; }
+      applyQuestProgress('coin', delta);
+    }
+    function auditGain(kind, amount, source = 'generic'){
       const k = kind === 'coins' ? 'coin' : (kind === 'resources' ? 'res' : kind);
       if (!audit.recGain[k]) audit.recGain[k] = 0;
       audit.recGain[k] += Number(amount||0);
       if (k === 'res') applyQuestProgress('res', amount);
-      if (k === 'coin') applyQuestProgress('coin', amount);
+      if (k === 'coin') trackCoinQuestProgress(amount, source);
     }
     function auditSpend(kind, amount){
       const k = kind === 'coins' ? 'coin' : (kind === 'resources' ? 'res' : kind);
       if (!audit.recSpend[k]) audit.recSpend[k] = 0;
       audit.recSpend[k] += Number(amount||0);
     }
-    function auditAdd(kind, amount){ auditGain(kind, amount); }
+    function auditAdd(kind, amount, source = 'generic'){ auditGain(kind, amount, source); }
     function auditResetCycle(){
       audit.recGain  = { res:0, coin:0, eco:0 };
       audit.recSpend = { res:0, coin:0, eco:0 };
@@ -4169,12 +4242,12 @@
         state.resources += inc;
         auditAdd('res', inc);
         playSfx('sfx-pickaxe');
-        if (state.autoConvertBought) convertResources();
+        if (state.autoConvertBought) convertResources(null, 'auto');
         save(); updateUI();
       });
       attachHoldRepeat('convert-button', () => {
         if (!ensureReady()) return false;
-        if (!convertResources(1)) return false;
+        if (!convertResources(1, 'manual')) return false;
         save(); updateUI();
         return true;
       });
@@ -4348,11 +4421,11 @@
           if (state.conversionCount > 0) {
             const finalConvGain = convGain * prodMul * perkCoinMul;
             state.coins += finalConvGain;
-            auditAdd('coin', finalConvGain);
+            auditAdd('coin', finalConvGain, 'worker');
           }
 
           // 자동 변환
-          if (state.autoConvertBought) convertResources();
+          if (state.autoConvertBought) convertResources(null, 'auto');
         }
 
         // ✅ 1초마다 의심도 검사 (3초 지난 이후부터는 항상)
