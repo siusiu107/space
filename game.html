@@ -4039,12 +4039,12 @@
       document.getElementById('ecoins').innerText = `이벤트코인: ${formatKR(state.eventCoins||0)}`;
       document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${formatKR(state.shipUpgradeCost)}코인)`;
       setShipImage(state.shipLevel);
-      document.getElementById('upgrade-ship').disabled = state.coins < state.shipUpgradeCost;
+      document.getElementById('upgrade-ship').disabled = (state.coins < state.shipUpgradeCost) && !canSpendEC(1);
 
       const clickUp = document.getElementById('click-upgrade');
       const clickCost = ensureClickUpgradeCost();
       clickUp.innerText = `클릭 업그레이드 (${formatKR(clickCost)}코인)`;
-      clickUp.disabled  = state.coins < clickCost;
+      clickUp.disabled  = (state.coins < clickCost) && !canSpendEC(1);
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
       const autoBtn = document.getElementById('auto-convert-buy');
@@ -4336,10 +4336,18 @@
       });
       attachHoldRepeat('upgrade-ship', () => {
         if (!ensureReady()) return false;
-        if (state.coins < state.shipUpgradeCost) return false;
-        const cost = state.shipUpgradeCost;
-        state.coins -= cost;
-        auditSpend('coin', cost);
+
+        if (state.coins >= state.shipUpgradeCost) {
+          const cost = state.shipUpgradeCost;
+          state.coins -= cost;
+          auditSpend('coin', cost);
+        } else if (canSpendEC(1)) {
+          state.eventCoins -= 1;
+          auditSpend('eco', 1);
+        } else {
+          return false;
+        }
+
         state.shipLevel++;
         state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
         applyQuestProgress('ship', 1);
