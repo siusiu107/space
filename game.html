@@ -2474,6 +2474,27 @@
       const base = currentCost ?? initialClickUpgradeCost;
       return Math.max(1, Math.round(base + clickUpgradeIncrement));
     }
+    function applyClickUpgrades(levels = 1){
+      const count = Math.max(0, Math.floor(levels));
+      if (!count) return;
+      let cost = ensureClickUpgradeCost();
+      for (let i = 0; i < count; i++) {
+        state.clickPower = (state.clickPower||1) + 1;
+        cost = getNextClickUpgradeCost(cost);
+      }
+      state.clickUpgradeCost = cost;
+    }
+    function hireWorkersBulk(levels = 1){
+      const count = Math.max(0, Math.floor(levels));
+      if (!count) return;
+      state.workerCount += count;
+      applyQuestProgress('worker', count);
+    }
+    function hireConversionsBulk(levels = 1){
+      const count = Math.max(0, Math.floor(levels));
+      if (!count) return;
+      state.conversionCount += count;
+    }
 
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null, source = 'manual') {
@@ -4282,21 +4303,34 @@
       attachHoldRepeat('hire-worker', () => {
         if (!ensureReady()) return false;
         const cost = getWorkerCost();
-        if (state.coins < cost) return false;
-        state.coins -= cost;
-        auditSpend('coin', cost);
-        state.workerCount++;
-        applyQuestProgress('worker', 1);
+        if (state.coins >= cost) {
+          state.coins -= cost;
+          auditSpend('coin', cost);
+          hireWorkersBulk(1);
+        } else if (canSpendEC(1)) {
+          state.eventCoins -= 1;
+          auditSpend('eco', 1);
+          hireWorkersBulk(15);
+        } else {
+          return false;
+        }
         save(); updateUI();
         return true;
       });
       attachHoldRepeat('hire-conversion', () => {
         if (!ensureReady()) return false;
         const cost = getConversionCost();
-        if (state.coins < cost) return false;
-        state.coins -= cost;
-        auditSpend('coin', cost);
-        state.conversionCount++;
+        if (state.coins >= cost) {
+          state.coins -= cost;
+          auditSpend('coin', cost);
+          hireConversionsBulk(1);
+        } else if (canSpendEC(1)) {
+          state.eventCoins -= 1;
+          auditSpend('eco', 1);
+          hireConversionsBulk(10);
+        } else {
+          return false;
+        }
         save(); updateUI();
         return true;
       });
@@ -4316,11 +4350,17 @@
       attachHoldRepeat('click-upgrade', () => {
         if (!ensureReady()) return false;
         const cost = ensureClickUpgradeCost();
-        if (state.coins < cost) return false;
-        state.coins -= cost;
-        auditSpend('coin', cost);
-        state.clickPower = (state.clickPower||1) + 1;
-        state.clickUpgradeCost = getNextClickUpgradeCost(cost);
+        if (state.coins >= cost) {
+          state.coins -= cost;
+          auditSpend('coin', cost);
+          applyClickUpgrades(1);
+        } else if (canSpendEC(1)) {
+          state.eventCoins -= 1;
+          auditSpend('eco', 1);
+          applyClickUpgrades(15);
+        } else {
+          return false;
+        }
         save(); updateUI();
         return true;
       });
