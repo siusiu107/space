@@ -2415,10 +2415,17 @@
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
-      workerCount:0, conversionCount:0, autoConvertBought:false, ownedPlanets:[],
+      workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[],
       quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
     };
+    function withAutoConvertDefaults(rawState) {
+      const merged = { ...defaultData, ...(rawState || {}) };
+      if (typeof merged.autoConvertEnabled !== 'boolean') {
+        merged.autoConvertEnabled = !!merged.autoConvertBought;
+      }
+      return merged;
+    }
     function writeGuestProfile(profile) {
       try { localStorage.setItem(GUEST_PROFILE_KEY, JSON.stringify(profile)); }
       catch (err) { console.warn('guest profile save error', err); }
@@ -2443,7 +2450,7 @@
       const rawState = (profile && typeof profile === 'object' && profile.state && typeof profile.state === 'object')
         ? profile.state
         : null;
-      state = { ...defaultData, ...(rawState || {}) };
+      state = withAutoConvertDefaults(rawState);
       rankingUnlocked = !!(profile && profile.rankingUnlocked);
     }
     function loadGuestProfileIntoState() {
@@ -2798,7 +2805,7 @@
       const ship        = Math.max(1, state.shipLevel || 1);
       const workers     = state.workerCount || 0;
       const converters  = state.conversionCount || 0;
-      const auto        = state.autoConvertBought ? 1 : 0;
+      const auto        = (state.autoConvertBought && state.autoConvertEnabled) ? 1 : 0;
       const wealthScore = Math.log10(Math.max(1, (state.coins||0) + (state.resources||0)));
       let raw = 1 + (workers * 0.05) + (converters * 0.08) + (ship * 0.12) + (planets * 0.28) + (auto * 0.25) + (wealthScore * 0.18);
       if (kind === 'weekly') raw += planets * 0.12 + ship * 0.08 + converters * 0.05;
@@ -2925,7 +2932,7 @@
       const rpc = state.clickPower;
       const planets = (state.ownedPlanets?.length || 0);
       const ship = (state.shipLevel || 1);
-      const auto = state.autoConvertBought ? 1 : 0;
+      const auto = (state.autoConvertBought && state.autoConvertEnabled) ? 1 : 0;
       const score =
         20 * Math.log2(1 + rps) +
         45 * Math.log2(1 + cps) +
@@ -4020,8 +4027,15 @@
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
       const autoBtn = document.getElementById('auto-convert-buy');
-      autoBtn.innerHTML = state.autoConvertBought ? '구매 완료' : `자동변환 구매<br>(${formatKR(100)}코인)`;
-      autoBtn.disabled = state.autoConvertBought || state.coins < 100;
+      if (state.autoConvertBought) {
+        const status = state.autoConvertEnabled ? 'ON' : 'OFF';
+        autoBtn.innerHTML = `자동변환 ${status}`;
+        autoBtn.setAttribute('aria-pressed', state.autoConvertEnabled ? 'true' : 'false');
+      } else {
+        autoBtn.innerHTML = `자동변환 구매<br>(${formatKR(100)}코인)`;
+        autoBtn.removeAttribute('aria-pressed');
+      }
+      autoBtn.disabled = !state.autoConvertBought && state.coins < 100;
 
       document.getElementById('convert-button').disabled = state.resources < 10;
 
@@ -4054,6 +4068,7 @@
             workerCount: state.workerCount,
             conversionCount: state.conversionCount,
             autoConvertBought: state.autoConvertBought,
+            autoConvertEnabled: state.autoConvertEnabled,
             ownedPlanets: state.ownedPlanets
           };
           localStorage.setItem(`gd_cache_${uid}`, JSON.stringify(cachePick));
@@ -4242,7 +4257,7 @@
         state.resources += inc;
         auditAdd('res', inc);
         playSfx('sfx-pickaxe');
-        if (state.autoConvertBought) convertResources(null, 'auto');
+        if (state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         save(); updateUI();
       });
       attachHoldRepeat('convert-button', () => {
@@ -4253,12 +4268,16 @@
       });
       document.getElementById('auto-convert-buy').addEventListener('click', () => {
         if (!ensureReady()) return;
-        if (!state.autoConvertBought && state.coins >= 100) {
+        if (!state.autoConvertBought) {
+          if (state.coins < 100) return;
           state.coins -= 100;
           auditSpend('coin', 100);
           state.autoConvertBought = true;
-          save(); updateUI();
+          state.autoConvertEnabled = true;
+        } else {
+          state.autoConvertEnabled = !state.autoConvertEnabled;
         }
+        save(); updateUI();
       });
       attachHoldRepeat('hire-worker', () => {
         if (!ensureReady()) return false;
@@ -4425,7 +4444,7 @@
           }
 
           // 자동 변환
-          if (state.autoConvertBought) convertResources(null, 'auto');
+          if (state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         }
 
         // ✅ 1초마다 의심도 검사 (3초 지난 이후부터는 항상)
@@ -4729,7 +4748,7 @@
       if (shouldApplyGuest && guestProfile && guestProfile.state) {
         try {
           const now = Date.now();
-          const merged = { ...defaultData, ...(guestProfile.state || {}) };
+          const merged = withAutoConvertDefaults(guestProfile.state || {});
           merged._lastUpdated = now;
           await update(dataRef, { ...merged });
           localLastWrite = now;
@@ -4770,7 +4789,7 @@
         }
 
         if (isInitialSync) {
-          state = { ...defaultData, ...(server || {}) };
+          state = withAutoConvertDefaults(server);
 
           // 이 부분도 이제 freeze 안 함
           await fetchDaily();
@@ -4796,13 +4815,13 @@
         }
 
         if (!server) {
-          state = { ...defaultData };
+          state = withAutoConvertDefaults();
         } else {
           const serverLast = serverStamp;
           if (serverLast >= (localLastWrite || 0)) {
-            state = { ...defaultData, ...server };
+            state = withAutoConvertDefaults(server);
           } else {
-            state = { ...defaultData, ...server, ...state };
+            state = withAutoConvertDefaults({ ...server, ...state });
             try { if (JSON.stringify(server) !== JSON.stringify(state)) save(true); }
             catch { save(true); }
           }
@@ -4878,7 +4897,7 @@
           const cacheRaw = localStorage.getItem(`gd_cache_${uid}`);
           if (cacheRaw) {
             const cached = JSON.parse(cacheRaw);
-            state = { ...defaultData, ...state, ...cached };
+            state = withAutoConvertDefaults({ ...state, ...cached });
             showGameUI();
             updateUI();
             renderPlanets();
@@ -4994,7 +5013,7 @@
         clearSupportCtx();
         hideAllOverlays();
 
-        state = { ...defaultData };
+        state = withAutoConvertDefaults();
         localLastWrite = 0; isInitialSync = false;
 
         authContainer.style.display = 'block';
