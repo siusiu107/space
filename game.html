@@ -378,6 +378,20 @@
       color: #001218; background: linear-gradient(180deg,#00c0ff,#00a2ff);
       border-color: transparent; box-shadow: 0 6px 18px rgba(0,160,255,0.28);
     }
+    .event-panel{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; align-items:flex-start; }
+    .event-card{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; box-shadow:0 8px 26px rgba(0,0,0,0.35); }
+    .event-card h3{ margin:0 0 8px; font-size:16px; display:flex; gap:8px; align-items:center; }
+    .event-stats{ display:flex; flex-direction:column; gap:6px; font-size:14px; }
+    .event-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .event-actions button{ flex:1 1 150px; }
+    #christmas-frame{ width:100%; min-height:420px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+    .tree-status{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .tree-figure{ width:120px; height:120px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(0,0,0,0.25); object-fit:contain; }
+    .tree-rewards{ margin:10px 0; padding:10px; border-radius:10px; background:rgba(0,0,0,0.25); border:1px dashed rgba(255,255,255,0.14); font-size:13px; line-height:1.5; }
+    .tree-rewards strong{ color:#ffe08a; }
+    .pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.08); font-size:13px; }
+    .pill img{ width:18px; height:18px; }
+    #permanent-buffs{ margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); font-size:13px; color:#cfe6ff; line-height:1.45; }
 
     #container{ padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
     #planets-content{ padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px)); }
@@ -1178,6 +1192,38 @@
       <div id="planet-list"></div>
     </div>
 
+    <div id="christmas-content" class="tab-content">
+      <div class="event-panel">
+        <div class="event-card">
+          <h3>🎄 2025 크리스마스 이벤트</h3>
+          <div class="event-stats">
+            <div class="pill"><img src="/images/santa-piece.png" alt="산타 조각" /> 산타 조각: <span id="santa-pieces">0</span></div>
+            <div class="pill"><img src="/images/santa-coin.png" alt="산타 이벤트 코인" /> 산타 이벤트코인: <span id="santa-coins">0</span></div>
+            <div class="pill"><img src="/images/event-icon.png" alt="이벤트코인" /> 이벤트코인: <span id="event-coins-inline">0</span></div>
+          </div>
+          <div class="event-actions">
+            <button id="craft-santa-coin" class="general" type="button">산타코인 제작 (조각 10개)</button>
+            <button id="convert-ecoin-to-santacoin" class="general" type="button">이벤트코인 → 산타코인 (1:1)</button>
+            <button id="christmas-upgrade" class="general" type="button">트리 강화</button>
+          </div>
+          <div class="tree-status">
+            <img id="tree-image" class="tree-figure" src="/images/tree1.png" alt="크리스마스 트리" />
+            <div>
+              <div>현재 트리 레벨: <strong id="tree-level">0</strong> / 6</div>
+              <div>다음 강화 필요 산타코인: <strong id="tree-cost">-</strong></div>
+            </div>
+          </div>
+          <div class="tree-rewards" id="tree-rewards">특별 보상 안내</div>
+        </div>
+
+        <div class="event-card">
+          <h3>🎧 리듬게임 (산타 조각 획득)</h3>
+          <p style="margin:6px 0 10px; color:#cfe6ff;">크리스마스 테마 저작권 무료 음악 10곡을 준비했어요. 곡을 완주하고 한 번도 틀리지 않으면 <b>산타 조각 5개</b>를 획득합니다.</p>
+          <iframe id="christmas-frame" title="크리스마스 리듬게임" src="Christmas.html" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+
     <!-- 바텀 내비 -->
     <nav id="bottom-nav" aria-label="게임 탭 내비게이션">
       <div class="tab active" data-tab="main"     role="button" tabindex="0"><span class="t-icon">🪨</span><span class="t-label">메인</span></div>
@@ -1185,6 +1231,7 @@
       <div class="tab"        data-tab="ship"     role="button" tabindex="0"><span class="t-icon">🚀</span><span class="t-label">우주선</span></div>
       <div class="tab"        data-tab="upgrades" role="button" tabindex="0"><span class="t-icon">⚙️</span><span class="t-label">업그레이드</span></div>
       <div class="tab"        data-tab="planets"  role="button" tabindex="0"><span class="t-icon">🪐</span><span class="t-label">행성</span></div>
+      <div class="tab"        data-tab="christmas" role="button" tabindex="0"><span class="t-icon">🎄</span><span class="t-label">크리스마스</span></div>
     </nav>
   </div>
 
@@ -1416,6 +1463,7 @@
     <div id="buff-card" role="dialog" aria-modal="true" aria-labelledby="buff-title">
       <h3 id="buff-title">현재 적용 중인 버프</h3>
       <div id="buff-list">적용 중인 버프가 없습니다.</div>
+      <div id="permanent-buffs"></div>
       <div class="overlay-actions">
         <button id="buff-close" class="spinbtn">닫기</button>
       </div>
@@ -1908,6 +1956,33 @@
     }
 
     // 👉 여기서부터: 버튼/오버레이용 버프 렌더
+    function unlockedTreeBuffs(){
+      const lv = Math.max(0, Math.min(christmasTreeRewards.length, state.christmasTreeLevel || 0));
+      return christmasTreeRewards.slice(0, lv).map((r, idx) => `Lv.${idx + 1}: ${r.reward}`);
+    }
+
+    function renderPermanentBuffs(){
+      const perm = document.getElementById('permanent-buffs');
+      if (!perm) return;
+      const buffs = unlockedTreeBuffs();
+      const ecoMult = aggregateTreeMultiplier('event');
+      const resMult = aggregateTreeMultiplier('res');
+      const coinMult = aggregateTreeMultiplier('coin');
+      const clickMult = aggregateTreeMultiplier('click');
+      const workerMult = aggregateTreeMultiplier('worker');
+      const multTexts = [];
+      if (ecoMult > 1) multTexts.push(`이벤트코인 획득 x${ecoMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (resMult > 1) multTexts.push(`자원 생산 x${resMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (coinMult > 1) multTexts.push(`코인 생산 x${coinMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (clickMult > 1) multTexts.push(`클릭 채굴 x${clickMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (workerMult > 1) multTexts.push(`알바 효율 x${workerMult.toFixed(2).replace(/\.00$/, '')}`);
+      const list = buffs.map(b => `<li>${escapeHTML(b)}</li>`).join('');
+      const multInfo = multTexts.length ? `<div style="margin-top:6px;">적용 배율: ${multTexts.map(escapeHTML).join(' · ')}</div>` : '';
+      perm.innerHTML = buffs.length
+        ? `<div style="font-weight:700; margin-bottom:4px;">🎁 영구 버프</div><ul style="margin:0 0 6px 18px; padding:0;">${list}</ul>${multInfo}`
+        : '<div style="font-weight:700; margin-bottom:4px;">🎁 영구 버프</div><div>활성화된 영구 버프가 없습니다.</div>';
+    }
+
     function renderBuffStatus(){
       const btn = document.getElementById('buff-btn');
       const listEl = document.getElementById('buff-list');
@@ -1933,6 +2008,7 @@
           }).join('');
         }
       }
+      renderPermanentBuffs();
     }
 
     /* ========= 숫자 한국식 단위 ========= */
@@ -2143,9 +2219,8 @@
       const ecoAmt = Math.max(0, Math.floor(Number(rewards.eventCoins ?? rewards.eco ?? rewards.ecoins ?? 0)));
       if (ecoAmt > 0) {
         registerAuditIntent('eco', ecoAmt, 8000);
-        state.eventCoins = (state.eventCoins || 0) + ecoAmt;
-        auditGain('eco', ecoAmt);
-        applied.push(`이벤트코인 ${formatKR(ecoAmt)}`);
+        const ecoFinal = addEventCoins(ecoAmt, 'mail');
+        applied.push(`이벤트코인 ${formatKR(ecoFinal)}`);
       }
       const buffList = Array.isArray(rewards.buffs)
         ? rewards.buffs
@@ -2421,9 +2496,19 @@
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
       workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[],
+      santaPieces:0, santaCoins:0, christmasTreeLevel:0,
       quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
     };
+
+    const christmasTreeRewards = [
+      { cost: 1, reward: '2025 크리스마스 이벤트코인 획득 x2 영구 적용', effects: { event: 2 } },
+      { cost: 2, reward: '자원 생산 x2 영구', effects: { res: 2 } },
+      { cost: 4, reward: '코인 생산 x2 영구', effects: { coin: 2 } },
+      { cost: 8, reward: '클릭 채굴 x2 영구', effects: { click: 2 } },
+      { cost: 16, reward: '알바 효율 x1.5 영구', effects: { worker: 1.5 } },
+      { cost: 20, reward: '2025 크리스마스 이벤트코인 추가 배율 & 전 생산 x2 영구', effects: { res: 2, coin: 2, event: 2 } }
+    ];
     function withAutoConvertDefaults(rawState) {
       const merged = { ...defaultData, ...(rawState || {}) };
       if (typeof merged.autoConvertEnabled !== 'boolean') {
@@ -2511,7 +2596,7 @@
       state.resources -= resOut;
       auditSpend('res', resOut);
 
-      const coinMul = activeBuffFactor('coin');
+      const coinMul = activeBuffFactor('coin') * aggregateTreeMultiplier('coin');
       const perkCoinMul = perkState.coinMult || 1;
       const inc = count * coinMul * perkCoinMul;
       state.coins += inc;
@@ -2519,6 +2604,40 @@
       applyQuestProgress('convert', count);
       playSfx('sfx-coin');
       return true;
+    }
+
+    function aggregateTreeMultiplier(kind) {
+      const lv = Math.max(0, Math.min(christmasTreeRewards.length, state.christmasTreeLevel || 0));
+      let mult = 1;
+      for (let i = 0; i < lv; i++) {
+        const eff = christmasTreeRewards[i]?.effects || {};
+        if (eff.all) mult *= eff.all;
+        if (kind === 'res' && eff.res) mult *= eff.res;
+        if (kind === 'coin' && eff.coin) mult *= eff.coin;
+        if (kind === 'click' && eff.click) mult *= eff.click;
+        if (kind === 'worker' && eff.worker) mult *= eff.worker;
+        if (kind === 'event' && eff.event) mult *= eff.event;
+      }
+      return mult;
+    }
+
+    function addEventCoins(amount, source = 'reward') {
+      const base = Math.max(0, Math.floor(amount || 0));
+      if (!base) return 0;
+      const mult = aggregateTreeMultiplier('event');
+      const finalAmt = Math.max(0, Math.floor(base * mult));
+      state.eventCoins = (state.eventCoins || 0) + finalAmt;
+      auditGain('eco', finalAmt, source);
+      return finalAmt;
+    }
+
+    function autoCraftSantaCoins() {
+      const pieces = Math.max(0, Math.floor(state.santaPieces || 0));
+      const craftable = Math.floor(pieces / 10);
+      if (craftable <= 0) return 0;
+      state.santaPieces -= craftable * 10;
+      state.santaCoins = (state.santaCoins || 0) + craftable;
+      return craftable;
     }
 
     function attachHoldRepeat(target, action, options = {}) {
@@ -3042,8 +3161,8 @@
             label:`이벤트코인 ×${it.val}`,
             onWin:()=>{
               registerAuditIntent('eco', it.val, ROULETTE_AUDIT_WINDOW_MS);
-              state.eventCoins = (state.eventCoins||0) + it.val;
-              auditGain('eco', it.val);
+              const gained = addEventCoins(it.val, 'slot');
+              auditGain('eco', gained);
             }
           };
         }
@@ -4036,6 +4155,40 @@
       ? cb => requestAnimationFrame(cb)
       : cb => setTimeout(cb, 16);
 
+    function renderChristmasUI() {
+      const piecesEl = document.getElementById('santa-pieces');
+      const coinsEl = document.getElementById('santa-coins');
+      const eventInline = document.getElementById('event-coins-inline');
+      if (piecesEl) piecesEl.innerText = formatKR(Math.floor(state.santaPieces || 0));
+      if (coinsEl) coinsEl.innerText = formatKR(Math.floor(state.santaCoins || 0));
+      if (eventInline) eventInline.innerText = formatKR(state.eventCoins || 0);
+
+      const treeLv = Math.max(0, state.christmasTreeLevel || 0);
+      const treeMax = christmasTreeRewards.length;
+      const treeLevelEl = document.getElementById('tree-level');
+      if (treeLevelEl) treeLevelEl.innerText = treeLv.toString();
+
+      const nextReward = christmasTreeRewards[treeLv];
+      const costEl = document.getElementById('tree-cost');
+      if (costEl) costEl.innerText = nextReward ? `${nextReward.cost}` : 'MAX';
+
+      const treeImg = document.getElementById('tree-image');
+      if (treeImg) {
+        const imgLv = Math.max(1, Math.min(treeMax, treeLv || 1));
+        treeImg.src = `/images/tree${imgLv}.png`;
+        treeImg.alt = `크리스마스 트리 레벨 ${imgLv}`;
+      }
+
+      const unlockedBuffs = christmasTreeRewards.slice(0, treeLv).map((r, idx) => `<li>Lv.${idx + 1}: ${escapeHTML(r.reward)}</li>`);
+      const rewardBox = document.getElementById('tree-rewards');
+      if (rewardBox) {
+        const upcoming = nextReward ? `<div style="margin-top:6px;">다음 보상: <strong>${escapeHTML(nextReward.reward)}</strong></div>` : '<div style="margin-top:6px;">모든 보상을 획득했습니다!</div>';
+        rewardBox.innerHTML = `<div style="font-weight:700; margin-bottom:6px;">해제된 보상</div>${unlockedBuffs.length ? `<ul style="margin:0 0 6px 18px; padding:0;">${unlockedBuffs.join('')}</ul>` : '<div>아직 해제된 보상이 없어요.</div>'}${upcoming}`;
+      }
+
+      renderPermanentBuffs();
+    }
+
     function renderUIContents() {
       pruneExpiredBuffs();
       syncQuestPeriods();
@@ -4076,7 +4229,8 @@
       if (hireWorkEc) {
         hireWorkEc.disabled = !canSpendEC(1);
       }
-      document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower() * activeBuffFactor('res')).toFixed(1);
+      const resPerSec = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregateTreeMultiplier('res') * aggregateTreeMultiplier('worker');
+      document.getElementById('resource-per-sec').innerText = resPerSec.toFixed(1);
 
       const hireConv = document.getElementById('hire-conversion');
       hireConv.innerText = `코인 알바 (${formatKR(getConversionCost())}코인)`;
@@ -4085,7 +4239,10 @@
       if (hireConvEc) {
         hireConvEc.disabled = !canSpendEC(1);
       }
-      document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
+      const coinPerSec = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
+      document.getElementById('coin-per-sec').innerText = coinPerSec.toFixed(1);
+
+      renderChristmasUI();
 
       renderSecurityBadge();
       tryUnlockDaily();
@@ -4289,9 +4446,10 @@
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
-        const resMul = activeBuffFactor('res');
+        const resMul = activeBuffFactor('res') * aggregateTreeMultiplier('res');
+        const clickMul = aggregateTreeMultiplier('click');
         const perkResMul = perkState.resourceMult || 1;
-        const inc = state.clickPower * resMul * perkResMul;
+        const inc = state.clickPower * resMul * perkResMul * clickMul;
         state.resources += inc;
         auditAdd('res', inc);
         playSfx('sfx-pickaxe');
@@ -4315,6 +4473,50 @@
         } else {
           state.autoConvertEnabled = !state.autoConvertEnabled;
         }
+        save(); updateUI();
+      });
+
+      document.getElementById('craft-santa-coin')?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        if ((state.santaPieces || 0) < 10) {
+          showToast('산타 조각이 부족합니다. 리듬게임을 플레이해 보세요!', null, null, 2600);
+          return;
+        }
+        state.santaPieces -= 10;
+        state.santaCoins = (state.santaCoins || 0) + 1;
+        showToast('🎅 산타 이벤트코인 1개를 제작했습니다!', null, null, 2400);
+        save(); updateUI();
+      });
+
+      document.getElementById('convert-ecoin-to-santacoin')?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        if (!canSpendEC(1)) {
+          showToast('이벤트코인이 부족합니다.', null, null, 2400);
+          return;
+        }
+        state.eventCoins -= 1;
+        state.santaCoins = (state.santaCoins || 0) + 1;
+        auditSpend('eco', 1);
+        showToast('이벤트코인을 산타 이벤트코인으로 교환했어요.', null, null, 2400);
+        save(); updateUI();
+      });
+
+      document.getElementById('christmas-upgrade')?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        const lv = Math.max(0, state.christmasTreeLevel || 0);
+        const next = christmasTreeRewards[lv];
+        if (!next) {
+          showToast('최대 트리 레벨입니다!', null, null, 2200);
+          return;
+        }
+        if ((state.santaCoins || 0) < next.cost) {
+          showToast('산타 이벤트코인이 부족해요.', null, null, 2400);
+          return;
+        }
+        state.santaCoins -= next.cost;
+        state.christmasTreeLevel = lv + 1;
+        showToast(`트리 Lv.${lv + 1} 달성! ${next.reward}`, null, null, 3200);
+        renderBuffStatus();
         save(); updateUI();
       });
       attachHoldRepeat('hire-worker', () => {
@@ -4516,7 +4718,7 @@
           const perkResMul = perkState.resourceMult || 1;
           const perkCoinMul = perkState.coinMult || 1;
 
-          let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res');
+          let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregateTreeMultiplier('res') * aggregateTreeMultiplier('worker');
           if (state.workerCount > 0) {
             const finalWorkerGain = workerGain * prodMul * perkResMul;
             state.resources += finalWorkerGain;
@@ -4524,7 +4726,7 @@
           }
 
           // 코인 알바
-          let convGain = state.conversionCount * activeBuffFactor('coin');
+          let convGain = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
           if (state.conversionCount > 0) {
             const finalConvGain = convGain * prodMul * perkCoinMul;
             state.coins += finalConvGain;
@@ -4545,6 +4747,20 @@
         }
       }, 1000);
     }
+
+    window.addEventListener('message', (event) => {
+      if (event.origin && event.origin !== window.location.origin) return;
+      const data = event.data || {};
+      if (data.type === 'christmas-clear' && data.pieces) {
+        const gain = Math.max(0, Math.floor(data.pieces));
+        state.santaPieces = (state.santaPieces || 0) + gain;
+        const crafted = autoCraftSantaCoins();
+        renderBuffStatus();
+        save(); updateUI();
+        const craftedMsg = crafted > 0 ? ` (+산타코인 ${crafted}개 제작)` : '';
+        showToast(`🎅 산타 조각 ${gain}개 획득!${craftedMsg}`, null, null, 3200);
+      }
+    });
 
     /* ======================
        인증/부팅 흐름
