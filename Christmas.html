@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎄 Christmas Rhythm Stage</title>
+  <style>
+    body{ margin:0; font-family:'Noto Sans KR', system-ui, -apple-system, sans-serif; background:radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 30%), #0a0f1c; color:#e7f5ff; }
+    .layout{ display:flex; flex-wrap:wrap; gap:14px; padding:14px; max-width:1200px; margin:0 auto; }
+    .panel{ flex:1 1 320px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; box-shadow:0 10px 28px rgba(0,0,0,0.45); }
+    #game-container{ flex:2 1 520px; min-height:640px; background:#050912; border:1px solid rgba(255,255,255,0.08); border-radius:12px; position:relative; overflow:hidden; }
+    h1{ margin:0 0 6px; font-size:20px; }
+    .hint{ color:#bcd8ff; font-size:14px; line-height:1.55; }
+    select, button{ width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.18); background:rgba(0,0,0,0.25); color:#fff; font-size:14px; }
+    button{ cursor:pointer; background:linear-gradient(90deg,#0de3ff,#4a7cff); color:#001218; font-weight:800; border:none; box-shadow:0 8px 18px rgba(0,180,255,0.22); }
+    button:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; }
+    .stats{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; font-size:14px; }
+    .stat{ flex:1 1 120px; padding:8px 10px; border-radius:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); }
+    #status{ margin-top:8px; color:#ffe8a6; font-weight:700; min-height:20px; }
+    .keys{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .keycap{ flex:1 1 60px; padding:8px; text-align:center; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.08); }
+    canvas{ border-radius:12px; overflow:hidden; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <div class="panel">
+      <h1>🎧 크리스마스 리듬게임</h1>
+      <p class="hint">저작권 없는 크리스마스/연말 테마 음악 10곡을 골라 플레이하세요. 곡을 한 번도 틀리지 않으면 산타 조각 5개를 획득해요!</p>
+      <label style="display:block; margin-top:10px; font-weight:700;">곡 선택</label>
+      <select id="track-select" aria-label="크리스마스 곡 선택"></select>
+      <button id="start-btn" style="margin-top:10px;">게임 시작</button>
+      <div id="status" aria-live="polite"></div>
+      <div class="stats">
+        <div class="stat">히트: <span id="hit-count">0</span></div>
+        <div class="stat">미스: <span id="miss-count">0</span></div>
+        <div class="stat">연속: <span id="combo-count">0</span></div>
+      </div>
+      <div class="keys">
+        <div class="keycap">D</div>
+        <div class="keycap">F</div>
+        <div class="keycap">J</div>
+        <div class="keycap">K</div>
+      </div>
+    </div>
+    <div id="game-container" aria-label="리듬게임 영역"></div>
+  </div>
+
+  <script>
+    const tracks = [
+      { name:'Jingle Bells - Chillhop', url:'https://cdn.pixabay.com/download/audio/2022/10/02/audio_9025c7f1a3.mp3?filename=jingle-bells-12068.mp3' },
+      { name:'Christmas Village', url:'https://cdn.pixabay.com/download/audio/2022/11/09/audio_06cc7abfe7.mp3?filename=christmas-village-12674.mp3' },
+      { name:'Deck the Halls (Jazz)', url:'https://cdn.pixabay.com/download/audio/2022/11/24/audio_5c8ead1b8d.mp3?filename=deck-the-halls-12853.mp3' },
+      { name:'Happy Christmas Swing', url:'https://cdn.pixabay.com/download/audio/2022/12/06/audio_7b73a9ca53.mp3?filename=happy-christmas-swing-12981.mp3' },
+      { name:'Soft Snow', url:'https://cdn.pixabay.com/download/audio/2021/12/21/audio_07f0990357.mp3?filename=soft-snow-12610.mp3' },
+      { name:'Warm Fireplace', url:'https://cdn.pixabay.com/download/audio/2022/11/21/audio_38cb1fad1d.mp3?filename=warm-fireplace-12815.mp3' },
+      { name:'Holiday Future Bass', url:'https://cdn.pixabay.com/download/audio/2022/12/28/audio_d7d4b27c63.mp3?filename=christmas-future-bass-13102.mp3' },
+      { name:'Snowy Day Lo-fi', url:'https://cdn.pixabay.com/download/audio/2023/11/16/audio_dddbf6c6b4.mp3?filename=snowy-day-175375.mp3' },
+      { name:'Silent Night Remix', url:'https://cdn.pixabay.com/download/audio/2022/11/28/audio_6196ef7a63.mp3?filename=silent-night-chill-12887.mp3' },
+      { name:'Holiday Chip Tune', url:'https://cdn.pixabay.com/download/audio/2022/12/29/audio_5346df75e8.mp3?filename=retro-christmas-chip-13111.mp3' },
+    ];
+
+    const keyToLane = { KeyD:0, KeyF:1, KeyJ:2, KeyK:3 };
+    const laneColors = ['#00d4ff','#5cffc8','#ffc85c','#ff7aa5'];
+    let gameInstance = null;
+    let currentScene = null;
+    let activeAudio = null;
+
+    const rhythmData = { schedule: [], startedAt: 0, hits:0, misses:0, combo:0, sent:false };
+
+    const statusEl = document.getElementById('status');
+    const hitEl = document.getElementById('hit-count');
+    const missEl = document.getElementById('miss-count');
+    const comboEl = document.getElementById('combo-count');
+    const startBtn = document.getElementById('start-btn');
+    const selectEl = document.getElementById('track-select');
+
+    function fillTracks(){
+      tracks.forEach((t, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${idx+1}. ${t.name}`;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function updateStats(){
+      hitEl.textContent = rhythmData.hits;
+      missEl.textContent = rhythmData.misses;
+      comboEl.textContent = rhythmData.combo;
+    }
+
+    function buildSchedule(durationMs){
+      const beat = 680;
+      const count = Math.min(180, Math.max(40, Math.floor(durationMs / beat)));
+      const schedule = [];
+      let lane = 0;
+      for (let i=0;i<count;i++){
+        const time = i*beat + Phaser.Math.Between(-120, 120);
+        lane = (lane + Phaser.Math.Between(1,3)) % 4;
+        schedule.push({ time: Math.max(0, time), lane });
+      }
+      return schedule;
+    }
+
+    function destroyGame(){
+      if (gameInstance) {
+        gameInstance.destroy(true);
+        gameInstance = null;
+      }
+    }
+
+    function finishRun(scene){
+      if (rhythmData.finished) return;
+      rhythmData.finished = true;
+      const perfect = rhythmData.hits > 0 && rhythmData.misses === 0;
+      statusEl.textContent = perfect ? '완벽 클리어! 산타 조각 5개 획득!' : '클리어! 다시 도전해 보세요.';
+      if (perfect && !rhythmData.sent) {
+        try { window.parent.postMessage({ type:'christmas-clear', pieces:5, perfect:true }, '*'); } catch {}
+        rhythmData.sent = true;
+      }
+      startBtn.disabled = false;
+    }
+
+    class RhythmScene extends Phaser.Scene {
+      constructor(){ super('RhythmScene'); }
+      create(){
+        currentScene = this;
+        this.cameras.main.setBackgroundColor('#050912');
+        this.hitY = 540;
+        this.noteSpeed = 320;
+        this.window = 72;
+        this.activeNotes = [];
+        this.scheduleIndex = 0;
+        rhythmData.hits = 0; rhythmData.misses = 0; rhythmData.combo = 0; rhythmData.finished = false; rhythmData.sent = false;
+        updateStats();
+
+        const width = this.game.config.width;
+        const laneWidth = 120;
+        this.laneX = [width/2 - laneWidth*1.5, width/2 - laneWidth*0.5, width/2 + laneWidth*0.5, width/2 + laneWidth*1.5];
+        this.add.rectangle(width/2, this.hitY, width, 4, 0xffffff, 0.3);
+        this.laneX.forEach((x, idx)=>{
+          this.add.rectangle(x, this.hitY, laneWidth-4, 18, Phaser.Display.Color.HexStringToColor(laneColors[idx]).color, 0.18);
+        });
+
+        this.input.keyboard.on('keydown', (ev)=>this.handleKey(ev.code));
+        rhythmData.startedAt = performance.now();
+      }
+
+      spawnNote(lane){
+        const x = this.laneX[lane];
+        const note = this.add.rectangle(x, -30, 68, 16, Phaser.Display.Color.HexStringToColor(laneColors[lane]).color).setOrigin(0.5);
+        note.lane = lane;
+        this.activeNotes.push(note);
+      }
+
+      handleKey(code){
+        const lane = keyToLane[code];
+        if (lane === undefined) return;
+        let best = null;
+        let bestIdx = -1;
+        for (let i=0;i<this.activeNotes.length;i++){
+          const n = this.activeNotes[i];
+          if (n.lane !== lane) continue;
+          const dist = Math.abs(n.y - this.hitY);
+          if (dist <= this.window && (best === null || dist < best.dist)) {
+            best = { note:n, dist, idx:i };
+          }
+        }
+        if (best){
+          rhythmData.hits += 1;
+          rhythmData.combo = rhythmData.combo + 1;
+          best.note.destroy();
+          this.activeNotes.splice(best.idx, 1);
+          statusEl.textContent = best.dist < 28 ? 'PERFECT!' : 'GOOD!';
+        } else {
+          rhythmData.misses += 1;
+          rhythmData.combo = 0;
+          statusEl.textContent = 'MISS...';
+        }
+        updateStats();
+      }
+
+      update(_, delta){
+        if (!rhythmData.startedAt) return;
+        const now = performance.now();
+        const elapsed = now - rhythmData.startedAt;
+        while (this.scheduleIndex < rhythmData.schedule.length && rhythmData.schedule[this.scheduleIndex].time <= elapsed + 1100){
+          this.spawnNote(rhythmData.schedule[this.scheduleIndex].lane);
+          this.scheduleIndex++;
+        }
+
+        for (let i=this.activeNotes.length-1;i>=0;i--){
+          const n = this.activeNotes[i];
+          n.y += this.noteSpeed * (delta/1000);
+          if (n.y > this.hitY + this.window){
+            rhythmData.misses += 1;
+            rhythmData.combo = 0;
+            statusEl.textContent = 'MISS...';
+            n.destroy();
+            this.activeNotes.splice(i,1);
+            updateStats();
+          }
+        }
+
+        if (this.scheduleIndex >= rhythmData.schedule.length && this.activeNotes.length === 0) {
+          finishRun(this);
+        }
+      }
+    }
+
+    function startGame(){
+      const idx = Number(selectEl.value) || 0;
+      const track = tracks[idx];
+      statusEl.textContent = '로딩 중...';
+      startBtn.disabled = true;
+      if (activeAudio) { try { activeAudio.pause(); } catch{} }
+      destroyGame();
+      activeAudio = new Audio(track.url);
+      activeAudio.crossOrigin = 'anonymous';
+      activeAudio.addEventListener('loadedmetadata', () => {
+        const durationMs = Math.max(45000, (activeAudio.duration || 60) * 1000);
+        rhythmData.schedule = buildSchedule(durationMs);
+        destroyGame();
+        gameInstance = new Phaser.Game({
+          type: Phaser.AUTO,
+          width: 540,
+          height: 640,
+          parent: 'game-container',
+          backgroundColor: '#050912',
+          physics: { default: 'arcade' },
+          scene: [RhythmScene]
+        });
+        activeAudio.currentTime = 0;
+        activeAudio.play().catch(()=>{ statusEl.textContent='오디오 재생이 차단되었습니다. 소리를 켜주세요.'; startBtn.disabled=false; });
+      });
+      activeAudio.addEventListener('ended', () => finishRun(currentScene));
+      activeAudio.load();
+    }
+
+    startBtn.addEventListener('click', startGame);
+    fillTracks();
+    statusEl.textContent = 'D / F / J / K 키로 판정선에 맞춰 누르세요.';
+  </script>
+</body>
+</html>
