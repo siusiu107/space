@@ -113,6 +113,30 @@
       background:url('/images/space-bg.jpg') center center / cover no-repeat fixed;
       color:#fff;
     }
+    #snow-layer{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index:5;
+      mix-blend-mode:screen;
+    }
+    .snowflake{
+      position:absolute;
+      top:-6px;
+      width:4px;
+      height:4px;
+      background:rgba(255,255,255,0.9);
+      border-radius:50%;
+      box-shadow:0 0 6px rgba(255,255,255,0.55);
+      animation: snowFall linear infinite;
+      opacity:0.7;
+    }
+    @keyframes snowFall {
+      0%   { transform: translate3d(0, -10px, 0); opacity:0; }
+      10%  { opacity:0.9; }
+      100% { transform: translate3d(var(--drift, 0px), 110vh, 0); opacity:0.95; }
+    }
     body.game-hard-blocked #top-bar,
     body.game-hard-blocked #container { filter: grayscale(0.65); pointer-events:none; user-select:none; opacity:0.55; }
     body.game-hard-blocked #top-bar { opacity:0.35; }
@@ -959,6 +983,7 @@
   <script src="https://cdn.gtranslate.net/widgets/latest/popup.js" defer></script>
 </head>
 <body>
+  <div id="snow-layer" aria-hidden="true"></div>
   <div class="gtranslate_wrapper" aria-hidden="true"></div>
   <!-- PC 팝업 안내 게이트 -->
   <div id="popup-gate" aria-hidden="true">
@@ -7252,6 +7277,30 @@
         activate(window.__CURRENT_USER_UID);
       } else {
         applyPlayState();
+      }
+    })();
+  </script>
+
+  <!-- 작은 눈 내리는 효과 -->
+  <script>
+    (() => {
+      const snowLayer = document.getElementById('snow-layer');
+      if (!snowLayer) return;
+      const flakeCount = 60;
+      for (let i = 0; i < flakeCount; i++) {
+        const flake = document.createElement('span');
+        flake.className = 'snowflake';
+        const size = 2 + Math.random() * 2;
+        const duration = 7 + Math.random() * 6;
+        const delay = Math.random() * -duration;
+        flake.style.width = `${size}px`;
+        flake.style.height = `${size}px`;
+        flake.style.left = `${Math.random() * 100}%`;
+        flake.style.animationDuration = `${duration}s`;
+        flake.style.animationDelay = `${delay}s`;
+        flake.style.setProperty('--drift', `${(Math.random() * 40 - 20).toFixed(1)}px`);
+        flake.style.opacity = (0.45 + Math.random() * 0.35).toFixed(2);
+        snowLayer.appendChild(flake);
       }
     })();
   </script>
