@@ -48,24 +48,14 @@
   </div>
 
   <script>
-    const tracks = [
-      { name:'Jingle Bells - Chillhop', url:'https://cdn.pixabay.com/download/audio/2022/10/02/audio_9025c7f1a3.mp3?filename=jingle-bells-12068.mp3' },
-      { name:'Christmas Village', url:'https://cdn.pixabay.com/download/audio/2022/11/09/audio_06cc7abfe7.mp3?filename=christmas-village-12674.mp3' },
-      { name:'Deck the Halls (Jazz)', url:'https://cdn.pixabay.com/download/audio/2022/11/24/audio_5c8ead1b8d.mp3?filename=deck-the-halls-12853.mp3' },
-      { name:'Happy Christmas Swing', url:'https://cdn.pixabay.com/download/audio/2022/12/06/audio_7b73a9ca53.mp3?filename=happy-christmas-swing-12981.mp3' },
-      { name:'Soft Snow', url:'https://cdn.pixabay.com/download/audio/2021/12/21/audio_07f0990357.mp3?filename=soft-snow-12610.mp3' },
-      { name:'Warm Fireplace', url:'https://cdn.pixabay.com/download/audio/2022/11/21/audio_38cb1fad1d.mp3?filename=warm-fireplace-12815.mp3' },
-      { name:'Holiday Future Bass', url:'https://cdn.pixabay.com/download/audio/2022/12/28/audio_d7d4b27c63.mp3?filename=christmas-future-bass-13102.mp3' },
-      { name:'Snowy Day Lo-fi', url:'https://cdn.pixabay.com/download/audio/2023/11/16/audio_dddbf6c6b4.mp3?filename=snowy-day-175375.mp3' },
-      { name:'Silent Night Remix', url:'https://cdn.pixabay.com/download/audio/2022/11/28/audio_6196ef7a63.mp3?filename=silent-night-chill-12887.mp3' },
-      { name:'Holiday Chip Tune', url:'https://cdn.pixabay.com/download/audio/2022/12/29/audio_5346df75e8.mp3?filename=retro-christmas-chip-13111.mp3' },
-    ];
+    const tracks = Array.from({ length: 10 }, (_, i) => ({ name: `Holiday Groove ${i + 1}`, seed: i + 1 }));
 
     const keyToLane = { KeyD:0, KeyF:1, KeyJ:2, KeyK:3 };
     const laneColors = ['#00d4ff','#5cffc8','#ffc85c','#ff7aa5'];
     let gameInstance = null;
     let currentScene = null;
     let activeAudio = null;
+    const generatedUrls = new Map();
 
     const rhythmData = { schedule: [], startedAt: 0, hits:0, misses:0, combo:0, sent:false };
 
@@ -118,7 +108,9 @@
     }
 
     function initGameFromAudio(){
-      const durationMs = Math.max(45000, (activeAudio.duration || 60) * 1000);
+      const durationMs = (Number.isFinite(activeAudio.duration) && activeAudio.duration > 0)
+        ? activeAudio.duration * 1000
+        : 30000;
       rhythmData.schedule = buildSchedule(durationMs);
       destroyGame();
       gameInstance = new Phaser.Game({
@@ -208,7 +200,7 @@
       }
 
       update(_, delta){
-        if (!rhythmData.startedAt) return;
+        if (!rhythmData.startedAt || rhythmData.finished) return;
         const now = performance.now();
         const elapsed = now - rhythmData.startedAt;
         while (this.scheduleIndex < rhythmData.schedule.length && rhythmData.schedule[this.scheduleIndex].time <= elapsed + 1100){
@@ -235,17 +227,156 @@
       }
     }
 
-    function startGame(){
+    function audioBufferToWav(buffer){
+      const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const format = 1;
+      const bitDepth = 16;
+      const bytesPerSample = bitDepth / 8;
+      const samples = buffer.length * numChannels;
+      const dataLength = samples * bytesPerSample;
+      const bufferLength = 44 + dataLength;
+      const arrayBuffer = new ArrayBuffer(bufferLength);
+      const view = new DataView(arrayBuffer);
+      let offset = 0;
+
+      function writeString(str){
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset++, str.charCodeAt(i));
+        }
+      }
+
+      function writeUint16(data){ view.setUint16(offset, data, true); offset += 2; }
+      function writeUint32(data){ view.setUint32(offset, data, true); offset += 4; }
+
+      writeString('RIFF');
+      writeUint32(36 + dataLength);
+      writeString('WAVE');
+      writeString('fmt ');
+      writeUint32(16);
+      writeUint16(format);
+      writeUint16(numChannels);
+      writeUint32(sampleRate);
+      writeUint32(sampleRate * numChannels * bytesPerSample);
+      writeUint16(numChannels * bytesPerSample);
+      writeUint16(bitDepth);
+      writeString('data');
+      writeUint32(dataLength);
+
+      const channelData = [];
+      for (let i = 0; i < numChannels; i++) {
+        channelData.push(buffer.getChannelData(i));
+      }
+
+      for (let i = 0; i < buffer.length; i++) {
+        for (let channel = 0; channel < numChannels; channel++) {
+          let sample = channelData[channel][i];
+          sample = Math.max(-1, Math.min(1, sample));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+          offset += 2;
+        }
+      }
+
+      return new Blob([arrayBuffer], { type: 'audio/wav' });
+    }
+
+    async function renderTrack(seed){
+      const duration = 26;
+      const sampleRate = 44100;
+      const ctx = new OfflineAudioContext(1, sampleRate * duration, sampleRate);
+      const mainGain = ctx.createGain();
+      mainGain.gain.value = 0.45;
+      mainGain.connect(ctx.destination);
+
+      const baseNotes = [0, 2, 4, 5, 7, 9, 11];
+      const tempo = 96 + (seed % 4) * 6;
+      const beatTime = 60 / tempo;
+      const melodyGain = ctx.createGain();
+      melodyGain.gain.value = 0.5;
+      melodyGain.connect(mainGain);
+
+      const pad = ctx.createOscillator();
+      pad.type = 'triangle';
+      pad.frequency.value = 180 + seed * 7;
+      const padGain = ctx.createGain();
+      padGain.gain.setValueAtTime(0.06, 0);
+      pad.connect(padGain).connect(mainGain);
+      pad.start(0);
+      pad.stop(duration);
+
+      for (let bar = 0; bar < 16; bar++) {
+        for (let step = 0; step < 4; step++) {
+          const time = (bar * 4 + step) * beatTime;
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          const noteIndex = (seed * 13 + bar * 3 + step * 5) % baseNotes.length;
+          const semitone = baseNotes[noteIndex] + 12 * ((bar % 4 === 0) ? 4 : 3);
+          const freq = 261.63 * Math.pow(2, semitone / 12);
+          osc.frequency.value = freq;
+          const g = ctx.createGain();
+          const vel = 0.32 + ((bar + step + seed) % 3) * 0.1;
+          g.gain.setValueAtTime(0, time);
+          g.gain.linearRampToValueAtTime(vel, time + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, time + beatTime * 0.85);
+          osc.connect(g).connect(melodyGain);
+          osc.start(time);
+          osc.stop(time + beatTime);
+        }
+      }
+
+      for (let bar = 0; bar < 16; bar++) {
+        const time = bar * 4 * beatTime;
+        const noise = ctx.createBufferSource();
+        const length = Math.floor(sampleRate * 0.12);
+        const noiseBuffer = ctx.createBuffer(1, length, sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.35;
+        }
+        noise.buffer = noiseBuffer;
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(0.08, time);
+        ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
+        noise.connect(ng).connect(mainGain);
+        noise.start(time);
+        noise.stop(time + 0.5);
+      }
+
+      return ctx.startRendering();
+    }
+
+    async function getTrackUrl(idx){
+      if (generatedUrls.has(idx)) return generatedUrls.get(idx);
+      try {
+        const buffer = await renderTrack(idx + 1);
+        const blob = audioBufferToWav(buffer);
+        const url = URL.createObjectURL(blob);
+        generatedUrls.set(idx, url);
+        return url;
+      } catch (err) {
+        console.error(err);
+        throw new Error('트랙 생성 중 문제가 발생했습니다.');
+      }
+    }
+
+    async function startGame(){
       const idx = Number(selectEl.value) || 0;
-      const track = tracks[idx];
       statusEl.textContent = '로딩 중...';
       startBtn.disabled = true;
       if (activeAudio) { try { activeAudio.pause(); } catch{} }
       destroyGame();
-      activeAudio = new Audio(track.url);
-      activeAudio.crossOrigin = 'anonymous';
+
+      try {
+        const url = await getTrackUrl(idx);
+        activeAudio = new Audio(url);
+        activeAudio.crossOrigin = 'anonymous';
+      } catch (err) {
+        handleAudioError(err.message || '트랙을 준비하지 못했습니다. 다시 시도해 주세요.');
+        return;
+      }
+
       const loadTimeout = setTimeout(() => {
-        handleAudioError('음원 로딩이 지연됩니다. 네트워크를 확인한 뒤 다시 시도해 주세요.');
+        handleAudioError('음원 로딩이 지연됩니다. 잠시 후 다시 시도해 주세요.');
       }, 7000);
 
       const readyHandler = () => {
@@ -263,7 +394,9 @@
       activeAudio.load();
     }
 
-    startBtn.addEventListener('click', startGame);
+    startBtn.addEventListener('click', () => {
+      startGame().catch((err) => handleAudioError(err.message || '트랙을 준비하지 못했습니다.'));
+    });
     fillTracks();
     statusEl.textContent = 'D / F / J / K 키로 판정선에 맞춰 누르세요.';
   </script>
