@@ -111,6 +111,31 @@
       }
     }
 
+    function handleAudioError(message){
+      statusEl.textContent = message;
+      startBtn.disabled = false;
+      destroyGame();
+    }
+
+    function initGameFromAudio(){
+      const durationMs = Math.max(45000, (activeAudio.duration || 60) * 1000);
+      rhythmData.schedule = buildSchedule(durationMs);
+      destroyGame();
+      gameInstance = new Phaser.Game({
+        type: Phaser.AUTO,
+        width: 540,
+        height: 640,
+        parent: 'game-container',
+        backgroundColor: '#050912',
+        physics: { default: 'arcade' },
+        scene: [RhythmScene]
+      });
+      activeAudio.currentTime = 0;
+      activeAudio.play().catch(()=>{
+        handleAudioError('오디오 재생이 차단되었습니다. 소리를 켜주세요.');
+      });
+    }
+
     function finishRun(scene){
       if (rhythmData.finished) return;
       rhythmData.finished = true;
@@ -219,22 +244,21 @@
       destroyGame();
       activeAudio = new Audio(track.url);
       activeAudio.crossOrigin = 'anonymous';
-      activeAudio.addEventListener('loadedmetadata', () => {
-        const durationMs = Math.max(45000, (activeAudio.duration || 60) * 1000);
-        rhythmData.schedule = buildSchedule(durationMs);
-        destroyGame();
-        gameInstance = new Phaser.Game({
-          type: Phaser.AUTO,
-          width: 540,
-          height: 640,
-          parent: 'game-container',
-          backgroundColor: '#050912',
-          physics: { default: 'arcade' },
-          scene: [RhythmScene]
-        });
-        activeAudio.currentTime = 0;
-        activeAudio.play().catch(()=>{ statusEl.textContent='오디오 재생이 차단되었습니다. 소리를 켜주세요.'; startBtn.disabled=false; });
-      });
+      const loadTimeout = setTimeout(() => {
+        handleAudioError('음원 로딩이 지연됩니다. 네트워크를 확인한 뒤 다시 시도해 주세요.');
+      }, 7000);
+
+      const readyHandler = () => {
+        clearTimeout(loadTimeout);
+        initGameFromAudio();
+      };
+
+      activeAudio.addEventListener('loadedmetadata', readyHandler, { once:true });
+      activeAudio.addEventListener('canplaythrough', readyHandler, { once:true });
+      activeAudio.addEventListener('error', () => {
+        clearTimeout(loadTimeout);
+        handleAudioError('음원 로딩에 실패했습니다. 다시 시도해 주세요.');
+      }, { once:true });
       activeAudio.addEventListener('ended', () => finishRun(currentScene));
       activeAudio.load();
     }
