@@ -1150,8 +1150,10 @@
     <div id="workers-content" class="tab-content">
       <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
       <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
+      <button id="hire-worker-ec" class="general">알바 +10렙 (1EC)</button>
       <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
       <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
+      <button id="hire-conversion-ec" class="general">코인 알바 +10렙 (1EC)</button>
     </div>
 
     <div id="ship-content" class="tab-content">
@@ -1166,7 +1168,10 @@
 
     <div id="upgrades-content" class="tab-content">
       <p>클릭당 자원: <span id="click-power">1</span></p>
-      <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
+      <div class="upgrade-actions">
+        <button id="click-upgrade" class="general">클릭 업그레이드 (15코인)</button>
+        <button id="click-upgrade-ec" class="general">클릭 업그레이드 +10렙 (1EC)</button>
+      </div>
     </div>
 
     <div id="planets-content" class="tab-content">
@@ -4042,9 +4047,13 @@
       document.getElementById('upgrade-ship').disabled = (state.coins < state.shipUpgradeCost) && !canSpendEC(1);
 
       const clickUp = document.getElementById('click-upgrade');
+      const clickUpEc = document.getElementById('click-upgrade-ec');
       const clickCost = ensureClickUpgradeCost();
       clickUp.innerText = `클릭 업그레이드 (${formatKR(clickCost)}코인)`;
       clickUp.disabled  = (state.coins < clickCost) && !canSpendEC(1);
+      if (clickUpEc) {
+        clickUpEc.disabled = !canSpendEC(1);
+      }
       document.getElementById('click-power').innerText = Math.round(state.clickPower).toString();
 
       const autoBtn = document.getElementById('auto-convert-buy');
@@ -4063,11 +4072,19 @@
       const hireWork = document.getElementById('hire-worker');
       hireWork.innerText = `알바 고용 (${formatKR(getWorkerCost())}코인)`;
       hireWork.disabled = state.coins < getWorkerCost();
+      const hireWorkEc = document.getElementById('hire-worker-ec');
+      if (hireWorkEc) {
+        hireWorkEc.disabled = !canSpendEC(1);
+      }
       document.getElementById('resource-per-sec').innerText = (state.workerCount * getWorkerPower() * activeBuffFactor('res')).toFixed(1);
 
       const hireConv = document.getElementById('hire-conversion');
       hireConv.innerText = `코인 알바 (${formatKR(getConversionCost())}코인)`;
       hireConv.disabled = state.coins < getConversionCost();
+      const hireConvEc = document.getElementById('hire-conversion-ec');
+      if (hireConvEc) {
+        hireConvEc.disabled = !canSpendEC(1);
+      }
       document.getElementById('coin-per-sec').innerText = (state.conversionCount * activeBuffFactor('coin')).toFixed(1);
 
       renderSecurityBadge();
@@ -4307,13 +4324,18 @@
           state.coins -= cost;
           auditSpend('coin', cost);
           hireWorkersBulk(1);
-        } else if (canSpendEC(1)) {
-          state.eventCoins -= 1;
-          auditSpend('eco', 1);
-          hireWorkersBulk(15);
         } else {
           return false;
         }
+        save(); updateUI();
+        return true;
+      });
+      attachHoldRepeat('hire-worker-ec', () => {
+        if (!ensureReady()) return false;
+        if (!canSpendEC(1)) return false;
+        state.eventCoins -= 1;
+        auditSpend('eco', 1);
+        hireWorkersBulk(10);
         save(); updateUI();
         return true;
       });
@@ -4331,6 +4353,15 @@
         } else {
           return false;
         }
+        save(); updateUI();
+        return true;
+      });
+      attachHoldRepeat('hire-conversion-ec', () => {
+        if (!ensureReady()) return false;
+        if (!canSpendEC(1)) return false;
+        state.eventCoins -= 1;
+        auditSpend('eco', 1);
+        hireConversionsBulk(10);
         save(); updateUI();
         return true;
       });
@@ -4365,10 +4396,19 @@
         } else if (canSpendEC(1)) {
           state.eventCoins -= 1;
           auditSpend('eco', 1);
-          applyClickUpgrades(15);
+          applyClickUpgrades(10);
         } else {
           return false;
         }
+        save(); updateUI();
+        return true;
+      });
+      attachHoldRepeat('click-upgrade-ec', () => {
+        if (!ensureReady()) return false;
+        if (!canSpendEC(1)) return false;
+        state.eventCoins -= 1;
+        auditSpend('eco', 1);
+        applyClickUpgrades(10);
         save(); updateUI();
         return true;
       });
