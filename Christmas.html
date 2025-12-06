@@ -4,38 +4,119 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🎄 Christmas Rhythm Stage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
-    body{ margin:0; font-family:'Noto Sans KR', system-ui, -apple-system, sans-serif; background:radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 30%), #0a0f1c; color:#e7f5ff; }
-    .layout{ display:flex; flex-wrap:wrap; gap:14px; padding:14px; max-width:1200px; margin:0 auto; }
-    .panel{ flex:1 1 320px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; box-shadow:0 10px 28px rgba(0,0,0,0.45); }
-    #game-container{ flex:2 1 520px; min-height:640px; background:#050912; border:1px solid rgba(255,255,255,0.08); border-radius:12px; position:relative; overflow:hidden; }
-    h1{ margin:0 0 6px; font-size:20px; }
-    .hint{ color:#bcd8ff; font-size:14px; line-height:1.55; }
-    select, button{ width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.18); background:rgba(0,0,0,0.25); color:#fff; font-size:14px; }
-    button{ cursor:pointer; background:linear-gradient(90deg,#0de3ff,#4a7cff); color:#001218; font-weight:800; border:none; box-shadow:0 8px 18px rgba(0,180,255,0.22); }
-    button:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; }
-    .stats{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; font-size:14px; }
-    .stat{ flex:1 1 120px; padding:8px 10px; border-radius:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); }
-    #status{ margin-top:8px; color:#ffe8a6; font-weight:700; min-height:20px; }
-    .keys{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
-    .keycap{ flex:1 1 60px; padding:8px; text-align:center; border-radius:10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.08); }
-    canvas{ border-radius:12px; overflow:hidden; }
+    :root{
+      --glass: rgba(255,255,255,0.08);
+      --stroke: rgba(255,255,255,0.14);
+      --bg: #040a18;
+      --accent: #ff4d7a;
+      --accent-2: #5df2ff;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:'Noto Sans KR','Montserrat', system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 20% 25%, rgba(255,255,255,0.12), transparent 32%),
+        radial-gradient(circle at 80% 10%, rgba(255,255,255,0.08), transparent 30%),
+        linear-gradient(160deg, #0a1633 0%, #050912 45%, #021623 100%);
+      color:#e7f5ff;
+      min-height:100vh;
+      position:relative;
+      overflow-x:hidden;
+    }
+    .snow{position:absolute;inset:0;pointer-events:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 10 10%22%3E%3Ccircle cx=%222%22 cy=%223%22 r=%220.6%22 fill=%22%23fff%22 opacity=%220.4%22/%3E%3Ccircle cx=%228%22 cy=%229%22 r=%220.5%22 fill=%22%23fff%22 opacity=%220.35%22/%3E%3Ccircle cx=%225%22 cy=%226%22 r=%220.4%22 fill=%22%23fff%22 opacity=%220.3%22/%3E%3C/svg%3E');animation: drift 18s linear infinite;}
+    @keyframes drift{from{transform:translateY(-20px);}to{transform:translateY(40px);}}
+    header{
+      max-width:1200px;
+      margin:0 auto;
+      padding:28px 16px 6px;
+      text-align:center;
+      position:relative;
+      z-index:1;
+    }
+    h1{
+      margin:0;
+      font-size:28px;
+      letter-spacing:0.3px;
+    }
+    h1 span{ color:var(--accent); }
+    .subtitle{ color:#bed8ff; margin:6px 0 14px; font-size:15px; }
+    .badge{ display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.1); padding:8px 14px; border-radius:999px; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#ffe2f3; border:1px solid rgba(255,255,255,0.15); }
+    .layout{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; padding:16px; max-width:1200px; margin:0 auto; position:relative; z-index:1; }
+    .panel{
+      background:var(--glass);
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 16px 32px rgba(0,0,0,0.4);
+      backdrop-filter:blur(8px);
+    }
+    #game-container{
+      background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.65)), #050912;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:18px;
+      position:relative;
+      overflow:hidden;
+      min-height:560px;
+    }
+    label{ display:block; margin-top:12px; font-weight:700; letter-spacing:0.2px; }
+    .hint{ color:#cfe2ff; font-size:14px; line-height:1.55; }
+    select, button{
+      width:100%; padding:12px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(0,0,0,0.35); color:#fff; font-size:15px;
+    }
+    select{ appearance:none; background-image:linear-gradient(45deg, transparent 50%, #8bafff 50%), linear-gradient(135deg, #8bafff 50%, transparent 50%); background-position: calc(100% - 18px) calc(50% - 4px), calc(100% - 13px) calc(50% - 4px); background-size:6px 6px; background-repeat:no-repeat; }
+    button{
+      cursor:pointer;
+      background:linear-gradient(120deg, #ff9acb 0%, #ff4d7a 45%, #5df2ff 100%);
+      color:#0b0b14;
+      font-weight:800;
+      border:none;
+      box-shadow:0 10px 30px rgba(255,77,122,0.35);
+      transition:transform 120ms ease, box-shadow 120ms ease;
+    }
+    button:hover{ transform:translateY(-1px); box-shadow:0 12px 34px rgba(93,242,255,0.4); }
+    button:disabled{ opacity:.65; cursor:not-allowed; box-shadow:none; }
+    .stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-top:12px; font-size:14px; }
+    .stat{ padding:10px 12px; border-radius:12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; }
+    #status{ margin-top:10px; color:#ffe8a6; font-weight:800; min-height:22px; letter-spacing:0.2px; }
+    .keys{ margin-top:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(60px, 1fr)); gap:10px; }
+    .keycap{ padding:10px; text-align:center; border-radius:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); font-weight:700; box-shadow:inset 0 1px 0 rgba(255,255,255,0.1); }
+    canvas{ border-radius:14px; overflow:hidden; width:100% !important; height:auto !important; }
+    .mobile-hint{ color:#9fc5ff; font-size:13px; margin-top:8px; display:flex; align-items:center; gap:8px; }
+    @media (max-width: 720px){
+      header{ padding-top:24px; }
+      h1{ font-size:24px; }
+      .panel{ padding:14px; }
+      #game-container{ min-height:520px; }
+      .keys{ grid-template-columns:repeat(4, 1fr); }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
+  <div class="snow"></div>
+  <header>
+    <div class="badge">HOLIDAY PARTY • 리듬챌린지</div>
+    <h1>🎧 <span>크리스마스</span> 리듬게임</h1>
+    <p class="subtitle">실제 캐롤과 함께 더 생동감 있게! 히트를 이어가고 완벽 클리어로 선물을 받아보세요.</p>
+  </header>
   <div class="layout">
     <div class="panel">
-      <h1>🎧 크리스마스 리듬게임</h1>
-      <p class="hint">저작권 없는 크리스마스/연말 테마 음악 10곡을 골라 플레이하세요. 곡을 한 번도 틀리지 않으면 산타 조각 5개를 획득해요!</p>
-      <label style="display:block; margin-top:10px; font-weight:700;">곡 선택</label>
+      <p class="hint">🎄 신나는 캐롤 8곡을 바로 재생할 수 있도록 연결했어요. 처음부터 끝까지 놓치지 말고 연속 히트를 노려보세요!</p>
+      <label>곡 선택</label>
       <select id="track-select" aria-label="크리스마스 곡 선택"></select>
-      <button id="start-btn" style="margin-top:10px;">게임 시작</button>
+      <button id="start-btn" style="margin-top:12px;">게임 시작</button>
       <div id="status" aria-live="polite"></div>
       <div class="stats">
-        <div class="stat">히트: <span id="hit-count">0</span></div>
-        <div class="stat">미스: <span id="miss-count">0</span></div>
-        <div class="stat">연속: <span id="combo-count">0</span></div>
+        <div class="stat"><span>히트</span><strong id="hit-count">0</strong></div>
+        <div class="stat"><span>미스</span><strong id="miss-count">0</strong></div>
+        <div class="stat"><span>연속</span><strong id="combo-count">0</strong></div>
       </div>
       <div class="keys">
         <div class="keycap">D</div>
@@ -43,19 +124,28 @@
         <div class="keycap">J</div>
         <div class="keycap">K</div>
       </div>
+      <div class="mobile-hint">💡 모바일에선 화면을 눕혀 두 손가락으로 D/F/J/K 위치를 눌러보세요.</div>
     </div>
     <div id="game-container" aria-label="리듬게임 영역"></div>
   </div>
 
   <script>
-    const tracks = Array.from({ length: 10 }, (_, i) => ({ name: `Holiday Groove ${i + 1}`, seed: i + 1 }));
+    const tracks = [
+      { name:'Jingle Bells (Upbeat Remix)', artist:'Alex Productions', url:'https://cdn.pixabay.com/audio/2022/12/19/audio_4fec3b4bb4.mp3' },
+      { name:'Deck the Halls', artist:'Nico Staf', url:'https://cdn.pixabay.com/download/audio/2023/12/11/audio_8f31cddd84.mp3?filename=deck-the-halls-150740.mp3' },
+      { name:'We Wish You a Merry Christmas', artist:'Grand_Project', url:'https://cdn.pixabay.com/download/audio/2023/12/11/audio_35bc0e8d47.mp3?filename=we-wish-you-a-merry-christmas-150742.mp3' },
+      { name:'Joyful Christmas', artist:'PrazKazak', url:'https://cdn.pixabay.com/download/audio/2022/12/07/audio_7fb2f6a510.mp3?filename=joyful-christmas-126566.mp3' },
+      { name:'Christmas Sleigh Ride', artist:'LiteSaturation', url:'https://cdn.pixabay.com/download/audio/2023/12/08/audio_27e1ca1192.mp3?filename=christmas-sleigh-ride-150550.mp3' },
+      { name:'Happy Xmas Bells', artist:'Grand_Project', url:'https://cdn.pixabay.com/download/audio/2023/12/11/audio_dfef399b95.mp3?filename=happy-xmas-bells-150744.mp3' },
+      { name:'Upbeat Christmas', artist:'Oleg Kirilkov', url:'https://cdn.pixabay.com/download/audio/2022/11/29/audio_85d6a8c41f.mp3?filename=upbeat-christmas-124132.mp3' },
+      { name:'Christmas Funk', artist:'FASSounds', url:'https://cdn.pixabay.com/download/audio/2022/11/14/audio_795bec5e54.mp3?filename=christmas-funk-12748.mp3' }
+    ];
 
     const keyToLane = { KeyD:0, KeyF:1, KeyJ:2, KeyK:3 };
     const laneColors = ['#00d4ff','#5cffc8','#ffc85c','#ff7aa5'];
     let gameInstance = null;
     let currentScene = null;
     let activeAudio = null;
-    const generatedUrls = new Map();
 
     const rhythmData = { schedule: [], startedAt: 0, hits:0, misses:0, combo:0, sent:false };
 
@@ -70,7 +160,7 @@
       tracks.forEach((t, idx) => {
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.textContent = `${idx+1}. ${t.name}`;
+        opt.textContent = `${idx+1}. ${t.name} · ${t.artist}`;
         selectEl.appendChild(opt);
       });
     }
@@ -82,8 +172,8 @@
     }
 
     function buildSchedule(durationMs){
-      const beat = 680;
-      const count = Math.min(180, Math.max(40, Math.floor(durationMs / beat)));
+      const beat = 620;
+      const count = Math.min(220, Math.max(48, Math.floor(durationMs / beat)));
       const schedule = [];
       let lane = 0;
       for (let i=0;i<count;i++){
@@ -115,8 +205,7 @@
       destroyGame();
       gameInstance = new Phaser.Game({
         type: Phaser.AUTO,
-        width: 540,
-        height: 640,
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 540, height: 720 },
         parent: 'game-container',
         backgroundColor: '#050912',
         physics: { default: 'arcade' },
@@ -145,9 +234,9 @@
       create(){
         currentScene = this;
         this.cameras.main.setBackgroundColor('#050912');
-        this.hitY = 540;
-        this.noteSpeed = 320;
-        this.window = 72;
+        this.hitY = 600;
+        this.noteSpeed = 340;
+        this.window = 76;
         this.activeNotes = [];
         this.scheduleIndex = 0;
         rhythmData.hits = 0; rhythmData.misses = 0; rhythmData.combo = 0; rhythmData.finished = false; rhythmData.sent = false;
@@ -227,153 +316,16 @@
       }
     }
 
-    function audioBufferToWav(buffer){
-      const numChannels = buffer.numberOfChannels;
-      const sampleRate = buffer.sampleRate;
-      const format = 1;
-      const bitDepth = 16;
-      const bytesPerSample = bitDepth / 8;
-      const samples = buffer.length * numChannels;
-      const dataLength = samples * bytesPerSample;
-      const bufferLength = 44 + dataLength;
-      const arrayBuffer = new ArrayBuffer(bufferLength);
-      const view = new DataView(arrayBuffer);
-      let offset = 0;
-
-      function writeString(str){
-        for (let i = 0; i < str.length; i++) {
-          view.setUint8(offset++, str.charCodeAt(i));
-        }
-      }
-
-      function writeUint16(data){ view.setUint16(offset, data, true); offset += 2; }
-      function writeUint32(data){ view.setUint32(offset, data, true); offset += 4; }
-
-      writeString('RIFF');
-      writeUint32(36 + dataLength);
-      writeString('WAVE');
-      writeString('fmt ');
-      writeUint32(16);
-      writeUint16(format);
-      writeUint16(numChannels);
-      writeUint32(sampleRate);
-      writeUint32(sampleRate * numChannels * bytesPerSample);
-      writeUint16(numChannels * bytesPerSample);
-      writeUint16(bitDepth);
-      writeString('data');
-      writeUint32(dataLength);
-
-      const channelData = [];
-      for (let i = 0; i < numChannels; i++) {
-        channelData.push(buffer.getChannelData(i));
-      }
-
-      for (let i = 0; i < buffer.length; i++) {
-        for (let channel = 0; channel < numChannels; channel++) {
-          let sample = channelData[channel][i];
-          sample = Math.max(-1, Math.min(1, sample));
-          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-          offset += 2;
-        }
-      }
-
-      return new Blob([arrayBuffer], { type: 'audio/wav' });
-    }
-
-    async function renderTrack(seed){
-      const duration = 26;
-      const sampleRate = 44100;
-      const ctx = new OfflineAudioContext(1, sampleRate * duration, sampleRate);
-      const mainGain = ctx.createGain();
-      mainGain.gain.value = 0.45;
-      mainGain.connect(ctx.destination);
-
-      const baseNotes = [0, 2, 4, 5, 7, 9, 11];
-      const tempo = 96 + (seed % 4) * 6;
-      const beatTime = 60 / tempo;
-      const melodyGain = ctx.createGain();
-      melodyGain.gain.value = 0.5;
-      melodyGain.connect(mainGain);
-
-      const pad = ctx.createOscillator();
-      pad.type = 'triangle';
-      pad.frequency.value = 180 + seed * 7;
-      const padGain = ctx.createGain();
-      padGain.gain.setValueAtTime(0.06, 0);
-      pad.connect(padGain).connect(mainGain);
-      pad.start(0);
-      pad.stop(duration);
-
-      for (let bar = 0; bar < 16; bar++) {
-        for (let step = 0; step < 4; step++) {
-          const time = (bar * 4 + step) * beatTime;
-          const osc = ctx.createOscillator();
-          osc.type = 'sine';
-          const noteIndex = (seed * 13 + bar * 3 + step * 5) % baseNotes.length;
-          const semitone = baseNotes[noteIndex] + 12 * ((bar % 4 === 0) ? 4 : 3);
-          const freq = 261.63 * Math.pow(2, semitone / 12);
-          osc.frequency.value = freq;
-          const g = ctx.createGain();
-          const vel = 0.32 + ((bar + step + seed) % 3) * 0.1;
-          g.gain.setValueAtTime(0, time);
-          g.gain.linearRampToValueAtTime(vel, time + 0.02);
-          g.gain.exponentialRampToValueAtTime(0.001, time + beatTime * 0.85);
-          osc.connect(g).connect(melodyGain);
-          osc.start(time);
-          osc.stop(time + beatTime);
-        }
-      }
-
-      for (let bar = 0; bar < 16; bar++) {
-        const time = bar * 4 * beatTime;
-        const noise = ctx.createBufferSource();
-        const length = Math.floor(sampleRate * 0.12);
-        const noiseBuffer = ctx.createBuffer(1, length, sampleRate);
-        const data = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < length; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.35;
-        }
-        noise.buffer = noiseBuffer;
-        const ng = ctx.createGain();
-        ng.gain.setValueAtTime(0.08, time);
-        ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
-        noise.connect(ng).connect(mainGain);
-        noise.start(time);
-        noise.stop(time + 0.5);
-      }
-
-      return ctx.startRendering();
-    }
-
-    async function getTrackUrl(idx){
-      if (generatedUrls.has(idx)) return generatedUrls.get(idx);
-      try {
-        const buffer = await renderTrack(idx + 1);
-        const blob = audioBufferToWav(buffer);
-        const url = URL.createObjectURL(blob);
-        generatedUrls.set(idx, url);
-        return url;
-      } catch (err) {
-        console.error(err);
-        throw new Error('트랙 생성 중 문제가 발생했습니다.');
-      }
-    }
-
     async function startGame(){
       const idx = Number(selectEl.value) || 0;
+      const track = tracks[idx] || tracks[0];
       statusEl.textContent = '로딩 중...';
       startBtn.disabled = true;
       if (activeAudio) { try { activeAudio.pause(); } catch{} }
       destroyGame();
 
-      try {
-        const url = await getTrackUrl(idx);
-        activeAudio = new Audio(url);
-        activeAudio.crossOrigin = 'anonymous';
-      } catch (err) {
-        handleAudioError(err.message || '트랙을 준비하지 못했습니다. 다시 시도해 주세요.');
-        return;
-      }
+      activeAudio = new Audio(track.url);
+      activeAudio.crossOrigin = 'anonymous';
 
       const loadTimeout = setTimeout(() => {
         handleAudioError('음원 로딩이 지연됩니다. 잠시 후 다시 시도해 주세요.');
@@ -381,6 +333,7 @@
 
       const readyHandler = () => {
         clearTimeout(loadTimeout);
+        statusEl.textContent = `${track.name} 재생 시작! 볼륨을 조절해 주세요.`;
         initGameFromAudio();
       };
 
