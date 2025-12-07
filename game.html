@@ -1539,10 +1539,10 @@
       getDatabase, ref, onValue, runTransaction, update, get
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
-      authDomain: "siu-studio.firebaseapp.com",
-      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      const firebaseConfig = {
+        apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+        authDomain: "siu-studio.firebaseapp.com",
+        databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "siu-studio",
       storageBucket: "siu-studio.appspot.com",
       messagingSenderId: "830887143444",
@@ -1553,10 +1553,24 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
+      const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
 
-    let currentCode = null;
-    let pollTimer = null;
+      // 🎄 크리스마스 이벤트 탭 노출 토글
+      const eventopen = true;
+
+      function applyEventVisibility() {
+        const christmasTab = document.querySelector('#bottom-nav .tab[data-tab="christmas"]');
+        const christmasContent = document.getElementById('christmas-content');
+        if (!eventopen) {
+          christmasTab?.remove();
+          christmasContent?.remove();
+        }
+      }
+
+      applyEventVisibility();
+
+      let currentCode = null;
+      let pollTimer = null;
 
     class SessionLogger {
       constructor() {
