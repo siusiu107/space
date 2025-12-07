@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🎄 Christmas Rhythm Stage</title>
+  <title>🎄 산타를 기다리는 스토리 클릭커</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -11,347 +11,271 @@
     :root{
       --glass: rgba(255,255,255,0.08);
       --stroke: rgba(255,255,255,0.14);
-      --bg: #040a18;
-      --accent: #ff4d7a;
-      --accent-2: #5df2ff;
+      --bg: #0a0f1c;
+      --accent: #ff8fb1;
+      --mint: #7df6ff;
+      --yellow: #ffe29f;
     }
     *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family:'Noto Sans KR','Montserrat', system-ui, -apple-system, sans-serif;
+      font-family:'Noto Sans KR','Montserrat',system-ui,-apple-system,sans-serif;
       background:
-        radial-gradient(circle at 20% 25%, rgba(255,255,255,0.12), transparent 32%),
-        radial-gradient(circle at 80% 10%, rgba(255,255,255,0.08), transparent 30%),
-        linear-gradient(160deg, #0a1633 0%, #050912 45%, #021623 100%);
-      color:#e7f5ff;
+        radial-gradient(circle at 18% 22%, rgba(255,255,255,0.12), transparent 32%),
+        radial-gradient(circle at 80% 12%, rgba(125,246,255,0.18), transparent 28%),
+        linear-gradient(180deg, #0f1530 0%, #040712 55%, #02060f 100%);
+      color:#eaf5ff;
       min-height:100vh;
-      position:relative;
       overflow-x:hidden;
     }
-    .snow{position:absolute;inset:0;pointer-events:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 10 10%22%3E%3Ccircle cx=%222%22 cy=%223%22 r=%220.6%22 fill=%22%23fff%22 opacity=%220.4%22/%3E%3Ccircle cx=%228%22 cy=%229%22 r=%220.5%22 fill=%22%23fff%22 opacity=%220.35%22/%3E%3Ccircle cx=%225%22 cy=%226%22 r=%220.4%22 fill=%22%23fff%22 opacity=%220.3%22/%3E%3C/svg%3E');animation: drift 18s linear infinite;}
+    .snow{position:absolute;inset:0;pointer-events:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 10 10%22%3E%3Ccircle cx=%222%22 cy=%223%22 r=%220.6%22 fill=%22%23f5f7ff%22 opacity=%220.4%22/%3E%3Ccircle cx=%228%22 cy=%229%22 r=%220.5%22 fill=%22%23fff%22 opacity=%220.35%22/%3E%3Ccircle cx=%225%22 cy=%226%22 r=%220.4%22 fill=%22%23fff%22 opacity=%220.3%22/%3E%3C/svg%3E');animation: drift 18s linear infinite;z-index:0;}
     @keyframes drift{from{transform:translateY(-20px);}to{transform:translateY(40px);}}
     header{
       max-width:1200px;
       margin:0 auto;
-      padding:28px 16px 6px;
+      padding:32px 16px 10px;
       text-align:center;
       position:relative;
       z-index:1;
     }
-    h1{
-      margin:0;
-      font-size:28px;
-      letter-spacing:0.3px;
-    }
-    h1 span{ color:var(--accent); }
-    .subtitle{ color:#bed8ff; margin:6px 0 14px; font-size:15px; }
-    .badge{ display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.1); padding:8px 14px; border-radius:999px; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#ffe2f3; border:1px solid rgba(255,255,255,0.15); }
-    .layout{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; padding:16px; max-width:1200px; margin:0 auto; position:relative; z-index:1; }
-    .panel{
-      background:var(--glass);
-      border:1px solid var(--stroke);
-      border-radius:16px;
-      padding:16px;
-      box-shadow:0 16px 32px rgba(0,0,0,0.4);
-      backdrop-filter:blur(8px);
-    }
-    #game-container{
-      background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.65)), #050912;
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:18px;
-      position:relative;
-      overflow:hidden;
-      min-height:560px;
-    }
-    label{ display:block; margin-top:12px; font-weight:700; letter-spacing:0.2px; }
-    .hint{ color:#cfe2ff; font-size:14px; line-height:1.55; }
-    select, button{
-      width:100%; padding:12px; border-radius:12px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(0,0,0,0.35); color:#fff; font-size:15px;
-    }
-    select{ appearance:none; background-image:linear-gradient(45deg, transparent 50%, #8bafff 50%), linear-gradient(135deg, #8bafff 50%, transparent 50%); background-position: calc(100% - 18px) calc(50% - 4px), calc(100% - 13px) calc(50% - 4px); background-size:6px 6px; background-repeat:no-repeat; }
-    button{
-      cursor:pointer;
-      background:linear-gradient(120deg, #ff9acb 0%, #ff4d7a 45%, #5df2ff 100%);
-      color:#0b0b14;
-      font-weight:800;
-      border:none;
-      box-shadow:0 10px 30px rgba(255,77,122,0.35);
-      transition:transform 120ms ease, box-shadow 120ms ease;
-    }
-    button:hover{ transform:translateY(-1px); box-shadow:0 12px 34px rgba(93,242,255,0.4); }
-    button:disabled{ opacity:.65; cursor:not-allowed; box-shadow:none; }
-    .stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-top:12px; font-size:14px; }
-    .stat{ padding:10px 12px; border-radius:12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.12); display:flex; justify-content:space-between; align-items:center; }
-    #status{ margin-top:10px; color:#ffe8a6; font-weight:800; min-height:22px; letter-spacing:0.2px; }
-    .keys{ margin-top:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(60px, 1fr)); gap:10px; }
-    .keycap{ padding:10px; text-align:center; border-radius:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); font-weight:700; box-shadow:inset 0 1px 0 rgba(255,255,255,0.1); }
-    canvas{ border-radius:14px; overflow:hidden; width:100% !important; height:auto !important; }
-    .mobile-hint{ color:#9fc5ff; font-size:13px; margin-top:8px; display:flex; align-items:center; gap:8px; }
-    @media (max-width: 720px){
-      header{ padding-top:24px; }
-      h1{ font-size:24px; }
-      .panel{ padding:14px; }
-      #game-container{ min-height:520px; }
-      .keys{ grid-template-columns:repeat(4, 1fr); }
-    }
+    h1{margin:0;font-size:28px;letter-spacing:0.3px;}
+    h1 span{color:var(--accent);}    
+    .subtitle{color:#bed8ff;margin:8px 0 16px;font-size:15px;}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);padding:8px 14px;border-radius:999px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#ffe2f3;border:1px solid rgba(255,255,255,0.18);}
+    .layout{display:grid;grid-template-columns:1.1fr 0.9fr;gap:16px;padding:16px;max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+    @media (max-width: 980px){.layout{grid-template-columns:1fr;}}
+    .panel{background:var(--glass);border:1px solid var(--stroke);border-radius:16px;padding:18px;box-shadow:0 16px 32px rgba(0,0,0,0.4);backdrop-filter:blur(8px);}
+    .panel h2{margin:0 0 10px;font-size:18px;letter-spacing:0.2px;}
+    .panel h2 span{color:var(--mint);}  
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;margin:12px 0 6px;}
+    .stat{padding:12px;border-radius:12px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.14);display:flex;justify-content:space-between;align-items:center;font-weight:700;}
+    button{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.18);background:linear-gradient(120deg,#ffb7d4 0%,#ff4f88 45%,#7df6ff 100%);color:#0b0b14;font-size:15px;font-weight:800;box-shadow:0 10px 30px rgba(255,77,122,0.32);cursor:pointer;transition:transform 120ms ease, box-shadow 120ms ease;}
+    button:hover{transform:translateY(-1px);box-shadow:0 12px 34px rgba(125,246,255,0.35);}  
+    button:disabled{opacity:.6;cursor:not-allowed;box-shadow:none;}
+    .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px;}
+    .log{max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);font-size:14px;line-height:1.55;}
+    .entry{padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);} 
+    .entry strong{color:var(--yellow);} 
+    .story-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px;}
+    .progress{height:12px;border-radius:12px;background:rgba(255,255,255,0.12);overflow:hidden;border:1px solid rgba(255,255,255,0.2);}
+    .progress-bar{height:100%;width:0;background:linear-gradient(90deg, #7df6ff, #ff8fb1);transition:width 0.2s ease;}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);font-size:12px;letter-spacing:0.3px;}
+    .hint{color:#cfe2ff;font-size:14px;line-height:1.6;}
+    .divider{margin:14px 0;border:0;border-top:1px solid rgba(255,255,255,0.12);}  
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
   <div class="snow"></div>
   <header>
-    <div class="badge">HOLIDAY PARTY • 리듬챌린지</div>
-    <h1>🎧 <span>크리스마스</span> 리듬게임</h1>
-    <p class="subtitle">실제 캐롤과 함께 더 생동감 있게! 히트를 이어가고 완벽 클리어로 선물을 받아보세요.</p>
+    <div class="badge">HOLIDAY STORY • 클릭커</div>
+    <h1>🎧 <span>크리스마스</span> 기다리는 이야기</h1>
+    <p class="subtitle">손가락 대신 기다림과 이야기에 집중하는 느긋한 클릭커. 산타가 오기 전까지 마을을 채우고, 코인을 아껴 쓰세요!</p>
   </header>
+
   <div class="layout">
-    <div class="panel">
-      <p class="hint">🎄 신나는 캐롤 8곡을 바로 재생할 수 있도록 연결했어요. 처음부터 끝까지 놓치지 말고 연속 히트를 노려보세요!</p>
-      <label>곡 선택</label>
-      <select id="track-select" aria-label="크리스마스 곡 선택"></select>
-      <button id="start-btn" style="margin-top:12px;">게임 시작</button>
-      <div id="status" aria-live="polite"></div>
-      <div class="stats">
-        <div class="stat"><span>히트</span><strong id="hit-count">0</strong></div>
-        <div class="stat"><span>미스</span><strong id="miss-count">0</strong></div>
-        <div class="stat"><span>연속</span><strong id="combo-count">0</strong></div>
+    <div class="panel" aria-live="polite">
+      <h2><span>산타 준비</span> 대시보드</h2>
+      <div class="stat-grid">
+        <div class="stat"><span>이벤트 코인</span><strong id="event-coins">0</strong></div>
+        <div class="stat"><span>산타 코인</span><strong id="santa-coins">0</strong></div>
+        <div class="stat"><span>트리 레벨</span><strong id="tree-level">1 / 6</strong></div>
+        <div class="stat"><span>산타 ETA</span><strong id="eta">대기 시작 전</strong></div>
       </div>
-      <div class="keys">
-        <div class="keycap">D</div>
-        <div class="keycap">F</div>
-        <div class="keycap">J</div>
-        <div class="keycap">K</div>
+      <div class="progress" aria-label="산타 도착까지 진행도"><div class="progress-bar" id="eta-progress"></div></div>
+      <div class="hint" style="margin-top:10px;">클릭은 최소화하고, 이야기와 기다림으로 코인을 모아 보세요. 이벤트 코인 10개당 산타 코인 1개로 교환됩니다.</div>
+      <div class="actions">
+        <button id="help-btn">작은 준비 돕기 (이벤트 코인 +1)</button>
+        <button id="letter-btn">산타에게 편지 쓰기 (10초)</button>
+        <button id="convert-btn">이벤트 코인 10개 → 산타 코인 1개</button>
+        <button id="wait-btn">산타 기다리기 (긴 대기)</button>
       </div>
-      <div class="mobile-hint">💡 모바일에선 화면을 눕혀 두 손가락으로 D/F/J/K 위치를 눌러보세요.</div>
+      <hr class="divider" />
+      <div class="story-choices">
+        <button id="campfire-btn">모닥불 곁 이야기 나누기</button>
+        <button id="scout-btn">순록 발자국 살피기</button>
+        <button id="tree-btn">트리 손질 · 업그레이드</button>
+      </div>
+      <p class="hint" style="margin-top:10px;">트리는 총 6레벨, 마지막 업그레이드 비용은 <strong>산타 코인 200개</strong>입니다. 귀한 코인을 쉽게 쓰지 마세요.</p>
     </div>
-    <div id="game-container" aria-label="리듬게임 영역"></div>
+
+    <div class="panel">
+      <h2><span>이야기</span> 로그</h2>
+      <div id="log" class="log" aria-live="polite"></div>
+      <p class="hint">조금씩 흘러가는 이야기를 읽으며, 어느새 산타가 가까워집니다.</p>
+    </div>
   </div>
 
   <script>
-    const tracks = [
-      { name:'Jingle Bells (Upbeat Remix)', artist:'Alex Productions', url:'https://cdn.pixabay.com/audio/2022/12/19/audio_4fec3b4bb4.mp3' },
-      { name:'Deck the Halls', artist:'Nico Staf', url:'https://cdn.pixabay.com/download/audio/2023/12/11/audio_8f31cddd84.mp3?filename=deck-the-halls-150740.mp3' },
-      { name:'We Wish You a Merry Christmas', artist:'Grand_Project', url:'https://cdn.pixabay.com/download/audio/2023/12/11/audio_35bc0e8d47.mp3?filename=we-wish-you-a-merry-christmas-150742.mp3' },
-      { name:'Joyful Christmas', artist:'PrazKazak', url:'https://cdn.pixabay.com/download/audio/2022/12/07/audio_7fb2f6a510.mp3?filename=joyful-christmas-126566.mp3' },
-      { name:'Christmas Sleigh Ride', artist:'LiteSaturation', url:'https://cdn.pixabay.com/download/audio/2023/12/08/audio_27e1ca1192.mp3?filename=christmas-sleigh-ride-150550.mp3' },
-      { name:'Happy Xmas Bells', artist:'Grand_Project', url:'https://cdn.pixabay.com/download/audio/2023/12/11/audio_dfef399b95.mp3?filename=happy-xmas-bells-150744.mp3' },
-      { name:'Upbeat Christmas', artist:'Oleg Kirilkov', url:'https://cdn.pixabay.com/download/audio/2022/11/29/audio_85d6a8c41f.mp3?filename=upbeat-christmas-124132.mp3' },
-      { name:'Christmas Funk', artist:'FASSounds', url:'https://cdn.pixabay.com/download/audio/2022/11/14/audio_795bec5e54.mp3?filename=christmas-funk-12748.mp3' }
-    ];
+    const logEl = document.getElementById('log');
+    const eventCoinsEl = document.getElementById('event-coins');
+    const santaCoinsEl = document.getElementById('santa-coins');
+    const treeLevelEl = document.getElementById('tree-level');
+    const etaEl = document.getElementById('eta');
+    const etaProgress = document.getElementById('eta-progress');
 
-    const keyToLane = { KeyD:0, KeyF:1, KeyJ:2, KeyK:3 };
-    const laneColors = ['#00d4ff','#5cffc8','#ffc85c','#ff7aa5'];
-    let gameInstance = null;
-    let currentScene = null;
-    let activeAudio = null;
+    const helpBtn = document.getElementById('help-btn');
+    const letterBtn = document.getElementById('letter-btn');
+    const convertBtn = document.getElementById('convert-btn');
+    const waitBtn = document.getElementById('wait-btn');
+    const campfireBtn = document.getElementById('campfire-btn');
+    const scoutBtn = document.getElementById('scout-btn');
+    const treeBtn = document.getElementById('tree-btn');
 
-    const rhythmData = { schedule: [], startedAt: 0, hits:0, misses:0, combo:0, sent:false };
+    const state = {
+      eventCoins: 0,
+      santaCoins: 0,
+      treeLevel: 1,
+      waiting: false,
+      waitStart: null,
+      waitDuration: 480000, // 8분을 기본 대기 시간으로 설정해 오래 기다리도록
+      storyStep: 0,
+      storyStages: [
+        '포근한 눈발 속, 마을 사람들은 저마다 작은 소원을 적은 카드를 트리에 매달고 있어요.',
+        '산타 마을 쪽에서 희미한 종소리가 들리는 듯합니다. 누군가 먼저 발견할 수 있을까요?',
+        '순록의 숨결이 닿은 듯한 서늘한 공기가 마을을 스쳐 지나갑니다.',
+        '아이들은 코코아를 나누어 마시며, 산타가 올 때까지 서로의 이야기를 듣기로 했어요.',
+        '멀리서 빛나는 선물 썰매가 보인다는 소문이 돌기 시작합니다.',
+        '눈밭 저편에서 익숙한 붉은 실루엣이 나타났어요. 곧 산타가 문을 두드릴지도 모릅니다!'
+      ]
+    };
 
-    const statusEl = document.getElementById('status');
-    const hitEl = document.getElementById('hit-count');
-    const missEl = document.getElementById('miss-count');
-    const comboEl = document.getElementById('combo-count');
-    const startBtn = document.getElementById('start-btn');
-    const selectEl = document.getElementById('track-select');
+    const treeCosts = [0, 5, 15, 45, 90, 200]; // level 2~6에 필요한 산타 코인
 
-    function fillTracks(){
-      tracks.forEach((t, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        opt.textContent = `${idx+1}. ${t.name} · ${t.artist}`;
-        selectEl.appendChild(opt);
-      });
+    function addLog(text){
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      entry.innerHTML = text;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function updateStats(){
-      hitEl.textContent = rhythmData.hits;
-      missEl.textContent = rhythmData.misses;
-      comboEl.textContent = rhythmData.combo;
+    function updateUI(){
+      eventCoinsEl.textContent = state.eventCoins;
+      santaCoinsEl.textContent = state.santaCoins;
+      treeLevelEl.textContent = `${state.treeLevel} / 6`;
     }
 
-    function buildSchedule(durationMs){
-      const beat = 620;
-      const count = Math.min(220, Math.max(48, Math.floor(durationMs / beat)));
-      const schedule = [];
-      let lane = 0;
-      for (let i=0;i<count;i++){
-        const time = i*beat + Phaser.Math.Between(-120, 120);
-        lane = (lane + Phaser.Math.Between(1,3)) % 4;
-        schedule.push({ time: Math.max(0, time), lane });
+    function grantEventCoins(amount, reason){
+      state.eventCoins += amount;
+      updateUI();
+      addLog(`<strong>이벤트 코인 +${amount}</strong> · ${reason}`);
+    }
+
+    function grantSantaCoins(amount, reason){
+      state.santaCoins += amount;
+      updateUI();
+      addLog(`<strong style="color:var(--mint);">산타 코인 +${amount}</strong> · ${reason}`);
+    }
+
+    function handleHelp(){
+      helpBtn.disabled = true;
+      grantEventCoins(1, '눈을 쓸어 길을 만들었어요. 다음 행동까지 잠시 숨을 고르세요.');
+      setTimeout(()=>helpBtn.disabled=false, 2800);
+    }
+
+    function handleLetter(){
+      if(letterBtn.disabled) return;
+      letterBtn.disabled = true;
+      addLog('📝 산타에게 편지를 쓰기 시작했습니다. 마음을 천천히 담는 중... (10초)');
+      setTimeout(()=>{
+        grantEventCoins(3, '정성스러운 편지로 산타가 기뻐했어요.');
+        letterBtn.disabled = false;
+      }, 10000);
+    }
+
+    function handleConvert(){
+      if(state.eventCoins < 10){
+        addLog('이벤트 코인이 부족해요. 10개를 모아야 산타 코인 1개로 바꿀 수 있어요.');
+        return;
       }
-      return schedule;
+      const bundles = Math.floor(state.eventCoins / 10);
+      state.eventCoins -= bundles * 10;
+      grantSantaCoins(bundles, `모아둔 이벤트 코인 ${bundles*10}개를 교환했어요.`);
+      updateUI();
     }
 
-    function destroyGame(){
-      if (gameInstance) {
-        gameInstance.destroy(true);
-        gameInstance = null;
-      }
+    function nextStoryStage(){
+      const text = state.storyStages[state.storyStep % state.storyStages.length];
+      addLog(text);
+      state.storyStep++;
     }
 
-    function handleAudioError(message){
-      statusEl.textContent = message;
-      startBtn.disabled = false;
-      destroyGame();
-    }
-
-    function initGameFromAudio(){
-      const durationMs = (Number.isFinite(activeAudio.duration) && activeAudio.duration > 0)
-        ? activeAudio.duration * 1000
-        : 30000;
-      rhythmData.schedule = buildSchedule(durationMs);
-      destroyGame();
-      gameInstance = new Phaser.Game({
-        type: Phaser.AUTO,
-        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 540, height: 720 },
-        parent: 'game-container',
-        backgroundColor: '#050912',
-        physics: { default: 'arcade' },
-        scene: [RhythmScene]
-      });
-      activeAudio.currentTime = 0;
-      activeAudio.play().catch(()=>{
-        handleAudioError('오디오 재생이 차단되었습니다. 소리를 켜주세요.');
-      });
-    }
-
-    function finishRun(scene){
-      if (rhythmData.finished) return;
-      rhythmData.finished = true;
-      const perfect = rhythmData.hits > 0 && rhythmData.misses === 0;
-      statusEl.textContent = perfect ? '완벽 클리어! 산타 조각 5개 획득!' : '클리어! 다시 도전해 보세요.';
-      if (perfect && !rhythmData.sent) {
-        try { window.parent.postMessage({ type:'christmas-clear', pieces:5, perfect:true }, '*'); } catch {}
-        rhythmData.sent = true;
-      }
-      startBtn.disabled = false;
-    }
-
-    class RhythmScene extends Phaser.Scene {
-      constructor(){ super('RhythmScene'); }
-      create(){
-        currentScene = this;
-        this.cameras.main.setBackgroundColor('#050912');
-        this.hitY = 600;
-        this.noteSpeed = 340;
-        this.window = 76;
-        this.activeNotes = [];
-        this.scheduleIndex = 0;
-        rhythmData.hits = 0; rhythmData.misses = 0; rhythmData.combo = 0; rhythmData.finished = false; rhythmData.sent = false;
-        updateStats();
-
-        const width = this.game.config.width;
-        const laneWidth = 120;
-        this.laneX = [width/2 - laneWidth*1.5, width/2 - laneWidth*0.5, width/2 + laneWidth*0.5, width/2 + laneWidth*1.5];
-        this.add.rectangle(width/2, this.hitY, width, 4, 0xffffff, 0.3);
-        this.laneX.forEach((x, idx)=>{
-          this.add.rectangle(x, this.hitY, laneWidth-4, 18, Phaser.Display.Color.HexStringToColor(laneColors[idx]).color, 0.18);
-        });
-
-        this.input.keyboard.on('keydown', (ev)=>this.handleKey(ev.code));
-        rhythmData.startedAt = performance.now();
-      }
-
-      spawnNote(lane){
-        const x = this.laneX[lane];
-        const note = this.add.rectangle(x, -30, 68, 16, Phaser.Display.Color.HexStringToColor(laneColors[lane]).color).setOrigin(0.5);
-        note.lane = lane;
-        this.activeNotes.push(note);
-      }
-
-      handleKey(code){
-        const lane = keyToLane[code];
-        if (lane === undefined) return;
-        let best = null;
-        let bestIdx = -1;
-        for (let i=0;i<this.activeNotes.length;i++){
-          const n = this.activeNotes[i];
-          if (n.lane !== lane) continue;
-          const dist = Math.abs(n.y - this.hitY);
-          if (dist <= this.window && (best === null || dist < best.dist)) {
-            best = { note:n, dist, idx:i };
-          }
+    function handleWait(){
+      if(state.waiting) return;
+      state.waiting = true;
+      state.waitStart = Date.now();
+      etaEl.textContent = '산타가 하늘에서 방향을 잡는 중...';
+      addLog('🕯️ 온 마을이 숨을 고릅니다. 긴 대기(8분) 동안 모닥불을 지키며 산타를 기다려요.');
+      const interval = setInterval(()=>{
+        const elapsed = Date.now() - state.waitStart;
+        const progress = Math.min(1, elapsed / state.waitDuration);
+        etaProgress.style.width = `${(progress*100).toFixed(1)}%`;
+        const remain = Math.max(0, state.waitDuration - elapsed);
+        const mm = String(Math.floor(remain/60000)).padStart(2,'0');
+        const ss = String(Math.floor((remain%60000)/1000)).padStart(2,'0');
+        etaEl.textContent = progress>=1 ? '산타 착륙 임박!' : `도착까지 ${mm}:${ss}`;
+        if(progress>=1){
+          clearInterval(interval);
+          state.waiting = false;
+          grantSantaCoins(5, '기다림 끝! 산타가 멀리서 손을 흔들어 코인을 쥐여줬어요.');
+          nextStoryStage();
         }
-        if (best){
-          rhythmData.hits += 1;
-          rhythmData.combo = rhythmData.combo + 1;
-          best.note.destroy();
-          this.activeNotes.splice(best.idx, 1);
-          statusEl.textContent = best.dist < 28 ? 'PERFECT!' : 'GOOD!';
-        } else {
-          rhythmData.misses += 1;
-          rhythmData.combo = 0;
-          statusEl.textContent = 'MISS...';
-        }
-        updateStats();
+      }, 1000);
+    }
+
+    function handleCampfire(){
+      addLog('🔥 모닥불 앞에서 주민들과 지난겨울 이야기를 나눴습니다. 시간은 흘러가지만 마음은 따뜻해져요.');
+      setTimeout(()=>{
+        grantEventCoins(2, '이야기 속에서 작은 힌트를 얻어 이벤트 코인을 챙겼어요.');
+        nextStoryStage();
+      }, 6000);
+    }
+
+    function handleScout(){
+      scoutBtn.disabled = true;
+      addLog('👣 순록의 발자국을 따라 조심스럽게 숲으로 들어갑니다... (20초)');
+      setTimeout(()=>{
+        grantEventCoins(4, '순록을 도우며 받은 고마움의 코인입니다.');
+        grantSantaCoins(1, '숨겨둔 선물 상자에서 산타 코인을 발견했어요.');
+        scoutBtn.disabled = false;
+        nextStoryStage();
+      }, 20000);
+    }
+
+    function handleTree(){
+      const nextLevel = state.treeLevel + 1;
+      if(nextLevel>6){
+        addLog('트리는 이미 최고 레벨입니다. 반짝이는 빛이 마을을 덮고 있어요.');
+        return;
       }
-
-      update(_, delta){
-        if (!rhythmData.startedAt || rhythmData.finished) return;
-        const now = performance.now();
-        const elapsed = now - rhythmData.startedAt;
-        while (this.scheduleIndex < rhythmData.schedule.length && rhythmData.schedule[this.scheduleIndex].time <= elapsed + 1100){
-          this.spawnNote(rhythmData.schedule[this.scheduleIndex].lane);
-          this.scheduleIndex++;
-        }
-
-        for (let i=this.activeNotes.length-1;i>=0;i--){
-          const n = this.activeNotes[i];
-          n.y += this.noteSpeed * (delta/1000);
-          if (n.y > this.hitY + this.window){
-            rhythmData.misses += 1;
-            rhythmData.combo = 0;
-            statusEl.textContent = 'MISS...';
-            n.destroy();
-            this.activeNotes.splice(i,1);
-            updateStats();
-          }
-        }
-
-        if (this.scheduleIndex >= rhythmData.schedule.length && this.activeNotes.length === 0) {
-          finishRun(this);
-        }
+      const cost = treeCosts[nextLevel-1];
+      if(state.santaCoins < cost){
+        addLog(`트리 ${nextLevel}레벨 업에는 산타 코인 ${cost}개가 필요합니다. 지금은 부족해요.`);
+        return;
+      }
+      state.santaCoins -= cost;
+      state.treeLevel = nextLevel;
+      updateUI();
+      addLog(`🎄 트리가 <strong>${nextLevel}레벨</strong>이 되었습니다! (${cost} 산타 코인 소모)`);
+      if(nextLevel === 6){
+        addLog('<strong style="color:var(--yellow);">최고 레벨 달성!</strong> 눈꽃과 별빛이 동시에 터지며 산타가 곧 도착할 것 같은 분위기가 감돕니다.');
+      } else {
+        grantEventCoins(1, '트리를 꾸미다 남은 장식으로 작은 보상을 받았어요.');
       }
     }
 
-    async function startGame(){
-      const idx = Number(selectEl.value) || 0;
-      const track = tracks[idx] || tracks[0];
-      statusEl.textContent = '로딩 중...';
-      startBtn.disabled = true;
-      if (activeAudio) { try { activeAudio.pause(); } catch{} }
-      destroyGame();
+    helpBtn.addEventListener('click', handleHelp);
+    letterBtn.addEventListener('click', handleLetter);
+    convertBtn.addEventListener('click', handleConvert);
+    waitBtn.addEventListener('click', handleWait);
+    campfireBtn.addEventListener('click', handleCampfire);
+    scoutBtn.addEventListener('click', handleScout);
+    treeBtn.addEventListener('click', handleTree);
 
-      activeAudio = new Audio(track.url);
-      activeAudio.crossOrigin = 'anonymous';
-
-      const loadTimeout = setTimeout(() => {
-        handleAudioError('음원 로딩이 지연됩니다. 잠시 후 다시 시도해 주세요.');
-      }, 7000);
-
-      const readyHandler = () => {
-        clearTimeout(loadTimeout);
-        statusEl.textContent = `${track.name} 재생 시작! 볼륨을 조절해 주세요.`;
-        initGameFromAudio();
-      };
-
-      activeAudio.addEventListener('loadedmetadata', readyHandler, { once:true });
-      activeAudio.addEventListener('canplaythrough', readyHandler, { once:true });
-      activeAudio.addEventListener('error', () => {
-        clearTimeout(loadTimeout);
-        handleAudioError('음원 로딩에 실패했습니다. 다시 시도해 주세요.');
-      }, { once:true });
-      activeAudio.addEventListener('ended', () => finishRun(currentScene));
-      activeAudio.load();
-    }
-
-    startBtn.addEventListener('click', () => {
-      startGame().catch((err) => handleAudioError(err.message || '트랙을 준비하지 못했습니다.'));
-    });
-    fillTracks();
-    statusEl.textContent = 'D / F / J / K 키로 판정선에 맞춰 누르세요.';
+    // 초기 상태
+    addLog('마을 광장에 첫 눈이 내렸습니다. 모두가 조용히 산타를 기다리고 있어요.');
+    addLog('이벤트 코인 10개를 모으면 귀한 산타 코인 1개로 바꿀 수 있습니다. 클릭보다는 기다림과 이야기로 채워보세요.');
+    updateUI();
   </script>
 </body>
 </html>
