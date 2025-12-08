@@ -3,279 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🎄 산타를 기다리는 스토리 클릭커</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <title>🎅 산타 조각 빠른 획득</title>
   <style>
-    :root{
-      --glass: rgba(255,255,255,0.08);
-      --stroke: rgba(255,255,255,0.14);
-      --bg: #0a0f1c;
-      --accent: #ff8fb1;
-      --mint: #7df6ff;
-      --yellow: #ffe29f;
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 35%),
+                  radial-gradient(circle at 80% 10%, rgba(125,246,255,0.14), transparent 32%),
+                  linear-gradient(180deg, #0f1530 0%, #040712 55%, #02060f 100%);
+      color: #f3f8ff;
+      text-align: center;
     }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:'Noto Sans KR','Montserrat',system-ui,-apple-system,sans-serif;
-      background:
-        radial-gradient(circle at 18% 22%, rgba(255,255,255,0.12), transparent 32%),
-        radial-gradient(circle at 80% 12%, rgba(125,246,255,0.18), transparent 28%),
-        linear-gradient(180deg, #0f1530 0%, #040712 55%, #02060f 100%);
-      color:#eaf5ff;
-      min-height:100vh;
-      overflow-x:hidden;
+    h1 { margin: 0; font-size: 22px; letter-spacing: 0.3px; }
+    p { margin: 0; color: #cfe2ff; }
+    button {
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(120deg, #ffb7d4 0%, #ff4f88 45%, #7df6ff 100%);
+      color: #0b0b14;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(255, 79, 136, 0.28);
     }
-    .snow{position:absolute;inset:0;pointer-events:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 10 10%22%3E%3Ccircle cx=%222%22 cy=%223%22 r=%220.6%22 fill=%22%23f5f7ff%22 opacity=%220.4%22/%3E%3Ccircle cx=%228%22 cy=%229%22 r=%220.5%22 fill=%22%23fff%22 opacity=%220.35%22/%3E%3Ccircle cx=%225%22 cy=%226%22 r=%220.4%22 fill=%22%23fff%22 opacity=%220.3%22/%3E%3C/svg%3E');animation: drift 18s linear infinite;z-index:0;}
-    @keyframes drift{from{transform:translateY(-20px);}to{transform:translateY(40px);}}
-    header{
-      max-width:1200px;
-      margin:0 auto;
-      padding:32px 16px 10px;
-      text-align:center;
-      position:relative;
-      z-index:1;
-    }
-    h1{margin:0;font-size:28px;letter-spacing:0.3px;}
-    h1 span{color:var(--accent);}    
-    .subtitle{color:#bed8ff;margin:8px 0 16px;font-size:15px;}
-    .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);padding:8px 14px;border-radius:999px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#ffe2f3;border:1px solid rgba(255,255,255,0.18);}
-    .layout{display:grid;grid-template-columns:1.1fr 0.9fr;gap:16px;padding:16px;max-width:1200px;margin:0 auto;position:relative;z-index:1;}
-    @media (max-width: 980px){.layout{grid-template-columns:1fr;}}
-    .panel{background:var(--glass);border:1px solid var(--stroke);border-radius:16px;padding:18px;box-shadow:0 16px 32px rgba(0,0,0,0.4);backdrop-filter:blur(8px);}
-    .panel h2{margin:0 0 10px;font-size:18px;letter-spacing:0.2px;}
-    .panel h2 span{color:var(--mint);}  
-    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;margin:12px 0 6px;}
-    .stat{padding:12px;border-radius:12px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.14);display:flex;justify-content:space-between;align-items:center;font-weight:700;}
-    button{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.18);background:linear-gradient(120deg,#ffb7d4 0%,#ff4f88 45%,#7df6ff 100%);color:#0b0b14;font-size:15px;font-weight:800;box-shadow:0 10px 30px rgba(255,77,122,0.32);cursor:pointer;transition:transform 120ms ease, box-shadow 120ms ease;}
-    button:hover{transform:translateY(-1px);box-shadow:0 12px 34px rgba(125,246,255,0.35);}  
-    button:disabled{opacity:.6;cursor:not-allowed;box-shadow:none;}
-    .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px;}
-    .log{max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);font-size:14px;line-height:1.55;}
-    .entry{padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);} 
-    .entry strong{color:var(--yellow);} 
-    .story-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px;}
-    .progress{height:12px;border-radius:12px;background:rgba(255,255,255,0.12);overflow:hidden;border:1px solid rgba(255,255,255,0.2);}
-    .progress-bar{height:100%;width:0;background:linear-gradient(90deg, #7df6ff, #ff8fb1);transition:width 0.2s ease;}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);font-size:12px;letter-spacing:0.3px;}
-    .hint{color:#cfe2ff;font-size:14px;line-height:1.6;}
-    .divider{margin:14px 0;border:0;border-top:1px solid rgba(255,255,255,0.12);}  
+    .status { font-size: 15px; color: #ffe29f; }
   </style>
 </head>
 <body>
-  <div class="snow"></div>
-  <header>
-    <div class="badge">HOLIDAY STORY • 클릭커</div>
-    <h1>🎧 <span>크리스마스</span> 기다리는 이야기</h1>
-    <p class="subtitle">손가락 대신 기다림과 이야기에 집중하는 느긋한 클릭커. 산타가 오기 전까지 마을을 채우고, 코인을 아껴 쓰세요!</p>
-  </header>
-
-  <div class="layout">
-    <div class="panel" aria-live="polite">
-      <h2><span>산타 준비</span> 대시보드</h2>
-      <div class="stat-grid">
-        <div class="stat"><span>이벤트 코인</span><strong id="event-coins">0</strong></div>
-        <div class="stat"><span>산타 코인</span><strong id="santa-coins">0</strong></div>
-        <div class="stat"><span>트리 레벨</span><strong id="tree-level">1 / 6</strong></div>
-        <div class="stat"><span>산타 ETA</span><strong id="eta">대기 시작 전</strong></div>
-      </div>
-      <div class="progress" aria-label="산타 도착까지 진행도"><div class="progress-bar" id="eta-progress"></div></div>
-      <div class="hint" style="margin-top:10px;">클릭은 최소화하고, 이야기와 기다림으로 코인을 모아 보세요. 이벤트 코인 10개당 산타 코인 1개로 교환됩니다.</div>
-      <div class="actions">
-        <button id="help-btn">작은 준비 돕기 (이벤트 코인 +1)</button>
-        <button id="letter-btn">산타에게 편지 쓰기 (10초)</button>
-        <button id="convert-btn">이벤트 코인 10개 → 산타 코인 1개</button>
-        <button id="wait-btn">산타 기다리기 (긴 대기)</button>
-      </div>
-      <hr class="divider" />
-      <div class="story-choices">
-        <button id="campfire-btn">모닥불 곁 이야기 나누기</button>
-        <button id="scout-btn">순록 발자국 살피기</button>
-        <button id="tree-btn">트리 손질 · 업그레이드</button>
-      </div>
-      <p class="hint" style="margin-top:10px;">트리는 총 6레벨, 마지막 업그레이드 비용은 <strong>산타 코인 200개</strong>입니다. 귀한 코인을 쉽게 쓰지 마세요.</p>
-    </div>
-
-    <div class="panel">
-      <h2><span>이야기</span> 로그</h2>
-      <div id="log" class="log" aria-live="polite"></div>
-      <p class="hint">조금씩 흘러가는 이야기를 읽으며, 어느새 산타가 가까워집니다.</p>
-    </div>
-  </div>
+  <h1>클릭 3번마다 산타 조각 1개!</h1>
+  <p>버튼을 세 번 누르면 자동으로 산타 조각을 보내드려요.</p>
+  <button id="click-btn" type="button">클릭해서 조각 받기</button>
+  <div class="status" id="status">0 / 3 클릭</div>
 
   <script>
-    const logEl = document.getElementById('log');
-    const eventCoinsEl = document.getElementById('event-coins');
-    const santaCoinsEl = document.getElementById('santa-coins');
-    const treeLevelEl = document.getElementById('tree-level');
-    const etaEl = document.getElementById('eta');
-    const etaProgress = document.getElementById('eta-progress');
+    const statusEl = document.getElementById('status');
+    const btn = document.getElementById('click-btn');
+    let clickCount = 0;
 
-    const helpBtn = document.getElementById('help-btn');
-    const letterBtn = document.getElementById('letter-btn');
-    const convertBtn = document.getElementById('convert-btn');
-    const waitBtn = document.getElementById('wait-btn');
-    const campfireBtn = document.getElementById('campfire-btn');
-    const scoutBtn = document.getElementById('scout-btn');
-    const treeBtn = document.getElementById('tree-btn');
-
-    const state = {
-      eventCoins: 0,
-      santaCoins: 0,
-      treeLevel: 1,
-      waiting: false,
-      waitStart: null,
-      waitDuration: 480000, // 8분을 기본 대기 시간으로 설정해 오래 기다리도록
-      storyStep: 0,
-      storyStages: [
-        '포근한 눈발 속, 마을 사람들은 저마다 작은 소원을 적은 카드를 트리에 매달고 있어요.',
-        '산타 마을 쪽에서 희미한 종소리가 들리는 듯합니다. 누군가 먼저 발견할 수 있을까요?',
-        '순록의 숨결이 닿은 듯한 서늘한 공기가 마을을 스쳐 지나갑니다.',
-        '아이들은 코코아를 나누어 마시며, 산타가 올 때까지 서로의 이야기를 듣기로 했어요.',
-        '멀리서 빛나는 선물 썰매가 보인다는 소문이 돌기 시작합니다.',
-        '눈밭 저편에서 익숙한 붉은 실루엣이 나타났어요. 곧 산타가 문을 두드릴지도 모릅니다!'
-      ]
-    };
-
-    const treeCosts = [0, 5, 15, 45, 90, 200]; // level 2~6에 필요한 산타 코인
-
-    function addLog(text){
-      const entry = document.createElement('div');
-      entry.className = 'entry';
-      entry.innerHTML = text;
-      logEl.appendChild(entry);
-      logEl.scrollTop = logEl.scrollHeight;
+    function updateStatus() {
+      statusEl.textContent = `${clickCount} / 3 클릭`;
     }
 
-    function updateUI(){
-      eventCoinsEl.textContent = state.eventCoins;
-      santaCoinsEl.textContent = state.santaCoins;
-      treeLevelEl.textContent = `${state.treeLevel} / 6`;
+    function sendPiece() {
+      const payload = { type: 'christmas-clear', pieces: 1 };
+      try { window.parent?.postMessage(payload, '*'); } catch {}
     }
 
-    function grantEventCoins(amount, reason){
-      state.eventCoins += amount;
-      updateUI();
-      addLog(`<strong>이벤트 코인 +${amount}</strong> · ${reason}`);
-    }
-
-    function grantSantaCoins(amount, reason){
-      state.santaCoins += amount;
-      updateUI();
-      addLog(`<strong style="color:var(--mint);">산타 코인 +${amount}</strong> · ${reason}`);
-    }
-
-    function handleHelp(){
-      helpBtn.disabled = true;
-      grantEventCoins(1, '눈을 쓸어 길을 만들었어요. 다음 행동까지 잠시 숨을 고르세요.');
-      setTimeout(()=>helpBtn.disabled=false, 2800);
-    }
-
-    function handleLetter(){
-      if(letterBtn.disabled) return;
-      letterBtn.disabled = true;
-      addLog('📝 산타에게 편지를 쓰기 시작했습니다. 마음을 천천히 담는 중... (10초)');
-      setTimeout(()=>{
-        grantEventCoins(3, '정성스러운 편지로 산타가 기뻐했어요.');
-        letterBtn.disabled = false;
-      }, 10000);
-    }
-
-    function handleConvert(){
-      if(state.eventCoins < 10){
-        addLog('이벤트 코인이 부족해요. 10개를 모아야 산타 코인 1개로 바꿀 수 있어요.');
+    btn.addEventListener('click', () => {
+      clickCount++;
+      if (clickCount >= 3) {
+        clickCount = 0;
+        sendPiece();
+        statusEl.textContent = '산타 조각을 보냈어요! 다시 시작하려면 클릭하세요.';
         return;
       }
-      const bundles = Math.floor(state.eventCoins / 10);
-      state.eventCoins -= bundles * 10;
-      grantSantaCoins(bundles, `모아둔 이벤트 코인 ${bundles*10}개를 교환했어요.`);
-      updateUI();
-    }
-
-    function nextStoryStage(){
-      const text = state.storyStages[state.storyStep % state.storyStages.length];
-      addLog(text);
-      state.storyStep++;
-    }
-
-    function handleWait(){
-      if(state.waiting) return;
-      state.waiting = true;
-      state.waitStart = Date.now();
-      etaEl.textContent = '산타가 하늘에서 방향을 잡는 중...';
-      addLog('🕯️ 온 마을이 숨을 고릅니다. 긴 대기(8분) 동안 모닥불을 지키며 산타를 기다려요.');
-      const interval = setInterval(()=>{
-        const elapsed = Date.now() - state.waitStart;
-        const progress = Math.min(1, elapsed / state.waitDuration);
-        etaProgress.style.width = `${(progress*100).toFixed(1)}%`;
-        const remain = Math.max(0, state.waitDuration - elapsed);
-        const mm = String(Math.floor(remain/60000)).padStart(2,'0');
-        const ss = String(Math.floor((remain%60000)/1000)).padStart(2,'0');
-        etaEl.textContent = progress>=1 ? '산타 착륙 임박!' : `도착까지 ${mm}:${ss}`;
-        if(progress>=1){
-          clearInterval(interval);
-          state.waiting = false;
-          grantSantaCoins(5, '기다림 끝! 산타가 멀리서 손을 흔들어 코인을 쥐여줬어요.');
-          nextStoryStage();
-        }
-      }, 1000);
-    }
-
-    function handleCampfire(){
-      addLog('🔥 모닥불 앞에서 주민들과 지난겨울 이야기를 나눴습니다. 시간은 흘러가지만 마음은 따뜻해져요.');
-      setTimeout(()=>{
-        grantEventCoins(2, '이야기 속에서 작은 힌트를 얻어 이벤트 코인을 챙겼어요.');
-        nextStoryStage();
-      }, 6000);
-    }
-
-    function handleScout(){
-      scoutBtn.disabled = true;
-      addLog('👣 순록의 발자국을 따라 조심스럽게 숲으로 들어갑니다... (20초)');
-      setTimeout(()=>{
-        grantEventCoins(4, '순록을 도우며 받은 고마움의 코인입니다.');
-        grantSantaCoins(1, '숨겨둔 선물 상자에서 산타 코인을 발견했어요.');
-        scoutBtn.disabled = false;
-        nextStoryStage();
-      }, 20000);
-    }
-
-    function handleTree(){
-      const nextLevel = state.treeLevel + 1;
-      if(nextLevel>6){
-        addLog('트리는 이미 최고 레벨입니다. 반짝이는 빛이 마을을 덮고 있어요.');
-        return;
-      }
-      const cost = treeCosts[nextLevel-1];
-      if(state.santaCoins < cost){
-        addLog(`트리 ${nextLevel}레벨 업에는 산타 코인 ${cost}개가 필요합니다. 지금은 부족해요.`);
-        return;
-      }
-      state.santaCoins -= cost;
-      state.treeLevel = nextLevel;
-      updateUI();
-      addLog(`🎄 트리가 <strong>${nextLevel}레벨</strong>이 되었습니다! (${cost} 산타 코인 소모)`);
-      if(nextLevel === 6){
-        addLog('<strong style="color:var(--yellow);">최고 레벨 달성!</strong> 눈꽃과 별빛이 동시에 터지며 산타가 곧 도착할 것 같은 분위기가 감돕니다.');
-      } else {
-        grantEventCoins(1, '트리를 꾸미다 남은 장식으로 작은 보상을 받았어요.');
-      }
-    }
-
-    helpBtn.addEventListener('click', handleHelp);
-    letterBtn.addEventListener('click', handleLetter);
-    convertBtn.addEventListener('click', handleConvert);
-    waitBtn.addEventListener('click', handleWait);
-    campfireBtn.addEventListener('click', handleCampfire);
-    scoutBtn.addEventListener('click', handleScout);
-    treeBtn.addEventListener('click', handleTree);
-
-    // 초기 상태
-    addLog('마을 광장에 첫 눈이 내렸습니다. 모두가 조용히 산타를 기다리고 있어요.');
-    addLog('이벤트 코인 10개를 모으면 귀한 산타 코인 1개로 바꿀 수 있습니다. 클릭보다는 기다림과 이야기로 채워보세요.');
-    updateUI();
+      updateStatus();
+    });
   </script>
 </body>
 </html>
