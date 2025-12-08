@@ -1228,7 +1228,7 @@
           </div>
           <div class="event-actions">
             <button id="craft-santa-coin" class="general" type="button">산타코인 제작 (조각 10개)</button>
-            <button id="convert-ecoin-to-santacoin" class="general" type="button">이벤트코인 → 산타코인 (1:1)</button>
+            <button id="convert-ecoin-to-santacoin" class="general" type="button">이벤트코인 → 산타코인 (3:1)</button>
             <button id="christmas-upgrade" class="general" type="button">트리 강화</button>
           </div>
           <div class="tree-status">
@@ -2541,12 +2541,12 @@
     };
 
     const christmasTreeRewards = [
-      { cost: 1, reward: '2025 크리스마스 이벤트코인 획득 x2 영구 적용', effects: { event: 2 } },
-      { cost: 2, reward: '자원 생산 x2 영구', effects: { res: 2 } },
-      { cost: 4, reward: '코인 생산 x2 영구', effects: { coin: 2 } },
-      { cost: 8, reward: '클릭 채굴 x2 영구', effects: { click: 2 } },
-      { cost: 16, reward: '알바 효율 x1.5 영구', effects: { worker: 1.5 } },
-      { cost: 20, reward: '2025 크리스마스 이벤트코인 추가 배율 & 전 생산 x2 영구', effects: { res: 2, coin: 2, event: 2 } }
+      { cost: 5, reward: '2025 크리스마스 이벤트코인 획득 x2 영구 적용', effects: { event: 2 } },
+      { cost: 10, reward: '자원 생산 x2 영구', effects: { res: 2 } },
+      { cost: 25, reward: '코인 생산 x2 영구', effects: { coin: 2 } },
+      { cost: 60, reward: '클릭 채굴 x2 영구', effects: { click: 2 } },
+      { cost: 120, reward: '알바 효율 x1.5 영구', effects: { worker: 1.5 } },
+      { cost: 200, reward: '2025 크리스마스 이벤트코인 추가 배율 & 전 생산 x2 영구', effects: { res: 2, coin: 2, event: 2 } }
     ];
     function withAutoConvertDefaults(rawState) {
       const merged = { ...defaultData, ...(rawState || {}) };
@@ -4529,14 +4529,14 @@
 
       document.getElementById('convert-ecoin-to-santacoin')?.addEventListener('click', () => {
         if (!ensureReady()) return;
-        if (!canSpendEC(1)) {
+        if (!canSpendEC(3)) {
           showToast('이벤트코인이 부족합니다.', null, null, 2400);
           return;
         }
-        state.eventCoins -= 1;
+        state.eventCoins -= 3;
         state.santaCoins = (state.santaCoins || 0) + 1;
-        auditSpend('eco', 1);
-        showToast('이벤트코인을 산타 이벤트코인으로 교환했어요.', null, null, 2400);
+        auditSpend('eco', 3);
+        showToast('이벤트코인 3개를 산타 이벤트코인 1개로 교환했어요.', null, null, 2400);
         save(); updateUI();
       });
 
