@@ -1300,7 +1300,7 @@
     <nav class="side-items">
       <button class="side-item" data-action="menu"><span class="icon">🎮</span><span>게임 메뉴로 돌아가기</span></button>
       <button class="side-item" data-action="download"><span class="icon">⬇️</span><span>앱 다운로드</span></button>
-      <button class="side-item" data-action="shop"><span class="icon">🛒</span><span>공식 상점</span></button>
+      <button class="side-item" data-action="shop"><span class="icon">🛒</span><span>이벤트코인 관리</span></button>
       <button class="side-item" data-action="resume"><span class="icon">▶️</span><span>게임 계속하기</span></button>
       <button class="side-item" data-action="rank"><span class="icon">🏆</span><span>랭킹 보기</span></button>
       <button class="side-item" data-action="mail">
@@ -1384,11 +1384,11 @@
   <div id="shop-overlay" aria-hidden="true">
     <div class="shop-card" role="dialog" aria-modal="true" aria-labelledby="shop-title">
       <div class="shop-head">
-        <h3 id="shop-title">🛒 공식 상점</h3>
+        <h3 id="shop-title">🛒 이벤트코인 관리</h3>
         <button id="shop-close" aria-label="상점 닫기">✕</button>
       </div>
       <p>페이앱 결제 모듈을 통해 이벤트코인 등을 구매할 수 있습니다.</p>
-      <iframe id="shop-frame" title="태양계 정복 공식 상점" loading="lazy" src="about:blank" allow="payment *"></iframe>
+      <iframe id="shop-frame" title="태양계 정복 이벤트코인 관리" loading="lazy" src="about:blank" allow="payment *"></iframe>
     </div>
   </div>
 
@@ -1925,7 +1925,7 @@
 
     window.addEventListener('shop-open-error', (event) => {
       const detail = event?.detail || {};
-      const msg = detail.message || '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
+      const msg = detail.message || '이벤트코인 관리를 열 수 없습니다. 잠시 후 다시 시도해주세요.';
       const manualMessage = detail.copyUrl ? (detail.manualMessage || '크롬에서 다음 사이트로 이동하세요') : null;
       const toastMessage = manualMessage ? `${msg}\n${manualMessage}` : msg;
 
@@ -5611,7 +5611,7 @@
           detail = { ...detail, ...extraDetail };
         }
         if (!detail.message) {
-          detail.message = '공식 상점을 열 수 없습니다. 잠시 후 다시 시도해주세요.';
+          detail.message = '이벤트코인 관리를 열 수 없습니다. 잠시 후 다시 시도해주세요.';
         }
         try {
           window.dispatchEvent(new CustomEvent('shop-open-error', { detail }));
