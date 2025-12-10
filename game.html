@@ -301,6 +301,15 @@
       width:100%;
       max-width:none;
     }
+    .ship-enhance-info{ margin-top:-4px; font-size:13px; color:#c6e7ff; }
+    .ship-enhance-status{ min-height:22px; font-size:13px; color:#dbe9ff; transition:color .2s ease; }
+    .ship-enhance-status[data-tone="success"]{ color:#8ef7c2; }
+    .ship-enhance-status[data-tone="warn"]{ color:#ffb7b7; }
+    .ship-panel.enhancing #ship-img{ animation: drumPulse .38s ease-in-out infinite; }
+    .ship-panel.success-glow{ box-shadow:0 0 0 0 rgba(0,212,255,0.22), 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .ship-panel.fail-shake{ animation: shipShake .36s ease; }
+    @keyframes drumPulse{ 0%{ transform:scale(1); } 50%{ transform:scale(1.04); } 100%{ transform:scale(1); } }
+    @keyframes shipShake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-6px); } 40%{ transform:translateX(6px); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(4px); } }
 
     #settings-btn {
       margin-left: 8px; padding: 6px 10px; border-radius: 8px;
@@ -1200,8 +1209,10 @@
         <h2>우주선 제어실</h2>
         <img id="ship-img" src="/images/ship-level1.png" alt="우주선" />
         <div class="ship-status" id="ship-level">1렙 (20코인)</div>
+        <div class="ship-enhance-info">강화 성공 확률: <strong id="ship-success-rate">100%</strong></div>
         <p>우주선을 업그레이드해 더 먼 행성과 새로운 콘텐츠를 개방하세요.</p>
         <button id="upgrade-ship" class="general">우주선 업그레이드</button>
+        <div class="ship-enhance-status" id="ship-upgrade-status" aria-live="polite">첫 강화는 100% 성공! 레벨이 오를수록 확률이 낮아집니다.</div>
       </div>
     </div>
 
@@ -2539,6 +2550,27 @@
       quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
     };
+
+    const shipEnhanceBaseMsg = '첫 강화는 100% 성공! 레벨이 오를수록 확률이 낮아집니다.';
+    let shipEnhanceMessage = shipEnhanceBaseMsg;
+    let shipEnhanceTone = 'info';
+    let shipEnhanceInProgress = false;
+
+    function getShipSuccessRate(level = state.shipLevel) {
+      const lv = Math.max(1, level || 1);
+      const rate = Math.max(25, 100 - (lv - 1) * 8);
+      return Math.round(rate);
+    }
+
+    function setShipEnhanceStatus(message, tone = 'info') {
+      shipEnhanceMessage = message;
+      shipEnhanceTone = tone;
+      const statusEl = document.getElementById('ship-upgrade-status');
+      if (statusEl) {
+        statusEl.innerText = message;
+        statusEl.dataset.tone = tone;
+      }
+    }
 
     const christmasTreeRewards = [
       { cost: 5, reward: '2025 크리스마스 이벤트코인 획득 x2 영구 적용', effects: { event: 2 } },
@@ -4236,7 +4268,16 @@
       document.getElementById('ecoins').innerText = `이벤트코인: ${formatKR(state.eventCoins||0)}`;
       document.getElementById('ship-level').innerText = `${state.shipLevel}렙 (${formatKR(state.shipUpgradeCost)}코인)`;
       setShipImage(state.shipLevel);
-      document.getElementById('upgrade-ship').disabled = (state.coins < state.shipUpgradeCost) && !canSpendEC(1);
+      const successRate = getShipSuccessRate();
+      const rateEl = document.getElementById('ship-success-rate');
+      if (rateEl) rateEl.innerText = `${successRate}%`;
+      const shipBtn = document.getElementById('upgrade-ship');
+      if (shipBtn) shipBtn.disabled = shipEnhanceInProgress || ((state.coins < state.shipUpgradeCost) && !canSpendEC(1));
+      const shipStatusEl = document.getElementById('ship-upgrade-status');
+      if (shipStatusEl) {
+        shipStatusEl.innerText = shipEnhanceMessage;
+        shipStatusEl.dataset.tone = shipEnhanceTone;
+      }
 
       const clickUp = document.getElementById('click-upgrade');
       const clickUpEc = document.getElementById('click-upgrade-ec');
@@ -4609,22 +4650,54 @@
       attachHoldRepeat('upgrade-ship', () => {
         if (!ensureReady()) return false;
 
-        if (state.coins >= state.shipUpgradeCost) {
-          const cost = state.shipUpgradeCost;
+        if (shipEnhanceInProgress) return false;
+
+        const cost = state.shipUpgradeCost;
+        let paidWith = null;
+        if (state.coins >= cost) {
           state.coins -= cost;
           auditSpend('coin', cost);
+          paidWith = 'coin';
         } else if (canSpendEC(1)) {
           state.eventCoins -= 1;
           auditSpend('eco', 1);
+          paidWith = 'eco';
         } else {
           return false;
         }
 
-        state.shipLevel++;
-        state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
-        applyQuestProgress('ship', 1);
-        save(); updateUI(); renderPlanets();
-        return true;
+        const chance = getShipSuccessRate();
+        const shipPanel = document.querySelector('.ship-panel');
+        shipEnhanceInProgress = true;
+        shipPanel?.classList.add('enhancing');
+        setShipEnhanceStatus(`두구두구... 강화 준비 중! (성공 확률 ${chance}%)`, 'info');
+        playSfx('sfx-start');
+        updateUI();
+
+        setTimeout(() => {
+          const success = Math.random() * 100 < chance;
+          shipPanel?.classList.remove('enhancing');
+
+          if (success) {
+            state.shipLevel++;
+            state.shipUpgradeCost = Math.floor(state.shipUpgradeCost * 2 + 30);
+            applyQuestProgress('ship', 1);
+            playSfx('sfx-win');
+            shipPanel?.classList.add('success-glow');
+            setTimeout(() => shipPanel?.classList.remove('success-glow'), 820);
+            setShipEnhanceStatus(`성공! 우주선 ${state.shipLevel}렙 달성 (도전 확률 ${chance}%)`, 'success');
+          } else {
+            shipPanel?.classList.add('fail-shake');
+            setTimeout(() => shipPanel?.classList.remove('fail-shake'), 720);
+            const payment = paidWith === 'eco' ? '이벤트코인 1개' : `${formatKR(cost)}코인`;
+            setShipEnhanceStatus(`실패... ${payment}이(가) 소모됐습니다. 확률은 유지돼요! (성공 확률 ${chance}%)`, 'warn');
+          }
+
+          shipEnhanceInProgress = false;
+          save(); updateUI(); renderPlanets();
+        }, 1100);
+
+        return false;
       });
 
       attachHoldRepeat('click-upgrade', () => {
