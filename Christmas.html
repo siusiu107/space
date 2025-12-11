@@ -124,7 +124,7 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 90px; /* 판정선 살짝 위로 */
+      bottom: 90px;
       height: 4px;
       background: linear-gradient(to right, #facc15, #22c55e, #f97316);
       box-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
@@ -292,23 +292,25 @@
   </div>
 
   <script>
-    // ===== 공통 상수 =====
     const laneKeys = ["d", "f", "j", "k"];
     const NOTE_HEIGHT = 20;
-    const fallTime = 1.0; // 노트가 위→판정선까지 오는데 걸리는 시간(초)
-    const NEAR_MISS_TIME_WINDOW = 0.18; // "아깝게" 틀린 시간 범위(초)
+    const fallTime = 1.0;
+    const NEAR_MISS_TIME_WINDOW = 0.18;
+
+    // Extreme 이상 난이도 ID
+    const HIGH_DIFF_IDS = new Set(["extreme", "ultra", "legend"]);
 
     let score = 0, combo = 0, maxCombo = 0;
     let isPlaying = false;
     let isDemoMode = false;
-    let startTime = 0;          // performance.now() 기준(초)
-    let chartNotes = [];        // 현재 선택된 곡의 노트들 (시간 정보 포함)
-    let activeNotes = [];       // 화면에 떠 있는 노트들
+    let startTime = 0;
+    let chartNotes = [];
+    let activeNotes = [];
     let animationId = null;
     let audioCtx = null;
     let songLengthSec = 0;
     let currentSong = null;
-    let softMissCount = 0;      // 아깝게 틀린 횟수 (2번까지는 게임 유지)
+    let softMissCount = 0;
     let demoTimers = [];
 
     const scoreEl = document.getElementById("score");
@@ -330,7 +332,7 @@
 
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-    // ===== 눈 효과 =====
+    // 눈 효과
     const snowContainer = document.getElementById("snow-container");
     function createSnowflake() {
       const snow = document.createElement("div");
@@ -345,7 +347,7 @@
     }
     setInterval(createSnowflake, 500);
 
-    // ===== 곡 정의 (5곡, 탭 노트만) =====
+    // 곡 정의
     const LANE_TO_PITCH = ["C5", "D5", "E5", "G5"];
 
     function makeSong(id, title, difficulty, bpm, measures, patternFn) {
@@ -467,7 +469,7 @@
         }
       ));
 
-      // Expert (후반부 더더 쉽게)
+      // Expert
       songs.push(makeSong(
         "expert",
         "Starry Night Ride",
@@ -476,7 +478,6 @@
         16,
         (notes, beat, measure, bpm) => {
           if (measure >= 12) {
-            // 8분+4분, 두 라인만 번갈아 치는 구조 (꽤 읽기 쉬움)
             const baseLane = measure % 4;
             const laneA = baseLane;
             const laneB = (baseLane + 1) % 4;
@@ -500,7 +501,6 @@
             return;
           }
 
-          // 기본 Expert 패턴 (트릴 + 점프)
           const baseLane = measure % 4;
           notes.push({ beat: beat + 0,   lane: baseLane,            pitch: LANE_TO_PITCH[baseLane],            durBeats: 0.5, type: "tap" });
           notes.push({ beat: beat + 0.5, lane: (baseLane+1)%4,      pitch: LANE_TO_PITCH[(baseLane+1)%4],      durBeats: 0.5, type: "tap" });
@@ -511,11 +511,67 @@
         }
       ));
 
-      // Extreme (사람 가능한 난이도로 재설계)
+      // Extreme (조금 더 인간적인 패턴)
       songs.push(makeSong(
         "extreme",
         "Santa Storm",
         "Extreme",
+        175,
+        16,
+        (notes, beat, measure, bpm) => {
+          const laneA = measure % 4;
+          const laneB = (measure + 1) % 4;
+
+          if (measure >= 12) {
+            // 두 라인 위주 8비트 러쉬 (살짝만 빡센 구간)
+            const pattern = [
+              { off: 0.0, lane: laneA },
+              { off: 0.5, lane: laneB },
+              { off: 1.0, lane: laneA },
+              { off: 1.5, lane: laneB },
+              { off: 2.0, lane: laneA },
+              { off: 2.5, lane: laneB },
+              { off: 3.0, lane: laneA },
+              { off: 3.5, lane: laneB }
+            ];
+            pattern.forEach(p => {
+              notes.push({
+                beat: beat + p.off,
+                lane: p.lane,
+                pitch: LANE_TO_PITCH[p.lane],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            });
+            return;
+          }
+
+          // 앞/중반: 8분 + 가끔 16분, 손꼬임 줄인 패턴
+          const pattern = [
+            { off: 0.0,  lane: laneA },
+            { off: 0.5,  lane: laneA },
+            { off: 1.0,  lane: laneB },
+            { off: 1.5,  lane: laneB },
+            { off: 2.25, lane: laneA },
+            { off: 2.75, lane: laneB }
+          ];
+          pattern.forEach(p => {
+            notes.push({
+              beat: beat + p.off,
+              lane: p.lane,
+              pitch: LANE_TO_PITCH[p.lane],
+              durBeats: 0.5,
+              type: "tap"
+            });
+          });
+        }
+      ));
+
+      // Ultra (기존 Extreme 패턴 그대로)
+      songs.push(makeSong(
+        "ultra",
+        "Santa Storm+",
+        "Ultra",
         180,
         16,
         (notes, beat, measure, bpm) => {
@@ -524,24 +580,23 @@
           const laneC = (measure + 2) % 4;
 
           if (measure >= 12) {
-            // 마지막 4마디: 16비트 러시 + 2키 코드
             const pattern = [
-              { off: 0.00, lanes: [laneA, laneC] }, // 코드
+              { off: 0.00, lanes: [laneA, laneC] },
               { off: 0.25, lanes: [laneB] },
               { off: 0.50, lanes: [laneA] },
               { off: 0.75, lanes: [laneB] },
 
-              { off: 1.00, lanes: [laneC, laneA] }, // 코드
+              { off: 1.00, lanes: [laneC, laneA] },
               { off: 1.25, lanes: [laneB] },
               { off: 1.50, lanes: [laneA] },
               { off: 1.75, lanes: [laneC] },
 
-              { off: 2.00, lanes: [laneB, laneA] }, // 코드
+              { off: 2.00, lanes: [laneB, laneA] },
               { off: 2.25, lanes: [laneC] },
               { off: 2.50, lanes: [laneB] },
               { off: 2.75, lanes: [laneA] },
 
-              { off: 3.00, lanes: [laneC, laneB] }, // 코드
+              { off: 3.00, lanes: [laneC, laneB] },
               { off: 3.25, lanes: [laneA] }
             ];
             pattern.forEach(p => {
@@ -558,18 +613,65 @@
             return;
           }
 
-          // 앞/중간부: 8비트 + 가끔 16비트, 2키 코드 살짝
           const pattern = [
             { off: 0.00, lanes: [laneA] },
             { off: 0.50, lanes: [laneB] },
             { off: 0.75, lanes: [laneC] },
-            { off: 1.00, lanes: [laneA, laneB] }, // 코드
+            { off: 1.00, lanes: [laneA, laneB] },
             { off: 1.50, lanes: [laneC] },
             { off: 2.00, lanes: [laneB] },
             { off: 2.25, lanes: [laneA] },
-            { off: 2.50, lanes: [laneC, laneA] }, // 코드
+            { off: 2.50, lanes: [laneC, laneA] },
             { off: 3.00, lanes: [laneB] }
           ];
+          pattern.forEach(p => {
+            p.lanes.forEach(L => {
+              notes.push({
+                beat: beat + p.off,
+                lane: L,
+                pitch: LANE_TO_PITCH[L],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            });
+          });
+        }
+      ));
+
+      // Legend (Ultra보다 더 미친 패턴)
+      songs.push(makeSong(
+        "legend",
+        "Santa Storm++",
+        "Legend",
+        190,
+        16,
+        (notes, beat, measure, bpm) => {
+          const laneA = measure % 4;
+          const laneB = (measure + 1) % 4;
+          const laneC = (measure + 2) % 4;
+          const laneD = (measure + 3) % 4;
+
+          const pattern = [
+            { off: 0.00, lanes: [laneA] },
+            { off: 0.25, lanes: [laneB] },
+            { off: 0.50, lanes: [laneC] },
+            { off: 0.75, lanes: [laneD] },
+
+            { off: 1.00, lanes: [laneA, laneC] },
+            { off: 1.25, lanes: [laneB] },
+            { off: 1.50, lanes: [laneD] },
+            { off: 1.75, lanes: [laneC] },
+
+            { off: 2.00, lanes: [laneB, laneD] },
+            { off: 2.25, lanes: [laneA] },
+            { off: 2.50, lanes: [laneC] },
+            { off: 2.75, lanes: [laneB] },
+
+            { off: 3.00, lanes: [laneA, laneD] },
+            { off: 3.25, lanes: [laneC] }
+          ];
+
+          // 마지막 4마디는 같은 패턴 반복 (정신없지만 규칙적)
           pattern.forEach(p => {
             p.lanes.forEach(L => {
               notes.push({
@@ -592,8 +694,10 @@
       easy: 1,
       normal: 2,
       hard: 3,
-      expert: 5,
-      extreme: 10
+      expert: 10,
+      extreme: 20,
+      ultra: 100,
+      legend: 300
     };
 
     function getPiecesForSong(song) {
@@ -607,13 +711,12 @@
       rewardInfoEl.textContent = `이 곡 클리어 시 산타 조각: ${pieces}개`;
     }
 
-    // parent에 산타 조각 지급 알림 보내기 (네가 준 패턴 그대로)
     function sendSantaPieces(pieces) {
       const payload = { type: 'christmas-clear', pieces };
       try { window.parent?.postMessage(payload, '*'); } catch (e) {}
     }
 
-    // 곡 선택 UI 초기화
+    // 곡 선택 UI
     SONGS.forEach(song => {
       const opt = document.createElement("option");
       opt.value = song.id;
@@ -628,7 +731,7 @@
       updateRewardInfo();
     });
 
-    // ===== 오디오 (Web Audio) =====
+    // 오디오
     function noteToFreq(note) {
       const A4 = 440;
       const map = {
@@ -676,7 +779,7 @@
         Math.max(max, n.beat + n.durBeats), 0))) * beatDur + 0.3;
     }
 
-    // ===== 차트 변환 =====
+    // 차트 변환
     function buildChartFromSong(song) {
       const beatDur = 60 / song.bpm;
       const lead = song.leadInBeats * beatDur;
@@ -704,7 +807,7 @@
       return arr;
     }
 
-    // ===== Demo 타이머 관리 =====
+    // Demo 타이머
     function clearDemoTimers() {
       demoTimers.forEach(id => clearTimeout(id));
       demoTimers = [];
@@ -718,13 +821,14 @@
           if (!isPlaying || !isDemoMode) return;
           const key = laneKeys[n.lane];
           flashKey(key);
-          handlePress(n.lane);
+          // 데모는 무조건 Perfect 처리
+          handlePress(n.lane, { forcePerfect: true });
         }, delayMs);
         demoTimers.push(id);
       });
     }
 
-    // ===== 게임 제어 =====
+    // 게임 제어
     function resetGame() {
       score = 0; combo = 0; maxCombo = 0;
       softMissCount = 0;
@@ -739,10 +843,17 @@
       clearDemoTimers();
     }
 
+    function maybeWarnHighDifficulty(song) {
+      if (HIGH_DIFF_IDS.has(song.id)) {
+        alert("경고: 이 난이도는 깨는 것이 불가능할 수도 있습니다 ㅋㅋ");
+      }
+    }
+
     function startGame() {
       isDemoMode = false;
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
+      maybeWarnHighDifficulty(currentSong);
       resetGame();
       chartNotes = buildChartFromSong(currentSong);
 
@@ -758,6 +869,7 @@
       isDemoMode = true;
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
+      maybeWarnHighDifficulty(currentSong);
       resetGame();
       chartNotes = buildChartFromSong(currentSong);
 
@@ -786,14 +898,12 @@
         title = "게임 오버 😵";
         text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}`;
       } else {
-        // 클리어
         if (isDemoMode) {
           title = "모범 연주 완료 🎶";
           text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n연습 모드에서는 산타 조각이 지급되지 않습니다.`;
         } else {
           title = "클리어! 🎉";
           const pieces = getPiecesForSong(currentSong);
-          // 여기서 진짜 지급: 부모에게 postMessage
           sendSantaPieces(pieces);
           text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n산타 조각 ${pieces}개를 보냈어요!`;
         }
@@ -810,7 +920,7 @@
       startGame();
     });
 
-    // ===== 노트 스폰/업데이트 =====
+    // 노트 스폰/업데이트
     function spawnNote(noteObj) {
       const laneEl = lanesEl.children[noteObj.lane];
       const noteEl = document.createElement("div");
@@ -837,17 +947,15 @@
         const y = progress * hitLineY;
         obj.el.style.top = y + "px";
 
-        // 선에서 한참 밑으로 내려가면 강한 Miss → 바로 게임오버(데모 제외)
         if (y > hitLineY + 120 && !obj.hit && !obj.missed) {
           obj.missed = true;
           obj.el.style.opacity = "0.2";
           if (!isDemoMode) {
-            addJudgement("miss"); // hard miss
+            addJudgement("miss");
           }
         }
       });
 
-      // 화면 밖/처리 끝난 노트 제거
       for (let i = activeNotes.length - 1; i >= 0; i--) {
         const obj = activeNotes[i];
         const top = parseFloat(obj.el.style.top || "0");
@@ -858,12 +966,11 @@
       }
     }
 
-    // ===== 점수 & 판정 =====
+    // 점수 & 판정
     function addJudgement(type, options) {
       options = options || {};
-      const soft = !!options.soft; // soft == "아깝게" 틀림
+      const soft = !!options.soft;
 
-      // 데모 모드에서는 miss는 완전히 무시 (게임오버도 안 나고, 점수/콤보 변화도 없음)
       if (isDemoMode && type === "miss") {
         return;
       }
@@ -884,12 +991,10 @@
         combo = 0;
 
         if (soft && softMissCount < 2) {
-          // 아깝게 틀린 것: 2번까지는 게임 계속
           softMissCount++;
           feedbackEl.textContent = "Almost...";
           feedbackEl.className = "hit-feedback hit-miss";
         } else {
-          // 완전 틀린 거 or 3번째 이후 아깝게 틀린 것 → 게임오버
           feedbackEl.textContent = "Miss";
           feedbackEl.className = "hit-feedback hit-miss";
           endGame("gameover");
@@ -900,7 +1005,7 @@
       maxComboEl.textContent = maxCombo;
     }
 
-    // ===== 입력 처리 =====
+    // 입력 처리
     function flashKey(key) {
       key = key.toLowerCase();
       keyHintEls.forEach(el => {
@@ -911,7 +1016,8 @@
       });
     }
 
-    function handlePress(laneIndex) {
+    function handlePress(laneIndex, options = {}) {
+      const forcePerfect = !!options.forcePerfect;
       if (!isPlaying) return;
 
       const now = performance.now() / 1000;
@@ -926,7 +1032,7 @@
       );
 
       if (candidates.length === 0) {
-        addJudgement("miss");
+        if (!forcePerfect) addJudgement("miss");
         return;
       }
 
@@ -941,7 +1047,6 @@
       });
 
       if (overlapped.length === 0) {
-        // 같은 라인에는 노트가 있는데 판정선 근처엔 없음 → near miss인지 완전 miss인지
         let best = null;
         let bestTimeDiff = Infinity;
 
@@ -953,12 +1058,21 @@
           }
         });
 
-        if (best && bestTimeDiff <= NEAR_MISS_TIME_WINDOW) {
-          best.missed = true;
-          if (best.el) best.el.style.opacity = "0.2";
-          addJudgement("miss", { soft: true });
+        if (forcePerfect && best) {
+          best.hit = true;
+          if (best.el) {
+            best.el.style.background = "linear-gradient(to right, #22c55e, #a3e635)";
+            best.el.style.boxShadow = "0 0 12px rgba(34,197,94,1)";
+          }
+          addJudgement("perfect");
         } else {
-          addJudgement("miss");
+          if (best && bestTimeDiff <= NEAR_MISS_TIME_WINDOW) {
+            best.missed = true;
+            if (best.el) best.el.style.opacity = "0.2";
+            addJudgement("miss", { soft: true });
+          } else {
+            addJudgement("miss");
+          }
         }
         return;
       }
@@ -976,19 +1090,27 @@
       });
       if (!best) return;
 
-      const top = parseFloat(best.el.style.top || "0");
-      const center = top + NOTE_HEIGHT / 2;
-      const dist = Math.abs(center - hitLineY);
-
       best.hit = true;
-      if (dist <= 10) {
-        best.el.style.background = "linear-gradient(to right, #22c55e, #a3e635)";
-        best.el.style.boxShadow = "0 0 12px rgba(34,197,94,1)";
+      if (forcePerfect) {
+        if (best.el) {
+          best.el.style.background = "linear-gradient(to right, #22c55e, #a3e635)";
+          best.el.style.boxShadow = "0 0 12px rgba(34,197,94,1)";
+        }
         addJudgement("perfect");
       } else {
-        best.el.style.background = "linear-gradient(to right, #38bdf8, #22c55e)";
-        best.el.style.boxShadow = "0 0 12px rgba(56,189,248,1)";
-        addJudgement("good");
+        const top = parseFloat(best.el.style.top || "0");
+        const center = top + NOTE_HEIGHT / 2;
+        const dist = Math.abs(center - hitLineY);
+
+        if (dist <= 10) {
+          best.el.style.background = "linear-gradient(to right, #22c55e, #a3e635)";
+          best.el.style.boxShadow = "0 0 12px rgba(34,197,94,1)";
+          addJudgement("perfect");
+        } else {
+          best.el.style.background = "linear-gradient(to right, #38bdf8, #22c55e)";
+          best.el.style.boxShadow = "0 0 12px rgba(56,189,248,1)";
+          addJudgement("good");
+        }
       }
     }
 
@@ -1024,7 +1146,7 @@
       });
     });
 
-    // ===== 메인 루프 =====
+    // 메인 루프
     function gameLoop() {
       if (!isPlaying) return;
 
