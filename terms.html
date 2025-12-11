@@ -21,7 +21,8 @@
       font-family:Inter, Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       line-height:1.7; -webkit-font-smoothing:antialiased;
     }
-    .wrap{ max-width:900px; margin:40px auto 64px; padding:0 20px; }
+    .wrap{ display:none; max-width:900px; margin:40px auto 64px; padding:0 20px; }
+    body.authorized .wrap{ display:block; }
     header{ padding:18px 0 12px; border-bottom:1px solid var(--line); }
     h1{ margin:0 0 6px; font-size:28px; }
     .meta{ font-size:14px; color:var(--muted); }
@@ -74,6 +75,8 @@
           return;
         }
       }
+
+      document.body.classList.add("authorized");
     })();
   </script>
   <div class="wrap">
