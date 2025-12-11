@@ -2672,8 +2672,14 @@
       state.conversionCount += count;
     }
 
+    function isOffline(){
+      try { return navigator.onLine === false; }
+      catch { return false; }
+    }
+
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null, source = 'manual') {
+      if (isOffline()) return false;
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
       if (count <= 0) return false;
@@ -3272,6 +3278,7 @@
     }
 
     function playSfx(id){
+      if (isOffline()) return;
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
       try{
@@ -4875,6 +4882,7 @@
         if (!guestMode && (!uid || isInitialSync)) return;
 
         if (window.__PLAY_ALLOWED && !security.banned) {
+          const offline = isOffline();
           pruneExpiredBuffs();
 
           // 자원 알바
@@ -4891,14 +4899,14 @@
 
           // 코인 알바
           let convGain = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
-          if (state.conversionCount > 0) {
+          if (!offline && state.conversionCount > 0) {
             const finalConvGain = convGain * prodMul * perkCoinMul;
             state.coins += finalConvGain;
             auditAdd('coin', finalConvGain, 'worker');
           }
 
           // 자동 변환
-          if (state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
+          if (!offline && state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         }
 
         // ✅ 의심도 검사는 1초마다 별도로 유지
