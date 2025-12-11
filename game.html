@@ -2677,6 +2677,11 @@
       catch { return false; }
     }
 
+    function isBackgrounded(){
+      try { return document.visibilityState === 'hidden'; }
+      catch { return false; }
+    }
+
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null, source = 'manual') {
       if (isOffline()) return false;
@@ -3278,7 +3283,7 @@
     }
 
     function playSfx(id){
-      if (isOffline()) return;
+      if (isOffline() || isBackgrounded()) return;
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
       try{
