@@ -298,10 +298,6 @@
     const fallTime = 1.0; // 노트가 위→판정선까지 오는데 걸리는 시간(초)
     const NEAR_MISS_TIME_WINDOW = 0.18; // "아깝게" 틀린 시간 범위(초)
 
-    // iframe 안이면 기본은 로그인 안 된 걸로, 단독 실행이면 로그인된 걸로 취급
-    const isEmbedded = window.self !== window.top;
-    let isLoggedIn = !isEmbedded;
-
     let score = 0, combo = 0, maxCombo = 0;
     let isPlaying = false;
     let isDemoMode = false;
@@ -333,15 +329,6 @@
     const rewardInfoEl = document.getElementById("rewardInfo");
 
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-
-    // 부모가 로그인 상태를 알려줄 수 있도록 message 리스너
-    window.addEventListener("message", (e) => {
-      const data = e.data;
-      if (!data || typeof data !== "object") return;
-      if (data.type === "login-status") {
-        isLoggedIn = !!data.loggedIn;
-      }
-    });
 
     // ===== 눈 효과 =====
     const snowContainer = document.getElementById("snow-container");
@@ -620,31 +607,10 @@
       rewardInfoEl.textContent = `이 곡 클리어 시 산타 조각: ${pieces}개`;
     }
 
-    // parent에 산타 조각 지급 알림 보내기 (네가 처음 준 패턴 그대로)
+    // parent에 산타 조각 지급 알림 보내기 (네가 준 패턴 그대로)
     function sendSantaPieces(pieces) {
       const payload = { type: 'christmas-clear', pieces };
       try { window.parent?.postMessage(payload, '*'); } catch (e) {}
-    }
-
-    // 로그인 유도 (필요할 때 호출)
-    function requestLoginIfPossible() {
-      try { window.parent?.postMessage({ type: 'login-required' }, '*'); } catch (e) {}
-    }
-
-    function showLoginRequiredOverlay() {
-      overlayTitle.textContent = "로그인이 필요합니다";
-      overlayText.textContent = "로그인 후 이용해주세요.";
-      overlay.style.display = "flex";
-    }
-
-    function ensureLoggedIn() {
-      if (!isLoggedIn) {
-        // 진짜로 내쫓기 + 로그인 요청
-        showLoginRequiredOverlay();
-        requestLoginIfPossible();
-        return false;
-      }
-      return true;
     }
 
     // 곡 선택 UI 초기화
@@ -774,9 +740,6 @@
     }
 
     function startGame() {
-      // 로그인 안 되어 있으면 바로 내보내기
-      if (!ensureLoggedIn()) return;
-
       isDemoMode = false;
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
@@ -792,9 +755,6 @@
     }
 
     function startDemo() {
-      // 모범 연주도 로그인 후 이용 (싫으면 여기 ensureLoggedIn() 제거하면 됨)
-      if (!ensureLoggedIn()) return;
-
       isDemoMode = true;
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
