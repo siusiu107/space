@@ -2274,7 +2274,7 @@
         applied.push(`자원 ${formatKR(finalResAmt)}`);
       }
       const coinAmt = Math.max(0, Math.floor(Number(rewards.coins ?? rewards.coin ?? 0)));
-      if (coinAmt > 0) {
+      if (coinAmt > 0 && canEarnCoins()) {
         const finalCoinAmt = coinAmt * (perkState.coinMult || 1);
         registerAuditIntent('coin', finalCoinAmt, 8000);
         state.coins += finalCoinAmt;
@@ -2672,8 +2672,18 @@
       state.conversionCount += count;
     }
 
+    function isOnline(){
+      try { return navigator.onLine !== false; } catch { return true; }
+    }
+    function isForeground(){
+      try { return document.visibilityState !== 'hidden'; } catch { return true; }
+    }
+    function canEarnCoins(){ return isOnline(); }
+
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null, source = 'manual') {
+      if (!canEarnCoins()) return false;
+
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
       if (count <= 0) return false;
@@ -3219,6 +3229,7 @@
             awardCoin: amt,
             label: `현재코인 ×${it.currentCoinMul} (= ${formatKR(amt)})`,
             onWin:()=>{
+              if (!canEarnCoins()) return;
               const finalAmt = amt * (perkState.coinMult || 1);
               registerAuditIntent('coin', finalAmt, ROULETTE_AUDIT_WINDOW_MS);
               state.coins += finalAmt;
@@ -3233,6 +3244,7 @@
             awardCoin: amt,
             label:`코인 ${formatKR(amt)}`,
             onWin:()=>{
+              if (!canEarnCoins()) return;
               const finalAmt = amt * (perkState.coinMult || 1);
               registerAuditIntent('coin', finalAmt, ROULETTE_AUDIT_WINDOW_MS);
               state.coins += finalAmt;
@@ -3272,6 +3284,7 @@
     }
 
     function playSfx(id){
+      if (!isOnline() || !isForeground()) return;
       const el=document.getElementById(id);
       if (el && el.play){ el.currentTime=0; el.play().catch(()=>{}); return; }
       try{
@@ -4891,7 +4904,7 @@
 
           // 코인 알바
           let convGain = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
-          if (state.conversionCount > 0) {
+          if (state.conversionCount > 0 && canEarnCoins()) {
             const finalConvGain = convGain * prodMul * perkCoinMul;
             state.coins += finalConvGain;
             auditAdd('coin', finalConvGain, 'worker');
