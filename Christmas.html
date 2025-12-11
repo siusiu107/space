@@ -1,71 +1,1078 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🎅 산타 조각 빠른 획득</title>
+  <meta charset="UTF-8">
+  <title>크리스마스 피아노 리듬게임 🎄 + 산타 조각</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+      background: radial-gradient(circle at top, #fffbf0 0, #f97373 40%, #111827 100%);
+      color: #fff;
       display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .game-wrapper {
+      width: min(520px, 100vw);
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .title {
+      text-align: center;
+      margin-bottom: 6px;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #e5e7eb;
+      margin-bottom: 4px;
+    }
+    .reward-info {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #ffe29f;
+      margin-bottom: 4px;
+    }
+    .snowflake {
+      position: absolute;
+      top: -10px;
+      font-size: 12px;
+      opacity: 0.6;
+      pointer-events: none;
+      animation: snow 8s linear infinite;
+    }
+    @keyframes snow {
+      to {
+        transform: translateY(110vh);
+        opacity: 0;
+      }
+    }
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      margin-bottom: 6px;
+      gap: 6px;
+    }
+    .stats span { margin-right: 6px; }
+    .hit-feedback {
+      text-align: right;
+      min-height: 1rem;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .hit-perfect { color: #22c55e; }
+    .hit-good    { color: #38bdf8; }
+    .hit-miss    { color: #f97373; }
+
+    .song-select {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .song-select label {
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+    select {
+      font-size: 0.8rem;
+      padding: 3px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+    }
+
+    .playfield {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: linear-gradient(to bottom, rgba(15,23,42,0.95), rgba(15,23,42,0.4));
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      touch-action: none;
+    }
+    .lanes {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+    .lane {
+      position: relative;
+      border-left: 1px solid rgba(148, 163, 184, 0.2);
+      border-right: 1px solid rgba(15, 23, 42, 0.9);
+      background: linear-gradient(to bottom, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.7));
+      touch-action: none;
+    }
+    .lane:last-child {
+      border-right: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .hit-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 90px; /* 판정선 살짝 위로 */
+      height: 4px;
+      background: linear-gradient(to right, #facc15, #22c55e, #f97316);
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
+    }
+    .key-hints {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #e5e7eb;
+    }
+    .key-hints span {
+      padding: 9px 0;
+      margin: 0 2px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: 0 0 8px rgba(148, 163, 184, 0.6);
+      user-select: none;
+      touch-action: none;
+    }
+    .key-active {
+      background: rgba(34, 197, 94, 0.9) !important;
+      border-color: #bbf7d0 !important;
+      box-shadow: 0 0 14px rgba(34, 197, 94, 1) !important;
+      color: #022c22 !important;
+    }
+
+    .note {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 20px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #f97373, #fb923c, #22c55e);
+      box-shadow: 0 0 10px rgba(251, 146, 60, 0.9);
+    }
+
+    .control-bar {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(to right, #22c55e, #0ea5e9);
+      color: #022c22;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.7);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      white-space: nowrap;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.7); }
+    .btn-demo {
+      background: linear-gradient(to right, #9ca3af, #6b7280);
+      color: #f9fafb;
+    }
+    .hint-text {
+      text-align: right;
+      opacity: 0.8;
+      flex: 1;
+      min-width: 130px;
+    }
+    .mobile-hint {
+      margin-top: 4px;
+      font-size: 0.72rem;
+      text-align: center;
+      opacity: 0.8;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.9);
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-      font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 35%),
-                  radial-gradient(circle at 80% 10%, rgba(125,246,255,0.14), transparent 32%),
-                  linear-gradient(180deg, #0f1530 0%, #040712 55%, #02060f 100%);
-      color: #f3f8ff;
       text-align: center;
+      font-size: 1rem;
+      padding: 16px;
     }
-    h1 { margin: 0; font-size: 22px; letter-spacing: 0.3px; }
-    p { margin: 0; color: #cfe2ff; }
-    button {
-      padding: 14px 20px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: linear-gradient(120deg, #ffb7d4 0%, #ff4f88 45%, #7df6ff 100%);
-      color: #0b0b14;
-      font-weight: 800;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 12px 28px rgba(255, 79, 136, 0.28);
+    .overlay h2 {
+      margin-bottom: 8px;
+      font-size: 1.3rem;
     }
-    .status { font-size: 15px; color: #ffe29f; }
+    .overlay p { margin-bottom: 8px; font-size: 0.9rem; white-space: pre-line; }
   </style>
 </head>
 <body>
-  <h1>클릭 3번마다 산타 조각 1개!</h1>
-  <p>버튼을 세 번 누르면 자동으로 산타 조각을 보내드려요.</p>
-  <button id="click-btn" type="button">클릭해서 조각 받기</button>
-  <div class="status" id="status">0 / 3 클릭</div>
+  <div class="game-wrapper">
+    <div id="snow-container"></div>
+
+    <div class="title">🎄 크리스마스 피아노 리듬게임 🎹</div>
+    <div class="subtitle">곡 선택 → D/F/J/K 또는 라인 터치로 노트를 맞춰봐!</div>
+    <div class="reward-info" id="rewardInfo">이 곡 클리어 시 산타 조각: 1개</div>
+
+    <div class="top-row">
+      <div class="stats">
+        <span>점수: <span id="score">0</span></span>
+        <span>콤보: <span id="combo">0</span></span>
+        <span>Max: <span id="maxCombo">0</span></span>
+      </div>
+      <div class="song-select">
+        <label for="songSelect">곡 / 난이도</label>
+        <select id="songSelect"></select>
+      </div>
+    </div>
+    <div class="hit-feedback" id="hitFeedback"></div>
+
+    <div class="playfield" id="playfield">
+      <div class="lanes" id="lanes">
+        <div class="lane" data-lane="0"></div>
+        <div class="lane" data-lane="1"></div>
+        <div class="lane" data-lane="2"></div>
+        <div class="lane" data-lane="3"></div>
+      </div>
+      <div class="hit-line"></div>
+      <div class="key-hints" id="keyHints">
+        <span data-key="d">D</span>
+        <span data-key="f">F</span>
+        <span data-key="j">J</span>
+        <span data-key="k">K</span>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <div class="btn-row">
+        <button id="startBtn">게임 시작</button>
+        <button id="demoBtn" class="btn-demo" type="button">모범 연주 보기</button>
+      </div>
+      <div class="hint-text">
+        선 위 80px / 아래 45px 안이면 성공<br>
+        약간 빗나간 건 2번까지 봐줌
+      </div>
+    </div>
+    <div class="mobile-hint">
+      📱 모바일: 각 라인 또는 아래 D/F/J/K 버튼을 톡 누르면 돼.
+    </div>
+
+    <div class="overlay" id="overlay" style="display:none;">
+      <h2 id="overlayTitle">게임 오버</h2>
+      <p id="overlayText"></p>
+      <button id="retryBtn">다시 하기</button>
+    </div>
+  </div>
 
   <script>
-    const statusEl = document.getElementById('status');
-    const btn = document.getElementById('click-btn');
-    let clickCount = 0;
+    // ===== 공통 상수 =====
+    const laneKeys = ["d", "f", "j", "k"];
+    const NOTE_HEIGHT = 20;
+    const fallTime = 1.0; // 노트가 위→판정선까지 오는데 걸리는 시간(초)
+    const NEAR_MISS_TIME_WINDOW = 0.18; // "아깝게" 틀린 시간 범위(초)
 
-    function updateStatus() {
-      statusEl.textContent = `${clickCount} / 3 클릭`;
+    // iframe 안이면 기본은 로그인 안 된 걸로, 단독 실행이면 로그인된 걸로 취급
+    const isEmbedded = window.self !== window.top;
+    let isLoggedIn = !isEmbedded;
+
+    let score = 0, combo = 0, maxCombo = 0;
+    let isPlaying = false;
+    let isDemoMode = false;
+    let startTime = 0;          // performance.now() 기준(초)
+    let chartNotes = [];        // 현재 선택된 곡의 노트들 (시간 정보 포함)
+    let activeNotes = [];       // 화면에 떠 있는 노트들
+    let animationId = null;
+    let audioCtx = null;
+    let songLengthSec = 0;
+    let currentSong = null;
+    let softMissCount = 0;      // 아깝게 틀린 횟수 (2번까지는 게임 유지)
+    let demoTimers = [];
+
+    const scoreEl = document.getElementById("score");
+    const comboEl = document.getElementById("combo");
+    const maxComboEl = document.getElementById("maxCombo");
+    const feedbackEl = document.getElementById("hitFeedback");
+    const playfield = document.getElementById("playfield");
+    const lanesEl = document.getElementById("lanes");
+    const startBtn = document.getElementById("startBtn");
+    const demoBtn = document.getElementById("demoBtn");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const retryBtn = document.getElementById("retryBtn");
+    const songSelectEl = document.getElementById("songSelect");
+    const keyHintEls = document.querySelectorAll(".key-hints span");
+    const hitLineEl = document.querySelector(".hit-line");
+    const rewardInfoEl = document.getElementById("rewardInfo");
+
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+    // 부모가 로그인 상태를 알려줄 수 있도록 message 리스너
+    window.addEventListener("message", (e) => {
+      const data = e.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type === "login-status") {
+        isLoggedIn = !!data.loggedIn;
+      }
+    });
+
+    // ===== 눈 효과 =====
+    const snowContainer = document.getElementById("snow-container");
+    function createSnowflake() {
+      const snow = document.createElement("div");
+      snow.className = "snowflake";
+      snow.textContent = "❄";
+      snow.style.left = Math.random() * 100 + "%";
+      snow.style.opacity = (0.5 + Math.random() * 0.5).toFixed(2);
+      snow.style.fontSize = (8 + Math.random() * 10) + "px";
+      snow.style.animationDuration = (6 + Math.random() * 6) + "s";
+      snowContainer.appendChild(snow);
+      setTimeout(() => snow.remove(), 13000);
+    }
+    setInterval(createSnowflake, 500);
+
+    // ===== 곡 정의 (5곡, 탭 노트만) =====
+    const LANE_TO_PITCH = ["C5", "D5", "E5", "G5"];
+
+    function makeSong(id, title, difficulty, bpm, measures, patternFn) {
+      const notes = [];
+      for (let m = 0; m < measures; m++) {
+        const baseBeat = m * 4;
+        patternFn(notes, baseBeat, m, bpm);
+      }
+      return { id, title, difficulty, bpm, leadInBeats: 4, notes };
     }
 
-    function sendPiece() {
-      const payload = { type: 'christmas-clear', pieces: 1 };
-      try { window.parent?.postMessage(payload, '*'); } catch {}
+    const SONGS = (() => {
+      const songs = [];
+
+      // Easy
+      songs.push(makeSong(
+        "easy",
+        "Snowy Steps",
+        "Easy",
+        120,
+        16,
+        (notes, beat, measure, bpm) => {
+          if (measure >= 12) {
+            const offsets = [0, 0.5, 1.5, 2, 3];
+            offsets.forEach((off, idx) => {
+              const lane = (measure * 2 + idx * 3) % 4;
+              notes.push({
+                beat: beat + off,
+                lane,
+                pitch: LANE_TO_PITCH[lane],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            });
+            return;
+          }
+          for (let s = 0; s < 4; s++) {
+            const lane = s;
+            notes.push({
+              beat: beat + s,
+              lane,
+              pitch: LANE_TO_PITCH[lane],
+              durBeats: 1,
+              type: "tap"
+            });
+          }
+        }
+      ));
+
+      // Normal
+      songs.push(makeSong(
+        "normal",
+        "Jingle Path",
+        "Normal",
+        135,
+        16,
+        (notes, beat, measure, bpm) => {
+          if (measure >= 12) {
+            const offsets = [0, 0.5, 1.5, 2, 2.5, 3, 3.5];
+            offsets.forEach((off, idx) => {
+              const lane = (measure + idx * 2) % 4;
+              notes.push({
+                beat: beat + off,
+                lane,
+                pitch: LANE_TO_PITCH[lane],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            });
+            return;
+          }
+          const offsets = [0, 1.5, 2, 3.5];
+          offsets.forEach((off, idx) => {
+            const lane = (measure + idx) % 4;
+            notes.push({
+              beat: beat + off,
+              lane,
+              pitch: LANE_TO_PITCH[lane],
+              durBeats: 0.5,
+              type: "tap"
+            });
+          });
+        }
+      ));
+
+      // Hard
+      songs.push(makeSong(
+        "hard",
+        "Carol Rush",
+        "Hard",
+        150,
+        16,
+        (notes, beat, measure, bpm) => {
+          if (measure >= 12) {
+            const offsets = [0, 0.25, 0.75, 1.0, 1.75, 2.0, 2.5, 3.0, 3.25];
+            offsets.forEach((off, idx) => {
+              const lane = (measure * 3 + idx * 5) % 4;
+              notes.push({
+                beat: beat + off,
+                lane,
+                pitch: LANE_TO_PITCH[lane],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            });
+            return;
+          }
+          const offsets = [0, 0.5, 1, 2, 2.5, 3];
+          offsets.forEach((off, idx) => {
+            const lane = (measure + idx) % 4;
+            notes.push({
+              beat: beat + off,
+              lane,
+              pitch: LANE_TO_PITCH[lane],
+              durBeats: 0.5,
+              type: "tap"
+            });
+          });
+        }
+      ));
+
+      // Expert (후반부 더 쉽게)
+      songs.push(makeSong(
+        "expert",
+        "Starry Night Ride",
+        "Expert",
+        165,
+        16,
+        (notes, beat, measure, bpm) => {
+          if (measure >= 12) {
+            // 규칙적인 8분/4분, 두 라인만 왔다갔다 하는 정도
+            const baseLane = measure % 4;
+            const laneA = baseLane;
+            const laneB = (baseLane + 1) % 4;
+            const pattern = [
+              { off: 0.0, lane: laneA },
+              { off: 0.5, lane: laneB },
+              { off: 1.5, lane: laneA },
+              { off: 2.0, lane: laneB },
+              { off: 3.0, lane: laneA }
+            ];
+            pattern.forEach(p => {
+              notes.push({
+                beat: beat + p.off,
+                lane: p.lane,
+                pitch: LANE_TO_PITCH[p.lane],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            });
+            return;
+          }
+
+          // 기본 Expert 패턴 (트릴 + 점프)
+          const baseLane = measure % 4;
+          notes.push({ beat: beat + 0,   lane: baseLane,            pitch: LANE_TO_PITCH[baseLane],            durBeats: 0.5, type: "tap" });
+          notes.push({ beat: beat + 0.5, lane: (baseLane+1)%4,      pitch: LANE_TO_PITCH[(baseLane+1)%4],      durBeats: 0.5, type: "tap" });
+          notes.push({ beat: beat + 1,   lane: (baseLane+2)%4,      pitch: LANE_TO_PITCH[(baseLane+2)%4],      durBeats: 0.5, type: "tap" });
+          notes.push({ beat: beat + 1.5, lane: (baseLane+3)%4,      pitch: LANE_TO_PITCH[(baseLane+3)%4],      durBeats: 0.5, type: "tap" });
+          notes.push({ beat: beat + 2,   lane: baseLane,            pitch: LANE_TO_PITCH[baseLane],            durBeats: 0.5, type: "tap" });
+          notes.push({ beat: beat + 2,   lane: (baseLane+2)%4,      pitch: LANE_TO_PITCH[(baseLane+2)%4],      durBeats: 0.5, type: "tap" });
+        }
+      ));
+
+      // Extreme (중간도, 후반도 더 어렵게)
+      songs.push(makeSong(
+        "extreme",
+        "Santa Storm",
+        "Extreme",
+        180,
+        16,
+        (notes, beat, measure, bpm) => {
+          if (measure >= 12) {
+            // 16비트 촘촘 + 코드 + 가끔 3키
+            const offsets = [
+              0.00, 0.25, 0.50, 0.75,
+              1.00, 1.25, 1.50, 1.75,
+              2.00, 2.25, 2.50, 2.75,
+              3.00, 3.25, 3.50
+            ];
+            offsets.forEach((off, idx) => {
+              const baseLane = (measure * 11 + idx * 5) % 4;
+
+              // 기본 한 타
+              notes.push({
+                beat: beat + off,
+                lane: baseLane,
+                pitch: LANE_TO_PITCH[baseLane],
+                durBeats: 0.5,
+                type: "tap"
+              });
+
+              // 박자 시작(정박)에서는 2키 코드
+              if (Math.abs(off % 1.0) < 0.001) {
+                const lane2 = (baseLane + 2) % 4;
+                notes.push({
+                  beat: beat + off,
+                  lane: lane2,
+                  pitch: LANE_TO_PITCH[lane2],
+                  durBeats: 0.5,
+                  type: "tap"
+                });
+              }
+
+              // 마지막 노트는 3키 코드
+              if (idx === offsets.length - 1) {
+                const lane2 = (baseLane + 1) % 4;
+                const lane3 = (baseLane + 3) % 4;
+                [lane2, lane3].forEach(L => {
+                  notes.push({
+                    beat: beat + off,
+                    lane: L,
+                    pitch: LANE_TO_PITCH[L],
+                    durBeats: 0.5,
+                    type: "tap"
+                  });
+                });
+              }
+            });
+            return;
+          }
+
+          // 중간부도 더 복잡한 8/16비트 패턴
+          const offsets = [0, 0.5, 0.75, 1.25, 1.5, 2.0, 2.25, 2.5, 3.0];
+          offsets.forEach((off, idx) => {
+            const lane = (measure * 3 + idx * 2) % 4;
+            notes.push({
+              beat: beat + off,
+              lane,
+              pitch: LANE_TO_PITCH[lane],
+              durBeats: 0.5,
+              type: "tap"
+            });
+            // 가끔 추가 한 타로 살짝 코드 느낌
+            if (idx % 3 === 0 && off !== 0) {
+              const lane2 = (lane + 2) % 4;
+              notes.push({
+                beat: beat + off,
+                lane: lane2,
+                pitch: LANE_TO_PITCH[lane2],
+                durBeats: 0.5,
+                type: "tap"
+              });
+            }
+          });
+        }
+      ));
+
+      return songs;
+    })();
+
+    // 난이도별 산타 조각 개수
+    const DIFFICULTY_PIECES = {
+      easy: 1,
+      normal: 2,
+      hard: 3,
+      expert: 5,
+      extreme: 10
+    };
+
+    function getPiecesForSong(song) {
+      if (!song) return 1;
+      return DIFFICULTY_PIECES[song.id] ?? 1;
     }
 
-    btn.addEventListener('click', () => {
-      clickCount++;
-      if (clickCount >= 3) {
-        clickCount = 0;
-        sendPiece();
-        statusEl.textContent = '산타 조각을 보냈어요! 다시 시작하려면 클릭하세요.';
+    function updateRewardInfo() {
+      if (!rewardInfoEl) return;
+      const pieces = getPiecesForSong(currentSong);
+      rewardInfoEl.textContent = `이 곡 클리어 시 산타 조각: ${pieces}개`;
+    }
+
+    // parent에 산타 조각 지급 알림 보내기 (네 기존 프로토콜 유지)
+    function sendSantaPieces(pieces) {
+      const payload = { type: 'christmas-clear', pieces };
+      try { window.parent?.postMessage(payload, '*'); } catch (e) {}
+    }
+
+    // 로그인 유도 (필요할 때 호출)
+    function requestLoginIfPossible() {
+      try { window.parent?.postMessage({ type: 'login-required' }, '*'); } catch (e) {}
+    }
+
+    // 곡 선택 UI 초기화
+    SONGS.forEach(song => {
+      const opt = document.createElement("option");
+      opt.value = song.id;
+      opt.textContent = `${song.title} (${song.difficulty})`;
+      songSelectEl.appendChild(opt);
+    });
+    currentSong = SONGS[0];
+    updateRewardInfo();
+
+    songSelectEl.addEventListener("change", () => {
+      currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
+      updateRewardInfo();
+    });
+
+    // ===== 오디오 (Web Audio) =====
+    function noteToFreq(note) {
+      const A4 = 440;
+      const map = {
+        "C4": -9, "D4": -7, "E4": -5, "F4": -4, "G4": -2, "A4": 0, "B4": 2,
+        "C5": 3,  "D5": 5,  "E5": 7,  "F5": 8,  "G5": 10, "A5": 12
+      };
+      const semi = map[note] ?? 0;
+      return A4 * Math.pow(2, semi / 12);
+    }
+
+    function playSongAudio(song) {
+      if (audioCtx) {
+        try { audioCtx.close(); } catch (e) {}
+        audioCtx = null;
+      }
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      const beatDur = 60 / song.bpm;
+      const lead = song.leadInBeats * beatDur;
+      const now = audioCtx.currentTime;
+      const startAt = now + 0.2;
+
+      song.notes.forEach(n => {
+        const start = startAt + lead + n.beat * beatDur;
+        const dur = n.durBeats * beatDur;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "square";
+        osc.frequency.value = noteToFreq(n.pitch);
+
+        const g = gain.gain;
+        g.setValueAtTime(0, start);
+        g.linearRampToValueAtTime(0.3, start + 0.02);
+        g.linearRampToValueAtTime(0.25, start + dur * 0.7);
+        g.linearRampToValueAtTime(0.0, start + dur);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + dur + 0.05);
+      });
+
+      songLengthSec = (song.leadInBeats + (song.notes.reduce((max, n) =>
+        Math.max(max, n.beat + n.durBeats), 0))) * beatDur + 0.3;
+    }
+
+    // ===== 차트 변환 =====
+    function buildChartFromSong(song) {
+      const beatDur = 60 / song.bpm;
+      const lead = song.leadInBeats * beatDur;
+      const arr = [];
+
+      song.notes.forEach(n => {
+        const startTime = lead + n.beat * beatDur;
+        const endTime = startTime + n.durBeats * beatDur;
+        arr.push({
+          lane: n.lane,
+          type: "tap",
+          pitch: n.pitch,
+          startTime,
+          endTime,
+          spawnTime: startTime - fallTime,
+          hitTime: startTime,
+          spawned: false,
+          hit: false,
+          missed: false
+        });
+      });
+
+      const last = arr.reduce((max, n) => Math.max(max, n.endTime), 0);
+      songLengthSec = last + 0.5;
+      return arr;
+    }
+
+    // ===== Demo 타이머 관리 =====
+    function clearDemoTimers() {
+      demoTimers.forEach(id => clearTimeout(id));
+      demoTimers = [];
+    }
+
+    function scheduleDemoPresses() {
+      clearDemoTimers();
+      chartNotes.forEach(n => {
+        const delayMs = n.hitTime * 1000;
+        const id = setTimeout(() => {
+          if (!isPlaying || !isDemoMode) return;
+          const key = laneKeys[n.lane];
+          flashKey(key);
+          handlePress(n.lane);
+        }, delayMs);
+        demoTimers.push(id);
+      });
+    }
+
+    // ===== 게임 제어 =====
+    function resetGame() {
+      score = 0; combo = 0; maxCombo = 0;
+      softMissCount = 0;
+      scoreEl.textContent = 0;
+      comboEl.textContent = 0;
+      maxComboEl.textContent = 0;
+      feedbackEl.textContent = "";
+      feedbackEl.className = "hit-feedback";
+      activeNotes.forEach(n => n.el.remove());
+      activeNotes = [];
+      overlay.style.display = "none";
+      clearDemoTimers();
+    }
+
+    function startGame() {
+      isDemoMode = false;
+      currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
+      updateRewardInfo();
+      resetGame();
+      chartNotes = buildChartFromSong(currentSong);
+
+      if (animationId) cancelAnimationFrame(animationId);
+      isPlaying = true;
+      startTime = performance.now() / 1000;
+
+      playSongAudio(currentSong);
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function startDemo() {
+      isDemoMode = true;
+      currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
+      updateRewardInfo();
+      resetGame();
+      chartNotes = buildChartFromSong(currentSong);
+
+      if (animationId) cancelAnimationFrame(animationId);
+      isPlaying = true;
+      startTime = performance.now() / 1000;
+
+      playSongAudio(currentSong);
+      scheduleDemoPresses();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function endGame(reason) {
+      if (!isPlaying) return;
+      isPlaying = false;
+      if (animationId) cancelAnimationFrame(animationId);
+      clearDemoTimers();
+
+      if (audioCtx) {
+        try { audioCtx.close(); } catch (e) {}
+        audioCtx = null;
+      }
+
+      let title, text;
+      if (reason === "gameover") {
+        title = "게임 오버 😵";
+        text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}`;
+      } else {
+        // 클리어
+        if (isDemoMode) {
+          title = "모범 연주 완료 🎶";
+          text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n연습 모드에서는 산타 조각이 지급되지 않습니다.`;
+        } else {
+          title = "클리어! 🎉";
+          const pieces = getPiecesForSong(currentSong);
+          if (isLoggedIn) {
+            sendSantaPieces(pieces);
+            text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n산타 조각 ${pieces}개를 보냈어요!`;
+          } else {
+            text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n로그인하면 산타 조각 ${pieces}개를 받을 수 있어요!`;
+            requestLoginIfPossible();
+          }
+        }
+      }
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      overlay.style.display = "flex";
+    }
+
+    startBtn.addEventListener("click", startGame);
+    demoBtn.addEventListener("click", startDemo);
+    retryBtn.addEventListener("click", () => {
+      isDemoMode = false;
+      startGame();
+    });
+
+    // ===== 노트 스폰/업데이트 =====
+    function spawnNote(noteObj) {
+      const laneEl = lanesEl.children[noteObj.lane];
+      const noteEl = document.createElement("div");
+      noteEl.className = "note";
+      noteEl.style.top = "-24px";
+      laneEl.appendChild(noteEl);
+
+      activeNotes.push({
+        ...noteObj,
+        el: noteEl
+      });
+    }
+
+    function updateNotes(elapsed) {
+      const fieldRect = playfield.getBoundingClientRect();
+      const lineRect = hitLineEl.getBoundingClientRect();
+      const hitLineY = (lineRect.top - fieldRect.top) + lineRect.height / 2;
+
+      activeNotes.forEach(obj => {
+        if (obj.hit || obj.missed) return;
+
+        const dt = elapsed - obj.spawnTime;
+        const progress = dt / fallTime;
+        const y = progress * hitLineY;
+        obj.el.style.top = y + "px";
+
+        // 선에서 한참 밑으로 내려가면 강한 Miss → 바로 게임오버
+        if (y > hitLineY + 120 && !obj.hit && !obj.missed) {
+          obj.missed = true;
+          obj.el.style.opacity = "0.2";
+          addJudgement("miss"); // hard miss
+        }
+      });
+
+      // 화면 밖/처리 끝난 노트 제거
+      for (let i = activeNotes.length - 1; i >= 0; i--) {
+        const obj = activeNotes[i];
+        const top = parseFloat(obj.el.style.top || "0");
+        if (top > fieldRect.height + 40 || obj.missed || obj.hit) {
+          obj.el.remove();
+          activeNotes.splice(i, 1);
+        }
+      }
+    }
+
+    // ===== 점수 & 판정 =====
+    function addJudgement(type, options) {
+      options = options || {};
+      const soft = !!options.soft; // soft == "아깝게" 틀림
+
+      if (type === "perfect") {
+        score += 100;
+        combo += 1;
+        maxCombo = Math.max(maxCombo, combo);
+        feedbackEl.textContent = "Perfect!";
+        feedbackEl.className = "hit-feedback hit-perfect";
+      } else if (type === "good") {
+        score += 60;
+        combo += 1;
+        maxCombo = Math.max(maxCombo, combo);
+        feedbackEl.textContent = "Good!";
+        feedbackEl.className = "hit-feedback hit-good";
+      } else if (type === "miss") {
+        combo = 0;
+
+        if (soft && softMissCount < 2) {
+          // 아깝게 틀린 것: 2번까지는 게임 계속
+          softMissCount++;
+          feedbackEl.textContent = "Almost...";
+          feedbackEl.className = "hit-feedback hit-miss";
+        } else {
+          // 완전 틀린 거 or 3번째 이후 아깝게 틀린 것 → 게임오버
+          feedbackEl.textContent = "Miss";
+          feedbackEl.className = "hit-feedback hit-miss";
+          endGame("gameover");
+        }
+      }
+      scoreEl.textContent = score;
+      comboEl.textContent = combo;
+      maxComboEl.textContent = maxCombo;
+    }
+
+    // ===== 입력 처리 =====
+    function flashKey(key) {
+      key = key.toLowerCase();
+      keyHintEls.forEach(el => {
+        if (el.dataset.key === key) {
+          el.classList.add("key-active");
+          setTimeout(() => el.classList.remove("key-active"), 120);
+        }
+      });
+    }
+
+    function handlePress(laneIndex) {
+      if (!isPlaying) return;
+
+      const now = performance.now() / 1000;
+      const elapsed = now - startTime;
+
+      const fieldRect = playfield.getBoundingClientRect();
+      const lineRect = hitLineEl.getBoundingClientRect();
+      const hitLineY = (lineRect.top - fieldRect.top) + lineRect.height / 2;
+
+      const candidates = activeNotes.filter(
+        n => n.lane === laneIndex && !n.hit && !n.missed
+      );
+
+      if (candidates.length === 0) {
+        addJudgement("miss");
         return;
       }
-      updateStatus();
+
+      const successMarginAbove = 80;
+      const successMarginBelow = 45;
+
+      const overlapped = candidates.filter(n => {
+        const top = parseFloat(n.el.style.top || "0");
+        const bottom = top + NOTE_HEIGHT;
+        return bottom >= (hitLineY - successMarginAbove) &&
+               top    <= (hitLineY + successMarginBelow);
+      });
+
+      if (overlapped.length === 0) {
+        // 같은 라인에는 노트가 있는데 판정선 근처엔 없음 → near miss인지 완전 miss인지
+        let best = null;
+        let bestTimeDiff = Infinity;
+
+        candidates.forEach(n => {
+          const diff = Math.abs(n.hitTime - elapsed);
+          if (diff < bestTimeDiff) {
+            bestTimeDiff = diff;
+            best = n;
+          }
+        });
+
+        if (best && bestTimeDiff <= NEAR_MISS_TIME_WINDOW) {
+          best.missed = true;
+          if (best.el) best.el.style.opacity = "0.2";
+          addJudgement("miss", { soft: true });
+        } else {
+          addJudgement("miss");
+        }
+        return;
+      }
+
+      let best = null;
+      let bestDist = Infinity;
+      overlapped.forEach(n => {
+        const top = parseFloat(n.el.style.top || "0");
+        const center = top + NOTE_HEIGHT / 2;
+        const dist = Math.abs(center - hitLineY);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = n;
+        }
+      });
+      if (!best) return;
+
+      const top = parseFloat(best.el.style.top || "0");
+      const center = top + NOTE_HEIGHT / 2;
+      const dist = Math.abs(center - hitLineY);
+
+      best.hit = true;
+      if (dist <= 10) {
+        best.el.style.background = "linear-gradient(to right, #22c55e, #a3e635)";
+        best.el.style.boxShadow = "0 0 12px rgba(34,197,94,1)";
+        addJudgement("perfect");
+      } else {
+        best.el.style.background = "linear-gradient(to right, #38bdf8, #22c55e)";
+        best.el.style.boxShadow = "0 0 12px rgba(56,189,248,1)";
+        addJudgement("good");
+      }
+    }
+
+    // 키보드 입력
+    window.addEventListener("keydown", (e) => {
+      if (!isPlaying) return;
+      const key = e.key.toLowerCase();
+      const idx = laneKeys.indexOf(key);
+      if (idx !== -1) {
+        e.preventDefault();
+        flashKey(key);
+        handlePress(idx);
+      }
     });
+
+    // 터치/마우스 입력 (라인)
+    Array.from(lanesEl.children).forEach((laneEl, idx) => {
+      laneEl.addEventListener("pointerdown", (e) => {
+        if (!isPlaying) return;
+        e.preventDefault();
+        flashKey(laneKeys[idx]);
+        handlePress(idx);
+      });
+    });
+
+    // 터치/마우스 입력 (아래 버튼)
+    keyHintEls.forEach((el, idx) => {
+      el.addEventListener("pointerdown", (e) => {
+        if (!isPlaying) return;
+        e.preventDefault();
+        flashKey(laneKeys[idx]);
+        handlePress(idx);
+      });
+    });
+
+    // ===== 메인 루프 =====
+    function gameLoop() {
+      if (!isPlaying) return;
+
+      const now = performance.now() / 1000;
+      const elapsed = now - startTime;
+
+      chartNotes.forEach(n => {
+        if (!n.spawned && elapsed >= n.spawnTime) {
+          n.spawned = true;
+          spawnNote(n);
+        }
+      });
+
+      updateNotes(elapsed);
+
+      const allSpawned = chartNotes.every(n => n.spawned);
+      if (allSpawned && activeNotes.length === 0 && elapsed > songLengthSec) {
+        endGame("clear");
+        return;
+      }
+
+      animationId = requestAnimationFrame(gameLoop);
+    }
   </script>
 </body>
 </html>
