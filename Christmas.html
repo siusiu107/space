@@ -2,46 +2,125 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>크리스마스 피아노 리듬게임 🎄 + 산타 조각</title>
+  <title>🎄 크리스마스 피아노 리듬게임 – 산타 조각 이벤트</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    :root {
+      --bg-main: #020617;
+      --bg-card: rgba(15, 23, 42, 0.96);
+      --bg-card-soft: rgba(15, 23, 42, 0.85);
+      --accent-main: #f97373;
+      --accent-sub: #38bdf8;
+      --accent-gold: #facc15;
+      --accent-green: #22c55e;
+      --border-soft: rgba(148, 163, 184, 0.4);
+      --text-main: #e5e7eb;
+      --text-sub: #9ca3af;
+      --text-soft: #6b7280;
+      --radius-xl: 18px;
+      --radius-lg: 12px;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
-      background: radial-gradient(circle at top, #fffbf0 0, #f97373 40%, #111827 100%);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       min-height: 100vh;
-    }
-    .game-wrapper {
-      width: min(520px, 100vw);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 16px;
-      border-radius: 16px;
-      background: rgba(15, 23, 42, 0.95);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      background:
+        radial-gradient(circle at 10% 0, rgba(248, 250, 252, 0.08), transparent 50%),
+        radial-gradient(circle at 90% 0, rgba(248, 113, 113, 0.4), transparent 55%),
+        radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.25), transparent 55%),
+        linear-gradient(160deg, #020617 0%, #030712 40%, #020617 100%);
+      color: var(--text-main);
+    }
+
+    .game-wrapper {
+      width: min(520px, 100%);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(
+        145deg,
+        rgba(15, 23, 42, 0.96) 0%,
+        rgba(15, 23, 42, 0.92) 40%,
+        rgba(15, 23, 42, 0.98) 100%
+      );
+      box-shadow:
+        0 18px 50px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(148, 163, 184, 0.2);
+      padding: 14px 14px 16px;
       position: relative;
       overflow: hidden;
     }
-    .title {
-      text-align: center;
+
+    /* 상단 헤더 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 6px;
-      font-size: 1.3rem;
+      gap: 10px;
+    }
+
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .title-badge {
+      font-size: 0.68rem;
       font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(248, 250, 252, 0.06);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-sub);
     }
+
     .subtitle {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #e5e7eb;
-      margin-bottom: 4px;
+      font-size: 0.76rem;
+      color: var(--text-sub);
     }
+
     .reward-info {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #ffe29f;
-      margin-bottom: 4px;
+      text-align: right;
+      font-size: 0.78rem;
+      color: #fed7aa;
+      font-weight: 600;
     }
+
+    .reward-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0 0, rgba(254, 240, 138, 0.35), transparent 60%);
+      border: 1px solid rgba(253, 224, 71, 0.55);
+      box-shadow: 0 0 18px rgba(253, 224, 71, 0.4);
+    }
+
+    .reward-pill span:first-child {
+      font-size: 0.8rem;
+    }
+
+    .reward-pill span:last-child {
+      font-weight: 800;
+    }
+
+    /* 눈 효과 */
     .snowflake {
       position: absolute;
       top: -10px;
@@ -49,6 +128,7 @@
       opacity: 0.6;
       pointer-events: none;
       animation: snow 8s linear infinite;
+      filter: drop-shadow(0 0 4px rgba(248, 250, 252, 0.7));
     }
     @keyframes snow {
       to {
@@ -56,53 +136,81 @@
         opacity: 0;
       }
     }
+
+    /* 점수 & 선택 영역 */
     .top-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 0.78rem;
       margin-bottom: 6px;
-      gap: 6px;
+      gap: 8px;
     }
-    .stats span { margin-right: 6px; }
+
+    .stats-card {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at 0 0, rgba(248, 113, 113, 0.22), transparent 55%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.78rem;
+    }
+
+    .stats-card span label {
+      color: var(--text-soft);
+      margin-right: 3px;
+    }
+
+    .song-select {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: right;
+    }
+
+    .song-select label {
+      font-size: 0.72rem;
+      opacity: 0.9;
+      color: var(--text-sub);
+    }
+
+    select {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.18), transparent 55%);
+      color: #f9fafb;
+      outline: none;
+      min-width: 160px;
+    }
+
     .hit-feedback {
       text-align: right;
       min-height: 1rem;
       font-weight: 700;
       font-size: 0.8rem;
     }
-    .hit-perfect { color: #22c55e; }
-    .hit-good    { color: #38bdf8; }
-    .hit-miss    { color: #f97373; }
+    .hit-perfect { color: var(--accent-green); }
+    .hit-good    { color: var(--accent-sub); }
+    .hit-miss    { color: var(--accent-main); }
 
-    .song-select {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .song-select label {
-      font-size: 0.75rem;
-      opacity: 0.9;
-    }
-    select {
-      font-size: 0.8rem;
-      padding: 3px 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.9);
-      background: rgba(15,23,42,0.9);
-      color: #e5e7eb;
-    }
-
+    /* 플레이 필드 */
     .playfield {
       position: relative;
       width: 100%;
-      height: 420px;
-      border-radius: 12px;
+      height: 410px;
+      border-radius: var(--radius-lg);
       overflow: hidden;
-      background: linear-gradient(to bottom, rgba(15,23,42,0.95), rgba(15,23,42,0.4));
-      border: 1px solid rgba(148, 163, 184, 0.4);
+      background:
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.86)),
+        radial-gradient(circle at 50% 0, rgba(248, 113, 113, 0.25), transparent 55%);
+      border: 1px solid var(--border-soft);
       touch-action: none;
     }
+
     .lanes {
       position: absolute;
       inset: 0;
@@ -110,25 +218,44 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 2px;
     }
+
     .lane {
       position: relative;
-      border-left: 1px solid rgba(148, 163, 184, 0.2);
+      border-left: 1px solid rgba(148, 163, 184, 0.23);
       border-right: 1px solid rgba(15, 23, 42, 0.9);
-      background: linear-gradient(to bottom, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.7));
+      background: linear-gradient(
+        to bottom,
+        rgba(148, 163, 184, 0.04),
+        rgba(15, 23, 42, 0.85)
+      );
       touch-action: none;
     }
-    .lane:last-child {
-      border-right: 1px solid rgba(148, 163, 184, 0.2);
+
+    .lane::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 70%, rgba(248, 250, 252, 0.08), transparent 60%);
+      pointer-events: none;
     }
+
+    .lane:last-child {
+      border-right: 1px solid rgba(148, 163, 184, 0.23);
+    }
+
     .hit-line {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 90px;
+      left: 6px;
+      right: 6px;
+      bottom: 90px; /* 판정선 위치 */
       height: 4px;
-      background: linear-gradient(to right, #facc15, #22c55e, #f97316);
-      box-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--accent-gold), var(--accent-green), #fb923c);
+      box-shadow:
+        0 0 14px rgba(250, 204, 21, 0.9),
+        0 0 28px rgba(248, 113, 113, 0.3);
     }
+
     .key-hints {
       position: absolute;
       bottom: 20px;
@@ -140,22 +267,31 @@
       font-weight: 700;
       font-size: 0.9rem;
       color: #e5e7eb;
+      padding: 0 6px;
     }
+
     .key-hints span {
       padding: 9px 0;
       margin: 0 2px;
       border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.9);
-      box-shadow: 0 0 8px rgba(148, 163, 184, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.75);
+      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.25), transparent 65%);
+      backdrop-filter: blur(6px);
+      box-shadow:
+        0 0 8px rgba(148, 163, 184, 0.6),
+        0 8px 20px rgba(15, 23, 42, 0.9);
       user-select: none;
       touch-action: none;
     }
+
     .key-active {
-      background: rgba(34, 197, 94, 0.9) !important;
+      background: radial-gradient(circle at 0 0, rgba(74, 222, 128, 0.45), transparent 65%) !important;
       border-color: #bbf7d0 !important;
-      box-shadow: 0 0 14px rgba(34, 197, 94, 1) !important;
+      box-shadow:
+        0 0 12px rgba(34, 197, 94, 0.9) !important,
+        0 12px 28px rgba(15, 23, 42, 0.9) !important;
       color: #022c22 !important;
+      transform: translateY(1px);
     }
 
     .note {
@@ -165,9 +301,12 @@
       height: 20px;
       border-radius: 999px;
       background: linear-gradient(to right, #f97373, #fb923c, #22c55e);
-      box-shadow: 0 0 10px rgba(251, 146, 60, 0.9);
+      box-shadow:
+        0 0 10px rgba(251, 146, 60, 0.9),
+        0 8px 18px rgba(15, 23, 42, 0.9);
     }
 
+    /* 컨트롤 바 */
     .control-bar {
       margin-top: 8px;
       display: flex;
@@ -177,47 +316,75 @@
       gap: 6px;
       flex-wrap: wrap;
     }
+
     .btn-row {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
     }
+
     button {
       padding: 7px 14px;
       border-radius: 999px;
       border: none;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       font-weight: 600;
       cursor: pointer;
-      background: linear-gradient(to right, #22c55e, #0ea5e9);
+      background: linear-gradient(120deg, #22c55e, #0ea5e9);
       color: #022c22;
-      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.7);
+      box-shadow:
+        0 10px 20px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
       transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
       white-space: nowrap;
     }
-    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    button:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.7); }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow:
+        0 12px 24px rgba(15, 23, 42, 1),
+        0 0 0 1px rgba(148, 163, 184, 0.7);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow:
+        0 4px 10px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      filter: brightness(0.96);
+    }
+
     .btn-demo {
-      background: linear-gradient(to right, #9ca3af, #6b7280);
+      background: linear-gradient(120deg, #9ca3af, #6b7280);
       color: #f9fafb;
     }
+
     .hint-text {
       text-align: right;
-      opacity: 0.8;
+      opacity: 0.85;
       flex: 1;
-      min-width: 130px;
+      min-width: 140px;
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      line-height: 1.4;
     }
+
     .mobile-hint {
       margin-top: 4px;
       font-size: 0.72rem;
       text-align: center;
       opacity: 0.8;
+      color: var(--text-sub);
     }
 
+    /* 오버레이 */
     .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.9);
+      background: radial-gradient(circle at 20% 0, rgba(248, 113, 113, 0.24), transparent 60%),
+                  radial-gradient(circle at 80% 100%, rgba(56, 189, 248, 0.15), transparent 55%),
+                  rgba(15, 23, 42, 0.96);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -225,33 +392,60 @@
       text-align: center;
       font-size: 1rem;
       padding: 16px;
+      backdrop-filter: blur(6px);
     }
     .overlay h2 {
       margin-bottom: 8px;
       font-size: 1.3rem;
     }
-    .overlay p { margin-bottom: 8px; font-size: 0.9rem; white-space: pre-line; }
+    .overlay p {
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      white-space: pre-line;
+      color: var(--text-sub);
+    }
+
+    /* 반응형 살짝 */
+    @media (max-width: 420px) {
+      .title { font-size: 1.05rem; }
+      .playfield { height: 390px; }
+      .stats-card { padding: 4px 8px; }
+      select { min-width: 0; }
+    }
   </style>
 </head>
 <body>
   <div class="game-wrapper">
     <div id="snow-container"></div>
 
-    <div class="title">🎄 크리스마스 피아노 리듬게임 🎹</div>
-    <div class="subtitle">곡 선택 → D/F/J/K 또는 라인 터치로 노트를 맞춰봐!</div>
-    <div class="reward-info" id="rewardInfo">이 곡 클리어 시 산타 조각: 1개</div>
+    <div class="header">
+      <div class="title-wrap">
+        <div class="title">
+          🎄 크리스마스 피아노 리듬게임
+          <span class="title-badge">산타 조각 이벤트</span>
+        </div>
+        <div class="subtitle">곡을 선택하고 D/F/J/K 또는 라인을 눌러 박자에 맞춰 연주해 보세요.</div>
+      </div>
+      <div class="reward-info">
+        <div class="reward-pill">
+          <span>🎁 보상</span>
+          <span id="rewardInfo">클리어 시 산타 조각 1개</span>
+        </div>
+      </div>
+    </div>
 
     <div class="top-row">
-      <div class="stats">
-        <span>점수: <span id="score">0</span></span>
-        <span>콤보: <span id="combo">0</span></span>
-        <span>Max: <span id="maxCombo">0</span></span>
+      <div class="stats-card">
+        <span><label>점수</label><span id="score">0</span></span>
+        <span><label>콤보</label><span id="combo">0</span></span>
+        <span><label>Max</label><span id="maxCombo">0</span></span>
       </div>
       <div class="song-select">
-        <label for="songSelect">곡 / 난이도</label>
+        <label for="songSelect">곡 / 난이도 선택</label>
         <select id="songSelect"></select>
       </div>
     </div>
+
     <div class="hit-feedback" id="hitFeedback"></div>
 
     <div class="playfield" id="playfield">
@@ -276,12 +470,13 @@
         <button id="demoBtn" class="btn-demo" type="button">모범 연주 보기</button>
       </div>
       <div class="hint-text">
-        선 위 80px / 아래 45px 안이면 성공<br>
-        약간 빗나간 건 2번까지 봐줌
+        판정선 기준 위쪽 80px · 아래쪽 45px 안에 들어오면 성공입니다.<br>
+        아주 아깝게 틀린 경우 2번까지는 게임이 계속 유지돼요.
       </div>
     </div>
+
     <div class="mobile-hint">
-      📱 모바일: 각 라인 또는 아래 D/F/J/K 버튼을 톡 누르면 돼.
+      📱 모바일에서는 각 라인 또는 아래 D/F/J/K 버튼을 톡톡 눌러도 인식됩니다.
     </div>
 
     <div class="overlay" id="overlay" style="display:none;">
@@ -297,8 +492,8 @@
     const fallTime = 1.0;
     const NEAR_MISS_TIME_WINDOW = 0.18;
 
-    // Extreme 이상 난이도 ID
-    const HIGH_DIFF_IDS = new Set(["extreme", "ultra", "legend"]);
+    // 경고 띄울 난이도 (Santa Storm / Extreme 은 제외)
+    const HIGH_DIFF_IDS = new Set(["ultra", "legend"]);
 
     let score = 0, combo = 0, maxCombo = 0;
     let isPlaying = false;
@@ -523,7 +718,6 @@
           const laneB = (measure + 1) % 4;
 
           if (measure >= 12) {
-            // 두 라인 위주 8비트 러쉬 (살짝만 빡센 구간)
             const pattern = [
               { off: 0.0, lane: laneA },
               { off: 0.5, lane: laneB },
@@ -546,7 +740,6 @@
             return;
           }
 
-          // 앞/중반: 8분 + 가끔 16분, 손꼬임 줄인 패턴
           const pattern = [
             { off: 0.0,  lane: laneA },
             { off: 0.5,  lane: laneA },
@@ -638,7 +831,7 @@
         }
       ));
 
-      // Legend (Ultra보다 더 미친 패턴)
+      // Legend
       songs.push(makeSong(
         "legend",
         "Santa Storm++",
@@ -671,7 +864,6 @@
             { off: 3.25, lanes: [laneC] }
           ];
 
-          // 마지막 4마디는 같은 패턴 반복 (정신없지만 규칙적)
           pattern.forEach(p => {
             p.lanes.forEach(L => {
               notes.push({
@@ -689,7 +881,7 @@
       return songs;
     })();
 
-    // 난이도별 산타 조각 개수
+    // 난이도별 보상
     const DIFFICULTY_PIECES = {
       easy: 1,
       normal: 2,
@@ -706,9 +898,9 @@
     }
 
     function updateRewardInfo() {
-      if (!rewardInfoEl) return;
+      if (!rewardInfoEl || !currentSong) return;
       const pieces = getPiecesForSong(currentSong);
-      rewardInfoEl.textContent = `이 곡 클리어 시 산타 조각: ${pieces}개`;
+      rewardInfoEl.textContent = `클리어 시 산타 조각 ${pieces}개`;
     }
 
     function sendSantaPieces(pieces) {
@@ -821,7 +1013,7 @@
           if (!isPlaying || !isDemoMode) return;
           const key = laneKeys[n.lane];
           flashKey(key);
-          // 데모는 무조건 Perfect 처리
+          // 모범 연주는 무조건 Perfect
           handlePress(n.lane, { forcePerfect: true });
         }, delayMs);
         demoTimers.push(id);
@@ -830,7 +1022,9 @@
 
     // 게임 제어
     function resetGame() {
-      score = 0; combo = 0; maxCombo = 0;
+      score = 0;
+      combo = 0;
+      maxCombo = 0;
       softMissCount = 0;
       scoreEl.textContent = 0;
       comboEl.textContent = 0;
