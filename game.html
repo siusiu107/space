@@ -3723,10 +3723,13 @@
     }
     setInterval(updateAttendanceLabels, 1000);
 
+    let lastShipImageLevel = null;
     function setShipImage(level) {
       const img = document.getElementById('ship-img');
       if (!img) return;
-      let attempted = Math.max(1, level);
+      const normalized = Math.max(1, level);
+      if (lastShipImageLevel === normalized) return;
+      let attempted = normalized;
       img.onerror = function onErr() {
         if (attempted > 1) {
           attempted -= 1;
@@ -3737,6 +3740,7 @@
         }
       };
       img.src = `/images/ship-level${attempted}.png`;
+      lastShipImageLevel = normalized;
     }
 
     const authContainer = document.getElementById('auth-container');
@@ -4818,8 +4822,8 @@
         });
       }
 
-      // 메인 루프
-      window.__gameTimer = setInterval(async () => {
+      // 메인 루프 (리소스 및 UI 갱신 전용)
+      window.__gameTimer = setInterval(() => {
         if (!guestMode && (!uid || isInitialSync)) return;
 
         if (window.__PLAY_ALLOWED && !security.banned) {
@@ -4849,15 +4853,22 @@
           if (state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         }
 
-        // ✅ 1초마다 의심도 검사 (3초 지난 이후부터는 항상)
+        // ✅ 의심도 검사는 1초마다 별도로 유지
         auditCheck();
-        await saveSecurity();
 
         if (window.__PLAY_ALLOWED) {
-          save();
           updateUI();
         }
       }, 1000);
+
+      // 보안/상태 저장은 5초 주기로 분리하여 네트워크 부하 완화
+      window.__saveTimer = setInterval(async () => {
+        if (!guestMode && (!uid || isInitialSync)) return;
+        await saveSecurity();
+        if (window.__PLAY_ALLOWED) {
+          save();
+        }
+      }, 5000);
     }
 
     window.addEventListener('message', (event) => {
