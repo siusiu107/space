@@ -26,7 +26,8 @@
       line-height:1.7; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
     }
 
-    .wrap{ max-width:900px; margin:40px auto 64px; padding:0 20px; }
+    .wrap{ display:none; max-width:900px; margin:40px auto 64px; padding:0 20px; }
+    body.authorized .wrap{ display:block; }
 
     /* Header */
     header{ padding:16px 0 8px; border-bottom:1px solid var(--line); }
@@ -117,6 +118,8 @@
           return;
         }
       }
+
+      document.body.classList.add("authorized");
     })();
   </script>
   <div class="wrap">
