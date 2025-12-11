@@ -272,7 +272,7 @@
 
     <div class="control-bar">
       <div class="btn-row">
-        <button id="startBtn">게임 시작</button>
+        <button id="startBtn" type="button">게임 시작</button>
         <button id="demoBtn" class="btn-demo" type="button">모범 연주 보기</button>
       </div>
       <div class="hint-text">
@@ -287,7 +287,7 @@
     <div class="overlay" id="overlay" style="display:none;">
       <h2 id="overlayTitle">게임 오버</h2>
       <p id="overlayText"></p>
-      <button id="retryBtn">다시 하기</button>
+      <button id="retryBtn" type="button">다시 하기</button>
     </div>
   </div>
 
@@ -480,7 +480,7 @@
         }
       ));
 
-      // Expert (후반부 더 쉽게)
+      // Expert (후반부 더더 쉽게)
       songs.push(makeSong(
         "expert",
         "Starry Night Ride",
@@ -489,16 +489,17 @@
         16,
         (notes, beat, measure, bpm) => {
           if (measure >= 12) {
-            // 규칙적인 8분/4분, 두 라인만 왔다갔다 하는 정도
+            // 8분+4분, 두 라인만 번갈아 치는 구조 (꽤 읽기 쉬움)
             const baseLane = measure % 4;
             const laneA = baseLane;
             const laneB = (baseLane + 1) % 4;
             const pattern = [
               { off: 0.0, lane: laneA },
               { off: 0.5, lane: laneB },
-              { off: 1.5, lane: laneA },
-              { off: 2.0, lane: laneB },
-              { off: 3.0, lane: laneA }
+              { off: 1.0, lane: laneA },
+              { off: 1.5, lane: laneB },
+              { off: 2.5, lane: laneA },
+              { off: 3.0, lane: laneB }
             ];
             pattern.forEach(p => {
               notes.push({
@@ -523,7 +524,7 @@
         }
       ));
 
-      // Extreme (중간도, 후반도 더 어렵게)
+      // Extreme (사람 가능한 난이도로 재설계)
       songs.push(makeSong(
         "extreme",
         "Santa Storm",
@@ -531,78 +532,67 @@
         180,
         16,
         (notes, beat, measure, bpm) => {
+          const laneA = measure % 4;
+          const laneB = (measure + 1) % 4;
+          const laneC = (measure + 2) % 4;
+
           if (measure >= 12) {
-            // 16비트 촘촘 + 코드 + 가끔 3키
-            const offsets = [
-              0.00, 0.25, 0.50, 0.75,
-              1.00, 1.25, 1.50, 1.75,
-              2.00, 2.25, 2.50, 2.75,
-              3.00, 3.25, 3.50
+            // 마지막 4마디: 16비트 러시 + 2키 코드
+            const pattern = [
+              { off: 0.00, lanes: [laneA, laneC] }, // 코드
+              { off: 0.25, lanes: [laneB] },
+              { off: 0.50, lanes: [laneA] },
+              { off: 0.75, lanes: [laneB] },
+
+              { off: 1.00, lanes: [laneC, laneA] }, // 코드
+              { off: 1.25, lanes: [laneB] },
+              { off: 1.50, lanes: [laneA] },
+              { off: 1.75, lanes: [laneC] },
+
+              { off: 2.00, lanes: [laneB, laneA] }, // 코드
+              { off: 2.25, lanes: [laneC] },
+              { off: 2.50, lanes: [laneB] },
+              { off: 2.75, lanes: [laneA] },
+
+              { off: 3.00, lanes: [laneC, laneB] }, // 코드
+              { off: 3.25, lanes: [laneA] }
             ];
-            offsets.forEach((off, idx) => {
-              const baseLane = (measure * 11 + idx * 5) % 4;
-
-              // 기본 한 타
-              notes.push({
-                beat: beat + off,
-                lane: baseLane,
-                pitch: LANE_TO_PITCH[baseLane],
-                durBeats: 0.5,
-                type: "tap"
-              });
-
-              // 박자 시작(정박)에서는 2키 코드
-              if (Math.abs(off % 1.0) < 0.001) {
-                const lane2 = (baseLane + 2) % 4;
+            pattern.forEach(p => {
+              p.lanes.forEach(L => {
                 notes.push({
-                  beat: beat + off,
-                  lane: lane2,
-                  pitch: LANE_TO_PITCH[lane2],
+                  beat: beat + p.off,
+                  lane: L,
+                  pitch: LANE_TO_PITCH[L],
                   durBeats: 0.5,
                   type: "tap"
                 });
-              }
-
-              // 마지막 노트는 3키 코드
-              if (idx === offsets.length - 1) {
-                const lane2 = (baseLane + 1) % 4;
-                const lane3 = (baseLane + 3) % 4;
-                [lane2, lane3].forEach(L => {
-                  notes.push({
-                    beat: beat + off,
-                    lane: L,
-                    pitch: LANE_TO_PITCH[L],
-                    durBeats: 0.5,
-                    type: "tap"
-                  });
-                });
-              }
+              });
             });
             return;
           }
 
-          // 중간부도 더 복잡한 8/16비트 패턴
-          const offsets = [0, 0.5, 0.75, 1.25, 1.5, 2.0, 2.25, 2.5, 3.0];
-          offsets.forEach((off, idx) => {
-            const lane = (measure * 3 + idx * 2) % 4;
-            notes.push({
-              beat: beat + off,
-              lane,
-              pitch: LANE_TO_PITCH[lane],
-              durBeats: 0.5,
-              type: "tap"
-            });
-            // 가끔 추가 한 타로 살짝 코드 느낌
-            if (idx % 3 === 0 && off !== 0) {
-              const lane2 = (lane + 2) % 4;
+          // 앞/중간부: 8비트 + 가끔 16비트, 2키 코드 살짝
+          const pattern = [
+            { off: 0.00, lanes: [laneA] },
+            { off: 0.50, lanes: [laneB] },
+            { off: 0.75, lanes: [laneC] },
+            { off: 1.00, lanes: [laneA, laneB] }, // 코드
+            { off: 1.50, lanes: [laneC] },
+            { off: 2.00, lanes: [laneB] },
+            { off: 2.25, lanes: [laneA] },
+            { off: 2.50, lanes: [laneC, laneA] }, // 코드
+            { off: 3.00, lanes: [laneB] }
+          ];
+          pattern.forEach(p => {
+            p.lanes.forEach(L => {
               notes.push({
-                beat: beat + off,
-                lane: lane2,
-                pitch: LANE_TO_PITCH[lane2],
+                beat: beat + p.off,
+                lane: L,
+                pitch: LANE_TO_PITCH[L],
                 durBeats: 0.5,
                 type: "tap"
               });
-            }
+            });
           });
         }
       ));
@@ -630,7 +620,7 @@
       rewardInfoEl.textContent = `이 곡 클리어 시 산타 조각: ${pieces}개`;
     }
 
-    // parent에 산타 조각 지급 알림 보내기 (네 기존 프로토콜 유지)
+    // parent에 산타 조각 지급 알림 보내기 (네가 처음 준 패턴 그대로)
     function sendSantaPieces(pieces) {
       const payload = { type: 'christmas-clear', pieces };
       try { window.parent?.postMessage(payload, '*'); } catch (e) {}
@@ -639,6 +629,22 @@
     // 로그인 유도 (필요할 때 호출)
     function requestLoginIfPossible() {
       try { window.parent?.postMessage({ type: 'login-required' }, '*'); } catch (e) {}
+    }
+
+    function showLoginRequiredOverlay() {
+      overlayTitle.textContent = "로그인이 필요합니다";
+      overlayText.textContent = "로그인 후 이용해주세요.";
+      overlay.style.display = "flex";
+    }
+
+    function ensureLoggedIn() {
+      if (!isLoggedIn) {
+        // 진짜로 내쫓기 + 로그인 요청
+        showLoginRequiredOverlay();
+        requestLoginIfPossible();
+        return false;
+      }
+      return true;
     }
 
     // 곡 선택 UI 초기화
@@ -768,6 +774,9 @@
     }
 
     function startGame() {
+      // 로그인 안 되어 있으면 바로 내보내기
+      if (!ensureLoggedIn()) return;
+
       isDemoMode = false;
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
@@ -783,6 +792,9 @@
     }
 
     function startDemo() {
+      // 모범 연주도 로그인 후 이용 (싫으면 여기 ensureLoggedIn() 제거하면 됨)
+      if (!ensureLoggedIn()) return;
+
       isDemoMode = true;
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
@@ -821,13 +833,9 @@
         } else {
           title = "클리어! 🎉";
           const pieces = getPiecesForSong(currentSong);
-          if (isLoggedIn) {
-            sendSantaPieces(pieces);
-            text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n산타 조각 ${pieces}개를 보냈어요!`;
-          } else {
-            text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n로그인하면 산타 조각 ${pieces}개를 받을 수 있어요!`;
-            requestLoginIfPossible();
-          }
+          // 여기서 진짜 지급: 부모에게 postMessage
+          sendSantaPieces(pieces);
+          text = `${currentSong.title} (${currentSong.difficulty})\n점수: ${score} / Max Combo: ${maxCombo}\n산타 조각 ${pieces}개를 보냈어요!`;
         }
       }
       overlayTitle.textContent = title;
@@ -869,11 +877,13 @@
         const y = progress * hitLineY;
         obj.el.style.top = y + "px";
 
-        // 선에서 한참 밑으로 내려가면 강한 Miss → 바로 게임오버
+        // 선에서 한참 밑으로 내려가면 강한 Miss → 바로 게임오버(데모 제외)
         if (y > hitLineY + 120 && !obj.hit && !obj.missed) {
           obj.missed = true;
           obj.el.style.opacity = "0.2";
-          addJudgement("miss"); // hard miss
+          if (!isDemoMode) {
+            addJudgement("miss"); // hard miss
+          }
         }
       });
 
@@ -892,6 +902,11 @@
     function addJudgement(type, options) {
       options = options || {};
       const soft = !!options.soft; // soft == "아깝게" 틀림
+
+      // 데모 모드에서는 miss는 완전히 무시 (게임오버도 안 나고, 점수/콤보 변화도 없음)
+      if (isDemoMode && type === "miss") {
+        return;
+      }
 
       if (type === "perfect") {
         score += 100;
