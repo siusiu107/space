@@ -417,7 +417,14 @@
     .event-stats{ display:flex; flex-direction:column; gap:6px; font-size:14px; }
     .event-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     .event-actions button{ flex:1 1 150px; }
-    #christmas-frame{ width:100%; min-height:420px; border:1px solid rgba(255,255,255,0.12); border-radius:12px; background:rgba(0,0,0,0.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+    .christmas-launch{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    #christmas-start{ flex: 0 0 auto; }
+    #christmas-launch-hint{ font-size:13px; color:#cfe6ff; opacity:0.9; }
+    #christmas-overlay{ position:fixed; inset:0; background:rgba(2,6,12,0.85); backdrop-filter:blur(6px); z-index:3600; display:none; align-items:center; justify-content:center; padding:18px; }
+    #christmas-overlay.show{ display:flex; }
+    #christmas-overlay iframe{ width:calc(100vw - 28px); height:calc(100vh - 28px); border:none; border-radius:14px; background:#000; box-shadow:0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06); }
+    #christmas-close{ position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:10px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.35); color:#e6f7ff; font-size:18px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,0.35); backdrop-filter:blur(6px); }
+    #christmas-close:hover{ background:rgba(255,255,255,0.08); }
     .tree-status{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     .tree-figure{ width:120px; height:120px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(0,0,0,0.25); object-fit:contain; }
     .tree-rewards{ margin:10px 0; padding:10px; border-radius:10px; background:rgba(0,0,0,0.25); border:1px dashed rgba(255,255,255,0.14); font-size:13px; line-height:1.5; }
@@ -1255,9 +1262,17 @@
         <div class="event-card">
           <h3>🎧 리듬게임 (산타 조각 획득)</h3>
           <p style="margin:6px 0 10px; color:#cfe6ff;">크리스마스 테마 저작권 무료 음악 10곡을 준비했어요. 곡을 완주하고 한 번도 틀리지 않으면 <b>산타 조각 5개</b>를 획득합니다.</p>
-          <iframe id="christmas-frame" title="크리스마스 리듬게임" src="Christmas.html" loading="lazy"></iframe>
+          <div class="christmas-launch">
+            <button id="christmas-start" class="general" type="button">리듬게임 시작하기</button>
+            <div id="christmas-launch-hint">버튼을 누르면 전체 화면에서 크리스마스 리듬게임을 즐길 수 있어요.</div>
+          </div>
         </div>
       </div>
+    </div>
+
+    <div id="christmas-overlay" aria-hidden="true">
+      <button id="christmas-close" type="button" aria-label="리듬게임 닫기">✕</button>
+      <iframe id="christmas-frame" title="크리스마스 리듬게임" src="about:blank" data-src="Christmas.html" loading="lazy" allowfullscreen></iframe>
     </div>
 
     <!-- 바텀 내비 -->
@@ -4558,6 +4573,39 @@
           state.autoConvertEnabled = !state.autoConvertEnabled;
         }
         save(); updateUI();
+      });
+
+      const christmasOverlay = document.getElementById('christmas-overlay');
+      const christmasFrame = document.getElementById('christmas-frame');
+      const christmasStartBtn = document.getElementById('christmas-start');
+      const christmasCloseBtn = document.getElementById('christmas-close');
+
+      function openChristmasOverlay() {
+        if (!christmasOverlay || !christmasFrame) return;
+        const src = christmasFrame.dataset.src;
+        if (src && (!christmasFrame.src || christmasFrame.src === 'about:blank')) {
+          christmasFrame.src = src;
+        }
+        christmasOverlay.classList.add('show');
+        christmasOverlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeChristmasOverlay() {
+        if (!christmasOverlay || !christmasFrame) return;
+        christmasOverlay.classList.remove('show');
+        christmasOverlay.setAttribute('aria-hidden', 'true');
+        christmasFrame.src = 'about:blank';
+        document.body.style.overflow = '';
+      }
+
+      christmasStartBtn?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        openChristmasOverlay();
+      });
+
+      christmasCloseBtn?.addEventListener('click', () => {
+        closeChristmasOverlay();
       });
 
       document.getElementById('craft-santa-coin')?.addEventListener('click', () => {
