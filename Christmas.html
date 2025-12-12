@@ -717,19 +717,6 @@
       try { window.parent?.postMessage(payload, '*'); } catch (e) {}
     }
 
-    function requestFullscreenIfNeeded() {
-      if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-        return;
-      }
-
-      const request = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
-      try {
-        request?.call(docEl);
-      } catch (e) {
-        console.warn('전체화면 요청 실패', e);
-      }
-    }
-
     // 곡 선택 UI
     SONGS.forEach(song => {
       const opt = document.createElement("option");
@@ -868,7 +855,6 @@
       currentSong = SONGS.find(s => s.id === songSelectEl.value) || SONGS[0];
       updateRewardInfo();
       maybeWarnHighDifficulty(currentSong);
-      requestFullscreenIfNeeded();
       resetGame();
       chartNotes = buildChartFromSong(currentSong);
 
