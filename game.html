@@ -983,6 +983,123 @@
       margin-top: 18px;
     }
 
+    /* 쿠팡 광고 카드 */
+    .coupang-inline {
+      margin: 12px auto 18px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.25));
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+      color: #eaf6ff;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+    .coupang-inline .coupang-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .coupang-inline .coupang-title,
+    #coupang-focus-overlay .coupang-title {
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      font-size: 15px;
+    }
+    .coupang-label {
+      background: rgba(0,212,255,0.15);
+      color: #9fe4ff;
+      border: 1px solid rgba(0,212,255,0.35);
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .coupang-slot {
+      width: 100%;
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: rgba(0,0,0,0.25);
+      border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 6px;
+    }
+    .coupang-note {
+      margin: 0;
+      font-size: 12px;
+      color: #bcd8ee;
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+
+    /* 탭 복귀 광고 오버레이 */
+    #coupang-focus-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2,6,12,0.78);
+      backdrop-filter: blur(4px);
+      z-index: 3800;
+      padding: 18px;
+    }
+    #coupang-focus-overlay.show {
+      display: flex;
+    }
+    #coupang-focus-overlay .ad-modal {
+      width: min(760px, 96vw);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(4,8,16,0.92));
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: #eaf6ff;
+    }
+    #coupang-focus-overlay .ad-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    #coupang-focus-overlay .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #coupang-overlay-close {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.28);
+      color: #eaf6ff;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    #coupang-overlay-close:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.4);
+    }
+    #coupang-focus-overlay .coupang-slot {
+      min-height: 200px;
+      background: rgba(0,0,0,0.35);
+    }
+
     /* 이용약관 & 정지 오버레이 */
     .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center;
       background: linear-gradient(180deg, rgba(2,6,12,.60), rgba(2,6,12,.80)); backdrop-filter: blur(4px); z-index:3650; }
@@ -1048,6 +1165,20 @@
         <p id="session-admin-error" class="admin-error" role="status" aria-live="polite"></p>
         <div id="session-admin-progress" class="admin-progress" role="status" aria-live="assertive"></div>
       </div>
+    </div>
+  </div>
+
+  <div id="coupang-focus-overlay" aria-hidden="true">
+    <div class="ad-modal" role="dialog" aria-modal="true" aria-labelledby="coupang-overlay-title">
+      <div class="ad-header">
+        <div class="title-wrap">
+          <span class="coupang-label">광고</span>
+          <span id="coupang-overlay-title" class="coupang-title">잠시 둘러보고 가세요</span>
+        </div>
+        <button id="coupang-overlay-close" aria-label="광고 닫기">✕</button>
+      </div>
+      <div id="coupang-overlay-slot" class="coupang-slot" aria-hidden="false"></div>
+      <p class="coupang-note">※ 본 링크를 통해 구매 시 소정의 수수료를 받을 수 있습니다.</p>
     </div>
   </div>
 
@@ -1193,6 +1324,15 @@
 
   <div id="container">
     <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
+
+    <section id="coupang-inline" class="coupang-inline" aria-label="쿠팡 광고">
+      <div class="coupang-head">
+        <span class="coupang-label">광고</span>
+        <span class="coupang-title">오늘의 추천 아이템</span>
+      </div>
+      <div id="coupang-inline-slot" class="coupang-slot" aria-hidden="false"></div>
+      <p class="coupang-note">※ 본 링크를 통해 구매 시 소정의 수수료를 받을 수 있습니다.</p>
+    </section>
 
     <div id="main-content" class="tab-content active">
       <div id="ore-container" style="position:relative; display:inline-block;">
@@ -7459,6 +7599,65 @@
       } else {
         applyPlayState();
       }
+    })();
+  </script>
+
+  <!-- 쿠팡 광고 로딩 및 탭 복귀 오버레이 -->
+  <script>
+    (() => {
+      const INLINE_SLOT_ID = 'coupang-inline-slot';
+      const OVERLAY_SLOT_ID = 'coupang-overlay-slot';
+      const overlay = document.getElementById('coupang-focus-overlay');
+      const closeBtn = document.getElementById('coupang-overlay-close');
+      let wasHidden = false;
+
+      const showOverlay = () => {
+        if (!overlay) return;
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden', 'false');
+      };
+
+      const hideOverlay = () => {
+        if (!overlay) return;
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+      };
+
+      closeBtn?.addEventListener('click', hideOverlay);
+      overlay?.addEventListener('click', (e) => {
+        if (e.target === overlay) hideOverlay();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          wasHidden = true;
+        } else if (wasHidden) {
+          showOverlay();
+          wasHidden = false;
+        }
+      });
+
+      function renderAd(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target || !(window.PartnersCoupang && typeof window.PartnersCoupang.G === 'function')) return;
+        target.innerHTML = '';
+        const adScript = document.createElement('script');
+        adScript.type = 'text/javascript';
+        adScript.innerHTML = 'new PartnersCoupang.G({"id":950028,"template":"carousel","trackingCode":"AF4259209","width":"680","height":"140","tsource":""});';
+        target.appendChild(adScript);
+      }
+
+      function onCoupangReady() {
+        renderAd(INLINE_SLOT_ID);
+        renderAd(OVERLAY_SLOT_ID);
+      }
+
+      const loader = document.createElement('script');
+      loader.src = 'https://ads-partners.coupang.com/g.js';
+      loader.async = true;
+      loader.onload = onCoupangReady;
+      loader.onerror = onCoupangReady;
+      document.head.appendChild(loader);
     })();
   </script>
 
