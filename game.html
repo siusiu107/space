@@ -4591,6 +4591,40 @@
       const christmasFrame = document.getElementById('christmas-frame');
       const christmasStartBtn = document.getElementById('christmas-start');
       const christmasCloseBtn = document.getElementById('christmas-close');
+      let christmasGameBlockSnapshot = null;
+
+      function setChristmasGameBlock(active) {
+        if (active) {
+          if (christmasGameBlockSnapshot) return;
+          const hadHardBlock = document.body.classList.contains('game-hard-blocked');
+          christmasGameBlockSnapshot = {
+            hadHardBlock,
+            prevPlayAllowed: (typeof window.__PLAY_ALLOWED === 'boolean') ? window.__PLAY_ALLOWED : null
+          };
+          try { window.__PLAY_BLOCKED_BY_CHRISTMAS = true; } catch {}
+          try { window.__PLAY_ALLOWED = false; } catch {}
+          try { document.body.classList.add('christmas-focus'); } catch {}
+          if (!hadHardBlock) {
+            try { document.body.classList.add('game-hard-blocked'); } catch {}
+          }
+          return;
+        }
+
+        if (!christmasGameBlockSnapshot) return;
+        const { hadHardBlock, prevPlayAllowed } = christmasGameBlockSnapshot;
+        christmasGameBlockSnapshot = null;
+        try { window.__PLAY_BLOCKED_BY_CHRISTMAS = false; } catch {}
+        if (typeof window.__PLAY_BASE_ALLOWED === 'boolean') {
+          const allow = window.__PLAY_BASE_ALLOWED && !window.__PLAY_DUP_LOCK_ACTIVE;
+          try { window.__PLAY_ALLOWED = allow; } catch {}
+        } else if (typeof prevPlayAllowed === 'boolean') {
+          try { window.__PLAY_ALLOWED = prevPlayAllowed; } catch {}
+        }
+        try { document.body.classList.remove('christmas-focus'); } catch {}
+        if (!hadHardBlock) {
+          try { document.body.classList.remove('game-hard-blocked'); } catch {}
+        }
+      }
 
       function openChristmasOverlay() {
         if (!christmasOverlay || !christmasFrame) return;
@@ -4601,6 +4635,7 @@
         christmasOverlay.classList.add('show');
         christmasOverlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        setChristmasGameBlock(true);
       }
 
       function closeChristmasOverlay() {
@@ -4609,6 +4644,7 @@
         christmasOverlay.setAttribute('aria-hidden', 'true');
         christmasFrame.src = 'about:blank';
         document.body.style.overflow = '';
+        setChristmasGameBlock(false);
       }
 
       christmasStartBtn?.addEventListener('click', () => {
