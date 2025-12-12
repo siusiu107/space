@@ -350,7 +350,19 @@
     #suspicion-badge{ display:none !important; }
 
     /* 본문 */
-    #container { margin:56px auto 20px; width:90%; max-width:640px; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
+    .page-shell{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+      gap:12px;
+      width:min(1200px, 96vw);
+      margin:80px auto 32px;
+      padding:0 6px;
+      box-sizing:border-box;
+      align-items:flex-start;
+    }
+    .game-area{ min-width:0; }
+    .ad-area{ position:sticky; top:76px; align-self:flex-start; }
+    #container { margin:0; width:100%; max-width:none; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); box-sizing:border-box; }
     h1 { font-size:1.4em; margin:6px 0 14px; color:var(--accent); }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
     button.general:disabled { opacity:0.5; cursor:not-allowed; }
@@ -439,6 +451,15 @@
     #container{ padding-bottom: calc(200px + env(safe-area-inset-bottom, 0px)); }
     #planets-content{ padding-bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
 
+    @media (max-width: 1024px){
+      .page-shell{ grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); }
+    }
+    @media (max-width: 900px){
+      .page-shell{ grid-template-columns: 1fr; margin-top:78px; }
+      .ad-area{ position:relative; top:auto; width:100%; }
+      .coupang-inline{ justify-content:flex-start; }
+      .coupang-card{ width:min(520px, 94vw); }
+    }
     @media (max-width: 420px){
       #top-bar{ font-size:11px; padding:6px 8px; }
       #settings-btn{ padding:5px 8px; font-size:12px; }
@@ -989,13 +1010,13 @@
       position: relative;
       display: flex;
       justify-content: center;
-      padding: 0 14px 28px;
-      margin: 160px auto 36px;
-      max-width: 760px;
+      padding: 0;
+      margin: 0;
+      width: 100%;
       pointer-events: auto;
     }
     .coupang-card {
-      width: min(520px, 94vw);
+      width: min(360px, 100%);
       background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.35));
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 14px;
@@ -1003,9 +1024,9 @@
       color: #eaf6ff;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
       text-align: left;
-      padding: 10px 12px;
+      padding: 10px 12px 12px;
       pointer-events: auto;
     }
     .coupang-inline .coupang-head {
@@ -1045,7 +1066,7 @@
     }
     .coupang-slot iframe {
       width: 100%;
-      height: 110px;
+      height: 96px;
       border: none;
       display: block;
     }
@@ -1352,32 +1373,34 @@
     </div>
   </div>
 
-  <div id="container">
-    <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
+  <div class="page-shell">
+    <div class="game-area">
+      <div id="container">
+        <h1>🌌 태양계 정복: 우주 생존 클릭커 🌌</h1>
 
-    <div id="main-content" class="tab-content active">
-      <div id="ore-container" style="position:relative; display:inline-block;">
-        <img src="/images/ore.png" id="ore" alt="광석" />
-      </div>
-      <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
-        <button id="convert-button" class="general">10자원 → 1코인</button>
-        <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
-      </div>
-    </div>
+        <div id="main-content" class="tab-content active">
+          <div id="ore-container" style="position:relative; display:inline-block;">
+            <img src="/images/ore.png" id="ore" alt="광석" />
+          </div>
+          <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
+            <button id="convert-button" class="general">10자원 → 1코인</button>
+            <button id="auto-convert-buy" class="general">자동변환 구매<br>(100코인)</button>
+          </div>
+        </div>
 
-    <div id="workers-content" class="tab-content">
-      <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
-      <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
-      <button id="hire-worker-ec" class="general">알바 +10렙 (1EC)</button>
-      <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
-      <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
-      <button id="hire-conversion-ec" class="general">코인 알바 +10렙 (1EC)</button>
-    </div>
+        <div id="workers-content" class="tab-content">
+          <p>총 초당 자원: <span id="resource-per-sec">0</span></p>
+          <button id="hire-worker" class="general">알바 고용 (<span id="worker-cost">0</span>코인)</button>
+          <button id="hire-worker-ec" class="general">알바 +10렙 (1EC)</button>
+          <p>총 초당 코인: <span id="coin-per-sec">0</span></p>
+          <button id="hire-conversion" class="general">코인 알바 (<span id="conversion-cost">0</span>코인)</button>
+          <button id="hire-conversion-ec" class="general">코인 알바 +10렙 (1EC)</button>
+        </div>
 
-    <div id="ship-content" class="tab-content">
-      <div class="ship-panel" aria-live="polite">
-        <h2>우주선 제어실</h2>
-        <img id="ship-img" src="/images/ship-level1.png" alt="우주선" />
+        <div id="ship-content" class="tab-content">
+          <div class="ship-panel" aria-live="polite">
+            <h2>우주선 제어실</h2>
+            <img id="ship-img" src="/images/ship-level1.png" alt="우주선" />
         <div class="ship-status" id="ship-level">1렙 (20코인)</div>
         <div class="ship-enhance-info">강화 성공 확률: <strong id="ship-success-rate">100%</strong></div>
         <p>우주선을 업그레이드해 더 먼 행성과 새로운 콘텐츠를 개방하세요.</p>
@@ -1450,29 +1473,32 @@
       <div class="tab"        data-tab="planets"  role="button" tabindex="0"><span class="t-icon">🪐</span><span class="t-label">행성</span></div>
       <div class="tab"        data-tab="christmas" role="button" tabindex="0"><span class="t-icon">🎄</span><span class="t-label">크리스마스</span></div>
     </nav>
-  </div>
-
-  <section id="coupang-inline" class="coupang-inline" aria-label="쿠팡 광고">
-    <div class="coupang-card">
-      <div class="coupang-head">
-        <span class="coupang-label">광고</span>
-        <span class="coupang-title">오늘의 추천 아이템</span>
-      </div>
-      <div id="coupang-inline-slot" class="coupang-slot" aria-hidden="false">
-        <iframe
-          src="https://ads-partners.coupang.com/widgets.html?id=950028&template=carousel&trackingCode=AF4259209&subId=&width=680&height=96&tsource="
-          width="680"
-          height="96"
-          frameborder="0"
-          scrolling="no"
-          referrerpolicy="unsafe-url"
-          browsingtopics
-          title="쿠팡 광고"
-          loading="lazy"></iframe>
-      </div>
-      <p class="coupang-note">※ 본 링크를 통해 구매 시 소정의 수수료를 받습니다.</p>
     </div>
-  </section>
+    </div>
+    <aside class="ad-area" aria-label="스폰서 영역">
+      <section id="coupang-inline" class="coupang-inline" aria-label="쿠팡 광고">
+        <div class="coupang-card">
+          <div class="coupang-head">
+            <span class="coupang-label">광고</span>
+            <span class="coupang-title">오늘의 추천 아이템</span>
+          </div>
+          <div id="coupang-inline-slot" class="coupang-slot" aria-hidden="false">
+            <iframe
+              src="https://ads-partners.coupang.com/widgets.html?id=950028&template=carousel&trackingCode=AF4259209&subId=&width=680&height=96&tsource="
+              width="680"
+              height="96"
+              frameborder="0"
+              scrolling="no"
+              referrerpolicy="unsafe-url"
+              browsingtopics
+              title="쿠팡 광고"
+              loading="lazy"></iframe>
+          </div>
+          <p class="coupang-note">※ 본 링크를 통해 구매 시 소정의 수수료를 받습니다.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
 
   <!-- 커스텀 메뉴 -->
     <div id="custom-menu">
