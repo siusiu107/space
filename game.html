@@ -101,6 +101,7 @@
       --glass-bg: rgba(10,12,20,0.40);
       --glass-brd: rgba(255,255,255,0.08);
       --accent: #00d4ff;
+      --bottom-stack-space: calc(220px + env(safe-area-inset-bottom, 0px));
     }
     html, body {
       margin: 0;
@@ -458,8 +459,8 @@
     .pill img{ width:18px; height:18px; }
     #permanent-buffs{ margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); font-size:13px; color:#cfe6ff; line-height:1.45; }
 
-    #container{ padding-bottom: calc(200px + env(safe-area-inset-bottom, 0px)); }
-    #planets-content{ padding-bottom: calc(260px + env(safe-area-inset-bottom, 0px)); }
+    #container{ padding-bottom: var(--bottom-stack-space); }
+    #planets-content{ padding-bottom: var(--bottom-stack-space); }
 
     @media (max-width: 1024px){
       .page-shell{ grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); }
@@ -494,7 +495,7 @@
 
     /* 사이드 메뉴 */
     #side-menu-toggle{
-      position: fixed; left: 8px; bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      position: fixed; left: 8px; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
       z-index: 1600; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
       background: var(--glass-bg); backdrop-filter: blur(10px); color:#e6f5ff; font-size: 20px; cursor: pointer;
       display:flex; align-items:center; justify-content:center; box-shadow: 0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
@@ -516,7 +517,7 @@
     .side-item:hover{ filter: brightness(1.08); }
     .side-item .icon{ width:18px; text-align:center; }
     .side-right { opacity:.9; color:#9fdcff; font-variant-numeric: tabular-nums; }
-    @media (max-width: 420px){ #side-menu-toggle{ bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; } #side-menu{ width: 240px; } }
+    @media (max-width: 420px){ #side-menu-toggle{ bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; } #side-menu{ width: 240px; } }
 
     /* ===== 출석 & 슬롯 오버레이 ===== */
     #daily-overlay{
