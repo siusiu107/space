@@ -361,7 +361,12 @@
       align-items:flex-start;
     }
     .game-area{ min-width:0; }
-    .ad-area{ position:sticky; top:76px; align-self:flex-start; }
+    .ad-area{
+      position:sticky;
+      top:64px;
+      align-self:flex-start;
+      margin-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    }
     #container { margin:0; width:100%; max-width:none; padding:16px 20px; background:rgba(30,30,30,0.55); border-radius:10px; text-align:center; border:1px solid rgba(255,255,255,0.08); box-sizing:border-box; }
     h1 { font-size:1.4em; margin:6px 0 14px; color:var(--accent); }
     button.general { width:calc(100% - 32px); max-width:320px; padding:10px; margin:6px auto; font-size:13px; background:url('/images/button-bg.png') center/contain no-repeat; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; white-space: pre-line; }
@@ -456,7 +461,12 @@
     }
     @media (max-width: 900px){
       .page-shell{ grid-template-columns: 1fr; margin-top:78px; }
-      .ad-area{ position:relative; top:auto; width:100%; }
+      .ad-area{
+        position:relative;
+        top:auto;
+        width:100%;
+        margin-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
+      }
       .coupang-inline{ justify-content:flex-start; }
       .coupang-card{ width:min(520px, 94vw); }
     }
