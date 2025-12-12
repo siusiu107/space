@@ -2684,6 +2684,7 @@
 
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null, source = 'manual') {
+      if (window.__CHRISTMAS_BLOCK_COINS) return false;
       if (isOffline()) return false;
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
@@ -4597,33 +4598,24 @@
         if (active) {
           if (christmasGameBlockSnapshot) return;
           const hadHardBlock = document.body.classList.contains('game-hard-blocked');
-          christmasGameBlockSnapshot = {
-            hadHardBlock,
-            prevPlayAllowed: (typeof window.__PLAY_ALLOWED === 'boolean') ? window.__PLAY_ALLOWED : null
-          };
+          const prevCoinBlock = !!window.__CHRISTMAS_BLOCK_COINS;
+          christmasGameBlockSnapshot = { hadHardBlock, prevCoinBlock };
           try { window.__PLAY_BLOCKED_BY_CHRISTMAS = true; } catch {}
-          try { window.__PLAY_ALLOWED = false; } catch {}
+          try { window.__CHRISTMAS_BLOCK_COINS = true; } catch {}
           try { document.body.classList.add('christmas-focus'); } catch {}
-          if (!hadHardBlock) {
-            try { document.body.classList.add('game-hard-blocked'); } catch {}
-          }
+          if (hadHardBlock) return;
+          try { document.body.classList.remove('game-hard-blocked'); } catch {}
           return;
         }
 
         if (!christmasGameBlockSnapshot) return;
-        const { hadHardBlock, prevPlayAllowed } = christmasGameBlockSnapshot;
+        const { hadHardBlock, prevCoinBlock } = christmasGameBlockSnapshot;
         christmasGameBlockSnapshot = null;
         try { window.__PLAY_BLOCKED_BY_CHRISTMAS = false; } catch {}
-        if (typeof window.__PLAY_BASE_ALLOWED === 'boolean') {
-          const allow = window.__PLAY_BASE_ALLOWED && !window.__PLAY_DUP_LOCK_ACTIVE;
-          try { window.__PLAY_ALLOWED = allow; } catch {}
-        } else if (typeof prevPlayAllowed === 'boolean') {
-          try { window.__PLAY_ALLOWED = prevPlayAllowed; } catch {}
-        }
+        try { window.__CHRISTMAS_BLOCK_COINS = prevCoinBlock; } catch {}
         try { document.body.classList.remove('christmas-focus'); } catch {}
-        if (!hadHardBlock) {
-          try { document.body.classList.remove('game-hard-blocked'); } catch {}
-        }
+        if (hadHardBlock) return;
+        try { document.body.classList.remove('game-hard-blocked'); } catch {}
       }
 
       function openChristmasOverlay() {
@@ -4924,6 +4916,7 @@
 
         if (window.__PLAY_ALLOWED && !security.banned) {
           const offline = isOffline();
+          const coinBlocked = !!window.__CHRISTMAS_BLOCK_COINS;
           pruneExpiredBuffs();
 
           // 자원 알바
@@ -4932,7 +4925,7 @@
           const perkCoinMul = perkState.coinMult || 1;
 
           let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregateTreeMultiplier('res') * aggregateTreeMultiplier('worker');
-          if (state.workerCount > 0) {
+          if (!coinBlocked && state.workerCount > 0) {
             const finalWorkerGain = workerGain * prodMul * perkResMul;
             state.resources += finalWorkerGain;
             auditAdd('res', finalWorkerGain);
@@ -4940,14 +4933,14 @@
 
           // 코인 알바
           let convGain = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
-          if (!offline && state.conversionCount > 0) {
+          if (!coinBlocked && !offline && state.conversionCount > 0) {
             const finalConvGain = convGain * prodMul * perkCoinMul;
             state.coins += finalConvGain;
             auditAdd('coin', finalConvGain, 'worker');
           }
 
           // 자동 변환
-          if (!offline && state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
+          if (!coinBlocked && !offline && state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         }
 
         // ✅ 의심도 검사는 1초마다 별도로 유지
