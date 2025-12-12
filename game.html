@@ -417,13 +417,14 @@
     .event-stats{ display:flex; flex-direction:column; gap:6px; font-size:14px; }
     .event-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     .event-actions button{ flex:1 1 150px; }
+    .event-hint{ margin:10px 0 0; font-size:12px; color:#ffdede; opacity:0.92; }
     .christmas-launch{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     #christmas-start{ flex: 0 0 auto; }
     #christmas-launch-hint{ font-size:13px; color:#cfe6ff; opacity:0.9; }
     #christmas-overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.65); backdrop-filter:blur(8px); z-index:2000; }
     #christmas-overlay.show{ display:flex; }
-    .christmas-modal{ position:relative; width:min(1100px, 96vw); height:min(88vh, 720px); padding:14px; background:rgba(2,6,12,0.55); border-radius:14px; border:1px solid rgba(255,255,255,0.08); box-shadow:0 20px 50px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05); display:flex; flex-direction:column; gap:10px; }
-    #christmas-overlay iframe{ flex:1; width:100%; border:none; border-radius:12px; background:#000; box-shadow:0 14px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .christmas-modal{ position:relative; width:min(1280px, 98vw); height:min(94vh, 860px); padding:14px; background:rgba(2,6,12,0.55); border-radius:14px; border:1px solid rgba(255,255,255,0.08); box-shadow:0 20px 50px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05); display:flex; flex-direction:column; gap:10px; }
+    #christmas-overlay iframe{ flex:1; width:100%; min-height:0; border:none; border-radius:12px; background:#000; box-shadow:0 14px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.04); }
     #christmas-close{ position:absolute; top:10px; right:10px; width:38px; height:38px; border-radius:12px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.42); color:#e6f7ff; font-size:18px; cursor:pointer; box-shadow:0 12px 26px rgba(0,0,0,0.35); backdrop-filter:blur(6px); }
     #christmas-close:hover{ background:rgba(255,255,255,0.12); }
     .tree-status{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
@@ -1250,6 +1251,7 @@
             <button id="convert-ecoin-to-santacoin" class="general" type="button">이벤트코인 → 산타코인 (3:1)</button>
             <button id="christmas-upgrade" class="general" type="button">트리 강화</button>
           </div>
+          <p class="event-hint">※ 산타 조각으로 얻는 산타코인은 직접 제작해야 해요.</p>
           <div class="tree-status">
             <img id="tree-image" class="tree-figure" src="/images/tree1.png" alt="크리스마스 트리" />
             <div>
@@ -2730,15 +2732,6 @@
       state.eventCoins = (state.eventCoins || 0) + finalAmt;
       auditGain('eco', finalAmt, source);
       return finalAmt;
-    }
-
-    function autoCraftSantaCoins() {
-      const pieces = Math.max(0, Math.floor(state.santaPieces || 0));
-      const craftable = Math.floor(pieces / 10);
-      if (craftable <= 0) return 0;
-      state.santaPieces -= craftable * 10;
-      state.santaCoins = (state.santaCoins || 0) + craftable;
-      return craftable;
     }
 
     function attachHoldRepeat(target, action, options = {}) {
@@ -4969,11 +4962,9 @@
       if (data.type === 'christmas-clear' && data.pieces) {
         const gain = Math.max(0, Math.floor(data.pieces));
         state.santaPieces = (state.santaPieces || 0) + gain;
-        const crafted = autoCraftSantaCoins();
         renderBuffStatus();
         save(); updateUI();
-        const craftedMsg = crafted > 0 ? ` (+산타코인 ${crafted}개 제작)` : '';
-        showToast(`🎅 산타 조각 ${gain}개 획득!${craftedMsg}`, null, null, 3200);
+        showToast(`🎅 산타 조각 ${gain}개 획득! 산타코인은 직접 제작해 주세요.`, null, null, 3200);
       }
     });
 
