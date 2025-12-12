@@ -416,15 +416,18 @@
       border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
       z-index: 1200; max-width: 96vw;
       width: min(720px, calc(100% - 24px));
+      flex-wrap: nowrap;
     }
     #bottom-nav.nav-locked{ position: absolute; }
     #bottom-nav-guard{ width:100%; height:1px; margin:0; padding:0; position:relative; pointer-events:none; }
     #bottom-nav .tab{
       display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; min-width: 70px; padding: 10px 12px; font-size: 13px;
+      gap: 5px; min-width: 0; padding: 10px 10px; font-size: 13px;
       color: #d7e8ff; cursor: pointer; user-select: none; border-radius: 12px;
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
       border: 1px solid rgba(255,255,255,0.06); transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+      flex: 1 1 0;
+      white-space: nowrap;
     }
     #bottom-nav .tab:hover{ transform: translateY(-1px); }
     #bottom-nav .tab.active{
@@ -475,9 +478,18 @@
     @media (max-width: 420px){
       #top-bar{ font-size:11px; padding:6px 8px; }
       #settings-btn{ padding:5px 8px; font-size:12px; }
-      #bottom-nav{ left:8px; right:8px; transform:none; border-radius:14px; gap:6px; bottom: calc(86px + env(safe-area-inset-bottom, 10px)); }
-      #bottom-nav .tab{ padding:10px 8px; min-width:0; }
+      #bottom-nav{ left:8px; right:8px; transform:none; border-radius:14px; gap:6px; bottom: calc(86px + env(safe-area-inset-bottom, 10px)); padding: 6px; }
+      #bottom-nav .tab{ padding:9px 8px; min-width:0; font-size:12px; }
       h1{ font-size:1.2em; }
+    }
+
+    @media (max-width: 600px){
+      #bottom-nav{ gap:6px; padding:6px; }
+      #bottom-nav .tab{ padding:9px 8px; font-size:12px; }
+    }
+
+    @media (max-width: 420px){
+      #bottom-nav .tab{ padding:8px 6px; font-size:11px; gap:4px; }
     }
 
     /* 사이드 메뉴 */
