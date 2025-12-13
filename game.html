@@ -5056,6 +5056,7 @@
         document.getElementById(tab.dataset.tab + '-content').classList.add('active');
         document.querySelectorAll('#bottom-nav .tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'auto' });
       }));
 
       // 하단 내비가 광고 영역을 덮지 않도록 가드 지점에서 멈춤
