@@ -6103,9 +6103,23 @@
       if (googleCodeArea) googleCodeArea.style.display = 'none';
     }
 
+    const isTouchContextMenu = (e) => {
+      return (
+        e.pointerType === 'touch' ||
+        (typeof PointerEvent !== 'undefined' && e instanceof PointerEvent && e.pointerType === 'touch') ||
+        !!e.touches?.length ||
+        !!e.changedTouches?.length ||
+        !!e.sourceCapabilities?.firesTouchEvents
+      );
+    };
+
     const handleContextMenu = (e) => {
       if (devtoolGuard.active === false) {
         devtoolGuard.hideMenu?.();
+        return;
+      }
+      if (isTouchContextMenu(e)) {
+        customMenu.style.display = 'none';
         return;
       }
       e.preventDefault();
