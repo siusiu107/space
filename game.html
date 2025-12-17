@@ -376,6 +376,41 @@
     .tab-content { display:none; margin-top:12px; }
     .tab-content.active { display:block; }
 
+    #planets-content .planet-tabbar {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:6px 0 12px;
+    }
+    #planets-content .planet-subtab {
+      padding:8px 12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.05);
+      color:#e6f7ff;
+      cursor:pointer;
+      font-weight:700;
+    }
+    #planets-content .planet-subtab.active {
+      background:linear-gradient(90deg, rgba(0,212,255,0.35), rgba(0,119,255,0.35));
+      border-color:rgba(0,212,255,0.6);
+      box-shadow:0 6px 16px rgba(0,160,255,0.18);
+    }
+    #planets-content .planet-panel { display:none; }
+    #planets-content .planet-panel.active { display:block; }
+    #planets-content .planet-card,
+    #planets-content .planet-info-box {
+      margin:10px 0;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:10px;
+      background:rgba(255,255,255,0.05);
+      text-align:left;
+    }
+    #planets-content .planet-card strong { display:block; margin-bottom:4px; }
+    #planets-content .planet-card .planet-actions { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+    #planets-content .planet-card button.general { width:auto; padding:10px 14px; margin:0; }
+
     .ore-frag {
       position: absolute;
       width: 46px;
@@ -1447,7 +1482,12 @@
     </div>
 
     <div id="planets-content" class="tab-content">
-      <div id="planet-list"></div>
+      <div class="planet-tabbar" role="tablist" aria-label="행성 세부 탭">
+        <button class="planet-subtab active" data-planet-tab="explore" role="tab" aria-selected="true">🛰️ 탐사</button>
+        <button class="planet-subtab" data-planet-tab="purchase" role="tab" aria-selected="false">🛒 구매</button>
+      </div>
+      <div id="planet-explore-panel" class="planet-panel active" role="tabpanel" aria-label="행성 탐사 목록"></div>
+      <div id="planet-purchase-panel" class="planet-panel" role="tabpanel" aria-label="행성 구매 목록"></div>
     </div>
 
     <div id="christmas-content" class="tab-content">
@@ -4839,19 +4879,42 @@
       return (state.ownedPlanets?.length || 0) >= PLANET_CATALOG.length;
     }
 
+    let planetSubTab = 'explore';
+
+    function setPlanetSubTab(mode = 'explore') {
+      planetSubTab = mode === 'purchase' ? 'purchase' : 'explore';
+      const activePanelId = planetSubTab === 'purchase' ? 'planet-purchase-panel' : 'planet-explore-panel';
+
+      document.querySelectorAll('#planets-content .planet-subtab').forEach(btn => {
+        const active = btn.dataset.planetTab === planetSubTab;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('#planets-content .planet-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === activePanelId);
+      });
+    }
+
+    function getPlanetExplorationCost(planet) {
+      if (!planet) return 0;
+      const ratioCost = Math.floor(planet.cost * 0.05);
+      return Math.max(50, ratioCost);
+    }
+
     function renderPlanets() {
       finalizePlanetExplorationIfReady();
       const planets = PLANET_CATALOG;
-      const list = document.getElementById('planet-list'); list.innerHTML = '';
+      const explorePanel = document.getElementById('planet-explore-panel');
+      const purchasePanel = document.getElementById('planet-purchase-panel');
+      if (!explorePanel || !purchasePanel) return;
+      explorePanel.innerHTML = '';
+      purchasePanel.innerHTML = '';
+
       const exploration = state.planetExploration;
       const hasActiveExploration = exploration && Date.now() < (exploration.endsAt || 0);
 
       const info = document.createElement('div');
-      info.style.margin = '0 0 12px';
-      info.style.padding = '10px 12px';
-      info.style.border = '1px solid rgba(255,255,255,0.12)';
-      info.style.borderRadius = '10px';
-      info.style.background = 'rgba(255,255,255,0.05)';
+      info.className = 'planet-info-box';
       if (hasActiveExploration) {
         const target = planets[exploration.planetIndex];
         const infoText = document.createElement('div');
@@ -4866,30 +4929,37 @@
         accelBtn.onclick = () => promptAcceleratePlanetExploration();
         info.appendChild(accelBtn);
       } else {
-        info.textContent = `다음 탐사 소요 시간: ${formatPlanetDuration(getNextPlanetExplorationDurationMs())}`;
+        info.textContent = `다음 탐사 소요 시간: ${formatPlanetDuration(getNextPlanetExplorationDurationMs())} · 탐사 비용은 각 행성 구매가의 5%입니다.`;
       }
-      list.appendChild(info);
+      explorePanel.appendChild(info);
 
       planets.forEach((p, i) => {
-        const div = document.createElement('div');
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const discovered = state.discoveredPlanets && state.discoveredPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         const exploringThis = !!(exploration && exploration.planetIndex === i);
         const activeCountdown = exploringThis && hasActiveExploration;
         const otherExploring = hasActiveExploration && !exploringThis;
-        div.style.margin='10px 0';
-        div.innerHTML = `<strong>${p.name}</strong> — ${formatKR(p.cost)}코인<br>필요 렙: ${p.requiredShipLevel}`;
-        const btn = document.createElement('button'); btn.className='general';
+        const exploreCost = getPlanetExplorationCost(p);
+        const durationText = formatPlanetDuration(getNextPlanetExplorationDurationMs());
+
+        const div = document.createElement('div');
+        div.className = 'planet-card';
+        div.innerHTML = `<strong>${p.name}</strong><div>탐사 비용: ${formatKR(exploreCost)}코인 · 탐사 시간: ${durationText}</div><div>필요 렙: ${p.requiredShipLevel}</div>`;
+
+        const actions = document.createElement('div');
+        actions.className = 'planet-actions';
+        const btn = document.createElement('button');
+        btn.className='general';
         if (owned) {
-          btn.textContent = '탐사 완료';
+          btn.textContent = '정복 완료';
           btn.disabled = true;
         } else if (discovered && !canBuy) {
-          btn.textContent = '렙 부족 (구매)';
+          btn.textContent = '렙 부족 (구매 탭)';
           btn.disabled = true;
         } else if (discovered) {
-          btn.textContent = `구매 (${formatKR(p.cost)}코인)`;
-          btn.disabled = state.coins < p.cost;
+          btn.textContent = '탐사 완료 (구매 탭에서 진행)';
+          btn.disabled = true;
         } else if (activeCountdown) {
           btn.textContent = `탐사 중 (${formatPlanetCountdown(exploration)})`;
           btn.disabled = true;
@@ -4900,19 +4970,19 @@
           btn.textContent = '렙 부족';
           btn.disabled = true;
         } else {
-          btn.textContent = `탐사 시작 (${formatPlanetDuration(getNextPlanetExplorationDurationMs())})`;
-          btn.disabled = false;
+          btn.textContent = `탐사 시작 (${formatKR(exploreCost)}코인)`;
+          btn.disabled = state.coins < exploreCost;
         }
 
         btn.onclick = () => {
           if (!ensureReady()) return;
-          if (owned) return;
-          if (discovered) {
-            purchaseDiscoveredPlanet(i);
-            return;
-          }
+          if (owned || discovered) return;
           if (!canBuy) {
             showToast('우주선 레벨이 부족합니다. 우주선을 먼저 강화하세요.', null, null, 2600);
+            return;
+          }
+          if (state.coins < exploreCost) {
+            showToast('탐사 비용이 부족합니다.', null, null, 2400);
             return;
           }
           const active = state.planetExploration && Date.now() < (state.planetExploration.endsAt || 0);
@@ -4922,6 +4992,8 @@
           }
           const now = Date.now();
           const durationMs = getNextPlanetExplorationDurationMs();
+          state.coins -= exploreCost;
+          auditSpend('coin', exploreCost);
           state.planetExploration = {
             planetIndex: i,
             startedAt: now,
@@ -4933,8 +5005,56 @@
           renderPlanets();
           showToast(`🛰️ ${p.name} 탐사를 시작했습니다! (${formatPlanetDuration(durationMs)})`, null, null, 3200);
         };
-        div.appendChild(btn); list.appendChild(div);
+        actions.appendChild(btn);
+        div.appendChild(actions);
+        explorePanel.appendChild(div);
       });
+
+      const purchaseInfo = document.createElement('div');
+      purchaseInfo.className = 'planet-info-box';
+      purchaseInfo.textContent = '탐사를 완료한 행성은 여기서 코인을 지불해 정복할 수 있습니다.';
+      purchasePanel.appendChild(purchaseInfo);
+
+      let hasPurchaseCandidate = false;
+      planets.forEach((p, i) => {
+        const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
+        const discovered = state.discoveredPlanets && state.discoveredPlanets.includes(i);
+        if (!owned && !discovered) return;
+
+        const canBuy = state.shipLevel >= p.requiredShipLevel;
+        const div = document.createElement('div');
+        div.className = 'planet-card';
+        div.innerHTML = `<strong>${p.name}</strong><div>구매 비용: ${formatKR(p.cost)}코인</div><div>필요 렙: ${p.requiredShipLevel}</div>`;
+
+        const actions = document.createElement('div');
+        actions.className = 'planet-actions';
+        const btn = document.createElement('button');
+        btn.className = 'general';
+
+        if (owned) {
+          btn.textContent = '구매 완료';
+          btn.disabled = true;
+        } else if (!canBuy) {
+          btn.textContent = '렙 부족 (구매)';
+          btn.disabled = true;
+        } else {
+          btn.textContent = `구매 (${formatKR(p.cost)}코인)`;
+          btn.disabled = state.coins < p.cost;
+          btn.onclick = () => purchaseDiscoveredPlanet(i);
+        }
+
+        actions.appendChild(btn);
+        div.appendChild(actions);
+        purchasePanel.appendChild(div);
+        hasPurchaseCandidate = true;
+      });
+
+      if (!hasPurchaseCandidate) {
+        const empty = document.createElement('div');
+        empty.className = 'planet-card';
+        empty.textContent = '탐사를 완료한 행성이 없습니다. 먼저 탐사 탭에서 탐사를 진행하세요.';
+        purchasePanel.appendChild(empty);
+      }
     }
 
     const oreParticlePool = [];
@@ -5317,6 +5437,11 @@
           requestAnimationFrame(() => updateBottomNavLock && updateBottomNavLock());
         }
       }));
+
+      document.querySelectorAll('#planets-content .planet-subtab').forEach(btn => btn.addEventListener('click', () => {
+        setPlanetSubTab(btn.dataset.planetTab);
+      }));
+      setPlanetSubTab(planetSubTab);
 
       // 하단 내비가 광고 영역을 덮지 않도록 가드 지점에서 멈춤
       const bottomNav = document.getElementById('bottom-nav');
