@@ -2806,7 +2806,7 @@
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
-      workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[], planetExploration:null,
+      workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[], discoveredPlanets:[], planetExploration:null,
       santaPieces:0, santaCoins:0, christmasTreeLevel:0,
       quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
@@ -4610,20 +4610,21 @@
 
       try {
         if (uid) {
-          const cachePick = {
-            resources: state.resources,
-            coins: state.coins,
-            eventCoins: state.eventCoins,
-            clickPower: state.clickPower,
-            clickUpgradeCost: state.clickUpgradeCost,
-            shipLevel: state.shipLevel,
-            shipUpgradeCost: state.shipUpgradeCost,
-            workerCount: state.workerCount,
-            conversionCount: state.conversionCount,
-            autoConvertBought: state.autoConvertBought,
-            autoConvertEnabled: state.autoConvertEnabled,
-            ownedPlanets: state.ownedPlanets
-          };
+      const cachePick = {
+        resources: state.resources,
+        coins: state.coins,
+        eventCoins: state.eventCoins,
+        clickPower: state.clickPower,
+        clickUpgradeCost: state.clickUpgradeCost,
+        shipLevel: state.shipLevel,
+        shipUpgradeCost: state.shipUpgradeCost,
+        workerCount: state.workerCount,
+        conversionCount: state.conversionCount,
+        autoConvertBought: state.autoConvertBought,
+        autoConvertEnabled: state.autoConvertEnabled,
+        ownedPlanets: state.ownedPlanets,
+        discoveredPlanets: state.discoveredPlanets
+      };
           localStorage.setItem(`gd_cache_${uid}`, JSON.stringify(cachePick));
         }
       } catch {}
@@ -4668,8 +4669,14 @@
       return PLANET_EXPLORATION_SCHEDULE_MS[scheduleIndex];
     }
 
+    function getCompletedExplorationCount() {
+      const owned = state.ownedPlanets?.length || 0;
+      const discovered = state.discoveredPlanets?.length || 0;
+      return Math.max(owned, discovered);
+    }
+
     function getNextPlanetExplorationDurationMs() {
-      const completed = state.ownedPlanets?.length || 0;
+      const completed = getCompletedExplorationCount();
       return getPlanetExplorationDurationMsForIndex(completed);
     }
 
@@ -4688,10 +4695,21 @@
       return formatPlanetDuration(remaining);
     }
 
+    function addDiscoveredPlanet(planetIndex) {
+      if (!state.discoveredPlanets) state.discoveredPlanets = [];
+      if (!state.discoveredPlanets.includes(planetIndex)) state.discoveredPlanets.push(planetIndex);
+    }
+
+    function removeDiscoveredPlanet(planetIndex) {
+      if (!state.discoveredPlanets) return;
+      state.discoveredPlanets = state.discoveredPlanets.filter((idx) => idx !== planetIndex);
+    }
+
     function completePlanetAcquisition(planetIndex) {
       if (!state.ownedPlanets) state.ownedPlanets = [];
       if (state.ownedPlanets.includes(planetIndex)) return false;
       state.ownedPlanets.push(planetIndex);
+      removeDiscoveredPlanet(planetIndex);
       applyQuestProgress('planet', 1);
       const planet = PLANET_CATALOG[planetIndex];
       if (planet?.name === '화성' && !rankingUnlocked) {
@@ -4715,12 +4733,85 @@
       if (!exp) return false;
       if (Date.now() < (exp.endsAt || 0)) return false;
       state.planetExploration = null;
-      const completed = completePlanetAcquisition(exp.planetIndex);
-      if (completed) {
-        showToast(`🪐 ${PLANET_CATALOG[exp.planetIndex]?.name || '행성'} 탐사가 완료되었습니다!`, null, null, 3200);
-      }
+      addDiscoveredPlanet(exp.planetIndex);
+      showToast(`🪐 ${PLANET_CATALOG[exp.planetIndex]?.name || '행성'} 탐사가 완료되었습니다! 이제 구매할 수 있습니다.`, null, null, 3200);
       save();
       return true;
+    }
+
+    function getPlanetExplorationRemainingMs(exp = state.planetExploration) {
+      if (!exp) return 0;
+      return Math.max(0, (exp.endsAt || 0) - Date.now());
+    }
+
+    function promptAcceleratePlanetExploration() {
+      if (!ensureReady()) return;
+      const exp = state.planetExploration;
+      const remainingMs = getPlanetExplorationRemainingMs(exp);
+      if (!exp || remainingMs <= 0) {
+        showToast('가속할 탐사가 없습니다.', null, null, 2400);
+        return;
+      }
+
+      const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+      const input = prompt(`얼마나 가속할까요? 최대 ${remainingMinutes}분까지 가능합니다. (10분당 이벤트코인 1개)`, `${Math.min(remainingMinutes, 10)}`);
+      if (input === null) return;
+      const minutes = Math.floor(Number(input));
+      if (!minutes || minutes < 1) {
+        showToast('1분 이상 입력해주세요.', null, null, 2400);
+        return;
+      }
+
+      const clampedMinutes = Math.min(remainingMinutes, minutes);
+      const coinCost = Math.ceil(clampedMinutes / 10);
+      if ((state.eventCoins || 0) < coinCost) {
+        showToast('이벤트코인이 부족합니다.', null, null, 2400);
+        return;
+      }
+
+      const reductionMinutes = Math.min(remainingMinutes, coinCost * 10);
+      const reductionMs = reductionMinutes * 60000;
+      const overkillMinutes = reductionMinutes - clampedMinutes;
+      const newRemainingMs = Math.max(0, remainingMs - reductionMs);
+      let confirmMsg = `이벤트코인 ${coinCost}개를 사용해 ${reductionMinutes}분을 단축합니다. 가속 후 남은 시간은 ${formatPlanetDuration(newRemainingMs)}입니다. 진행할까요?`;
+      if (overkillMinutes > 0) {
+        confirmMsg = `가속은 10분 단위로 적용됩니다. 입력한 ${clampedMinutes}분 대신 ${reductionMinutes}분이 단축되어 ${overkillMinutes}분만큼 더 사용됩니다. 이벤트코인 ${coinCost}개를 사용하고 남은 시간은 ${formatPlanetDuration(newRemainingMs)}입니다. 진행할까요?`;
+      }
+      if (!confirm(confirmMsg)) return;
+
+      state.eventCoins -= coinCost;
+      auditSpend('eco', coinCost);
+      state.planetExploration.endsAt = Math.max(Date.now(), state.planetExploration.endsAt - reductionMs);
+      save();
+      updateUI(true);
+      renderPlanets();
+      showToast('⏱️ 탐사 속도를 높였습니다!', null, null, 2600);
+    }
+
+    function purchaseDiscoveredPlanet(planetIndex) {
+      if (!ensureReady()) return;
+      const planet = PLANET_CATALOG[planetIndex];
+      if (!planet) return;
+      if (state.ownedPlanets && state.ownedPlanets.includes(planetIndex)) return;
+      if (!state.discoveredPlanets || !state.discoveredPlanets.includes(planetIndex)) {
+        showToast('먼저 탐사를 완료해야 구매할 수 있습니다.', null, null, 2600);
+        return;
+      }
+      if (state.shipLevel < planet.requiredShipLevel) {
+        showToast('우주선 레벨이 부족합니다. 우주선을 먼저 강화하세요.', null, null, 2600);
+        return;
+      }
+      if (state.coins < planet.cost) {
+        showToast('코인이 부족합니다.', null, null, 2200);
+        return;
+      }
+      state.coins -= planet.cost;
+      auditSpend('coin', planet.cost);
+      completePlanetAcquisition(planetIndex);
+      save();
+      updateUI(true);
+      renderPlanets();
+      showToast(`🪐 ${planet.name} 구매 완료!`, null, null, 3000);
     }
 
     const PLANET_CATALOG = [
@@ -4763,7 +4854,17 @@
       info.style.background = 'rgba(255,255,255,0.05)';
       if (hasActiveExploration) {
         const target = planets[exploration.planetIndex];
-        info.textContent = `${target?.name || '행성'} 탐사 진행 중 · 남은 시간 ${formatPlanetCountdown(exploration)}`;
+        const infoText = document.createElement('div');
+        infoText.textContent = `${target?.name || '행성'} 탐사 진행 중 · 남은 시간 ${formatPlanetCountdown(exploration)}`;
+        info.appendChild(infoText);
+
+        const accelBtn = document.createElement('button');
+        accelBtn.className = 'general';
+        accelBtn.style.marginTop = '10px';
+        accelBtn.textContent = '탐사 가속 (10분당 이벤트코인 1개)';
+        accelBtn.disabled = !state.eventCoins;
+        accelBtn.onclick = () => promptAcceleratePlanetExploration();
+        info.appendChild(accelBtn);
       } else {
         info.textContent = `다음 탐사 소요 시간: ${formatPlanetDuration(getNextPlanetExplorationDurationMs())}`;
       }
@@ -4772,6 +4873,7 @@
       planets.forEach((p, i) => {
         const div = document.createElement('div');
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
+        const discovered = state.discoveredPlanets && state.discoveredPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
         const exploringThis = !!(exploration && exploration.planetIndex === i);
         const activeCountdown = exploringThis && hasActiveExploration;
@@ -4782,6 +4884,12 @@
         if (owned) {
           btn.textContent = '탐사 완료';
           btn.disabled = true;
+        } else if (discovered && !canBuy) {
+          btn.textContent = '렙 부족 (구매)';
+          btn.disabled = true;
+        } else if (discovered) {
+          btn.textContent = `구매 (${formatKR(p.cost)}코인)`;
+          btn.disabled = state.coins < p.cost;
         } else if (activeCountdown) {
           btn.textContent = `탐사 중 (${formatPlanetCountdown(exploration)})`;
           btn.disabled = true;
@@ -4793,12 +4901,16 @@
           btn.disabled = true;
         } else {
           btn.textContent = `탐사 시작 (${formatPlanetDuration(getNextPlanetExplorationDurationMs())})`;
-          btn.disabled = state.coins < p.cost;
+          btn.disabled = false;
         }
 
         btn.onclick = () => {
           if (!ensureReady()) return;
           if (owned) return;
+          if (discovered) {
+            purchaseDiscoveredPlanet(i);
+            return;
+          }
           if (!canBuy) {
             showToast('우주선 레벨이 부족합니다. 우주선을 먼저 강화하세요.', null, null, 2600);
             return;
@@ -4808,14 +4920,8 @@
             showToast('다른 행성 탐사가 끝날 때까지 기다려주세요.', null, null, 2400);
             return;
           }
-          if (state.coins < p.cost) {
-            showToast('코인이 부족합니다.', null, null, 2200);
-            return;
-          }
           const now = Date.now();
           const durationMs = getNextPlanetExplorationDurationMs();
-          state.coins -= p.cost;
-          auditSpend('coin', p.cost);
           state.planetExploration = {
             planetIndex: i,
             startedAt: now,
