@@ -558,11 +558,13 @@
       display:flex; flex-direction:column; gap:12px;
       padding:18px 20px 20px;
       max-height:92vh;
+      overflow:hidden;
     }
     #quest-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; touch-action:none; user-select:none; cursor:grab; }
     #quest-head h3{ margin:0; font-size:20px; }
     #quest-close{ border:none; background:rgba(255,255,255,0.08); color:#f2fbff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:14px; }
     #quest-close:hover{ background:rgba(255,255,255,0.15); }
+    .quest-body{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:4px; max-height:calc(92vh - 84px); touch-action:pan-y; }
     .quest-tabbar{ display:flex; gap:8px; }
     .qtab{ flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#dff2ff; font-weight:700; cursor:pointer; }
     .qtab.active{ background:linear-gradient(120deg, rgba(0,214,255,0.18), rgba(0,122,255,0.24)); border-color:rgba(0,214,255,0.45); color:#001018; text-shadow:0 1px 10px rgba(0,214,255,0.35); }
@@ -1710,20 +1712,22 @@
         <h3 id="quest-title">🗒️ 퀘스트</h3>
         <button id="quest-close" aria-label="퀘스트 닫기">✕</button>
       </div>
-      <div class="quest-tabbar">
-        <button class="qtab active" data-qtab="daily">일일 퀘스트</button>
-        <button class="qtab" data-qtab="weekly">주간 퀘스트</button>
-      </div>
-      <div id="quest-panels">
-        <div class="quest-panel active" data-panel="daily">
-          <p class="quest-desc">매일 00:00(KST) 초기화 · 성장도에 따라 목표가 상승하며 모든 과제를 완료하면 <b>프리미엄 슬롯</b> 1회가 열립니다.</p>
-          <div id="quest-daily-list" class="quest-list"></div>
-          <div class="quest-summary" id="quest-daily-summary"></div>
+      <div class="quest-body">
+        <div class="quest-tabbar">
+          <button class="qtab active" data-qtab="daily">일일 퀘스트</button>
+          <button class="qtab" data-qtab="weekly">주간 퀘스트</button>
         </div>
-        <div class="quest-panel" data-panel="weekly">
-          <p class="quest-desc">매주 일요일 12:00(KST) 초기화 · 성장도가 높을수록 목표가 커지며 모든 과제를 완료하면 <b>이벤트코인 슬롯</b> 1회가 열립니다.</p>
-          <div id="quest-weekly-list" class="quest-list"></div>
-          <div class="quest-summary" id="quest-weekly-summary"></div>
+        <div id="quest-panels">
+          <div class="quest-panel active" data-panel="daily">
+            <p class="quest-desc">매일 00:00(KST) 초기화 · 성장도에 따라 목표가 상승하며 모든 과제를 완료하면 <b>프리미엄 슬롯</b> 1회가 열립니다.</p>
+            <div id="quest-daily-list" class="quest-list"></div>
+            <div class="quest-summary" id="quest-daily-summary"></div>
+          </div>
+          <div class="quest-panel" data-panel="weekly">
+            <p class="quest-desc">매주 일요일 12:00(KST) 초기화 · 성장도가 높을수록 목표가 커지며 모든 과제를 완료하면 <b>이벤트코인 슬롯</b> 1회가 열립니다.</p>
+            <div id="quest-weekly-list" class="quest-list"></div>
+            <div class="quest-summary" id="quest-weekly-summary"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3348,13 +3352,20 @@
       const cap = kind === 'weekly' ? 4.8 : 3.6;
       return Math.min(cap, scale);
     }
+    function isPlanetQuestFinished(target){
+      const progress = state?.quests?.weekly?.progress?.explore_planet || 0;
+      return allPlanetsPurchased() || progress >= Math.max(0, target || 0);
+    }
+
     function questTasks(kind){
       const base = kind === 'weekly' ? BASE_WEEKLY_QUESTS : BASE_DAILY_QUESTS;
       const diff = questDifficulty(kind);
-      return base.map(task => ({
+      const scaled = base.map(task => ({
         ...task,
         target: Math.max(task.target, Math.round(task.target * diff * questUnitScale(task, kind)))
       }));
+      if (kind !== 'weekly') return scaled;
+      return scaled.filter(task => !(task.id === 'explore_planet' && isPlanetQuestFinished(task.target)));
     }
     function questProgress(kind){ syncQuestPeriods(); return state?.quests?.[kind]?.progress || {}; }
     function isQuestComplete(kind){
@@ -3587,6 +3598,7 @@
     const questWeeklySummary= document.getElementById('quest-weekly-summary');
     const questBadge       = document.getElementById('quest-badge');
     const questSideStatus  = document.getElementById('quest-status-side');
+    const questBody        = document.querySelector('.quest-body');
     const slotAccessInfo   = document.getElementById('slot-access-info');
 
     let dailyCache = null;
@@ -3729,6 +3741,7 @@
     function openQuestOverlay(){
       renderQuestUI();
       setQuestTab('daily');
+      if (questBody){ questBody.scrollTo({ top: 0, behavior: 'auto' }); }
       if (!questOverlay) return;
       questOverlay.classList.add('show');
       questOverlay.setAttribute('aria-hidden', 'false');
@@ -4636,18 +4649,33 @@
       });
     }
 
+    const PLANET_CATALOG = [
+      {name:'달', cost:100, requiredShipLevel:1},
+      {name:'수성', cost:500, requiredShipLevel:2},
+      {name:'금성', cost:2000, requiredShipLevel:3},
+      {name:'지구', cost:10000, requiredShipLevel:4},
+      {name:'화성', cost:50000, requiredShipLevel:5},
+      {name:'목성', cost:250000, requiredShipLevel:6},
+      {name:'토성', cost:1000000, requiredShipLevel:7},
+      {name:'천왕성', cost:5000000, requiredShipLevel:8},
+      {name:'해왕성', cost:20000000, requiredShipLevel:9},
+      {name:'세레스', cost:80000000, requiredShipLevel:10},
+      {name:'타이탄', cost:250000000, requiredShipLevel:11},
+      {name:'가니메데', cost:750000000, requiredShipLevel:12},
+      {name:'에우로파', cost:1800000000, requiredShipLevel:13},
+      {name:'트리톤', cost:4200000000, requiredShipLevel:14},
+      {name:'카론', cost:9000000000, requiredShipLevel:15},
+      {name:'트라피스트-1e', cost:22000000000, requiredShipLevel:16},
+      {name:'프로시마 b', cost:52000000000, requiredShipLevel:17},
+      {name:'글리제 581g', cost:125000000000, requiredShipLevel:18}
+    ];
+
+    function allPlanetsPurchased(){
+      return (state.ownedPlanets?.length || 0) >= PLANET_CATALOG.length;
+    }
+
     function renderPlanets() {
-      const planets = [
-        {name:'달',cost:100,requiredShipLevel:1},
-        {name:'수성',cost:500,requiredShipLevel:2},
-        {name:'금성',cost:2000,requiredShipLevel:3},
-        {name:'지구',cost:10000,requiredShipLevel:4},
-        {name:'화성',cost:50000,requiredShipLevel:5},
-        {name:'목성',cost:250000,requiredShipLevel:6},
-        {name:'토성',cost:1000000,requiredShipLevel:7},
-        {name:'천왕성',cost:5000000,requiredShipLevel:8},
-        {name:'해왕성',cost:20000000,requiredShipLevel:9}
-      ];
+      const planets = PLANET_CATALOG;
       const list = document.getElementById('planet-list'); list.innerHTML = '';
       planets.forEach((p, i) => {
         const div = document.createElement('div');
