@@ -2806,7 +2806,7 @@
     const defaultData = {
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
-      workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[],
+      workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[], planetExploration:null,
       santaPieces:0, santaCoins:0, christmasTreeLevel:0,
       quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
@@ -4649,6 +4649,80 @@
       });
     }
 
+    const PLANET_EXPLORATION_SCHEDULE_MS = [
+      30000,
+      60000,
+      120000,
+      180000,
+      300000,
+      420000,
+      600000,
+      780000,
+      900000,
+      3600000,
+      10800000
+    ];
+
+    function getPlanetExplorationDurationMsForIndex(index) {
+      const scheduleIndex = Math.min(index, PLANET_EXPLORATION_SCHEDULE_MS.length - 1);
+      return PLANET_EXPLORATION_SCHEDULE_MS[scheduleIndex];
+    }
+
+    function getNextPlanetExplorationDurationMs() {
+      const completed = state.ownedPlanets?.length || 0;
+      return getPlanetExplorationDurationMsForIndex(completed);
+    }
+
+    function formatPlanetDuration(ms) {
+      const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      if (hours > 0) return `${hours}시간 ${minutes}분`;
+      if (minutes > 0) return `${minutes}분 ${seconds}초`;
+      return `${seconds}초`;
+    }
+
+    function formatPlanetCountdown(exp) {
+      const remaining = exp ? (exp.endsAt - Date.now()) : 0;
+      return formatPlanetDuration(remaining);
+    }
+
+    function completePlanetAcquisition(planetIndex) {
+      if (!state.ownedPlanets) state.ownedPlanets = [];
+      if (state.ownedPlanets.includes(planetIndex)) return false;
+      state.ownedPlanets.push(planetIndex);
+      applyQuestProgress('planet', 1);
+      const planet = PLANET_CATALOG[planetIndex];
+      if (planet?.name === '화성' && !rankingUnlocked) {
+        rankingUnlocked = true;
+        if (uid && userBasePath) {
+          try {
+            update(ref(db, `${userBasePath}/meta`), { rankingUnlocked: true }).catch(() => {});
+          } catch {}
+        }
+        showToast('🏆 랭킹 잠금 해제!', '바로 가기', () => {
+          if (!requireLoginForFeature()) return;
+          location.href = '/ranking.html';
+        });
+      }
+      if (state.ownedPlanets.length === PLANET_CATALOG.length) window.location.href = '/ending.html';
+      return true;
+    }
+
+    function finalizePlanetExplorationIfReady() {
+      const exp = state.planetExploration;
+      if (!exp) return false;
+      if (Date.now() < (exp.endsAt || 0)) return false;
+      state.planetExploration = null;
+      const completed = completePlanetAcquisition(exp.planetIndex);
+      if (completed) {
+        showToast(`🪐 ${PLANET_CATALOG[exp.planetIndex]?.name || '행성'} 탐사가 완료되었습니다!`, null, null, 3200);
+      }
+      save();
+      return true;
+    }
+
     const PLANET_CATALOG = [
       {name:'달', cost:100, requiredShipLevel:1},
       {name:'수성', cost:500, requiredShipLevel:2},
@@ -4675,39 +4749,83 @@
     }
 
     function renderPlanets() {
+      finalizePlanetExplorationIfReady();
       const planets = PLANET_CATALOG;
       const list = document.getElementById('planet-list'); list.innerHTML = '';
+      const exploration = state.planetExploration;
+      const hasActiveExploration = exploration && Date.now() < (exploration.endsAt || 0);
+
+      const info = document.createElement('div');
+      info.style.margin = '0 0 12px';
+      info.style.padding = '10px 12px';
+      info.style.border = '1px solid rgba(255,255,255,0.12)';
+      info.style.borderRadius = '10px';
+      info.style.background = 'rgba(255,255,255,0.05)';
+      if (hasActiveExploration) {
+        const target = planets[exploration.planetIndex];
+        info.textContent = `${target?.name || '행성'} 탐사 진행 중 · 남은 시간 ${formatPlanetCountdown(exploration)}`;
+      } else {
+        info.textContent = `다음 탐사 소요 시간: ${formatPlanetDuration(getNextPlanetExplorationDurationMs())}`;
+      }
+      list.appendChild(info);
+
       planets.forEach((p, i) => {
         const div = document.createElement('div');
         const owned = state.ownedPlanets && state.ownedPlanets.includes(i);
         const canBuy = state.shipLevel >= p.requiredShipLevel;
+        const exploringThis = !!(exploration && exploration.planetIndex === i);
+        const activeCountdown = exploringThis && hasActiveExploration;
+        const otherExploring = hasActiveExploration && !exploringThis;
         div.style.margin='10px 0';
         div.innerHTML = `<strong>${p.name}</strong> — ${formatKR(p.cost)}코인<br>필요 렙: ${p.requiredShipLevel}`;
         const btn = document.createElement('button'); btn.className='general';
-        btn.textContent = owned ? '구매 완료' : (canBuy ? '구매' : '렙 부족'); btn.disabled = owned || !canBuy;
-        btn.onclick = async () => {
+        if (owned) {
+          btn.textContent = '탐사 완료';
+          btn.disabled = true;
+        } else if (activeCountdown) {
+          btn.textContent = `탐사 중 (${formatPlanetCountdown(exploration)})`;
+          btn.disabled = true;
+        } else if (otherExploring) {
+          btn.textContent = '다른 탐사 진행 중';
+          btn.disabled = true;
+        } else if (!canBuy) {
+          btn.textContent = '렙 부족';
+          btn.disabled = true;
+        } else {
+          btn.textContent = `탐사 시작 (${formatPlanetDuration(getNextPlanetExplorationDurationMs())})`;
+          btn.disabled = state.coins < p.cost;
+        }
+
+        btn.onclick = () => {
           if (!ensureReady()) return;
-          if (state.coins >= p.cost) {
-            state.coins -= p.cost;
-            auditSpend('coin', p.cost);
-            if (!state.ownedPlanets) state.ownedPlanets = [];
-            state.ownedPlanets.push(i);
-            applyQuestProgress('planet', 1);
-            save(); updateUI(); renderPlanets();
-            if (p.name === '화성' && !rankingUnlocked) {
-              rankingUnlocked = true;
-              if (uid && userBasePath) {
-                try {
-                  await update(ref(db, `${userBasePath}/meta`), { rankingUnlocked: true });
-                } catch{}
-              }
-              showToast('🏆 랭킹 잠금 해제!', '바로 가기', ()=>{
-                if (!requireLoginForFeature()) return;
-                location.href='/ranking.html';
-              });
-            }
-            if (state.ownedPlanets.length === planets.length) window.location.href = '/ending.html';
+          if (owned) return;
+          if (!canBuy) {
+            showToast('우주선 레벨이 부족합니다. 우주선을 먼저 강화하세요.', null, null, 2600);
+            return;
           }
+          const active = state.planetExploration && Date.now() < (state.planetExploration.endsAt || 0);
+          if (active) {
+            showToast('다른 행성 탐사가 끝날 때까지 기다려주세요.', null, null, 2400);
+            return;
+          }
+          if (state.coins < p.cost) {
+            showToast('코인이 부족합니다.', null, null, 2200);
+            return;
+          }
+          const now = Date.now();
+          const durationMs = getNextPlanetExplorationDurationMs();
+          state.coins -= p.cost;
+          auditSpend('coin', p.cost);
+          state.planetExploration = {
+            planetIndex: i,
+            startedAt: now,
+            endsAt: now + durationMs,
+            durationMs
+          };
+          save();
+          updateUI(true);
+          renderPlanets();
+          showToast(`🛰️ ${p.name} 탐사를 시작했습니다! (${formatPlanetDuration(durationMs)})`, null, null, 3200);
         };
         div.appendChild(btn); list.appendChild(div);
       });
@@ -5259,6 +5377,7 @@
         // ✅ 의심도 검사는 1초마다 별도로 유지
         auditCheck();
 
+        renderPlanets();
         if (window.__PLAY_ALLOWED) {
           updateUI();
         }
