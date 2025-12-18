@@ -2864,6 +2864,20 @@
       return Math.round(rate);
     }
 
+    function getShipEventUpgradeOffer() {
+      const rate = getShipSuccessRate();
+      if (rate <= 5) {
+        return { cost: 90, guaranteed: true };
+      }
+      if (rate <= 10) {
+        return { cost: 12, guaranteed: true };
+      }
+      if (rate <= 20) {
+        return { cost: 7, guaranteed: true };
+      }
+      return { cost: 1, guaranteed: false };
+    }
+
     function setShipEnhanceStatus(message, tone = 'info') {
       shipEnhanceMessage = message;
       shipEnhanceTone = tone;
@@ -4592,13 +4606,17 @@
       if (rateEl) rateEl.innerText = `${successRate}%`;
       const shipBtn = document.getElementById('upgrade-ship');
       const shipBtnEc = document.getElementById('upgrade-ship-ec');
+      const ecoOffer = getShipEventUpgradeOffer();
       if (shipBtn) {
         shipBtn.innerText = `우주선 업그레이드 (${formatKR(state.shipUpgradeCost)}코인)`;
         shipBtn.disabled = shipEnhanceInProgress || state.coins < state.shipUpgradeCost;
       }
       if (shipBtnEc) {
-        shipBtnEc.innerText = '우주선 업그레이드 (이벤트코인 1개)';
-        shipBtnEc.disabled = shipEnhanceInProgress || !canSpendEC(1);
+        const ecoText = ecoOffer.guaranteed
+          ? `우주선 업그레이드 (이벤트코인 ${formatKR(ecoOffer.cost)}개, 확정)`
+          : '우주선 업그레이드 (이벤트코인 1개)';
+        shipBtnEc.innerText = ecoText;
+        shipBtnEc.disabled = shipEnhanceInProgress || !canSpendEC(ecoOffer.cost);
       }
       const shipStatusEl = document.getElementById('ship-upgrade-status');
       if (shipStatusEl) {
@@ -5357,7 +5375,9 @@
         if (shipEnhanceInProgress) return false;
 
         const cost = state.shipUpgradeCost;
+        const ecoOffer = getShipEventUpgradeOffer();
         let paidWith = null;
+        let guaranteed = false;
 
         if (payment === 'coin') {
           if (state.coins < cost) return false;
@@ -5365,24 +5385,25 @@
           auditSpend('coin', cost);
           paidWith = 'coin';
         } else if (payment === 'eco') {
-          if (!canSpendEC(1)) return false;
-          state.eventCoins -= 1;
-          auditSpend('eco', 1);
+          if (!canSpendEC(ecoOffer.cost)) return false;
+          state.eventCoins -= ecoOffer.cost;
+          auditSpend('eco', ecoOffer.cost);
           paidWith = 'eco';
+          guaranteed = ecoOffer.guaranteed;
         } else {
           return false;
         }
 
-        const chance = getShipSuccessRate();
+        const chance = guaranteed ? 100 : getShipSuccessRate();
         const shipPanel = document.querySelector('.ship-panel');
         shipEnhanceInProgress = true;
         shipPanel?.classList.add('enhancing');
-        setShipEnhanceStatus(`두구두구... 강화 준비 중! (성공 확률 ${chance}%)`, 'info');
+        setShipEnhanceStatus(`두구두구... 강화 준비 중! (${guaranteed ? '확정 강화' : `성공 확률 ${chance}%`})`, 'info');
         playSfx('sfx-start');
         updateUI();
 
         setTimeout(() => {
-          const success = Math.random() * 100 < chance;
+          const success = guaranteed || Math.random() * 100 < chance;
           shipPanel?.classList.remove('enhancing');
 
           if (success) {
@@ -5392,11 +5413,14 @@
             playSfx('sfx-win');
             shipPanel?.classList.add('success-glow');
             setTimeout(() => shipPanel?.classList.remove('success-glow'), 820);
-            setShipEnhanceStatus(`성공! 우주선 ${state.shipLevel}렙 달성 (도전 확률 ${chance}%)`, 'success');
+            const resultMsg = guaranteed
+              ? `성공! 우주선 ${state.shipLevel}렙 달성 (이벤트코인으로 확정 강화)`
+              : `성공! 우주선 ${state.shipLevel}렙 달성 (도전 확률 ${chance}%)`;
+            setShipEnhanceStatus(resultMsg, 'success');
           } else {
             shipPanel?.classList.add('fail-shake');
             setTimeout(() => shipPanel?.classList.remove('fail-shake'), 720);
-            const paymentText = paidWith === 'eco' ? '이벤트코인 1개' : `${formatKR(cost)}코인`;
+            const paymentText = paidWith === 'eco' ? `이벤트코인 ${formatKR(ecoOffer.cost)}개` : `${formatKR(cost)}코인`;
             setShipEnhanceStatus(`실패... ${paymentText}이(가) 소모됐습니다. 확률은 유지돼요! (성공 확률 ${chance}%)`, 'warn');
           }
 
