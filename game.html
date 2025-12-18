@@ -4613,10 +4613,10 @@
       }
       if (shipBtnEc) {
         const ecoText = ecoOffer.guaranteed
-          ? `우주선 업그레이드 (이벤트코인 ${formatKR(ecoOffer.cost)}개, 확정)`
+          ? `우주선 업그레이드 (이벤트코인 ${formatKR(ecoOffer.cost)}개, 확정${canSpendEC(1) ? ' / 1개 도전 가능' : ''})`
           : '우주선 업그레이드 (이벤트코인 1개)';
         shipBtnEc.innerText = ecoText;
-        shipBtnEc.disabled = shipEnhanceInProgress || !canSpendEC(ecoOffer.cost);
+        shipBtnEc.disabled = shipEnhanceInProgress || !canSpendEC(ecoOffer.guaranteed ? 1 : ecoOffer.cost);
       }
       const shipStatusEl = document.getElementById('ship-upgrade-status');
       if (shipStatusEl) {
@@ -5378,6 +5378,7 @@
         const ecoOffer = getShipEventUpgradeOffer();
         let paidWith = null;
         let guaranteed = false;
+        let ecoCostUsed = 0;
 
         if (payment === 'coin') {
           if (state.coins < cost) return false;
@@ -5385,11 +5386,25 @@
           auditSpend('coin', cost);
           paidWith = 'coin';
         } else if (payment === 'eco') {
-          if (!canSpendEC(ecoOffer.cost)) return false;
-          state.eventCoins -= ecoOffer.cost;
-          auditSpend('eco', ecoOffer.cost);
+          const canGuarantee = ecoOffer.guaranteed && canSpendEC(ecoOffer.cost);
+          const canRiskAttempt = canSpendEC(1);
+          if (!canGuarantee && !canRiskAttempt) return false;
+
+          if (ecoOffer.guaranteed) {
+            let useGuaranteed = canGuarantee;
+            if (canGuarantee && canRiskAttempt) {
+              useGuaranteed = confirm(`이벤트코인 ${formatKR(ecoOffer.cost)}개로 확정 강화할까요? 1개로 확률 도전하려면 취소를 누르세요.`);
+            }
+            ecoCostUsed = useGuaranteed ? ecoOffer.cost : 1;
+            guaranteed = useGuaranteed && ecoOffer.guaranteed;
+          } else {
+            if (!canSpendEC(ecoOffer.cost)) return false;
+            ecoCostUsed = ecoOffer.cost;
+          }
+
+          state.eventCoins -= ecoCostUsed;
+          auditSpend('eco', ecoCostUsed);
           paidWith = 'eco';
-          guaranteed = ecoOffer.guaranteed;
         } else {
           return false;
         }
@@ -5420,7 +5435,7 @@
           } else {
             shipPanel?.classList.add('fail-shake');
             setTimeout(() => shipPanel?.classList.remove('fail-shake'), 720);
-            const paymentText = paidWith === 'eco' ? `이벤트코인 ${formatKR(ecoOffer.cost)}개` : `${formatKR(cost)}코인`;
+            const paymentText = paidWith === 'eco' ? `이벤트코인 ${formatKR(ecoCostUsed)}개` : `${formatKR(cost)}코인`;
             setShipEnhanceStatus(`실패... ${paymentText}이(가) 소모됐습니다. 확률은 유지돼요! (성공 확률 ${chance}%)`, 'warn');
           }
 
