@@ -302,6 +302,32 @@
       width:100%;
       max-width:none;
     }
+    .ship-ec-tabs{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin-top:4px;
+    }
+    .ship-ec-tab{
+      flex:1;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.05);
+      color:#e8f6ff;
+      cursor:pointer;
+      font-weight:700;
+      transition:all .18s ease;
+    }
+    .ship-ec-tab.active{
+      background:linear-gradient(90deg,#00c0ff,#0077ff);
+      color:#00101b;
+      border-color:rgba(0,180,255,0.55);
+      box-shadow:0 8px 22px rgba(0,160,255,0.22);
+    }
+    .ship-ec-panel{ display:none; text-align:left; }
+    .ship-ec-panel.active{ display:block; }
+    .ship-ec-note{ margin:6px 0 8px; color:#cde8ff; font-size:12px; }
     .ship-enhance-info{ margin-top:-4px; font-size:13px; color:#c6e7ff; }
     .ship-enhance-status{ min-height:22px; font-size:13px; color:#dbe9ff; transition:color .2s ease; }
     .ship-enhance-status[data-tone="success"]{ color:#8ef7c2; }
@@ -1469,7 +1495,18 @@
         <div class="ship-enhance-info">강화 성공 확률: <strong id="ship-success-rate">100%</strong></div>
         <p>우주선을 업그레이드해 더 먼 행성과 새로운 콘텐츠를 개방하세요.</p>
         <button id="upgrade-ship" class="general">우주선 업그레이드 (코인)</button>
-        <button id="upgrade-ship-ec" class="general">우주선 업그레이드 (이벤트코인)</button>
+        <div class="ship-ec-tabs" role="tablist" aria-label="이벤트코인 강화 방식 선택">
+          <button class="ship-ec-tab active" data-ship-ec-tab="guaranteed" role="tab" aria-selected="true">확정 강화</button>
+          <button class="ship-ec-tab" data-ship-ec-tab="challenge" role="tab" aria-selected="false">1개 도전</button>
+        </div>
+        <div class="ship-ec-panel active" data-ship-ec-panel="guaranteed" role="tabpanel" aria-label="이벤트코인 확정 강화">
+          <p class="ship-ec-note">이벤트코인을 모아 위험 없이 바로 강화!</p>
+          <button id="upgrade-ship-ec" class="general">우주선 확정 업그레이드 (이벤트코인)</button>
+        </div>
+        <div class="ship-ec-panel" data-ship-ec-panel="challenge" role="tabpanel" aria-label="이벤트코인 1개 도전">
+          <p class="ship-ec-note">이벤트코인 1개로 확률 도전을 할 수 있어요.</p>
+          <button id="upgrade-ship-ec-risk" class="general">우주선 업그레이드 도전 (이벤트코인 1개)</button>
+        </div>
         <div class="ship-enhance-status" id="ship-upgrade-status" aria-live="polite">첫 강화는 100% 성공! 레벨이 오를수록 확률이 낮아집니다.</div>
       </div>
     </div>
@@ -4606,6 +4643,7 @@
       if (rateEl) rateEl.innerText = `${successRate}%`;
       const shipBtn = document.getElementById('upgrade-ship');
       const shipBtnEc = document.getElementById('upgrade-ship-ec');
+      const shipBtnEcRisk = document.getElementById('upgrade-ship-ec-risk');
       const ecoOffer = getShipEventUpgradeOffer();
       if (shipBtn) {
         shipBtn.innerText = `우주선 업그레이드 (${formatKR(state.shipUpgradeCost)}코인)`;
@@ -4613,10 +4651,14 @@
       }
       if (shipBtnEc) {
         const ecoText = ecoOffer.guaranteed
-          ? `우주선 업그레이드 (이벤트코인 ${formatKR(ecoOffer.cost)}개, 확정${canSpendEC(1) ? ' / 1개 도전 가능' : ''})`
-          : '우주선 업그레이드 (이벤트코인 1개)';
+          ? `확정 강화 (${formatKR(ecoOffer.cost)} 이벤트코인)`
+          : '확정 강화 (현재 확정 강화 불가)';
         shipBtnEc.innerText = ecoText;
-        shipBtnEc.disabled = shipEnhanceInProgress || !canSpendEC(ecoOffer.guaranteed ? 1 : ecoOffer.cost);
+        shipBtnEc.disabled = shipEnhanceInProgress || !ecoOffer.guaranteed || !canSpendEC(ecoOffer.cost);
+      }
+      if (shipBtnEcRisk) {
+        shipBtnEcRisk.innerText = `확률 도전 (이벤트코인 1개, 성공 확률 ${successRate}%)`;
+        shipBtnEcRisk.disabled = shipEnhanceInProgress || !canSpendEC(1);
       }
       const shipStatusEl = document.getElementById('ship-upgrade-status');
       if (shipStatusEl) {
@@ -5370,12 +5412,13 @@
         save(); updateUI();
         return true;
       });
-      function attemptShipUpgrade(payment) {
+      function attemptShipUpgrade(payment, options = {}) {
         if (!ensureReady()) return false;
         if (shipEnhanceInProgress) return false;
 
         const cost = state.shipUpgradeCost;
         const ecoOffer = getShipEventUpgradeOffer();
+        const mode = options.mode || 'auto';
         let paidWith = null;
         let guaranteed = false;
         let ecoCostUsed = 0;
@@ -5388,18 +5431,29 @@
         } else if (payment === 'eco') {
           const canGuarantee = ecoOffer.guaranteed && canSpendEC(ecoOffer.cost);
           const canRiskAttempt = canSpendEC(1);
-          if (!canGuarantee && !canRiskAttempt) return false;
 
-          if (ecoOffer.guaranteed) {
-            let useGuaranteed = canGuarantee;
-            if (canGuarantee && canRiskAttempt) {
-              useGuaranteed = confirm(`이벤트코인 ${formatKR(ecoOffer.cost)}개로 확정 강화할까요? 1개로 확률 도전하려면 취소를 누르세요.`);
-            }
-            ecoCostUsed = useGuaranteed ? ecoOffer.cost : 1;
-            guaranteed = useGuaranteed && ecoOffer.guaranteed;
-          } else {
-            if (!canSpendEC(ecoOffer.cost)) return false;
+          if (mode === 'guaranteed') {
+            if (!canGuarantee) return false;
             ecoCostUsed = ecoOffer.cost;
+            guaranteed = true;
+          } else if (mode === 'risk') {
+            if (!canRiskAttempt) return false;
+            ecoCostUsed = 1;
+            guaranteed = false;
+          } else {
+            if (!canGuarantee && !canRiskAttempt) return false;
+
+            if (ecoOffer.guaranteed) {
+              let useGuaranteed = canGuarantee;
+              if (canGuarantee && canRiskAttempt) {
+                useGuaranteed = confirm(`이벤트코인 ${formatKR(ecoOffer.cost)}개로 확정 강화할까요? 1개로 확률 도전하려면 취소를 누르세요.`);
+              }
+              ecoCostUsed = useGuaranteed ? ecoOffer.cost : 1;
+              guaranteed = useGuaranteed && ecoOffer.guaranteed;
+            } else {
+              if (!canSpendEC(ecoOffer.cost)) return false;
+              ecoCostUsed = ecoOffer.cost;
+            }
           }
 
           state.eventCoins -= ecoCostUsed;
@@ -5447,7 +5501,20 @@
       }
 
       attachHoldRepeat('upgrade-ship', () => attemptShipUpgrade('coin'));
-      attachHoldRepeat('upgrade-ship-ec', () => attemptShipUpgrade('eco'));
+      attachHoldRepeat('upgrade-ship-ec', () => attemptShipUpgrade('eco', { mode: 'guaranteed' }));
+      attachHoldRepeat('upgrade-ship-ec-risk', () => attemptShipUpgrade('eco', { mode: 'risk' }));
+
+      document.querySelectorAll('.ship-ec-tab').forEach(tab => tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.shipEcTab;
+        document.querySelectorAll('.ship-ec-tab').forEach(t => {
+          const isActive = t === tab;
+          t.classList.toggle('active', isActive);
+          t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        document.querySelectorAll('.ship-ec-panel').forEach(panel => {
+          panel.classList.toggle('active', panel.dataset.shipEcPanel === targetTab);
+        });
+      }));
 
       attachHoldRepeat('click-upgrade', () => {
         if (!ensureReady()) return false;
