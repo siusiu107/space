@@ -1845,26 +1845,6 @@
     </div>
   </div>
 
-  <!-- ⛔ 정지 오버레이 (오탐 대응 버튼 포함) -->
-  <div id="ban-overlay" class="overlay" aria-hidden="true">
-    <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="ban-title">
-      <h3 id="ban-title">⛔ 계정 정지됨</h3>
-      <div id="ban-desc">
-        <p>이용약관 위반 의심에 따라 플레이가 제한되었습니다.</p>
-        <p>의심도: <b id="ban-sus-value">0</b></p>
-        <p style="color:#ffd36e">※ 정지 중에는 자원/코인이 증가하지 않습니다.</p>
-        <div style="margin-top:8px; font-size:13px; color:#cfe6ff;">
-          오탐으로 판단되면 아래 버튼으로 <b>지원팀에 즉시 메일</b>을 보내거나, <b>정보 복사</b> 후 수동 메일 전송이 가능합니다.
-        </div>
-      </div>
-      <div class="overlay-actions" style="flex-wrap:wrap;">
-        <button id="ban-appeal-email" class="spinbtn">📧 오탐 메일 보내기</button>
-        <button id="ban-copy-info" class="spinbtn">📋 정보 복사</button>
-        <button id="ban-ok" class="spinbtn">닫기</button>
-      </div>
-    </div>
-  </div>
-
   <!-- 사운드 -->
   <audio id="sfx-start"    src="/sounds/roulette_start.mp3" preload="auto"></audio>
   <audio id="sfx-tick"     src="/sounds/roulette_tick.mp3"  preload="auto"></audio>
@@ -3991,7 +3971,7 @@
     async function handleSpin(mode){
       if (!uid || !window.__PLAY_ALLOWED || isSpinning) return;
       if (!security.tosAccepted){ showTosOverlay(true); return; }
-      if (security.banned){ showBanOverlay(true); return; }
+      if (security.banned){ return; }
 
       if (isEventLocked()){
         dailyInfo.innerHTML = '이벤트가 일시 중지되었습니다. 잠시 후 다시 시도해 주세요.';
@@ -4232,13 +4212,6 @@
       const ov = document.getElementById('tos-overlay');
       if (ov){ ov.classList.toggle('show', !!show); ov.setAttribute('aria-hidden', show?'false':'true'); }
     }
-    function showBanOverlay(show=true){
-      const ov = document.getElementById('ban-overlay');
-      if (ov){
-        document.getElementById('ban-sus-value').textContent = Math.round(security.suspicion || 0);
-        ov.classList.toggle('show', !!show); ov.setAttribute('aria-hidden', show?'false':'true');
-      }
-    }
     function markTosViolationFlag(){
       const vio = security.suspicion > SEC_WARN_LEVEL || security.banned;
       if (security.tosViolated !== vio){ security.tosViolated = vio; securityDirty = true; }
@@ -4303,7 +4276,6 @@
       try { localStorage.removeItem(SUPPORT_CTX_KEY); } catch {}
     }
     function hideAllOverlays(){
-      try{ showBanOverlay(false); }catch{}
       try{ showTosOverlay(false); }catch{}
       try{ showMigrateOverlay(false); }catch{}
       try{ closeMailOverlay(); }catch{}
@@ -4432,7 +4404,7 @@
         security.banned = true;
         securityDirty = true;
         requestAccountDisable('auto-ban:suspicion>=30').finally(async ()=>{
-          showBanOverlay(true);
+          return;
           showToast('⛔ 의심도 30 이상으로 계정이 정지되었습니다.');
           try { await saveSecurity(); } catch {}
           saveSupportCtx({ banned: true });
@@ -5181,7 +5153,7 @@
       if (!uid && !guestMode) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (!guestMode && isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
       if (!guestMode && !security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
-      if (!guestMode && security.banned){ showBanOverlay(true); showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
+      if (!guestMode && security.banned){ showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
     }
 
@@ -5227,7 +5199,7 @@
       document.getElementById('ore').addEventListener('click', e => {
         if (!window.__PLAY_ALLOWED) return;
         if (!guestMode && (!uid || isInitialSync)) return;
-        if (security.banned){ showBanOverlay(true); return; }
+        if (security.banned){ return; }
 
         if (!ensureReady()) return;
         const rect = e.target.getBoundingClientRect();
@@ -5980,7 +5952,6 @@
     });
 
     // 정지 오버레이 버튼들
-    document.getElementById('ban-ok')?.addEventListener('click', ()=> showBanOverlay(false));
     document.getElementById('ban-appeal-email')?.addEventListener('click', ()=>{
       const { mailto } = buildSupportMail();
       location.href = mailto;
@@ -6108,7 +6079,7 @@
           maybeNotifyGuestRemoval();
 
           if (!security.tosAccepted){ showTosOverlay(true); }
-          if (security.banned){ showBanOverlay(true); }
+          if (security.banned){ return; }
           return;
         }
 
