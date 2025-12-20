@@ -248,6 +248,60 @@
       pointer-events: auto;
       transform: translate(-50%, 0);
     }
+
+    .policy-footer {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      z-index: 1000;
+      text-align: center;
+      color: #cfd3ff;
+      font-size: 12px;
+      letter-spacing: 0.2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: min(760px, 95vw);
+      pointer-events: auto;
+    }
+    .policy-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px 12px;
+      align-items: center;
+    }
+    .policy-links a {
+      color: #f4b400;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .policy-links a:hover { text-decoration: underline; }
+    .policy-links .new-tab {
+      font-size: 11px;
+      color: #fff;
+      opacity: 0.85;
+    }
+    .policy-frame {
+      width: min(760px, 95vw);
+      height: 220px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+      background: rgba(10, 10, 30, 0.9);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    }
+    @media (max-width: 768px) {
+      .policy-footer {
+        bottom: 8px;
+        font-size: 10px;
+        gap: 6px;
+      }
+      .policy-links a { font-size: 10px; }
+      .policy-links .new-tab { font-size: 10px; }
+      .policy-frame { height: 160px; border-radius: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -317,6 +371,17 @@
       </div>
     </div>
   </div>
+
+  <footer class="policy-footer" aria-label="서비스 약관 및 개인정보처리방침">
+    <div class="policy-links">
+      <a href="terms.html" target="policy-frame">서비스 이용약관</a>
+      <a class="new-tab" href="terms.html" target="_blank" rel="noopener noreferrer">약관 새탭 열기 ↗</a>
+      <span aria-hidden="true">|</span>
+      <a href="privacy.html" target="policy-frame">개인정보처리방침</a>
+      <a class="new-tab" href="privacy.html" target="_blank" rel="noopener noreferrer">방침 새탭 열기 ↗</a>
+    </div>
+    <iframe class="policy-frame" name="policy-frame" title="서비스 약관 및 개인정보처리방침"></iframe>
+  </footer>
 
   <script>
     (function () {
@@ -933,7 +998,6 @@
 
 </body>
 </html>
-
 
 
 
