@@ -85,13 +85,17 @@
       box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
       z-index: 3;
     }
-    .sidebar button {
+    .sidebar button,
+    .sidebar a {
       width: 80%; padding: 12px 0; text-align: center;
       color: #fff; background: rgba(255,255,255,0.1);
       border: none; border-radius: 30px; cursor: pointer;
       transition: background 0.3s, transform 0.2s;
+      text-decoration: none;
+      display: block;
     }
-    .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
+    .sidebar button:hover,
+    .sidebar a:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
 
     .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
     .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
@@ -200,7 +204,8 @@
         width: 100%; flex-direction: row; justify-content: space-around;
         padding: 8px 6px; gap: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
       }
-      .sidebar button { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
+      .sidebar button,
+      .sidebar a { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
 
       .loading-card { padding: 20px; }
       .loading-card h1 { font-size: 28px; }
@@ -262,8 +267,8 @@
   <div class="container">
     <nav class="sidebar">
       <button id="show-license">라이센스 정보</button>
-      <button id="show-privacy">개인정보처리방침</button>
-      <button id="show-terms">이용약관</button>
+      <a href="privacy.html" target="_blank" rel="noopener">개인정보처리방침</a>
+      <a href="terms.html" target="_blank" rel="noopener">이용약관</a>
       <button id="show-contact">Contact Us</button>
     </nav>
 
@@ -326,17 +331,6 @@
         <button class="close-btn" data-target="contact-panel">닫기</button>
       </div>
 
-      <div class="panel" id="privacy-panel" aria-modal="true" role="dialog">
-        <h2>개인정보처리방침</h2>
-        <iframe class="policy-frame" src="privacy.html" title="개인정보처리방침"></iframe>
-        <button class="close-btn" data-target="privacy-panel">닫기</button>
-      </div>
-
-      <div class="panel" id="terms-panel" aria-modal="true" role="dialog">
-        <h2>이용약관</h2>
-        <iframe class="policy-frame" src="terms.html" title="이용약관"></iframe>
-        <button class="close-btn" data-target="terms-panel">닫기</button>
-      </div>
     </div>
   </div>
 
@@ -413,12 +407,8 @@
   <!-- 패널 토글 -->
   <script>
     const $licenseBtn = document.getElementById('show-license');
-    const $privacyBtn = document.getElementById('show-privacy');
-    const $termsBtn = document.getElementById('show-terms');
     const $contactBtn = document.getElementById('show-contact');
     const $licensePanel = document.getElementById('license-panel');
-    const $privacyPanel = document.getElementById('privacy-panel');
-    const $termsPanel = document.getElementById('terms-panel');
     const $contactPanel = document.getElementById('contact-panel');
     const $envPanel = document.getElementById('env-panel');
 
@@ -426,8 +416,6 @@
 
     function closeOtherPanels() {
       $licensePanel.classList.remove('active');
-      $privacyPanel.classList.remove('active');
-      $termsPanel.classList.remove('active');
       $contactPanel.classList.remove('active');
     }
 
@@ -442,18 +430,6 @@
       closeEnvPanel();
       closeOtherPanels();
       $licensePanel.classList.add('active');
-    });
-
-    $privacyBtn.addEventListener('click', () => {
-      closeEnvPanel();
-      closeOtherPanels();
-      $privacyPanel.classList.add('active');
-    });
-
-    $termsBtn.addEventListener('click', () => {
-      closeEnvPanel();
-      closeOtherPanels();
-      $termsPanel.classList.add('active');
     });
 
     $contactBtn.addEventListener('click', () => {
