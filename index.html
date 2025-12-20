@@ -153,6 +153,13 @@
     .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
     .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
     .panel ul li { margin-bottom: 8px; font-size: 14px; }
+    .panel .policy-frame {
+      width: 100%;
+      height: min(60vh, 360px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+    }
     .panel .close-btn {
       display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff;
       border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s;
@@ -220,6 +227,7 @@
       .panel { width: 92%; max-width: 420px; padding: 20px; }
       .panel h2 { font-size: 20px; }
       .panel p, .panel ul li { font-size: 12px; }
+      .panel .policy-frame { height: min(50vh, 280px); }
       .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; }
     }
 
@@ -254,6 +262,8 @@
   <div class="container">
     <nav class="sidebar">
       <button id="show-license">라이센스 정보</button>
+      <button id="show-privacy">개인정보처리방침</button>
+      <button id="show-terms">이용약관</button>
       <button id="show-contact">Contact Us</button>
     </nav>
 
@@ -314,6 +324,18 @@
           <a href="mailto:support@siustudio.me" style="color: #f4b400; text-decoration: none;">support@siustudio.me</a>
         </p>
         <button class="close-btn" data-target="contact-panel">닫기</button>
+      </div>
+
+      <div class="panel" id="privacy-panel" aria-modal="true" role="dialog">
+        <h2>개인정보처리방침</h2>
+        <iframe class="policy-frame" src="privacy.html" title="개인정보처리방침"></iframe>
+        <button class="close-btn" data-target="privacy-panel">닫기</button>
+      </div>
+
+      <div class="panel" id="terms-panel" aria-modal="true" role="dialog">
+        <h2>이용약관</h2>
+        <iframe class="policy-frame" src="terms.html" title="이용약관"></iframe>
+        <button class="close-btn" data-target="terms-panel">닫기</button>
       </div>
     </div>
   </div>
@@ -391,12 +413,23 @@
   <!-- 패널 토글 -->
   <script>
     const $licenseBtn = document.getElementById('show-license');
+    const $privacyBtn = document.getElementById('show-privacy');
+    const $termsBtn = document.getElementById('show-terms');
     const $contactBtn = document.getElementById('show-contact');
     const $licensePanel = document.getElementById('license-panel');
+    const $privacyPanel = document.getElementById('privacy-panel');
+    const $termsPanel = document.getElementById('terms-panel');
     const $contactPanel = document.getElementById('contact-panel');
     const $envPanel = document.getElementById('env-panel');
 
     function closeEnvPanel() { $envPanel.style.display = 'none'; }
+
+    function closeOtherPanels() {
+      $licensePanel.classList.remove('active');
+      $privacyPanel.classList.remove('active');
+      $termsPanel.classList.remove('active');
+      $contactPanel.classList.remove('active');
+    }
 
     document.querySelectorAll('.close-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -407,13 +440,25 @@
     // 열기 시 서로 겹치지 않도록
     $licenseBtn.addEventListener('click', () => {
       closeEnvPanel();
-      $contactPanel.classList.remove('active');
+      closeOtherPanels();
       $licensePanel.classList.add('active');
+    });
+
+    $privacyBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      closeOtherPanels();
+      $privacyPanel.classList.add('active');
+    });
+
+    $termsBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      closeOtherPanels();
+      $termsPanel.classList.add('active');
     });
 
     $contactBtn.addEventListener('click', () => {
       closeEnvPanel();
-      $licensePanel.classList.remove('active');
+      closeOtherPanels();
       $contactPanel.classList.add('active');
     });
   </script>
@@ -523,6 +568,8 @@
 
       function openPanel() {
         document.getElementById('license-panel').classList.remove('active');
+        document.getElementById('privacy-panel').classList.remove('active');
+        document.getElementById('terms-panel').classList.remove('active');
         document.getElementById('contact-panel').classList.remove('active');
         render();
         $panel.style.display = 'block';
