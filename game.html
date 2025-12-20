@@ -188,6 +188,23 @@
     #auth-container .policy-consent input[type="checkbox"] { margin-top:3px; }
     #auth-container .policy-consent .policy-link { background:none; border:none; color:#9fdcff; padding:0; margin-left:6px; font-size:12px; text-decoration:underline; cursor:pointer; }
     #auth-container .policy-consent .policy-link:focus { outline:1px dashed rgba(159,220,255,0.7); outline-offset:2px; }
+    .code-details-toggle {
+      margin-top:8px;
+      font-size:12px;
+      color:#9fdcff;
+      background:none;
+      border:none;
+      padding:0;
+      cursor:pointer;
+      text-decoration:underline;
+    }
+    .code-details {
+      margin-top:8px;
+      font-size:0.9rem;
+      color:#ccc;
+      display:none;
+      text-align:left;
+    }
 
     .auth-status { margin-top:10px; min-height:22px; font-size:13px; color:#ffdede; opacity:0; transform:translateY(6px); transition:opacity .22s ease, transform .22s ease; }
     .auth-status.show { opacity:1; transform:translateY(0); }
@@ -1400,12 +1417,11 @@
     </button>
 
     <div id="codeArea" style="display:none; margin-top: 8px;">
-      <p id="codeInfoText" style="font-size: 0.9rem; color: #ccc;">
-        앱 전용 코드 로그인을 준비 중입니다...
-      </p>
-      <div id="codeDisplay"
-           style="font-size: 32px; font-weight: bold; letter-spacing: 3px;"></div>
-      <p id="codeStatus" style="font-size: 0.9rem; color: #aaa;"></p>
+      <button id="codeDetailsToggle" class="code-details-toggle" type="button">자세히 보기</button>
+      <div id="codeDetails" class="code-details" aria-live="polite">
+        <p id="codeInfoText">앱 전용 코드 로그인을 준비 중입니다...</p>
+        <p id="codeStatus" style="color:#aaa; margin-top:4px;"></p>
+      </div>
     </div>
 
     <div id="find-links" style="display:flex; gap:8px; justify-content:center; margin-top:10px; width:100%;">
@@ -6308,16 +6324,16 @@
 
     async function startCodeLoginFlow() {
       const infoEl = document.getElementById('codeInfoText');
-      const codeEl = document.getElementById('codeDisplay');
       const statusEl = document.getElementById('codeStatus');
       const areaEl = document.getElementById('codeArea');
 
-      if (!infoEl || !codeEl || !statusEl || !areaEl) {
+      if (!infoEl || !statusEl || !areaEl) {
         console.warn('code login elements not found');
         return;
       }
 
-      infoEl.textContent = '이 기능은 앱(WebView)에서 외부 브라우저로 로그인할 때 쓰는 옵션입니다.';
+      infoEl.textContent = '앱(WebView)에서 외부 브라우저로 로그인할 때 쓰는 옵션입니다.';
+      statusEl.textContent = '로그인 창을 여는 중입니다...';
 
       try {
         const res = await fetch(AUTH_BASE_URL + '/api/login-start', {
@@ -6327,18 +6343,9 @@
 
         currentCode = data.code;
         areaEl.style.display = 'block';
-        codeEl.textContent = currentCode;
-        statusEl.textContent = '코드를 복사하고, 3초 후 열릴 로그인 화면에서 구글 로그인을 완료하세요.';
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(currentCode).then(() => {
-            statusEl.textContent = '코드가 클립보드에 복사되었습니다. 3초 후 로그인 화면이 자동으로 열립니다.';
-          }).catch(() => {
-          });
-        }
-
         const loginUrl = AUTH_BASE_URL + '/login.html?code=' + encodeURIComponent(currentCode);
-        setTimeout(() => window.open(loginUrl, '_blank'), 3000);
+        window.open(loginUrl, '_blank');
+        statusEl.textContent = '로그인 창을 열었습니다. 계속 진행해 주세요.';
 
         startPollingLoginStatus();
       } catch (err) {
@@ -6427,6 +6434,16 @@
     const btnCode = document.getElementById('btnGoogleLoginCode');
     if (btnCode) {
       btnCode.addEventListener('click', startCodeLoginFlow);
+    }
+
+    const codeDetailsToggle = document.getElementById('codeDetailsToggle');
+    const codeDetails = document.getElementById('codeDetails');
+    if (codeDetailsToggle && codeDetails) {
+      codeDetailsToggle.addEventListener('click', () => {
+        const isVisible = codeDetails.style.display === 'block';
+        codeDetails.style.display = isVisible ? 'none' : 'block';
+        codeDetailsToggle.textContent = isVisible ? '자세히 보기' : '접기';
+      });
     }
 
     window.addEventListener('load', () => {
