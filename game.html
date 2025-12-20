@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -6418,10 +6419,15 @@
       const provider = new GoogleAuthProvider();
 
       try {
-        await signInWithRedirect(auth, provider);
+        await signInWithPopup(auth, provider);
       } catch (err) {
         if (handleAuthError(err)) return;
-        showAuthStatus('구글 로그인에 실패했습니다. 네트워크 상태를 확인하세요.');
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (err2) {
+          if (handleAuthError(err2)) return;
+          showAuthStatus('구글 로그인에 실패했습니다. 팝업 차단 또는 네트워크 상태를 확인하세요.');
+        }
         guestTransferPreference = 'none';
       }
     });
