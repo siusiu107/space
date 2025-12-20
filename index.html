@@ -1,57 +1,79 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-뉴  <title>태양계정복 – 메인메뉴계정복 – 
-  <meta name="description" content="태양계정복은 우주 기반 클릭커/방치형 웹 게임입니다. SIU Studio에서 개발 중입니다."/>
-  <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio, 태양계정복, 웹게임"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>태양계정복 - 메인 메뉴</title>
+  <meta name="description" content="태양계정복은 직관적인 조작과 화려한 그래픽을 갖춘 우주 생존 클릭커 HTML 게임입니다. 팝업으로 게임을 실행하고 행성을 정복해 보세요.">
+  <meta name="keywords" content="태양계, 우주, 클릭커, HTML 게임, SIU Studio, 태양계정복, 웹게임">
   <meta name="robots" content="index, follow">
   <meta name="author" content="SIU Studio">
-  <link rel="icon" href="favicon.ico"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="canonical" href="https://xn--989a202a4ogwtc69p.siustudio.me/">
+  <link rel="alternate" href="https://xn--989a202a4ogwtc69p.siustudio.me/" hreflang="ko-KR">
 
-  <!-- Open Graph (SNS 공유용) -->
-  <meta property="og:type" content="website"/>
-  <meta property="og:title" content="태양계정복"/>
-  <meta property="og:description" content="우주 기반 클릭커/방치형 웹 게임 – SIU Studio"/>
-  <meta property="og:image" content="space-bg.jpg"/>
-  <meta property="og:url" content="https://xn--989a202a4ogwtc69p.siustudio.me/"/>
+  <!-- Open Graph -->
+  <meta property="og:title" content="태양계정복 - SIU Studio">
+  <meta property="og:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="space-bg.jpg">
+  <meta property="og:image:alt" content="태양계정복 썸네일">
+  <meta property="og:url" content="https://xn--989a202a4ogwtc69p.siustudio.me/">
+  <meta property="og:locale" content="ko_KR">
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="태양계정복"/>
-  <meta name="twitter:description" content="우주 기반 클릭커/방치형 웹 게임 – SIU Studio"/>
-  <meta name="twitter:image" content="space-bg.jpg"/>
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="태양계정복 - SIU Studio">
+  <meta name="twitter:description" content="직관적인 조작과 화려한 그래픽의 우주 생존 클릭커. 지금 팝업으로 게임을 실행하세요.">
+  <meta name="twitter:image" content="space-bg.jpg">
+  <meta name="twitter:url" content="https://xn--989a202a4ogwtc69p.siustudio.me/">
 
-  <!-- JSON-LD 구조화 데이터 -->
+  <!-- Icons -->
+  <link rel="icon" href="space-bg.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileColor" content="#2d89ef">
+  <meta name="theme-color" content="#ffffff">
+
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "태양계정복",
-    "url": "https://xn--989a202a4ogwtc69p.siustudio.me/",
-    "publisher": {
-      "@type": "Organization",
-      "name": "SIU Studio",
-      "url": "https://xn--989a202a4ogwtc69p.siustudio.me/"
-    },
-    "image": "space-bg.jpg"
-  }
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "태양계정복",
+      "url": "https://xn--989a202a4ogwtc69p.siustudio.me/",
+      "inLanguage": "ko-KR",
+      "applicationCategory": "Game",
+      "operatingSystem": "Web",
+      "description": "직관적인 조작과 화려한 그래픽을 갖춘 우주 생존 클릭커 HTML 게임",
+      "publisher": {
+        "@type": "Organization",
+        "name": "SIU Studio",
+        "url": "https://xn--989a202a4ogwtc69p.siustudio.me/"
+      },
+      "image": "space-bg.jpg"
+    }
   </script>
 
-  <!-- 주소 표시를 /main으로 바꿔줌 (실제 이동은 안 함) -->
   <script>
-    try{
+    try {
       history.replaceState(null, '', '/main' + (location.hash || ''));
-    }catch(e){
+    } catch (e) {
       console.warn('주소 표시 변경 실패:', e);
     }
   </script>
 
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: 'Segoe UI', sans-serif; background: #000; }
+    html, body { height: 100%; font-family: 'Orbitron', sans-serif; background: #000; }
 
     .container { display: flex; flex-direction: row; height: 100vh; }
 
@@ -63,173 +85,211 @@
       box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
       z-index: 3;
     }
-    .sidebar button,
-    .sidebar a.side-link {
+    .sidebar button {
       width: 80%; padding: 12px 0; text-align: center;
       color: #fff; background: rgba(255,255,255,0.1);
       border: none; border-radius: 30px; cursor: pointer;
       transition: background 0.3s, transform 0.2s;
-      text-decoration: none;
-      display: inline-block;
     }
-    .sidebar button:hover,
-    .sidebar a.side-link:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
+    .sidebar button:hover { background: rgba(244,180,0,0.8); transform: scale(1.05); color: #000; }
 
     .content { flex: 1; position: relative; background: url('background.jpg') center/cover no-repeat; }
-    .content::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+    .content::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8)); }
 
-    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; }
+    .overlay { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; z-index: 1; padding: 0 10px; width: min(700px, 95%); }
     .loading-card {
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.15);
+      background: linear-gradient(135deg, rgba(10, 14, 34, 0.92), rgba(19, 22, 42, 0.9));
+      border: 1px solid rgba(244, 180, 0, 0.25);
       border-radius: 18px;
-      padding: 30px 36px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.65);
-      backdrop-filter: blur(8px);
-    }
-    .loading-card h1 {
-      font-size: 34px;
-      margin-bottom: 10px;
-      letter-spacing: 0.5px;
-    }
-    .loading-sub {
-      font-size: 14px;
-      opacity: .86;
-      margin-bottom: 18px;
-      line-height: 1.6;
-    }
-
-    /* 진행바 */
-    .progress-track {
-      width: 100%;
-      height: 12px;
-      background: rgba(255,255,255,0.12);
-      border-radius: 999px;
+      padding: 28px 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      position: relative;
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.18);
-      margin-bottom: 10px;
     }
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, rgba(244,180,0,1), rgba(255,255,255,0.9));
-      border-radius: 999px;
-      transition: width .25s ease;
+    .loading-card::before {
+      content: '';
+      position: absolute;
+      inset: -40% auto auto 10%;
+      width: 120%; height: 160%;
+      background: radial-gradient(circle at 20% 30%, rgba(255, 200, 64, 0.25), transparent 40%),
+                  radial-gradient(circle at 80% 20%, rgba(100, 180, 255, 0.2), transparent 45%);
+      filter: blur(8px);
+      opacity: 0.7;
+      pointer-events: none;
     }
-    .progress-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      opacity: .9;
-      margin-bottom: 8px;
+    .loading-card h1 { font-size: 42px; text-shadow: 0 0 20px rgba(244,180,0,0.6); margin-bottom: 10px; position: relative; z-index: 1; }
+    .loading-sub { color: #cfd3ff; opacity: .9; font-size: 15px; margin-bottom: 24px; letter-spacing: .2px; position: relative; z-index: 1; }
+    .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.08); color: #f4e9ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; position: relative; z-index: 1; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ffdd57; box-shadow: 0 0 12px rgba(255,221,87,0.9); animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.3); opacity: .45; } 100% { transform: scale(1); opacity: .9; } }
+    .progress-shell { position: relative; z-index: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 6px; margin-bottom: 14px; }
+    .progress-track { position: relative; height: 16px; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.35); }
+    .progress-fill { position: absolute; inset: 0; width: 0%; background: linear-gradient(90deg, #f4b400, #ffdd57, #7cf7ff); transition: width 0.12s ease-out; box-shadow: 0 0 20px rgba(255,234,0,0.5); }
+    .progress-info { display: flex; justify-content: space-between; align-items: center; color: #fdf5d9; font-size: 13px; letter-spacing: .2px; margin-top: 6px; }
+    .loading-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 16px 0 20px; position: relative; z-index: 1; }
+    .chip { border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 12px; color: #e8eeff; font-size: 12px; text-align: center; letter-spacing: .3px; }
+    .overlay a.start-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 16px 36px; font-size: 18px; font-weight: 700; letter-spacing: .5px;
+      background: linear-gradient(120deg, #ffdf64, #f4b400 45%, #ff9f1c);
+      color: #000; text-decoration: none;
+      border-radius: 14px; box-shadow: 0 14px 35px rgba(244,180,0,0.45);
+      transition: box-shadow 0.25s, transform 0.2s, filter 0.2s;
+      user-drag: none;
+      -webkit-user-drag: none;
+      position: relative; z-index: 1;
     }
+    .overlay a.start-btn:hover { box-shadow: 0 18px 40px rgba(255,234,0,0.5); transform: translateY(-3px); }
+    .overlay a.start-btn.locked { pointer-events: none; filter: grayscale(0.7) brightness(0.7); box-shadow: none; cursor: not-allowed; }
 
-    /* 시작 버튼 */
-    .start-btn {
-      display: inline-block;
-      margin-top: 14px;
-      padding: 12px 20px;
-      border-radius: 12px;
-      background: rgba(244,180,0,0.95);
-      color: #111;
-      font-weight: 700;
-      text-decoration: none;
-      transition: transform .18s ease, opacity .18s ease;
-      user-select: none;
-    }
-    .start-btn:hover { transform: translateY(-1px); }
-    .start-btn.locked { opacity: .55; pointer-events: none; }
-
-    /* 패널 공통 */
     .panel {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 70%;
-      max-width: 700px;
-      max-height: 80vh;
-      overflow: auto;
-      background: rgba(20, 20, 40, 0.95);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 15px;
-      padding: 25px;
-      box-shadow: 0 20px 70px rgba(0,0,0,0.7);
-      z-index: 10001;
-      display: none;
-      -webkit-overflow-scrolling: touch;
+      position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
+      background: rgba(20,20,40,0.9); padding: 30px; border-radius: 10px;
+      width: 90%; max-width: 500px; display: none; z-index: 2;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
-    .panel h2 { font-size: 24px; margin-bottom: 12px; color: #f4b400; }
-    .panel p, .panel ul li { font-size: 14px; line-height: 1.6; opacity: .95; }
-    .panel ul { margin-left: 18px; margin-top: 8px; }
-    .close-btn {
-      margin-top: 18px;
-      background: rgba(255,255,255,0.12);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.22);
-      padding: 10px 18px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background .2s ease, transform .15s ease;
+    .panel.active { display: block; }
+    .panel h2 { font-size: 24px; margin-bottom: 10px; color: #f4b400; }
+    .panel p { margin-bottom: 15px; line-height: 1.5; color: #ddd; font-size: 14px; }
+    .panel ul { margin-left: 20px; margin-bottom: 15px; color: #ddd; }
+    .panel ul li { margin-bottom: 8px; font-size: 14px; }
+    .panel .close-btn {
+      display: block; margin: 0 auto; padding: 10px 20px; background: #f44336; color: #fff;
+      border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s;
     }
-    .close-btn:hover { background: rgba(244,180,0,0.8); color:#000; transform: scale(1.03); }
+    .panel .close-btn:hover { background: #e53935; }
 
-    /* Responsive (모바일에서는 사이드바를 위로) */
+    /* 환경 배지 & 연결정보 패널 (기본: PC 레이아웃) */
+    #env-badge {
+      position: fixed; top: 8px; right: 8px; padding: 6px 10px; border-radius: 999px;
+      background: rgba(20,20,40,0.85); color: #fff; border: 1px solid rgba(244,180,0,0.4);
+      font-size: 12px; letter-spacing: .4px; z-index: 10001; cursor: pointer;
+      user-select: none; backdrop-filter: blur(4px);
+    }
+    #env-badge::after { content: 'ⓘ'; margin-left: 6px; opacity: .7; font-weight: 700; }
+
+    #env-panel {
+      position: fixed; top: 40px; right: 8px; width: 340px;
+      max-width: calc(100vw - 16px); max-height: 80vh; overflow: auto;
+      background: rgba(10,10,25,0.98); color: #fff; border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 8px 24px rgba(0,0,0,.55); border-radius: 12px; padding: 12px; display: none;
+      z-index: 10002; backdrop-filter: blur(6px); -webkit-overflow-scrolling: touch;
+    }
+    #env-panel h3 { margin: 2px 0 8px; font-size: 14px; color: #f4b400; }
+    #env-panel dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-size: 12px; word-break: break-all; }
+    #env-panel dt { color: #aab; }
+    #env-panel dd { color: #eef; margin: 0; }
+    #env-panel .muted { opacity: .8; font-size: 11px; }
+
+    #env-panel .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    #env-close { background: transparent; border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    #env-close:hover { background: rgba(255,255,255,.08); }
+
+    /* Responsive (모바일 더 작게) */
     @media (max-width: 768px) {
       .container { flex-direction: column; }
+
       .sidebar {
         width: 100%; flex-direction: row; justify-content: space-around;
         padding: 8px 6px; gap: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
       }
-      .sidebar button, .sidebar a.side-link { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
+      .sidebar button { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 18px; }
 
       .loading-card { padding: 20px; }
       .loading-card h1 { font-size: 28px; }
-      .loading-sub { font-size: 13px; }
-      .start-btn { padding: 10px 16px; border-radius: 10px; }
+      .loading-sub { font-size: 13px; margin-bottom: 16px; }
+      .overlay a.start-btn { padding: 12px 18px; font-size: 15px; border-radius: 12px; }
 
+      /* 배지 더 작게 + 우하단 */
+      #env-badge {
+        top: auto; right: 6px; bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        padding: 4px 7px; font-size: 10px; border-radius: 12px;
+      }
+
+      /* 패널 더 작게 */
+      #env-panel {
+        top: auto; bottom: calc(42px + env(safe-area-inset-bottom, 0px)); right: 6px;
+        width: 240px; max-width: calc(100vw - 12px); max-height: 55vh;
+        padding: 8px; border-radius: 10px;
+      }
+      #env-panel h3 { font-size: 12px; }
+      #env-panel dl { grid-template-columns: 90px 1fr; gap: 3px 6px; font-size: 10px; }
+    #env-panel .muted { font-size: 9px; }
+
+      /* 라이센스/컨택 패널도 소형화 */
       .panel { width: 92%; max-width: 420px; padding: 20px; }
       .panel h2 { font-size: 20px; }
       .panel p, .panel ul li { font-size: 12px; }
-      .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 8px; }
+      .panel .close-btn { padding: 8px 16px; font-size: 12px; border-radius: 6px; }
+    }
+
+    #multi-device-warning {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translate(-50%, -10px);
+      background: rgba(220, 53, 69, 0.92);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: .4px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
+      z-index: 11000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    #multi-device-warning.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
     }
   </style>
 </head>
-
 <body>
   <div class="container">
-
     <nav class="sidebar">
       <button id="show-license">라이센스 정보</button>
       <button id="show-contact">Contact Us</button>
-
-      <!-- 이용약관/개인정보처리방침: 새 탭으로 열리는 "직접 링크" -->
-      <a class="side-link" href="/terms" target="_blank" rel="noopener noreferrer">이용약관</a>
-      <a class="side-link" href="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</a>
     </nav>
 
     <div class="content">
       <div class="overlay">
         <div class="loading-card">
+          <div class="status-badge"><span class="status-dot"></span> Launching</div>
           <h1>태양계정복 준비 중</h1>
-          <p class="loading-sub">
-            시스템을 온라인에 올리고 있습니다. 잠시만 기다려 주세요.
-          </p>
-
-          <div class="progress-track">
-            <div id="progress-fill" class="progress-fill"></div>
+          <p class="loading-sub">행성 모듈을 온라인에 올리고 있습니다. 잠시만 기다려 주세요.</p>
+          <div class="progress-shell" aria-live="polite">
+            <div class="progress-track"><div id="progress-fill" class="progress-fill" aria-hidden="true"></div></div>
+            <div class="progress-info">
+              <span id="progress-status">시스템 부팅 중...</span>
+              <strong id="progress-percent">0%</strong>
+            </div>
           </div>
-          <div class="progress-info">
-            <span id="progress-status">시스템 부팅 중.</span>
-            <strong id="progress-percent">0%</strong>
+          <div class="loading-grid">
+            <div class="chip">행성 터널 초기화</div>
+            <div class="chip">자원 스트림 연결</div>
+            <div class="chip">조종 인터페이스 동기화</div>
+            <div class="chip">안전 프로토콜 인증</div>
           </div>
-
-          <a href="game.html" id="start-btn" class="start-btn locked" draggable="false">게임 준비 중.</a>
+          <!-- 드래그 방지 -->
+          <a href="game.html" id="start-btn" class="start-btn locked" draggable="false" data-loading="true">게임 준비 중...</a>
         </div>
       </div>
 
-      <!-- 라이센스 패널 -->
-      <div class="panel" id="license-panel">
+      <!-- 팝업 차단 안내 토스트 -->
+      <div
+        id="popup-hint"
+        style="display:none; position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:rgba(20,20,40,0.95); color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.4); font-size:14px; z-index:10000;"
+      >
+        팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.
+      </div>
+
+      <div class="panel" id="license-panel" aria-modal="true" role="dialog">
         <h2>라이센스 정보</h2>
         <p>© 2025 SIU Studio. All rights reserved.</p>
         <p>
@@ -242,66 +302,67 @@
           <li>재배포(Redistribution)</li>
           <li>상업적 이용(Commercial Use)</li>
         </ul>
-        <p>
-          개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.
-        </p>
+        <p>단, 개인이 비상업적 목적으로 게임 플레이 영상을 녹화하여 YouTube, Twitch 등 동영상 플랫폼에 게시하는 행위는 허용됩니다.</p>
         <p>위 조건을 위반할 경우 민·형사상 법적 조치를 받을 수 있습니다.</p>
         <button class="close-btn" data-target="license-panel">닫기</button>
       </div>
 
-      <!-- Contact 패널 -->
-      <div class="panel" id="contact-panel">
+      <div class="panel" id="contact-panel" aria-modal="true" role="dialog">
         <h2>Contact Us</h2>
         <p>문의 사항이 있으시면 아래 이메일로 연락 주세요:</p>
         <p>
-          <a href="mailto:support@siustudio.me" style="color: #f4b400; text-decoration: none;">
-            support@siustudio.me
-          </a>
+          <a href="mailto:support@siustudio.me" style="color: #f4b400; text-decoration: none;">support@siustudio.me</a>
         </p>
         <button class="close-btn" data-target="contact-panel">닫기</button>
       </div>
-
     </div>
   </div>
 
   <script>
-    // 로딩 프로그레스 애니메이션
-    (function(){
+    (function () {
       const startBtn = document.getElementById('start-btn');
       const fillEl = document.getElementById('progress-fill');
       const percentEl = document.getElementById('progress-percent');
       const statusEl = document.getElementById('progress-status');
 
-      const duration = (Math.random() * 2 + 4) * 500; // 대충 2~3초 정도
+      if (!startBtn || !fillEl || !percentEl || !statusEl) return;
+
+      const duration = (Math.random() * 2 + 4) * 400; // 6~11초
       const milestones = [
-        { pct: 0.18, text: '모듈 초기화 중.' },
-        { pct: 0.42, text: '리소스 로딩 중.' },
-        { pct: 0.65, text: '동기화 진행 중.' },
-        { pct: 0.82, text: '안전 프로토콜 확인.' },
-        { pct: 1, text: '준비 완료!' }
+        { pct: 0.18, text: '행성 항로 계산 중...' },
+        { pct: 0.42, text: '중력 보정 알고리즘 적용...' },
+        { pct: 0.65, text: '함선 에너지 캡슐 충전...' },
+        { pct: 0.82, text: '탑승 크루 체크인...' },
+        { pct: 1, text: '준비 완료! 발사 대기 중' }
       ];
+
+      startBtn.classList.add('locked');
+      startBtn.dataset.loading = 'true';
+      startBtn.setAttribute('aria-disabled', 'true');
 
       const started = performance.now();
 
-      function resolveStatus(ratio){
-        const t = milestones.find(m => ratio <= m.pct) || milestones[milestones.length - 1];
-        return t.text;
+      function resolveStatus(ratio) {
+        const target = milestones.find(m => ratio <= m.pct) || milestones[milestones.length - 1];
+        return target.text;
       }
 
-      function unlock(){
+      function unlock() {
         startBtn.classList.remove('locked');
+        startBtn.dataset.loading = 'false';
+        startBtn.removeAttribute('aria-disabled');
         startBtn.textContent = '게임 시작';
       }
 
-      function tick(now){
+      function tick(now) {
         const ratio = Math.min(1, (now - started) / duration);
         const pct = Math.round(ratio * 100);
 
-        fillEl.style.width = pct + '%';
-        percentEl.textContent = pct + '%';
+        fillEl.style.width = `${pct}%`;
+        percentEl.textContent = `${pct}%`;
         statusEl.textContent = resolveStatus(ratio);
 
-        if(ratio >= 1){
+        if (ratio >= 1) {
           unlock();
           return;
         }
@@ -310,35 +371,565 @@
 
       requestAnimationFrame(tick);
     })();
+  </script>
 
-    // 패널 열고 닫기
-    (function(){
-      const licenseBtn = document.getElementById('show-license');
-      const contactBtn = document.getElementById('show-contact');
-      const licensePanel = document.getElementById('license-panel');
-      const contactPanel = document.getElementById('contact-panel');
+  <!-- 환경 배지 & 연결정보 패널 -->
+  <div id="env-badge" title="클릭하면 연결정보를 보여줍니다."></div>
+  <div id="env-panel" role="dialog" aria-modal="true" aria-labelledby="env-title">
+    <div class="row">
+      <h3 id="env-title">연결 정보</h3>
+      <button id="env-close" aria-label="닫기">✕</button>
+    </div>
+    <dl id="env-list"><!-- JS에서 채웁니다 --></dl>
+    <p class="muted" style="margin-top:8px;">* 일부 값은 브라우저/OS 정책으로 비공개이거나 근사치일 수 있습니다.</p>
+  </div>
 
-      function openPanel(panel){ panel.style.display = 'block'; }
-      function closePanel(panel){ panel.style.display = 'none'; }
+  <div id="multi-device-warning" role="status" aria-live="polite">
+    다른 기기에서 새로 접속했습니다. 새로 연 기기에서 게임을 계속 이용해 주세요.
+  </div>
 
-      licenseBtn.addEventListener('click', () => openPanel(licensePanel));
-      contactBtn.addEventListener('click', () => openPanel(contactPanel));
+  <!-- 패널 토글 -->
+  <script>
+    const $licenseBtn = document.getElementById('show-license');
+    const $contactBtn = document.getElementById('show-contact');
+    const $licensePanel = document.getElementById('license-panel');
+    const $contactPanel = document.getElementById('contact-panel');
+    const $envPanel = document.getElementById('env-panel');
 
-      document.querySelectorAll('.close-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-target');
-          closePanel(document.getElementById(id));
-        });
+    function closeEnvPanel() { $envPanel.style.display = 'none'; }
+
+    document.querySelectorAll('.close-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(btn.getAttribute('data-target')).classList.remove('active');
       });
+    });
 
-      // ESC로 닫기
-      document.addEventListener('keydown', (e) => {
-        if(e.key === 'Escape'){
-          closePanel(licensePanel);
-          closePanel(contactPanel);
+    // 열기 시 서로 겹치지 않도록
+    $licenseBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      $contactPanel.classList.remove('active');
+      $licensePanel.classList.add('active');
+    });
+
+    $contactBtn.addEventListener('click', () => {
+      closeEnvPanel();
+      $licensePanel.classList.remove('active');
+      $contactPanel.classList.add('active');
+    });
+  </script>
+
+  <!-- 환경 배지 & 연결정보 로직 -->
+  <script>
+    (function () {
+      const $badge = document.getElementById('env-badge');
+      const $panel = document.getElementById('env-panel');
+      const $list = document.getElementById('env-list');
+
+      function isMobileLike() {
+        const ua = navigator.userAgent || '';
+        const uaDataMobile = (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean')
+          ? navigator.userAgentData.mobile : null;
+        const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const smallScreen = Math.max(screen.width, screen.height) < 1024;
+        const mobUA = /(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua);
+        if (uaDataMobile !== null) return uaDataMobile;
+        if (mobUA) return true;
+        return touch && smallScreen;
+      }
+
+      function bool(v) { return v ? '예' : '아니오'; }
+
+      function getConn() {
+        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!c) return null;
+        return { type: c.type, effectiveType: c.effectiveType, downlinkMbps: c.downlink, rttMs: c.rtt, saveData: !!c.saveData };
+      }
+
+      function tz() {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone; }
+        catch (_) { return ''; }
+      }
+
+      function hoverPointer() {
+        const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+        const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+        return { canHover, coarse, fine };
+      }
+
+      function displayMode() {
+        if (!window.matchMedia) return 'browser';
+        if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
+        if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
+        return 'browser';
+      }
+
+      function deviceTypeLabel() { return isMobileLike() ? '모바일' : 'PC'; }
+
+      function gather() {
+        const h = hoverPointer();
+        const conn = getConn();
+        const ua = navigator.userAgent || '';
+        const uaDataPlat = (navigator.userAgentData && navigator.userAgentData.platform) ? navigator.userAgentData.platform : '';
+        const langs = (navigator.languages && navigator.languages.length ? navigator.languages.join(', ') : (navigator.language || ''));
+        const ref = document.referrer || '';
+
+        const rows = [];
+
+        const authLabel = (window.__AUTH_STATUS || '비로그인');
+        rows.push(['계정 상태', authLabel]);
+        if (window.__SERVER_INFO) {
+          rows.push(['데이터 서버', window.__SERVER_INFO.server || '-']);
+          if (window.__SERVER_INFO.id) rows.push(['저장 ID', window.__SERVER_INFO.id]);
         }
-      });
+
+        rows.push(['디바이스', deviceTypeLabel()]);
+        rows.push(['플랫폼', uaDataPlat || navigator.platform || '']);
+        rows.push(['PWA 표시모드', displayMode()]);
+        rows.push(['온라인', bool(navigator.onLine)]);
+        rows.push(['언어', langs]);
+        rows.push(['타임존', tz() || '']);
+        rows.push(['뷰포트', String(window.innerWidth) + ' × ' + String(window.innerHeight)]);
+        rows.push(['스크린', String(screen.width) + ' × ' + String(screen.height)]);
+        rows.push(['DPR', String(window.devicePixelRatio || 1)]);
+        rows.push(['터치 지원', bool(('ontouchstart' in window) || (navigator.maxTouchPoints > 0))]);
+        rows.push(['마우스 Hover', bool(h.canHover)]);
+        rows.push(['포인터(굵음)', bool(h.coarse)]);
+        rows.push(['포인터(정밀)', bool(h.fine)]);
+        rows.push(['쿠키 사용', bool(navigator.cookieEnabled)]);
+        rows.push(['Referrer', ref || '(없음)']);
+        rows.push(['User-Agent', ua]);
+
+        const c = conn;
+        if (c) {
+          rows.push(['네트워크 유형', c.type || '(알 수 없음)']);
+          rows.push(['효과적 유형', c.effectiveType || '(알 수 없음)']);
+          rows.push(['추정 다운링크(Mbps)', (typeof c.downlinkMbps === 'number') ? String(c.downlinkMbps) : '(알 수 없음)']);
+          rows.push(['RTT(ms)', (typeof c.rttMs === 'number') ? String(c.rttMs) : '(알 수 없음)']);
+          rows.push(['데이터 절약모드', bool(c.saveData)]);
+        } else {
+          rows.push(['네트워크', '(API 미지원)']);
+        }
+
+        return rows;
+      }
+
+      function render() {
+        const rows = gather();
+        document.getElementById('env-badge').textContent = deviceTypeLabel();
+        $list.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${(v === undefined || v === null || v === '') ? '-' : String(v)}</dd>`).join('');
+      }
+
+      function openPanel() {
+        document.getElementById('license-panel').classList.remove('active');
+        document.getElementById('contact-panel').classList.remove('active');
+        render();
+        $panel.style.display = 'block';
+      }
+
+      function closePanel() { $panel.style.display = 'none'; }
+
+      document.getElementById('env-badge').addEventListener('click', () => ($panel.style.display === 'block' ? closePanel() : openPanel()));
+      document.getElementById('env-close').addEventListener('click', closePanel);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+      document.addEventListener('click', e => { if ($panel.style.display === 'block' && !e.target.closest('#env-panel, #env-badge')) closePanel(); });
+
+      ['resize', 'orientationchange', 'online', 'offline'].forEach(evt => window.addEventListener(evt, () => {
+        if ($panel.style.display === 'block') render();
+      }));
+
+      if (navigator.connection && typeof navigator.connection.addEventListener === 'function') {
+        navigator.connection.addEventListener('change', () => {
+          if ($panel.style.display === 'block') render();
+        });
+      }
+
+      window.__updateServerInfo = function (info) {
+        window.__SERVER_INFO = info || null;
+        if ($panel.style.display === 'block') render();
+      };
+      window.__setAuthStatus = function (label) {
+        window.__AUTH_STATUS = label || null;
+        if ($panel.style.display === 'block') render();
+      };
+
+      document.getElementById('env-badge').textContent = deviceTypeLabel();
     })();
   </script>
+
+  <!-- PC: 팝업(현재 탭 유지) / 모바일: 같은 탭 -->
+  <script>
+    (function () {
+      const POPUP_NAME = 'gameWindow';
+      const GAME_URL = 'game.html';
+      const W = 1024, H = 768;
+
+      let lastAttemptFromUser = false;
+      let suppressNextHint = false;
+
+      function showPopupHint(msg) {
+        if (!lastAttemptFromUser || suppressNextHint) return;
+        var el = document.getElementById('popup-hint');
+        if (!el) return;
+        el.textContent = msg || '팝업이 차단되어 새 창을 열 수 없습니다. 주소창 우측 팝업 차단 아이콘에서 허용해 주세요.';
+        el.style.display = 'block';
+        clearTimeout(showPopupHint._t);
+        showPopupHint._t = setTimeout(function () { el.style.display = 'none'; }, 4000);
+      }
+
+      function isDesktop() {
+        const ua = navigator.userAgent || '';
+        if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+          return navigator.userAgentData.mobile === false;
+        }
+        if (/(Mobi|Android|iPhone|iPad|iPod|Windows Phone|BlackBerry)/i.test(ua)) return false;
+        const finePointer = window.matchMedia?.('(pointer: fine)')?.matches;
+        const canHover = window.matchMedia?.('(hover: hover)')?.matches;
+        if (finePointer && canHover) return true;
+        return Math.max(screen.width, screen.height) >= 1024;
+      }
+
+      function openGamePopup(url) {
+        const left = Math.max(0, Math.round((screen.width - W) / 2));
+        const top = Math.max(0, Math.round((screen.height - H) / 2));
+        const opts = [
+          `width=${W}`,
+          `height=${H}`,
+          `left=${left}`,
+          `top=${top}`,
+          'resizable=yes',
+          'scrollbars=yes',
+          'status=no',
+          'toolbar=no',
+          'menubar=no',
+          'noopener',
+          'noreferrer'
+        ].join(',');
+
+        let win = null;
+        try { win = window.open(url, POPUP_NAME, opts); }
+        catch (e) { win = null; }
+        return win;
+      }
+
+      function shouldUsePopup() { return isDesktop(); }
+
+      const startBtn = document.getElementById('start-btn');
+      if (!startBtn) return;
+
+      // 드래그로 새 탭 열기 방지
+      startBtn.addEventListener('dragstart', function (e) { e.preventDefault(); });
+
+      startBtn.addEventListener('click', function (e) {
+        if (startBtn.dataset.loading === 'true' || startBtn.classList.contains('locked')) {
+          e.preventDefault();
+          return;
+        }
+        // Ctrl / Cmd / Shift / 가운데버튼 전부 무시
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        if (!shouldUsePopup()) {
+          // 모바일이면 그냥 이동
+          return;
+        }
+
+        e.preventDefault();
+
+        lastAttemptFromUser = true;
+        suppressNextHint = false;
+
+        const p = openGamePopup(GAME_URL);
+
+        // 진짜로 막혔을 때만 바로 토스트
+        if (!p) {
+          showPopupHint('팝업이 차단되어 새 창을 열 수 없습니다. 브라우저 설정에서 허용해주세요.');
+          setTimeout(() => { lastAttemptFromUser = false; }, 0);
+          return;
+        }
+
+        // 여기까지 왔으면 일단 열렸다고 보면 됨
+        try { p.focus(); } catch {}
+
+        // ✨ 핵심: 팝업이 "열려서 자기 일 하고" 바로 닫힌 경우는
+        // 0.8초 뒤에 다시 확인해서 그때도 막혀 있으면 토스트
+        setTimeout(() => {
+          // 그 사이에 자식창이 auto-close 메시지를 보내면 suppressNextHint = true 가 됨
+          if (p.closed && !suppressNextHint) {
+            showPopupHint('팝업이 차단되었거나 바로 닫혔습니다. 브라우저 설정에서 허용해주세요.');
+          }
+        }, 800);
+
+        setTimeout(() => { lastAttemptFromUser = false; }, 0);
+      });
+
+      // 팝업이 정상적으로 자기 의지로 닫힐 때는 토스트를 안 띄움
+      window.addEventListener('message', (e) => {
+        const t = e.data && e.data.type;
+        if (t === 'request-close-popup' || t === 'auto-close') {
+          suppressNextHint = true;
+          setTimeout(() => { suppressNextHint = false; }, 1000);
+        }
+      }, false);
+    })();
+  </script>
+
+  <!-- Firebase 로드 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get, runTransaction, update, set, onDisconnect, onValue, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIrsnUYEBG3cqbPrKD_eejOdtsCDjYG9k",
+      authDomain: "siu-studio.firebaseapp.com",
+      databaseURL: "https://siu-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "siu-studio",
+      storageBucket: "siu-studio.appspot.com",
+      messagingSenderId: "830887143444",
+      appId: "1:830887143444:web:70b45fc12140e893c31f01",
+      measurementId: "G-1Y090YJDB6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const DEVICE_STORAGE_KEY = 'siu__device_id';
+    function generateId(prefix) {
+      const rand = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${prefix}-${Math.random().toString(36).slice(2, 11)}`;
+      if (rand.startsWith(prefix)) return rand;
+      return `${prefix}-${rand}`;
+    }
+
+    function getPersistentDeviceId() {
+      try {
+        const existing = localStorage.getItem(DEVICE_STORAGE_KEY);
+        if (existing) return existing;
+        const created = generateId('device');
+        localStorage.setItem(DEVICE_STORAGE_KEY, created);
+        return created;
+      } catch {
+        return generateId('device');
+      }
+    }
+
+    const deviceId = getPersistentDeviceId();
+    const sessionId = generateId('session');
+    const sessionConnectedAt = Date.now();
+
+    const multiDeviceBanner = document.getElementById('multi-device-warning');
+    function updateMultiDeviceBanner(shouldShow) {
+      if (!multiDeviceBanner) return;
+      multiDeviceBanner.classList.toggle('active', !!shouldShow);
+      multiDeviceBanner.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    }
+    updateMultiDeviceBanner(false);
+
+    let stopPresenceWatcher = null;
+
+    function cleanupPresenceWatcher() {
+      if (typeof stopPresenceWatcher === 'function') {
+        stopPresenceWatcher();
+        stopPresenceWatcher = null;
+      }
+      updateMultiDeviceBanner(false);
+    }
+
+    async function startPresenceWatcher(user) {
+      cleanupPresenceWatcher();
+      if (!user) return;
+
+      const basePath = `presence/${user.uid}`;
+      const myRef = ref(db, `${basePath}/${deviceId}`);
+      const payload = {
+        deviceId,
+        sessionId,
+        connectedAt: sessionConnectedAt,
+        lastActiveAt: Date.now(),
+      };
+
+      try {
+        await set(myRef, payload);
+        onDisconnect(myRef).remove();
+      } catch (err) {
+        console.warn('실시간 접속 정보 등록 실패:', err);
+        return;
+      }
+
+      let destroyed = false;
+      const heartbeat = setInterval(() => {
+        update(myRef, { lastActiveAt: Date.now() }).catch(() => {});
+      }, 15000);
+
+      const watchRef = ref(db, basePath);
+      const unsubscribe = onValue(watchRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        const entries = Object.values(data)
+          .map((entry) => ({
+            deviceId: entry?.deviceId,
+            sessionId: entry?.sessionId,
+            connectedAt: Number(entry?.connectedAt) || 0,
+          }))
+          .filter((entry) => entry.deviceId && entry.sessionId);
+
+        if (!entries.length) {
+          updateMultiDeviceBanner(false);
+          return;
+        }
+
+        const hasOtherDevices = entries.some((entry) => entry.deviceId !== deviceId);
+        let newest = entries[0];
+        for (const entry of entries.slice(1)) {
+          if (entry.connectedAt > newest.connectedAt) {
+            newest = entry;
+          } else if (entry.connectedAt === newest.connectedAt && entry.sessionId > newest.sessionId) {
+            newest = entry;
+          }
+        }
+
+        const isNewest = newest.deviceId === deviceId && newest.sessionId === sessionId;
+        updateMultiDeviceBanner(hasOtherDevices && !isNewest);
+      }, (error) => {
+        console.warn('접속 정보 구독 실패:', error);
+      });
+
+      stopPresenceWatcher = () => {
+        if (destroyed) return;
+        destroyed = true;
+        clearInterval(heartbeat);
+        unsubscribe();
+        try { onDisconnect(myRef).cancel(); } catch {}
+        try { remove(myRef); } catch {}
+      };
+
+      window.addEventListener('beforeunload', () => {
+        try { onDisconnect(myRef).cancel(); } catch {}
+        try { remove(myRef); } catch {}
+      }, { once: true });
+    }
+
+    function sanitizeIdKey(raw) {
+      const s = (raw || '').toString().trim().toLowerCase();
+      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+      return base || 'user';
+    }
+
+    function makeIdKeyFromUser(user) {
+      const email = (user.email || '').toString();
+      if (email.includes('@')) {
+        const local = email.split('@')[0];
+        return sanitizeIdKey(local);
+      }
+      const dn = sanitizeIdKey(user.displayName || '');
+      if (dn && dn !== 'user') return dn;
+      return `user_${(user.uid || '').slice(0, 6) || '000000'}`;
+    }
+
+    async function ensureServerMapping(user) {
+      try {
+        const m = await get(ref(db, `userServerMap/${user.uid}`));
+        if (m.exists()) {
+          const { server, id } = m.val() || {};
+          if (server && id) return { server, id };
+        }
+      } catch {}
+
+      let nextIndex = 0;
+      try {
+        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
+        nextIndex = res?.snapshot?.val() || 1;
+      } catch { nextIndex = 1; }
+
+      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
+      const server = `server${serverNum}`;
+
+      let idKey = makeIdKeyFromUser(user);
+      try {
+        const exists = await get(ref(db, `users/${server}/${idKey}`));
+        if (exists.exists()) idKey = `${idKey}-${(user.uid || '').slice(0, 4)}`;
+      } catch {}
+
+      try {
+        await update(ref(db), {
+          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
+        });
+      } catch {}
+
+      return { server, id: idKey };
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.__setAuthStatus?.('비로그인');
+        window.__updateServerInfo?.({ server: '-', id: '(로그인 필요)' });
+        cleanupPresenceWatcher();
+        return;
+      }
+      window.__setAuthStatus?.('로그인');
+      try {
+        const info = await ensureServerMapping(user);
+        window.__updateServerInfo?.(info);
+      } catch (e) {
+        console.warn('서버 매핑 조회 실패:', e);
+        window.__updateServerInfo?.({ server: '(조회 실패)', id: '-' });
+      }
+      startPresenceWatcher(user);
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
+  <script>
+    DisableDevtool({
+      disableMenu: true,
+      disableSelect: true,
+      disableCopy: true,
+      disableCut: true,
+      disablePaste: true,
+      clearIntervalWhenDevOpenTrigger: true,
+      ondevtoolopen(type, next) {
+        window.close();
+        next();
+      },
+      ondevtoolclose() {
+        console.warn('DevTools 닫힘 감지됨');
+      }
+    });
+  </script>
+
+  <script>
+    // 우클릭 차단 (입력 영역은 허용)
+    document.addEventListener('contextmenu', function (e) {
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
+  </script>
+
+  <!-- 팝업으로 열렸을 때 자동 종료 -->
+  <script>
+    (function () {
+      try {
+        const openedByScript = !!window.opener;
+        if (openedByScript) {
+          const CLOSE_DELAY_MS = 500;
+          setTimeout(() => {
+            try { window.opener.postMessage && window.opener.postMessage({ type: 'auto-close', from: location.href }, '*'); } catch (e) {}
+            try { window.close(); } catch (e) {}
+            setTimeout(() => {
+              try { window.location.href = 'about:blank'; } catch (e) {}
+              try { window.close(); } catch (e) {}
+            }, 50);
+          }, CLOSE_DELAY_MS);
+        }
+      } catch (e) {
+        console.warn('팝업 자동 종료 검사 중 오류:', e);
+      }
+    })();
+  </script>
+
 </body>
 </html>
