@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌌 태양계 정복: 교육 탐사 버전</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05070f;
+      --panel: rgba(12, 16, 30, 0.78);
+      --accent: #48d9ff;
+      --accent-2: #ffcc4d;
+      --muted: rgba(255, 255, 255, 0.7);
+      --border: rgba(255, 255, 255, 0.12);
+      --good: rgba(124, 255, 180, 0.16);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", sans-serif;
+      background: radial-gradient(circle at top, rgba(72, 217, 255, 0.12), transparent 45%),
+        url("/images/space-bg.jpg") center / cover fixed no-repeat;
+      color: #fff;
+      min-height: 100vh;
+    }
+    header {
+      padding: 28px 20px 16px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 3vw, 36px);
+    }
+    header p {
+      margin: 0 auto;
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    main {
+      display: grid;
+      gap: 20px;
+      padding: 0 20px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .panel {
+      background: var(--panel);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+    }
+    .panel h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+    .top-stats {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      align-items: center;
+    }
+    .stat-box {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .stat-box strong {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .stat-box span {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .actions button {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s ease, border 0.2s ease;
+    }
+    .actions button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(72, 217, 255, 0.6);
+    }
+    .score {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .score .value {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .progress-bar {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), #7cffb4);
+      transition: width 0.4s ease;
+    }
+    .planet-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .planet-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid transparent;
+      color: #fff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.2s ease, border 0.2s ease, background 0.2s ease;
+      min-height: 72px;
+    }
+    .planet-btn strong {
+      display: block;
+    }
+    .planet-btn small {
+      color: var(--muted);
+    }
+    .planet-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(72, 217, 255, 0.6);
+      background: rgba(72, 217, 255, 0.12);
+    }
+    .planet-btn.active {
+      border-color: var(--accent-2);
+      background: rgba(255, 204, 77, 0.2);
+    }
+    .info-card {
+      min-height: 170px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .info-card h3 {
+      margin: 0;
+    }
+    .info-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .tab {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+    }
+    .tab.active {
+      background: rgba(72, 217, 255, 0.18);
+      color: #fff;
+      border-color: rgba(72, 217, 255, 0.4);
+    }
+    .mission {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mission-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .mission-item.completed {
+      background: var(--good);
+      border: 1px solid rgba(124, 255, 180, 0.4);
+    }
+    .mission-item span {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .quiz {
+      display: grid;
+      gap: 12px;
+    }
+    .quiz button {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      cursor: pointer;
+      text-align: left;
+      transition: border 0.2s ease, transform 0.2s ease;
+    }
+    .quiz button:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .result {
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(72, 217, 255, 0.12);
+      color: #dff8ff;
+      min-height: 24px;
+    }
+    .clicker {
+      display: grid;
+      gap: 12px;
+    }
+    .clicker button {
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease, border 0.2s ease;
+    }
+    .clicker button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(72, 217, 255, 0.6);
+    }
+    footer {
+      text-align: center;
+      padding: 24px 20px 40px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌌 태양계 정복: 교육 탐사 버전</h1>
+    <p>
+      기존 태양계 정복 게임의 클릭커 감성과 업그레이드 요소를 살리면서,
+      행성 탐사와 퀴즈로 학습 목표를 함께 달성하는 교육용 버전입니다.
+    </p>
+  </header>
+
+  <main>
+    <section class="panel top-stats">
+      <div class="stat-box">
+        <strong>자원</strong>
+        <span id="resources">0</span>
+      </div>
+      <div class="stat-box">
+        <strong>코인</strong>
+        <span id="coins">0</span>
+      </div>
+      <div class="stat-box">
+        <strong>클릭당 자원</strong>
+        <span id="click-power">1</span>
+      </div>
+      <div class="actions">
+        <button id="convert-button">10자원 → 1코인</button>
+        <button id="upgrade-ship">우주선 업그레이드 (코인)</button>
+        <button id="click-upgrade">클릭 업그레이드 (코인)</button>
+      </div>
+    </section>
+
+    <section class="panel clicker">
+      <h2>자원 채굴</h2>
+      <p>게임처럼 클릭해서 자원을 모으고, 탐사에 필요한 연구 비용을 확보하세요.</p>
+      <button id="mine-button">🪨 클릭 채굴하기</button>
+      <p id="resource-per-sec">총 초당 자원: 0</p>
+    </section>
+
+    <section class="panel score">
+      <div>
+        <h2>탐사 포인트</h2>
+        <div class="value" id="score">0</div>
+        <div class="progress-bar"><span id="progress"></span></div>
+        <p id="score-hint">행성을 클릭해 지식 포인트를 모으세요.</p>
+      </div>
+      <div>
+        <h2>현재 미션</h2>
+        <div class="mission" id="missions">
+          <div class="mission-item" data-mission="discover">
+            <strong>5개 행성 탐사하기</strong>
+            <span>탐사 성공 시 지식 포인트 획득</span>
+          </div>
+          <div class="mission-item" data-mission="upgrade">
+            <strong>우주선 2회 업그레이드</strong>
+            <span>코인을 사용해 강화하세요</span>
+          </div>
+          <div class="mission-item" data-mission="quiz">
+            <strong>퀴즈 2문제 맞히기</strong>
+            <span>탐사 후 도전 가능</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>행성 센터</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="explore" type="button">🛰️ 탐사</button>
+        <button class="tab" data-tab="research" type="button">🧪 연구 노트</button>
+      </div>
+      <div class="grid">
+        <div>
+          <div class="planet-list" id="planet-list"></div>
+        </div>
+        <div class="info-card" id="planet-info">
+          <h3>행성을 선택하세요</h3>
+          <p>각 행성을 클릭하면 특징과 재미있는 과학 정보를 확인할 수 있어요.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>태양계 퀴즈</h2>
+      <div class="quiz" id="quiz"></div>
+      <div class="result" id="quiz-result">탐사를 진행하면 퀴즈가 시작됩니다.</div>
+    </section>
+  </main>
+
+  <footer>
+    ✔️ 팁: 행성을 모두 탐사하면 특별한 메시지가 열립니다.
+  </footer>
+
+  <script>
+    const planets = [
+      {
+        name: "수성",
+        fact: "가장 태양에 가까운 행성으로, 하루가 176일이나 돼요.",
+        type: "암석형",
+        reward: 12
+      },
+      {
+        name: "금성",
+        fact: "짙은 대기 때문에 표면 온도가 460℃ 이상으로 매우 뜨거워요.",
+        type: "암석형",
+        reward: 12
+      },
+      {
+        name: "지구",
+        fact: "액체 물이 존재하는 유일한 행성으로, 생명체가 살고 있어요.",
+        type: "암석형",
+        reward: 15
+      },
+      {
+        name: "화성",
+        fact: "표면에 산화철이 많아 붉게 보이며, 두 개의 작은 위성이 있어요.",
+        type: "암석형",
+        reward: 12
+      },
+      {
+        name: "목성",
+        fact: "태양계에서 가장 큰 행성으로, 대적반이라는 거대한 폭풍이 있어요.",
+        type: "가스형",
+        reward: 18
+      },
+      {
+        name: "토성",
+        fact: "아름다운 고리로 유명하며, 위성이 80개 이상 발견됐어요.",
+        type: "가스형",
+        reward: 18
+      },
+      {
+        name: "천왕성",
+        fact: "자전축이 옆으로 누운 채 공전하며, 푸른빛을 띠어요.",
+        type: "얼음형",
+        reward: 18
+      },
+      {
+        name: "해왕성",
+        fact: "태양계에서 가장 강한 바람이 부는 행성으로 알려져 있어요.",
+        type: "얼음형",
+        reward: 18
+      }
+    ];
+
+    const quizData = [
+      {
+        question: "태양계에서 가장 큰 행성은 무엇일까요?",
+        options: ["목성", "금성", "화성", "해왕성"],
+        answer: "목성"
+      },
+      {
+        question: "표면 온도가 가장 높은 행성은 무엇일까요?",
+        options: ["수성", "금성", "지구", "천왕성"],
+        answer: "금성"
+      },
+      {
+        question: "고리로 유명한 행성은 무엇일까요?",
+        options: ["토성", "화성", "지구", "수성"],
+        answer: "토성"
+      }
+    ];
+
+    const state = {
+      score: 0,
+      resources: 0,
+      coins: 0,
+      clickPower: 1,
+      shipLevel: 0,
+      discovered: new Set(),
+      quizCorrect: 0
+    };
+
+    const scoreEl = document.getElementById("score");
+    const progressEl = document.getElementById("progress");
+    const planetListEl = document.getElementById("planet-list");
+    const planetInfoEl = document.getElementById("planet-info");
+    const quizEl = document.getElementById("quiz");
+    const quizResultEl = document.getElementById("quiz-result");
+    const resourcesEl = document.getElementById("resources");
+    const coinsEl = document.getElementById("coins");
+    const clickPowerEl = document.getElementById("click-power");
+    const resourcePerSecEl = document.getElementById("resource-per-sec");
+
+    const missions = {
+      discover: document.querySelector('[data-mission="discover"]'),
+      upgrade: document.querySelector('[data-mission="upgrade"]'),
+      quiz: document.querySelector('[data-mission="quiz"]')
+    };
+
+    function updateScore(additional = 0) {
+      state.score += additional;
+      scoreEl.textContent = state.score;
+      const progress = Math.min((state.discovered.size / planets.length) * 100, 100);
+      progressEl.style.width = `${progress}%`;
+      const hint = document.getElementById("score-hint");
+      if (state.discovered.size === planets.length) {
+        hint.textContent = "모든 행성을 탐사했습니다! 태양계 전문가 인증 완료 🎉";
+      } else {
+        hint.textContent = `탐사 완료: ${state.discovered.size}/${planets.length}개`;
+      }
+      missions.discover.classList.toggle("completed", state.discovered.size >= 5);
+      missions.quiz.classList.toggle("completed", state.quizCorrect >= 2);
+      missions.upgrade.classList.toggle("completed", state.shipLevel >= 2);
+    }
+
+    function updateResources() {
+      resourcesEl.textContent = state.resources;
+      coinsEl.textContent = state.coins;
+      clickPowerEl.textContent = state.clickPower;
+      resourcePerSecEl.textContent = `총 초당 자원: ${state.shipLevel}`;
+    }
+
+    function renderPlanets() {
+      planetListEl.innerHTML = "";
+      planets.forEach((planet) => {
+        const button = document.createElement("button");
+        button.className = "planet-btn";
+        button.innerHTML = `<strong>${planet.name}</strong><small>${planet.type} 행성</small>`;
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".planet-btn").forEach((btn) => btn.classList.remove("active"));
+          button.classList.add("active");
+          planetInfoEl.innerHTML = `
+            <h3>${planet.name} 탐사 보고서</h3>
+            <p>${planet.fact}</p>
+            <p>탐사 보상: <strong>${planet.reward} 지식 포인트</strong></p>
+          `;
+          if (!state.discovered.has(planet.name)) {
+            state.discovered.add(planet.name);
+            updateScore(planet.reward);
+            unlockQuiz();
+          }
+        });
+        planetListEl.appendChild(button);
+      });
+    }
+
+    function unlockQuiz() {
+      if (state.discovered.size < 3) {
+        quizResultEl.textContent = "3개 이상의 행성을 탐사하면 퀴즈가 시작됩니다.";
+        return;
+      }
+      if (quizEl.children.length > 0) return;
+      quizData.forEach((item) => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `<strong>${item.question}</strong>`;
+        const options = document.createElement("div");
+        options.className = "quiz";
+        item.options.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option;
+          button.addEventListener("click", () => handleAnswer(button, item.answer, option));
+          options.appendChild(button);
+        });
+        wrapper.appendChild(options);
+        quizEl.appendChild(wrapper);
+      });
+      quizResultEl.textContent = "퀴즈를 풀고 미션을 완료하세요!";
+    }
+
+    function handleAnswer(button, correctAnswer, selected) {
+      if (button.disabled) return;
+      const isCorrect = selected === correctAnswer;
+      button.disabled = true;
+      button.style.borderColor = isCorrect ? "#7cffb4" : "#ff6b6b";
+      button.style.background = isCorrect ? "rgba(124,255,180,0.2)" : "rgba(255,107,107,0.2)";
+      if (isCorrect) {
+        state.quizCorrect += 1;
+        updateScore(10);
+        quizResultEl.textContent = `정답! 현재 퀴즈 정답 수: ${state.quizCorrect}`;
+      } else {
+        quizResultEl.textContent = `아쉽지만 다시 도전해보세요. 정답은 ${correctAnswer}입니다.`;
+      }
+    }
+
+    function addResources() {
+      state.resources += state.clickPower;
+      updateResources();
+    }
+
+    function convertResources() {
+      if (state.resources < 10) {
+        alert("자원이 부족합니다. 10자원이 필요해요.");
+        return;
+      }
+      state.resources -= 10;
+      state.coins += 1;
+      updateResources();
+    }
+
+    function upgradeShip() {
+      if (state.coins < 2) {
+        alert("코인이 부족합니다. 2코인이 필요해요.");
+        return;
+      }
+      state.coins -= 2;
+      state.shipLevel += 1;
+      updateResources();
+      updateScore(5);
+    }
+
+    function upgradeClick() {
+      if (state.coins < 1) {
+        alert("코인이 부족합니다. 1코인이 필요해요.");
+        return;
+      }
+      state.coins -= 1;
+      state.clickPower += 1;
+      updateResources();
+    }
+
+    document.getElementById("mine-button").addEventListener("click", addResources);
+    document.getElementById("convert-button").addEventListener("click", convertResources);
+    document.getElementById("upgrade-ship").addEventListener("click", upgradeShip);
+    document.getElementById("click-upgrade").addEventListener("click", upgradeClick);
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((btn) => btn.classList.remove("active"));
+        tab.classList.add("active");
+        if (tab.dataset.tab === "research") {
+          planetInfoEl.innerHTML = `
+            <h3>연구 노트</h3>
+            <p>행성을 탐사하면 해당 행성의 특징과 함께 학습 포인트가 기록됩니다.</p>
+            <p>탐사 후 퀴즈에 도전하면 추가 지식 포인트를 받을 수 있어요.</p>
+          `;
+        } else {
+          planetInfoEl.innerHTML = `
+            <h3>행성을 선택하세요</h3>
+            <p>각 행성을 클릭하면 특징과 재미있는 과학 정보를 확인할 수 있어요.</p>
+          `;
+        }
+      });
+    });
+
+    renderPlanets();
+    updateScore();
+    updateResources();
+
+    setInterval(() => {
+      if (state.shipLevel > 0) {
+        state.resources += state.shipLevel;
+        updateResources();
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
