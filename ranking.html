@@ -375,53 +375,37 @@
       return (Math.floor(n)).toLocaleString();
     }
 
-    /* ====== 샤딩 유틸 ====== */
-    function sanitizeIdKey(raw) {
-      const s = (raw || '').toString().trim().toLowerCase();
-      return s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'user';
+    /* ====== 저장 경로/마이그레이션 ====== */
+    const ANDROID_BASE_PREFIX = 'android/uid';
+    function getUserBasePath(uid){
+      return `${ANDROID_BASE_PREFIX}/${uid}`;
     }
-    function makeIdKeyFromUser(user) {
-      const email = (user.email || '').toString();
-      if (email.includes('@')) return sanitizeIdKey(email.split('@')[0]);
-      const name = sanitizeIdKey(user.displayName || '');
-      return (name && name !== 'user') ? name : `user_${(user.uid || '').slice(0,6) || '000000'}`;
-    }
-    async function ensureServerMapping(user) {
+    async function findLegacyBasePath(uid){
       try {
-        const mapSnap = await get(ref(db, `userServerMap/${user.uid}`));
-        if (mapSnap.exists()) {
-          const { server, id } = mapSnap.val() || {};
-          if (server && id) return { server, id };
+        const mapSnap = await get(ref(db, `userServerMap/${uid}`));
+        const mapping = mapSnap.exists() ? (mapSnap.val() || null) : null;
+        if (mapping && mapping.server && mapping.id) {
+          const mappedPath = `users/${mapping.server}/${mapping.id}`;
+          const mappedSnap = await get(ref(db, mappedPath));
+          if (mappedSnap.exists()) return mappedPath;
         }
       } catch {}
-      let nextIndex = 0;
       try {
-        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
-        nextIndex = res?.snapshot?.val() || 1;
-      } catch { nextIndex = 1; }
-      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
-      const server = `server${serverNum}`;
-      let idKey = makeIdKeyFromUser(user);
-      try {
-        const exists = await get(ref(db, `users/${server}/${idKey}`));
-        if (exists.exists()) idKey = `${idKey}-${(user.uid||'').slice(0,4)}`;
+        const legacySnap = await get(ref(db, `users/${uid}`));
+        if (legacySnap.exists()) return `users/${uid}`;
       } catch {}
-      try { await update(ref(db), { [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() } }); } catch {}
-      return { server, id: idKey };
+      return null;
     }
-    async function migrateLegacyIfExists(user, basePath) {
+    async function migrateLegacyIfExists(uid, basePath) {
       try {
-        const oldSnap = await get(ref(db, `users/${user.uid}`));
-        if (!oldSnap.exists()) return;
-        const old = oldSnap.val() || {};
-        const updates = {};
-        if (old.gameData) updates[`${basePath}/gameData`] = old.gameData;
-        if (old.profile)  updates[`${basePath}/profile`]  = old.profile;
-        if (old.daily)    updates[`${basePath}/daily`]    = old.daily;
-        if (Object.keys(updates).length) {
-          updates[`migrations/${user.uid}`] = { to: basePath, at: Date.now() };
-          await update(ref(db), updates);
-        }
+        const legacyPath = await findLegacyBasePath(uid);
+        if (!legacyPath) return;
+        const destSnap = await get(ref(db, basePath));
+        if (destSnap.exists()) return;
+        const legacySnap = await get(ref(db, legacyPath));
+        if (!legacySnap.exists()) return;
+        const payload = legacySnap.val() || {};
+        await update(ref(db), { [basePath]: payload, [legacyPath]: null });
       } catch {}
     }
 
@@ -445,15 +429,9 @@
         bannerAndGo(`${location.origin}/game.html`, '로그인 후 이용해주세요!');
         return;
       }
-      try {
-        const { server, id } = await ensureServerMapping(user);
-        basePathForMe = `users/${server}/${id}`;
-        myIdKey = id;
-        await migrateLegacyIfExists(user, basePathForMe);
-      } catch {
-        basePathForMe = `users/${user.uid}`;
-        myIdKey = (user.uid||'').slice(0,8);
-      }
+      basePathForMe = getUserBasePath(user.uid);
+      myIdKey = (user.uid||'').slice(0,8);
+      await migrateLegacyIfExists(user.uid, basePathForMe);
       // 랭킹 잠금 해제 여부(화성 구매)
       try {
         const unlockedSnap = await get(ref(db, `${basePathForMe}/meta/rankingUnlocked`));

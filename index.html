@@ -836,54 +836,9 @@
       }, { once: true });
     }
 
-    function sanitizeIdKey(raw) {
-      const s = (raw || '').toString().trim().toLowerCase();
-      const base = s.replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
-      return base || 'user';
-    }
-
-    function makeIdKeyFromUser(user) {
-      const email = (user.email || '').toString();
-      if (email.includes('@')) {
-        const local = email.split('@')[0];
-        return sanitizeIdKey(local);
-      }
-      const dn = sanitizeIdKey(user.displayName || '');
-      if (dn && dn !== 'user') return dn;
-      return `user_${(user.uid || '').slice(0, 6) || '000000'}`;
-    }
-
-    async function ensureServerMapping(user) {
-      try {
-        const m = await get(ref(db, `userServerMap/${user.uid}`));
-        if (m.exists()) {
-          const { server, id } = m.val() || {};
-          if (server && id) return { server, id };
-        }
-      } catch {}
-
-      let nextIndex = 0;
-      try {
-        const res = await runTransaction(ref(db, 'meta/nextIndex'), cur => (cur || 0) + 1);
-        nextIndex = res?.snapshot?.val() || 1;
-      } catch { nextIndex = 1; }
-
-      const serverNum = Math.max(1, Math.ceil(nextIndex / 15));
-      const server = `server${serverNum}`;
-
-      let idKey = makeIdKeyFromUser(user);
-      try {
-        const exists = await get(ref(db, `users/${server}/${idKey}`));
-        if (exists.exists()) idKey = `${idKey}-${(user.uid || '').slice(0, 4)}`;
-      } catch {}
-
-      try {
-        await update(ref(db), {
-          [`userServerMap/${user.uid}`]: { server, id: idKey, createdAt: Date.now() }
-        });
-      } catch {}
-
-      return { server, id: idKey };
+    const ANDROID_BASE_PREFIX = 'android/uid';
+    function getUserBasePath(uid){
+      return `${ANDROID_BASE_PREFIX}/${uid}`;
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -894,13 +849,8 @@
         return;
       }
       window.__setAuthStatus?.('로그인');
-      try {
-        const info = await ensureServerMapping(user);
-        window.__updateServerInfo?.(info);
-      } catch (e) {
-        console.warn('서버 매핑 조회 실패:', e);
-        window.__updateServerInfo?.({ server: '(조회 실패)', id: '-' });
-      }
+      const basePath = getUserBasePath(user.uid);
+      window.__updateServerInfo?.({ server: ANDROID_BASE_PREFIX, id: user.uid, path: basePath });
       startPresenceWatcher(user);
     });
   </script>

@@ -2123,9 +2123,11 @@
     let lastSyncedServerStamp = 0;
     let isInitialSync = false;
 
-    let userServerKey = null;
-    let userIdKey     = null;
     let userBasePath  = null;
+    const ANDROID_BASE_PREFIX = 'android/uid';
+    function getUserBasePath(uid){
+      return `${ANDROID_BASE_PREFIX}/${uid}`;
+    }
 
     let dailyUnlocked = false;
     let rankingUnlocked = false;
@@ -2166,16 +2168,16 @@
     let mailboxCache = [];
     let selectedMailId = null;
 
-    function subscribePickaxePerk(serverKey, userIdKey){
+    function subscribePickaxePerk(basePath){
       if (perkUnsubscribe) {
         try { perkUnsubscribe(); } catch {}
         perkUnsubscribe = null;
       }
-      if (!serverKey || !userIdKey) {
+      if (!basePath) {
         resetPerkState();
         return;
       }
-      const perkRef = ref(db, `users/${serverKey}/${userIdKey}/perks/pickaxe`);
+      const perkRef = ref(db, `${basePath}/perks/pickaxe`);
       perkUnsubscribe = onValue(perkRef, snap => {
         if (!snap.exists()) {
           resetPerkState();
@@ -2742,43 +2744,27 @@
       const baseKeys = ['gameData', 'mailbox', 'security', 'daily'];
 
       try {
-        const mapSnap = await get(ref(db, 'userServerMap'));
-        if (mapSnap.exists()) {
-          const mapVal = mapSnap.val() || {};
-          Object.values(mapVal).forEach(entry => {
-            const server = entry?.server;
-            const id = entry?.id;
-            if (typeof server === 'string' && server && typeof id === 'string' && id) {
-              targets.add(`users/${server}/${id}`);
-            }
-          });
-        }
-      } catch (err) {
-        console.warn('fetchAllUserBasePaths map 오류', err);
-      }
-
-      try {
-        const usersSnap = await get(ref(db, 'users'));
-        if (usersSnap.exists()) {
+        const androidSnap = await get(ref(db, ANDROID_BASE_PREFIX));
+        if (androidSnap.exists()) {
           const collectNode = (node, parts = []) => {
             if (!node || typeof node !== 'object') return;
             const hasCoreData = baseKeys.some(k => Object.prototype.hasOwnProperty.call(node, k));
-            const hasMetaOnly = parts.length >= 2 && Object.prototype.hasOwnProperty.call(node, 'meta');
+            const hasMetaOnly = parts.length >= 1 && Object.prototype.hasOwnProperty.call(node, 'meta');
             const isUserNode = hasCoreData || hasMetaOnly;
             if (isUserNode && parts.length > 0) {
-              targets.add(`users/${parts.join('/')}`);
+              targets.add(`${ANDROID_BASE_PREFIX}/${parts.join('/')}`);
               return;
             }
-            if (parts.length >= 2) return;
+            if (parts.length >= 1) return;
             for (const [childKey, childVal] of Object.entries(node)) {
               if (!childKey || !childVal || typeof childVal !== 'object') continue;
               collectNode(childVal, [...parts, childKey]);
             }
           };
-          collectNode(usersSnap.val() || {}, []);
+          collectNode(androidSnap.val() || {}, []);
         }
       } catch (err) {
-        console.warn('fetchAllUserBasePaths users 오류', err);
+        console.warn('fetchAllUserBasePaths android 오류', err);
       }
 
       return Array.from(targets);
@@ -3248,51 +3234,37 @@
 
     async function planMigrationForUser(user){
       const uid = user.uid;
-      const desiredId = makeIdKeyFromUser(user);
-      const desiredServer = await allocateServerForUser();
-
-      let mapping = null;
-      try {
-        const m = await get(ref(db, `userServerMap/${uid}`));
-        mapping = m.exists() ? (m.val() || null) : null;
-      } catch {}
-
-      const legacySnap = await get(ref(db, `users/${uid}`));
-      const legacyExists = legacySnap.exists();
+      const destBasePath = getUserBasePath(uid);
 
       let srcBasePath = null;
-      let server = desiredServer;
+      try {
+        const m = await get(ref(db, `userServerMap/${uid}`));
+        const mapping = m.exists() ? (m.val() || null) : null;
+        if (mapping && mapping.server && mapping.id) {
+          const mappedPath = `users/${mapping.server}/${mapping.id}`;
+          const mappedSnap = await get(ref(db, mappedPath));
+          if (mappedSnap.exists()) srcBasePath = mappedPath;
+        }
+      } catch {}
 
-      if (mapping && mapping.server && mapping.id) {
-        srcBasePath = `users/${mapping.server}/${mapping.id}`;
-        server = mapping.server;
-      } else if (legacyExists) {
-        srcBasePath = `users/${uid}`;
-      }
-
-      const destBasePath = `users/${server}/${desiredId}`;
-      const destSnap = await get(ref(db, destBasePath));
-      const destExists = destSnap.exists();
-
-      if (isNewlyCreatedAccount(user) && !legacyExists && !mapping && !destExists) {
-        return { need: false, server, oldMapping: null, srcBasePath: null, destBasePath, reason: 'fresh-signup' };
-      }
-
-      if (mapping && mapping.server && mapping.id && mapping.id !== desiredId) {
+      if (!srcBasePath) {
         try {
-          const srcSnap = await get(ref(db, srcBasePath));
-          if (!srcSnap.exists()){
-            return { need:false, server: mapping.server, oldMapping: mapping, srcBasePath: null, destBasePath, reason: 'rename-mapping-only' };
-          }
+          const legacySnap = await get(ref(db, `users/${uid}`));
+          if (legacySnap.exists()) srcBasePath = `users/${uid}`;
         } catch {}
-        return { need:true, server: mapping.server, oldMapping: mapping, srcBasePath, destBasePath, reason: 'rename-to-email-id' };
       }
 
-      if (!mapping && legacyExists) {
-        return { need:true, server, oldMapping: null, srcBasePath: `users/${uid}`, destBasePath, reason: 'legacy-flat' };
+      let destExists = false;
+      try {
+        const destSnap = await get(ref(db, destBasePath));
+        destExists = destSnap.exists();
+      } catch {}
+
+      if (!srcBasePath || destExists) {
+        return { need: false, srcBasePath: null, destBasePath, reason: destExists ? 'already-new' : 'no-legacy' };
       }
 
-      return { need:false, server, oldMapping: mapping || null, srcBasePath: null, destBasePath, reason: 'fresh-or-already-ok' };
+      return { need: true, srcBasePath, destBasePath, reason: 'legacy-users' };
     }
 
     function showMigrateOverlay(show=true, msg='대기 중…'){
@@ -3322,15 +3294,6 @@
         setMigrateProgress('3/3 원본 삭제 중…');
         await update(ref(db), { [srcBasePath]: null });
       }
-      const displayEmail = String(user?.email || '').trim();
-      await update(ref(db), {
-        [`userServerMap/${user.uid}`]: {
-          server: userServerKey,
-          id: userIdKey,
-          displayId: displayEmail || null,
-          migratedAt: Date.now()
-        }
-      });
       setMigrateProgress('✅ 마이그레이션 완료! 잠시 후 게임으로 이동합니다…');
     }
 
@@ -4271,8 +4234,6 @@
     const SUPPORT_CTX_KEY = 'siu_support_ctx';
     function saveSupportCtx(extra = {}) {
       const ctx = {
-        server: userServerKey || null,
-        idKey: userIdKey || null,
         basePath: userBasePath || null,
         uid: uid || null,
         suspicion: (security && typeof security.suspicion === 'number') ? security.suspicion : null,
@@ -4544,17 +4505,13 @@
 
     function buildSupportInfoText(){
       const persisted = readSupportCtx();
-      const server = userServerKey || persisted?.server || '(알 수 없음)';
-      const idKey  = userIdKey     || persisted?.idKey  || '(알 수 없음)';
       const path   = userBasePath  || persisted?.basePath || '(알 수 없음)';
       const nowKST = kstDate().toLocaleString('ko-KR');
       const uidStr = uid || persisted?.uid || '(미로그인)';
       const sus    = (typeof security?.suspicion === 'number') ? security.suspicion
                 : (typeof persisted?.suspicion === 'number') ? persisted.suspicion : null;
       return [
-        `서버: ${server}`,
-        `아이디키: ${idKey}`,
-        `Realtime DB 경로: ${path}`,
+        `저장 경로: ${path}`,
         `UID: ${uidStr}`,
         `현재 의심도: ${sus === null ? '(알 수 없음)' : sus}`,
         `발생 시각(KST): ${nowKST}`
@@ -4562,9 +4519,8 @@
     }
     function buildSupportMail(){
       const persisted = readSupportCtx();
-      const s = userServerKey || persisted?.server || 'server?';
-      const i = userIdKey     || persisted?.idKey  || 'id?';
-      const subject = `[Appeal] 오탐 검토 요청 - ${s} / ${i}`;
+      const uidStr = uid || persisted?.uid || 'unknown';
+      const subject = `[Appeal] 오탐 검토 요청 - ${uidStr}`;
       const header  = '안녕하세요, 오탐으로 의심되어 검토를 요청드립니다.\n';
       const info    = buildSupportInfoText();
       const footer  = '\n\n상세 상황:\n(여기에 상황을 자세히 적어주세요)\n';
@@ -6135,7 +6091,7 @@
       showAuthStatus('');
       if (dataUnsubscribe) { try{ dataUnsubscribe(); }catch{} dataUnsubscribe=null; }
       if (mailboxUnsubscribe) { try{ mailboxUnsubscribe(); }catch{} mailboxUnsubscribe=null; }
-      subscribePickaxePerk(null, null);
+      subscribePickaxePerk(null);
       mailboxRef = null;
       mailboxCache = [];
       selectedMailId = null;
@@ -6197,31 +6153,15 @@
           plan = await planMigrationForUser(user);
         } catch(e){
           console.error('planMigration error', e);
-          const fallbackServer = await allocateServerForUser();
-          userServerKey = fallbackServer;
-          userIdKey     = makeIdKeyFromUser(user);
-          userBasePath  = `users/${userServerKey}/${userIdKey}`;
-          subscribePickaxePerk(userServerKey, userIdKey);
-          try {
-            await update(ref(db), {
-              [`userServerMap/${uid}`]: {
-                server: userServerKey,
-                id: userIdKey,
-                displayId: String(user?.email||'') || null,
-                assignedAt: Date.now(),
-                reason: 'plan-error-fallback'
-              }
-            });
-          } catch {}
+          userBasePath = getUserBasePath(uid);
+          subscribePickaxePerk(userBasePath);
           saveSupportCtx({ banned: false });
           await proceedWithDataBinding();
           return;
         }
-        userServerKey = plan.server;
-        userIdKey     = makeIdKeyFromUser(user);
-        userBasePath  = `users/${userServerKey}/${userIdKey}`;
-        subscribePickaxePerk(userServerKey, userIdKey);
 
+        userBasePath = getUserBasePath(uid);
+        subscribePickaxePerk(userBasePath);
         saveSupportCtx({ banned: false });
 
         if (plan.need) {
@@ -6233,17 +6173,6 @@
               disableMigrateStart(true);
               try{
                 await performMigration(plan.srcBasePath, plan.destBasePath, user);
-                try {
-                  await update(ref(db), {
-                    [`userServerMap/${uid}`]: {
-                      server: userServerKey,
-                      id: userIdKey,
-                      displayId: String(user?.email||'') || null,
-                      migratedAt: Date.now(),
-                      reason: plan.reason
-                    }
-                  });
-                } catch {}
                 saveSupportCtx({ banned: false });
                 setTimeout(()=>{ showMigrateOverlay(false); proceedWithDataBinding(); }, 600);
               }catch(e){
@@ -6254,17 +6183,6 @@
             };
           }
         } else {
-          try {
-            await update(ref(db), {
-              [`userServerMap/${uid}`]: {
-                server: userServerKey,
-                id: userIdKey,
-                displayId: String(user?.email||'') || null,
-                assignedAt: Date.now(),
-                reason: plan.reason || 'auto-assign'
-              }
-            });
-          } catch {}
           saveSupportCtx({ banned: false });
           await proceedWithDataBinding();
         }
@@ -6285,7 +6203,7 @@
         pendingGuestCleanup = false;
         pendingGuestRemovalNotice = false;
         uid = null; dataRef = null;
-        userServerKey = null; userIdKey = null; userBasePath = null;
+        userBasePath = null;
         dailyUnlocked = false; rankingUnlocked = false;
         bootDone = false;
 
