@@ -706,6 +706,7 @@
     .mail-item.unread{ border-color:rgba(0,212,255,0.45); background:rgba(0,212,255,0.14); }
     .mail-item.selected{ box-shadow:0 0 0 2px rgba(0,212,255,0.55); }
     .mail-item .mail-subject{ font-weight:700; font-size:14px; color:#f5fbff; }
+    .mail-claimed{ display:inline-block; margin-left:6px; padding:2px 6px; border-radius:999px; font-size:11px; font-weight:800; color:#00121a; background:rgba(0,242,255,0.95); }
     .mail-item .mail-preview{ font-size:12px; color:#b7d8ff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .mail-item .mail-meta{ display:flex; justify-content:space-between; gap:8px; font-size:11px; color:#8fb9ff; }
     #mail-detail{
@@ -2162,11 +2163,22 @@
     }
 
     const MAIL_ADMIN_EMAIL = 'siu46852579@gmail.com';
-    let mailboxRef = null;
-    let mailboxUnsubscribe = null;
+    // 메일함(안드로이드 방식): broadcast mailbox + per-user read/claimed
+    const ANDROID_BROADCAST_MAILBOX_PATH = 'android/broadcast/mailbox';
+    let mailboxRef = null;              // broadcast mailbox ref
+    let mailboxUnsubscribe = null;      // broadcast listener
+    let mailboxReadUnsubscribe = null;  // user read listener
+    let mailboxClaimedUnsubscribe = null; // user claimed listener
     let perkUnsubscribe = null;
+
     let mailboxCache = [];
     let selectedMailId = null;
+
+    // derived states (from per-user nodes)
+    let mailReadSet = new Set();        // keys in {userBasePath}/mailbox_read
+    let mailClaimedMap = new Map();     // key->timestamp in {userBasePath}/mailbox_claimed
+    let aliveMailIdSet = new Set();     // current broadcast mailbox IDs (after TTL filter)
+    let broadcastLoadedOnce = false;
 
     function subscribePickaxePerk(basePath){
       if (perkUnsubscribe) {
@@ -2460,7 +2472,7 @@
     }
 
     function buildMailRewardsHtml(mail) {
-      const rewards = mail?.rewards;
+      const rewards = mail?.rewards ?? mail?.reward;
       const rows = [];
       const resAmt = Number(rewards?.resources ?? rewards?.res ?? 0);
       if (resAmt > 0) rows.push(`<span>🪨 자원 +${formatKR(resAmt)}</span>`);
@@ -2496,11 +2508,14 @@
         const selected = selectedMailId === mail.id;
         const preview = escapeHTML((mail.body || '').replace(/\s+/g, ' ').trim().slice(0, 40));
         const sent = formatMailDate(mail.sentAt);
+        const subject = escapeHTML(mail.title || mail.subject || '제목 없음');
+        const sender = escapeHTML(mail.sender || mail.from || '시스템');
+        const claimed = mail.claimedAt ? ' <span class="mail-claimed">수령</span>' : '';
         return `
           <button type="button" class="mail-item${unread ? ' unread' : ''}${selected ? ' selected' : ''}" data-mail-id="${mail.id}">
-            <div class="mail-subject">${escapeHTML(mail.subject || '제목 없음')}</div>
+            <div class="mail-subject">${subject}${claimed}</div>
             <div class="mail-preview">${preview || '내용 없음'}</div>
-            <div class="mail-meta"><span>${escapeHTML(mail.from || '시스템')}</span><span>${sent}</span></div>
+            <div class="mail-meta"><span>${sender}</span><span>${sent}</span></div>
           </button>`;
       }).join('');
       listEl.innerHTML = html;
@@ -2520,28 +2535,40 @@
         return;
       }
       const sent = formatMailDate(mail.sentAt);
-      const read = mail.readAt ? formatMailDate(mail.readAt) : null;
-      const claimed = mail.claimedAt ? formatMailDate(mail.claimedAt) : null;
+      const isRead = !!mail.readAt;
+      const claimedAt = Number(mail.claimedAt || 0) || 0;
+      const claimed = claimedAt ? formatMailDate(claimedAt) : null;
+
+      const subject = escapeHTML(mail.title || mail.subject || '제목 없음');
+      const sender = escapeHTML(mail.sender || mail.from || '시스템');
       const bodyHtml = escapeHTML(mail.body || '').replace(/\n/g, '<br/>');
+
       const rewardsHtml = buildMailRewardsHtml(mail);
-      const hasRewards = !!mail.rewards && rewardsHtml !== '<span>보상 없음</span>';
-      const statusParts = [`발송: ${sent || '-'}`];
-      if (read) statusParts.push(`읽음: ${read}`);
+      const hasRewards = (mail.rewards || mail.reward) && rewardsHtml !== '<span>보상 없음</span>';
+
+      const statusParts = [`발송: ${sent || '-'}`, isRead ? '읽음' : '안 읽음'];
       if (claimed) statusParts.push(`보상 수령: ${claimed}`);
-      const claimDisabled = !hasRewards || !!mail.claimedAt;
-      const claimLabel = mail.claimedAt ? '수령 완료' : '보상 받기';
+
+      const claimDisabled = !hasRewards || claimedAt > 0;
+      const claimLabel = claimedAt > 0 ? '수령 완료' : '보상 받기';
+
+      const isAdmin = String(auth?.currentUser?.email || '').toLowerCase() === MAIL_ADMIN_EMAIL;
+
       detail.innerHTML = `
         <div>
-          <h4>${escapeHTML(mail.subject || '제목 없음')}</h4>
-          <div class="mail-meta-line">보낸 사람: ${escapeHTML(mail.from || '시스템')} • ${statusParts.join(' • ')}</div>
+          <h4>${subject}</h4>
+          <div class="mail-meta-line">보낸 사람: ${sender} • ${statusParts.join(' • ')}</div>
         </div>
         <div class="mail-body">${bodyHtml || '내용이 없습니다.'}</div>
         <div id="mail-rewards">${rewardsHtml}</div>
         <div id="mail-actions">
-          <button type="button" class="secondary" id="mail-delete-btn">삭제</button>
+          ${isAdmin ? '<button type="button" class="secondary" id="mail-delete-btn">삭제(전체)</button>' : ''}
           <button type="button" id="mail-claim-btn" ${claimDisabled ? 'disabled' : ''}>${claimLabel}</button>
         </div>`;
-      detail.querySelector('#mail-delete-btn')?.addEventListener('click', () => deleteMail(mail.id));
+
+      if (isAdmin) {
+        detail.querySelector('#mail-delete-btn')?.addEventListener('click', () => deleteMail(mail.id));
+      }
       if (!claimDisabled) {
         detail.querySelector('#mail-claim-btn')?.addEventListener('click', () => claimMailReward(mail.id));
       }
@@ -2564,12 +2591,15 @@
         return;
       }
       selectedMailId = mailId;
+
+      // 안드로이드 방식: 읽음은 per-user mailbox_read/{mailId}=true
       if (!mail.readAt) {
-        const now = Date.now();
-        mailboxCache = mailboxCache.map(m => m.id === mailId ? { ...m, readAt: m.readAt || now } : m);
-        mail = mailboxCache.find(m => m.id === mailId) || mail;
+        mailboxCache = mailboxCache.map(m => m.id === mailId ? { ...m, readAt: 1 } : m);
+        mailReadSet.add(mailId);
         markMailAsRead(mailId);
+        mail = mailboxCache.find(m => m.id === mailId) || mail;
       }
+
       renderMailList();
       renderMailDetail(mail);
       updateMailBadges();
@@ -2578,15 +2608,15 @@
     async function markMailAsRead(mailId) {
       if (!uid || !userBasePath) return;
       try {
-        await update(ref(db), { [`${userBasePath}/mailbox/${mailId}/readAt`]: Date.now() });
+        await update(ref(db), { [`${userBasePath}/mailbox_read/${mailId}`]: true });
       } catch (err) {
         console.warn('markMailAsRead 실패', err);
       }
     }
 
     function applyMailRewards(mail) {
-      if (!mail?.rewards) return [];
-      const rewards = mail.rewards || {};
+      const rewards = (mail?.rewards ?? mail?.reward) || {};
+      if (!rewards) return [];
       const applied = [];
       const resAmt = Math.max(0, Math.floor(Number(rewards.resources ?? rewards.res ?? 0)));
       if (resAmt > 0) {
@@ -2637,34 +2667,56 @@
         showToast('로그인 후 이용하세요.', null, null, 2800);
         return;
       }
-      const mailPath = ref(db, `${userBasePath}/mailbox/${mailId}`);
-      let alreadyClaimed = false;
+
+      const mail = mailboxCache.find(m => m.id === mailId);
+      if (!mail) {
+        showToast('우편이 존재하지 않습니다.', null, null, 2600);
+        return;
+      }
+
+      const rewardsHtml = buildMailRewardsHtml(mail);
+      const hasRewards = (mail.rewards || mail.reward) && rewardsHtml !== '<span>보상 없음</span>';
+      if (!hasRewards) {
+        showToast('보상이 없습니다.', null, null, 2600);
+        // 보상 없더라도 읽음 처리
+        if (!mail.readAt) markMailAsRead(mailId);
+        return;
+      }
+
+      const claimedPath = ref(db, `${userBasePath}/mailbox_claimed/${mailId}`);
       try {
-        const res = await runTransaction(mailPath, current => {
-          if (!current) return current;
-          if (current.claimedAt) { alreadyClaimed = true; return current; }
-          const next = { ...current };
-          const now = Date.now();
-          next.claimedAt = now;
-          if (!next.readAt) next.readAt = now;
-          return next;
+        const res = await runTransaction(claimedPath, current => {
+          const cur = Number(current ?? 0) || 0;
+          if (cur > 0) return; // abort (already claimed)
+          return Date.now();
         });
-        if (!res.snapshot.exists()) {
-          showToast('우편이 존재하지 않습니다.', null, null, 2600);
-          return;
-        }
-        if (alreadyClaimed) {
+
+        if (!res.committed) {
           showToast('이미 수령한 우편입니다.', null, null, 2600);
           return;
         }
-        const finalMail = { id: mailId, ...(res.snapshot.val() || {}) };
-        const rewards = applyMailRewards(finalMail);
-        mailboxCache = mailboxCache.map(m => m.id === mailId ? { ...m, readAt: finalMail.readAt, claimedAt: finalMail.claimedAt } : m);
+
+        const claimedAt = Number(res.snapshot.val() ?? Date.now()) || Date.now();
+
+        // 읽음 처리도 같이
+        try {
+          await update(ref(db), { [`${userBasePath}/mailbox_read/${mailId}`]: true });
+        } catch {}
+
+        mailReadSet.add(mailId);
+        mailClaimedMap.set(mailId, claimedAt);
+
+        // 보상 적용 (웹 게임 기존 보상 적용 로직 재사용)
+        const rewardsApplied = applyMailRewards({ ...mail, rewards: (mail.rewards ?? mail.reward) || {} });
+
+        // UI 즉시 반영
+        mailboxCache = mailboxCache.map(m => m.id === mailId ? { ...m, readAt: 1, claimedAt } : m);
         renderMailList();
-        renderMailDetail(mailboxCache.find(m => m.id === mailId) || finalMail);
+        renderMailDetail(mailboxCache.find(m => m.id === mailId) || { ...mail, readAt: 1, claimedAt });
         updateMailBadges();
-        if (rewards && rewards.length) {
-          showToast(`🎁 보상을 수령했습니다! (${rewards.join(', ')})`, null, null, 4200);
+
+        if (rewardsApplied && rewardsApplied.length) {
+          showToast(`🎁 보상을 수령했습니다! (${rewardsApplied.join(', ')})`, null, null, 4200);
         } else {
           showToast('보상을 확인했습니다.', null, null, 3200);
         }
@@ -2675,15 +2727,15 @@
     }
 
     async function deleteMail(mailId) {
-      if (!uid || !userBasePath) {
-        if (!requireLoginForFeature()) return;
-        showToast('로그인 후 이용하세요.', null, null, 2800);
+      const isAdmin = String(auth?.currentUser?.email || '').toLowerCase() === MAIL_ADMIN_EMAIL;
+      if (!isAdmin) {
+        showToast('삭제는 관리자 전용입니다.', null, null, 2600);
         return;
       }
-      const ok = confirm('해당 우편을 삭제할까요? 보상을 받았다면 삭제해도 안전합니다.');
+      const ok = confirm('이 우편을 전체 유저에게서 삭제할까요? (broadcast 메일 삭제)');
       if (!ok) return;
       try {
-        await update(ref(db), { [`${userBasePath}/mailbox/${mailId}`]: null });
+        await update(ref(db), { [`${ANDROID_BROADCAST_MAILBOX_PATH}/${mailId}`]: null });
         mailboxCache = mailboxCache.filter(m => m.id !== mailId);
         if (selectedMailId === mailId) {
           selectedMailId = null;
@@ -2781,66 +2833,42 @@
       const resInput = document.getElementById('mail-compose-res');
       const coinInput = document.getElementById('mail-compose-coin');
       const ecoInput = document.getElementById('mail-compose-ecoin');
-      const buffTypeSel = document.getElementById('mail-compose-buff-type');
-      const buffMultInput = document.getElementById('mail-compose-buff-mult');
-      const buffMinInput = document.getElementById('mail-compose-buff-min');
+
+      // (안드로이드 방식과 동일하게) broadcast 메일은 전체 유저 공용 메일함에 1번만 저장
+      if (targetInput) targetInput.value = '모든 유저 (broadcast 발송)';
 
       if (!subjectInput || !bodyInput) return;
 
       const subject = subjectInput.value.trim() || '제목 없음';
       const body = bodyInput.value.trim();
+
       const resAmt = Math.max(0, Math.floor(Number(resInput?.value ?? 0)));
       const coinAmt = Math.max(0, Math.floor(Number(coinInput?.value ?? 0)));
       const ecoAmt = Math.max(0, Math.floor(Number(ecoInput?.value ?? 0)));
-      const buffType = buffTypeSel?.value || '';
-      const buffMultRaw = Number(buffMultInput?.value ?? 0);
-      const buffMinutes = Math.max(0, Math.floor(Number(buffMinInput?.value ?? 0)));
 
-      const rewards = {};
+      const reward = {};
       let rewardCount = 0;
-      if (resAmt > 0) { rewards.resources = resAmt; rewardCount++; }
-      if (coinAmt > 0) { rewards.coins = coinAmt; rewardCount++; }
-      if (ecoAmt > 0) { rewards.eventCoins = ecoAmt; rewardCount++; }
-      if (buffType && buffMultRaw > 1 && buffMinutes > 0) {
-        rewards.buffs = [{ type: buffType, value: buffMultRaw - 1, duration: buffMinutes * 60000 }];
-        rewardCount++;
-      }
+      if (resAmt > 0) { reward.resources = resAmt; rewardCount++; }
+      if (coinAmt > 0) { reward.coins = coinAmt; rewardCount++; }
+      if (ecoAmt > 0) { reward.eventCoins = ecoAmt; rewardCount++; }
 
+      // 안드로이드 앱이 읽는 스키마로 저장: title/body/sender/sentAt/reward
       const payload = {
-        subject,
+        title: subject,
         body,
-        from: MAIL_ADMIN_EMAIL,
+        sender: MAIL_ADMIN_EMAIL,
         sentAt: Date.now()
       };
-      if (rewardCount > 0) payload.rewards = rewards;
-
-      const recipients = await fetchAllUserBasePaths();
-      if (!recipients.length) {
-        showToast('발송 대상 사용자를 찾을 수 없습니다.', null, null, 3600);
-        if (targetInput) targetInput.value = '모든 유저 (자동 발송)';
-        return;
-      }
-
-      const updates = {};
-      recipients.forEach(path => {
-        if (!path) return;
-        updates[`${path}/mailbox/${generateMailId()}`] = { ...payload };
-      });
-
-      if (!Object.keys(updates).length) {
-        showToast('발송 대상 사용자를 찾을 수 없습니다.', null, null, 3600);
-        if (targetInput) targetInput.value = '모든 유저 (자동 발송)';
-        return;
-      }
+      if (rewardCount > 0) payload.reward = reward;
 
       const sendBtn = document.getElementById('mail-compose-send');
       if (sendBtn) sendBtn.disabled = true;
 
       try {
-        await update(ref(db), updates);
-        const count = recipients.length;
-        showToast(`우편을 발송했습니다. (총 ${count}명)`, null, null, 3200);
-        if (targetInput) targetInput.value = '모든 유저 (자동 발송)';
+        const mailId = generateMailId();
+        await update(ref(db), { [`${ANDROID_BROADCAST_MAILBOX_PATH}/${mailId}`]: payload });
+        showToast('우편을 발송했습니다. (전체 유저)', null, null, 3200);
+        if (targetInput) targetInput.value = '모든 유저 (broadcast 발송)';
       } catch (err) {
         console.error('sendAdminMail 오류', err);
         showToast('우편 발송에 실패했습니다. 잠시 후 다시 시도해주세요.', null, null, 3600);
@@ -5947,25 +5975,137 @@
     // 데이터 바인딩
     async function proceedWithDataBinding(){
       if (mailboxUnsubscribe) { try { mailboxUnsubscribe(); } catch {} mailboxUnsubscribe = null; }
+      if (mailboxReadUnsubscribe) { try { mailboxReadUnsubscribe(); } catch {} mailboxReadUnsubscribe = null; }
+      if (mailboxClaimedUnsubscribe) { try { mailboxClaimedUnsubscribe(); } catch {} mailboxClaimedUnsubscribe = null; }
       mailboxCache = [];
       selectedMailId = null;
+      mailReadSet = new Set();
+      mailClaimedMap = new Map();
+      aliveMailIdSet = new Set();
+      broadcastLoadedOnce = false;
       renderMailList();
       renderMailDetail(null);
       updateMailBadges();
-      mailboxRef = ref(db, `${userBasePath}/mailbox`);
-      mailboxUnsubscribe = onValue(mailboxRef, snap => {
-        const raw = snap.exists() ? snap.val() : {};
-        const entries = Object.entries(raw || {}).map(([id, mail]) => ({ id, ...(mail || {}) }));
+      mailboxRef = ref(db, ANDROID_BROADCAST_MAILBOX_PATH);
+      const readRef = ref(db, `${userBasePath}/mailbox_read`);
+      const claimedRef = ref(db, `${userBasePath}/mailbox_claimed`);
+      const isAdmin = String(auth?.currentUser?.email || '').toLowerCase() === MAIL_ADMIN_EMAIL;
+
+      let broadcastRaw = {};
+      let readRaw = {};
+      let claimedRaw = {};
+      const TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+      const normalizeBroadcastMailbox = () => {
+        const nowMs = Date.now();
+        const expiredIds = [];
+        const raw = broadcastRaw || {};
+        const entries = Object.entries(raw || {}).map(([id, mail]) => {
+          const m = mail || {};
+          const sentAt = Number(m.sentAt ?? 0) || 0;
+
+          // 30일 지난 메일은 숨김 + (관리자 계정) DB에서 자동 삭제
+          if (sentAt > 0 && (nowMs - sentAt) >= TTL_MS) {
+            expiredIds.push(id);
+            return null;
+          }
+
+          const title = String(m.title ?? m.subject ?? '제목 없음');
+          const body = String(m.body ?? '');
+          const sender = String(m.sender ?? m.from ?? '시스템');
+          const reward = (m.reward ?? m.rewards ?? {}) || {};
+
+          const claimedAt = Number((claimedRaw || {})[id] ?? 0) || 0;
+          const read = !!(readRaw && Object.prototype.hasOwnProperty.call(readRaw, id));
+
+          return {
+            id,
+            title,
+            body,
+            sender,
+            sentAt,
+            reward,
+            rewards: reward,         // 기존 함수 호환
+            readAt: read ? 1 : 0,    // 안드로이드 방식(읽음: boolean)을 UI 호환용으로 변환
+            claimedAt               // 안드로이드 방식(수령: timestamp)
+          };
+        }).filter(Boolean);
+
         entries.sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0));
         mailboxCache = entries;
-        if (selectedMailId && !mailboxCache.some(m => m.id === selectedMailId)) {
+        aliveMailIdSet = new Set(entries.map(e => e.id));
+
+        // 선택된 메일이 사라졌다면 선택 해제
+        if (selectedMailId && !aliveMailIdSet.has(selectedMailId)) {
           selectedMailId = null;
         }
+
+        // 관리자 계정이면 만료 메일을 broadcast에서 제거
+        if (isAdmin && expiredIds.length) {
+          const updates = {};
+          expiredIds.forEach(id => {
+            updates[`${ANDROID_BROADCAST_MAILBOX_PATH}/${id}`] = null;
+          });
+          update(ref(db), updates).catch(() => {});
+        }
+
+        // per-user read/claimed에 남아있는 쓰레기 mailId 정리 (broadcast 로딩 이후에만)
+        if (broadcastLoadedOnce) {
+          try {
+            const extraRead = Object.keys(readRaw || {}).filter(id => !aliveMailIdSet.has(id));
+            if (extraRead.length) {
+              const up = {};
+              extraRead.forEach(id => { up[`${userBasePath}/mailbox_read/${id}`] = null; });
+              update(ref(db), up).catch(() => {});
+            }
+          } catch {}
+          try {
+            const extraClaim = Object.keys(claimedRaw || {}).filter(id => !aliveMailIdSet.has(id));
+            if (extraClaim.length) {
+              const up = {};
+              extraClaim.forEach(id => { up[`${userBasePath}/mailbox_claimed/${id}`] = null; });
+              update(ref(db), up).catch(() => {});
+            }
+          } catch {}
+        }
+
         renderMailList();
         const current = selectedMailId ? mailboxCache.find(m => m.id === selectedMailId) : null;
         renderMailDetail(current || null);
         updateMailBadges();
+      };
+
+      // 1) broadcast mailbox 구독
+      mailboxUnsubscribe = onValue(mailboxRef, snap => {
+        broadcastLoadedOnce = true;
+        broadcastRaw = snap.exists() ? (snap.val() || {}) : {};
+        normalizeBroadcastMailbox();
       });
+
+      // 2) 읽음 상태 구독
+      mailboxReadUnsubscribe = onValue(readRef, snap => {
+        readRaw = snap.exists() ? (snap.val() || {}) : {};
+        mailReadSet = new Set(Object.keys(readRaw || {}));
+        if (broadcastLoadedOnce) {
+          normalizeBroadcastMailbox();
+        } else {
+          renderMailList();
+          updateMailBadges();
+        }
+      });
+
+      // 3) 수령 상태 구독
+      mailboxClaimedUnsubscribe = onValue(claimedRef, snap => {
+        claimedRaw = snap.exists() ? (snap.val() || {}) : {};
+        mailClaimedMap = new Map(Object.entries(claimedRaw || {}).map(([k, v]) => [k, Number(v) || 0]));
+        if (broadcastLoadedOnce) {
+          normalizeBroadcastMailbox();
+        } else {
+          renderMailList();
+          updateMailBadges();
+        }
+      });
+
       updateMailComposeVisibility(auth.currentUser || null);
 
       try {
@@ -6095,6 +6235,10 @@
       mailboxRef = null;
       mailboxCache = [];
       selectedMailId = null;
+      mailReadSet = new Set();
+      mailClaimedMap = new Map();
+      aliveMailIdSet = new Set();
+      broadcastLoadedOnce = false;
       renderMailList();
       renderMailDetail(null);
       updateMailBadges();
