@@ -144,6 +144,41 @@
     body.game-hard-blocked #top-bar { opacity:0.35; }
     #container .hard-block-disabled,
     #top-bar .hard-block-disabled { pointer-events:none !important; opacity:0.5; }
+    .ore-feedback {
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-size:13px;
+      color:#d9f2ff;
+      min-height:20px;
+    }
+    .ore-feedback .combo-badge {
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(120, 220, 255, 0.45);
+      background:rgba(11, 28, 48, 0.55);
+      font-weight:700;
+      color:#c2ecff;
+      transition:all .2s ease;
+    }
+    .ore-feedback .combo-badge.hot {
+      color:#fff3b0;
+      border-color:rgba(255, 218, 120, 0.85);
+      box-shadow:0 0 12px rgba(255, 217, 102, 0.35);
+    }
+    .ore-feedback .crit-text {
+      color:#aee4ff;
+      opacity:0.88;
+      transition:all .2s ease;
+    }
+    .ore-feedback .crit-text.on {
+      color:#ffea99;
+      font-weight:700;
+      text-shadow:0 0 10px rgba(255, 221, 90, 0.4);
+      opacity:1;
+    }
     img { display:block; }
 
     /* 부팅/스피너 */
@@ -1489,6 +1524,10 @@
         <div id="main-content" class="tab-content active">
           <div id="ore-container" style="position:relative; display:inline-block;">
             <img src="/images/ore.png" id="ore" alt="광석" />
+          </div>
+          <div class="ore-feedback" aria-live="polite">
+            <span id="combo-status" class="combo-badge">콤보 x1.00</span>
+            <span id="crit-status" class="crit-text">약점 찬스 준비됨</span>
           </div>
           <div style="display:flex; justify-content:center; gap:8px; align-items:center; margin-top:10px;">
             <button id="convert-button" class="general">10자원 → 1코인</button>
@@ -2905,6 +2944,15 @@
     let shipEnhanceMessage = shipEnhanceBaseMsg;
     let shipEnhanceTone = 'info';
     let shipEnhanceInProgress = false;
+    const clickComboWindowMs = 1400;
+    const clickComboTierSize = 8;
+    const clickComboBonusPerTier = 0.06;
+    const clickComboMaxBonus = 0.72;
+    const weakSpotChance = 0.09;
+    const weakSpotMultiplier = 1.8;
+    let clickComboCount = 0;
+    let clickComboExpireAt = 0;
+    let weakSpotRecentUntil = 0;
 
     function getShipSuccessRate(level = state.shipLevel) {
       const lv = Math.max(1, level || 1);
@@ -2924,6 +2972,38 @@
         return { cost: 7, guaranteed: true };
       }
       return { cost: 1, guaranteed: false };
+    }
+
+    function getClickComboMultiplier(now = Date.now()) {
+      if (!clickComboCount || now > clickComboExpireAt) return 1;
+      const comboTier = Math.floor(clickComboCount / clickComboTierSize);
+      const bonus = Math.min(clickComboMaxBonus, comboTier * clickComboBonusPerTier);
+      return 1 + bonus;
+    }
+
+    function registerClickCombo(now = Date.now()) {
+      if (now > clickComboExpireAt) {
+        clickComboCount = 0;
+      }
+      clickComboCount += 1;
+      clickComboExpireAt = now + clickComboWindowMs;
+      return getClickComboMultiplier(now);
+    }
+
+    function renderMiningFeedback(now = Date.now()) {
+      if (clickComboCount > 0 && now > clickComboExpireAt) clickComboCount = 0;
+      const comboEl = document.getElementById('combo-status');
+      if (comboEl) {
+        const mult = getClickComboMultiplier(now);
+        comboEl.innerText = `콤보 x${mult.toFixed(2)}`;
+        comboEl.classList.toggle('hot', mult >= 1.2);
+      }
+      const critEl = document.getElementById('crit-status');
+      if (critEl) {
+        const active = now <= weakSpotRecentUntil;
+        critEl.innerText = active ? '약점 적중! 다음 콤보 유지!' : '약점 찬스 준비됨';
+        critEl.classList.toggle('on', active);
+      }
     }
 
     function setShipEnhanceStatus(message, tone = 'info') {
@@ -4687,6 +4767,7 @@
       renderSecurityBadge();
       tryUnlockDaily();
       renderBuffStatus();
+      renderMiningFeedback();
       renderQuestUI();
       updateSpinButtons();
 
@@ -5203,16 +5284,22 @@
         if (security.banned){ return; }
 
         if (!ensureReady()) return;
+        const now = Date.now();
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
         const resMul = activeBuffFactor('res') * aggregateTreeMultiplier('res');
         const clickMul = aggregateTreeMultiplier('click');
         const perkResMul = perkState.resourceMult || 1;
-        const inc = state.clickPower * resMul * perkResMul * clickMul;
+        const comboMul = registerClickCombo(now);
+        const weakSpotHit = Math.random() < weakSpotChance;
+        if (weakSpotHit) weakSpotRecentUntil = now + 850;
+        const weakSpotMul = weakSpotHit ? weakSpotMultiplier : 1;
+        const inc = state.clickPower * resMul * perkResMul * clickMul * comboMul * weakSpotMul;
         state.resources += inc;
         auditAdd('res', inc);
         playSfx('sfx-pickaxe');
         if (state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
+        renderMiningFeedback(now);
         save(); updateUI();
       });
       attachHoldRepeat('convert-button', () => {
