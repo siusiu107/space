@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -4441,11 +4440,15 @@
       if (!url) {
         throw new Error('secureSaveEndpoint가 Firebase meta/secureSaveEndpoint에 설정되어 있지 않습니다.');
       }
-      if (!auth?.currentUser) throw new Error('로그인이 필요합니다.');
-      const idToken = await auth.currentUser.getIdToken(true);
+
+      // Cloudflare Worker는 Authorization: Bearer <Firebase ID token> 헤더를 요구한다.
+      // 기존 버전은 idToken을 body에 넣어서 보냈기 때문에 Worker에서 401 Missing Firebase ID token이 발생했다.
+      const currentUser = auth?.currentUser || (window.firebase?.auth ? firebase.auth().currentUser : null);
+      if (!currentUser) throw new Error('로그인이 필요합니다.');
+
+      const idToken = await currentUser.getIdToken(true);
       const payload = {
-        idToken,
-        state: proposedState,
+        gameData: proposedState,
         clientAudit: {
           last: audit.last,
           recGain: audit.recGain,
@@ -4455,9 +4458,13 @@
           clientNow: Date.now()
         }
       };
+
       const resp = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        headers: {
+          'Content-Type':'application/json',
+          'Authorization': 'Bearer ' + idToken
+        },
         body: JSON.stringify(payload)
       });
       let json = null;
