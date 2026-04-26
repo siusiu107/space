@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -4473,12 +4472,12 @@
       });
       let json = null;
       try { json = await resp.json(); } catch {}
-      if (resp.status === 423 || json?.banned) {
+      if (resp.status === 423 || resp.status === 403 || json?.banned || json?.authDisabled) {
         security.banned = true;
-        security.disabledReason = json?.reason || 'abnormal-save';
+        security.disabledReason = json?.reason || json?.error || 'terms-violation';
+        security.authDisabled = !!json?.authDisabled;
         securityDirty = true;
-        saveSupportCtx({ banned:true, disabledReason: security.disabledReason });
-        showAuthStatus('⛔ 비정상 저장 요청이 반복되어 계정이 정지되었습니다. 오탐이면 appeals@siustudio.me 로 문의해 주세요.', true);
+        showBanAppealNotice(security.disabledReason, security.authDisabled);
         try { await auth.signOut(); } catch {}
         throw new Error('account-disabled');
       }
@@ -4525,18 +4524,41 @@
     function buildSupportMail(){
       const persisted = readSupportCtx();
       const uidStr = uid || persisted?.uid || 'unknown';
-      const subject = `[Support] 문의 - ${uidStr}`;
-      const header  = '안녕하세요, 계정 정지/차단 검토를 요청드립니다.\n';
+      const subject = `[Appeal] 계정 정지 검토 요청 - ${uidStr}`;
       const info    = buildSupportInfoText();
-      const footer  = '\n\n상세 상황:\n(여기에 상황을 자세히 적어주세요)\n';
-      const body    = `${header}\n${info}${footer}`;
+      const body    = [
+        '안녕하세요, SiuStudio 운영팀께 계정 정지 검토를 요청드립니다.',
+        '',
+        '아래 계정이 약관 위반/비정상 저장 탐지로 차단되었으나, 오탐 가능성이 있다고 생각하여 이의신청합니다.',
+        '',
+        info,
+        '',
+        '상세 상황:',
+        '- 차단 직전에 한 행동: ',
+        '- 사용 기기/브라우저: ',
+        '- 네트워크 상태 또는 새로고침/중복 접속 여부: ',
+        '- 기타 설명: ',
+        '',
+        '확인 후 정지 해제를 검토해 주세요.'
+      ].join('\n');
       const mailto  = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       return { subject, body, mailto };
     }
+
+    function showBanAppealNotice(reason = 'terms-violation', authDisabled = false){
+      const persisted = readSupportCtx();
+      const uidStr = uid || persisted?.uid || 'unknown';
+      const msg = `⛔ 약관 위반으로 게임 이용이 차단되었습니다.${authDisabled ? ' Firebase Authentication 계정도 정지되었습니다.' : ''} 오탐이라고 생각되면 appeals@siustudio.me 로 이의신청을 보내 주세요. 제목 예시: [Appeal] 계정 정지 검토 요청 - ${uidStr}`;
+      try { showAuthStatus(msg, true); } catch {}
+      try { showToast('⛔ 계정이 정지되었습니다. 이의신청: appeals@siustudio.me', null, null, 8000); } catch {}
+      try { console.warn(msg, '\n\n메일 템플릿:\n' + buildSupportMail().body); } catch {}
+      try { saveSupportCtx({ banned:true, disabledReason: reason, authDisabled: !!authDisabled }); } catch {}
+    }
+
     async function copySupportInfo(){
       try {
-        await navigator.clipboard.writeText(buildSupportInfoText());
-        showToast('복사 완료! 메일에 붙여넣어 보낼 수 있어요.', null, null, 2500);
+        await navigator.clipboard.writeText(buildSupportMail().body);
+        showToast('이의신청 메일 템플릿을 복사했어요.', null, null, 2500);
       } catch {
         showToast('클립보드 복사에 실패했습니다.', null, null, 2500);
       }
@@ -5132,7 +5154,7 @@
       if (!uid && !guestMode) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (!guestMode && isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
       if (!guestMode && !security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
-      if (!guestMode && security.banned){ showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
+      if (!guestMode && security.banned){ showBanAppealNotice(security.disabledReason || 'terms-violation', !!security.authDisabled); return false; }
       showAuthStatus(''); return true;
     }
 
@@ -5815,9 +5837,10 @@
       const code = err?.code || '';
       if (code === 'auth/user-disabled') {
         security.banned = true;
+        security.authDisabled = true;
+        security.disabledReason = 'auth/user-disabled';
         securityDirty = true;
-        showAuthStatus('⛔ 계정이 정지되었습니다. 오탐이면 appeals@siustudio.me 로 메일을 보내 주세요.', true);
-        try { saveSupportCtx({ banned: true }); } catch {}
+        showBanAppealNotice('auth/user-disabled', true);
         return true;
       }
       return false;
