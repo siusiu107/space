@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -4448,6 +4449,9 @@
 
       const idToken = await currentUser.getIdToken(true);
       const payload = {
+        // Worker가 Authorization 헤더를 못 받는 환경까지 대비해서 body에도 토큰을 같이 넣는다.
+        idToken: idToken,
+        firebaseIdToken: idToken,
         gameData: proposedState,
         clientAudit: {
           last: audit.last,
