@@ -426,8 +426,6 @@
     }
     #buff-btn:hover{ background: rgba(0,212,255,0.25); }
 
-    /* 의심도 배지: 요구사항대로 완전 숨김 */
-    #suspicion-badge{ display:none !important; }
 
     /* 본문 */
     .page-shell{
@@ -1510,7 +1508,6 @@
     <div class="bar-group">
       <!-- 버프 버튼으로 교체 -->
       <button id="buff-btn" aria-label="현재 버프 보기">버프(0)</button>
-      <span id="suspicion-badge" title="핵 사용 의심도">의심도: 0</span>
       <button id="guest-login-btn" type="button" aria-label="게스트에서 로그인 화면으로 이동">🔐 로그인</button>
       <button id="settings-btn" aria-label="설정으로 이동">⚙️ 설정</button>
     </div>
@@ -4256,9 +4253,9 @@
     }
 
     /* ===========================
-       ⚠️ 보안/약관/의심도 (강화판)
+       ⚠️ 보안/약관
        =========================== */
-    let security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
+    let security = { tosAccepted:false };
     let securityDirty = false;
 
     const TOS_ACCEPT_PREFIX = 'siu_tos_ok_';
@@ -4272,37 +4269,10 @@
       catch { return false; }
     }
 
-    // 임계값
-    const SEC_WARN_LEVEL = 20;
-    const SEC_BAN_LEVEL  = 30;
 
-    const EPS               = 1e-6;
-    const UNKNOWN_THRESH    = 0.05;
-    const HUMAN_MAX_CPS     = 12;
-    const MAX_TICK_GAP_MS   = 5000;
-    const RES_WEIGHT        = 0.8;
-    const COIN_WEIGHT       = 1.0;
-    const ECO_WEIGHT        = 1.2;
-
-    const BAN_SPIKE_COINS = 1_000_000_000;
-    const BAN_SPIKE_RES   = 100_000_000;
-    const BAN_SPIKE_ECO   = 50_000;
-
-    function renderSecurityBadge(){
-      const el = document.getElementById('suspicion-badge');
-      if (!el) return;
-      el.classList.remove('warn','ban');
-      el.textContent = `의심도: ${Math.round(security.suspicion)}`;
-      if (security.suspicion >= SEC_BAN_LEVEL){ el.classList.add('ban'); }
-      else if (security.suspicion > SEC_WARN_LEVEL){ el.classList.add('warn'); }
-    }
     function showTosOverlay(show=true){
       const ov = document.getElementById('tos-overlay');
       if (ov){ ov.classList.toggle('show', !!show); ov.setAttribute('aria-hidden', show?'false':'true'); }
-    }
-    function markTosViolationFlag(){
-      const vio = security.suspicion > SEC_WARN_LEVEL || security.banned;
-      if (security.tosViolated !== vio){ security.tosViolated = vio; securityDirty = true; }
     }
     async function loadSecurity(){
       try {
@@ -4327,14 +4297,6 @@
       if (!uid || !userBasePath) return;
       if (!securityDirty) return;
       try {
-        await update(ref(db), { [`${userBasePath}/security`]: {
-          suspicion: security.suspicion,
-          banned: security.banned,
-          tosAccepted: security.tosAccepted,
-          tosViolated: security.tosViolated,
-          fairSeconds: security.fairSeconds,
-          lastWarnAt: security.lastWarnAt
-        }});
       } catch {}
       securityDirty = false;
     }
@@ -4344,8 +4306,6 @@
       const ctx = {
         basePath: userBasePath || null,
         uid: uid || null,
-        suspicion: (security && typeof security.suspicion === 'number') ? security.suspicion : null,
-        banned: !!(security && security.banned),
         ts: Date.now(),
         ...extra
       };
@@ -4434,32 +4394,6 @@
       auditIntent.until = Math.max(auditIntent.until, now + windowMs);
     }
 
-    // BAN 엔드포인트
-    let __BAN_ENDPOINT = null;
-    async function __getBanEndpoint() {
-      if (__BAN_ENDPOINT) return __BAN_ENDPOINT;
-      try {
-        const snap = await get(ref(db, 'meta/banEndpoint'));
-        if (snap.exists()) __BAN_ENDPOINT = String(snap.val());
-      } catch {}
-      return __BAN_ENDPOINT;
-    }
-    async function requestAccountDisable(reason = 'auto-ban') {
-      try {
-        const url = await __getBanEndpoint();
-        if (!url || !auth?.currentUser) return;
-        const idToken = await auth.currentUser.getIdToken(true);
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({
-            idToken,
-            reason,
-            suspicion: security?.suspicion ?? null
-          })
-        });
-      } catch (e) { console.warn('ban endpoint failed', e); }
-    }
 
     function expectedResGain(dtSec){
       const resBuff = activeBuffFactor('res');
@@ -4473,163 +4407,23 @@
       return convGain + 2;
     }
 
-    function adjustSuspicion(delta){
-      const prev = security.suspicion;
-      security.suspicion = Math.max(0, Math.min(1000, prev + delta));
-
-      if (!security.banned && security.suspicion > SEC_WARN_LEVEL){
-        const now = Date.now();
-        if (!security.lastWarnAt || now - security.lastWarnAt > 60000){
-          security.lastWarnAt = now;
-          showToast('⚠️ 의심도가 20을 초과했습니다. 비정상 증가가 탐지되면 정지될 수 있어요.');
-          securityDirty = true;
-        }
-      }
-
-      if (security.suspicion >= SEC_BAN_LEVEL && !security.banned){
-        security.banned = true;
-        securityDirty = true;
-        requestAccountDisable('auto-ban:suspicion>=30').finally(async ()=>{
-          return;
-          showToast('⛔ 의심도 30 이상으로 계정이 정지되었습니다.');
-          try { await saveSecurity(); } catch {}
-          saveSupportCtx({ banned: true });
-          try { await auth.signOut(); } catch {}
-        });
-      }
-
-      markTosViolationFlag();
-      securityDirty = true;
-      renderSecurityBadge();
-    }
-
-    function auditCheck(){
-      const nowGlobal = Date.now();
-
-      // ✅ 요청사항: "처음 3초만 검사하지 않게"
-      // → 초기 부팅 시작 시각(AUDIT_BOOT_TS)로부터 3초가 지나기 전이면 검사 스킵
-      if (nowGlobal - AUDIT_BOOT_TS < AUDIT_INITIAL_SKIP_MS) {
-        auditResetCycle();
-        return;
-      }
-
-      if (!audit.last){ auditInit(); return; }
-      const now = nowGlobal;
-      let dtMs = now - (audit.lastAt || now);
-      if (dtMs < 0) dtMs = 0;
-      if (dtMs > MAX_TICK_GAP_MS) dtMs = MAX_TICK_GAP_MS;
-      const dtSec = dtMs / 1000;
-
-      const cur = { res: state.resources||0, coins: state.coins||0, eco: state.eventCoins||0 };
-      let dr = cur.res   - audit.last.res;
-      let dc = cur.coins - audit.last.coins;
-      let de = cur.eco   - audit.last.eco;
-
-      if (now <= (auditIntent.until||0)) {
-        const useRes = Math.min(Math.max(0, dr), auditIntent.res||0);
-        const useCoin= Math.min(Math.max(0, dc), auditIntent.coin||0);
-        const useEco = Math.min(Math.max(0, de), auditIntent.eco||0);
-        dr -= useRes; dc -= useCoin; de -= useEco;
-        auditIntent.res  -= useRes;
-        auditIntent.coin -= useCoin;
-        auditIntent.eco  -= useEco;
-      } else {
-        auditIntent = { res:0, coin:0, eco:0, until:0 };
-      }
-
-      if (dc >= BAN_SPIKE_COINS || dr >= BAN_SPIKE_RES || de >= BAN_SPIKE_ECO) {
-        adjustSuspicion(SEC_BAN_LEVEL + 1);
-        auditResetCycle();
-        return;
-      }
-
-      const legRes  = (audit.recGain.res  - audit.recSpend.res);
-      const legCoin = (audit.recGain.coin - audit.recSpend.coin);
-      const legEco  = (audit.recGain.eco  - audit.recSpend.eco);
-
-      const physResRoom  = expectedResGain(dtSec);
-      const physCoinRoom = expectedCoinGain(dtSec);
-
-      const unknownRes  = Math.max(0, dr - legRes);
-      const unknownCoin = Math.max(0, dc - legCoin);
-      const unknownEco  = Math.max(0, de - legEco);
-
-      const spikeRes  = Math.max(0, dr - (legRes  + physResRoom));
-      const spikeCoin = Math.max(0, dc - (legCoin + physCoinRoom));
-
-      if (unknownEco > EPS) {
-        const rollback = Math.min(Math.floor(unknownEco), Math.floor(state.eventCoins || 0));
-        if (rollback > 0) {
-          state.eventCoins -= rollback;
-          save(); updateUI();
-        }
-        cancelEvents('비정상 이벤트코인 증가 감지');
-      }
-
-      const mag = Math.log10(1
-        + unknownRes
-        + (unknownCoin * 10)
-        + (unknownEco  * 20)
-        + spikeRes
-        + (spikeCoin * 10)
-      );
-
-      const ratioRes  = physResRoom  > 0 ? (dr - legRes) / physResRoom   : 0;
-      const ratioCoin = physCoinRoom > 0 ? (dc - legCoin) / physCoinRoom : 0;
-      const ratioBoost = Math.max(0, ratioRes - 1) + Math.max(0, ratioCoin - 1);
-
-      const baseUnknown =
-        (unknownRes  > EPS ? unknownRes  * RES_WEIGHT  : 0) +
-        (unknownCoin > EPS ? unknownCoin * COIN_WEIGHT : 0) +
-        (unknownEco  > EPS ? unknownEco  * ECO_WEIGHT  : 0);
-
-      const baseSpike =
-        (spikeRes  > EPS ? spikeRes  * 1.6 : 0) +
-        (spikeCoin > EPS ? spikeCoin * 1.6 : 0);
-
-      let score = (baseUnknown + baseSpike) * (1 + 0.6*mag + 0.8*ratioBoost);
-      if (lastRouletteAwardAt && (now - lastRouletteAwardAt) < 12000) {
-        const ecoSafe = unknownEco <= EPS;
-        const spikeSafe = spikeRes <= EPS && spikeCoin <= EPS;
-        score *= ecoSafe && spikeSafe ? 0.35 : 0.6;
-      }
-
-      if (score > UNKNOWN_THRESH){
-        const add = Math.min(24, Math.max(2, Math.ceil(score)));
-        adjustSuspicion(add);
-        security.fairSeconds = 0;
-        securityDirty = true;
-      } else {
-        security.fairSeconds = (security.fairSeconds||0) + dtSec;
-        if (security.fairSeconds >= 90 && security.suspicion > 0){
-          adjustSuspicion(-1);
-          security.fairSeconds = 0;
-        }
-        securityDirty = true;
-      }
-
-      auditResetCycle();
-    }
 
     function buildSupportInfoText(){
       const persisted = readSupportCtx();
       const path   = userBasePath  || persisted?.basePath || '(알 수 없음)';
       const nowKST = kstDate().toLocaleString('ko-KR');
       const uidStr = uid || persisted?.uid || '(미로그인)';
-      const sus    = (typeof security?.suspicion === 'number') ? security.suspicion
-                : (typeof persisted?.suspicion === 'number') ? persisted.suspicion : null;
       return [
         `저장 경로: ${path}`,
         `UID: ${uidStr}`,
-        `현재 의심도: ${sus === null ? '(알 수 없음)' : sus}`,
         `발생 시각(KST): ${nowKST}`
       ].join('\n');
     }
     function buildSupportMail(){
       const persisted = readSupportCtx();
       const uidStr = uid || persisted?.uid || 'unknown';
-      const subject = `[Appeal] 오탐 검토 요청 - ${uidStr}`;
-      const header  = '안녕하세요, 오탐으로 의심되어 검토를 요청드립니다.\n';
+      const subject = `[Support] 문의 - ${uidStr}`;
+      const header  = '안녕하세요, 문의드립니다.\n';
       const info    = buildSupportInfoText();
       const footer  = '\n\n상세 상황:\n(여기에 상황을 자세히 적어주세요)\n';
       const body    = `${header}\n${info}${footer}`;
@@ -5235,7 +5029,6 @@
       if (!uid && !guestMode) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (!guestMode && isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
       if (!guestMode && !security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
-      if (!guestMode && security.banned){ showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
     }
 
@@ -5756,7 +5549,7 @@
       window.__gameTimer = setInterval(() => {
         if (!guestMode && (!uid || isInitialSync)) return;
 
-        if (window.__PLAY_ALLOWED && !security.banned) {
+        if (window.__PLAY_ALLOWED) {
           const offline = isOffline();
           const coinBlocked = !!window.__CHRISTMAS_BLOCK_COINS;
           pruneExpiredBuffs();
@@ -5785,8 +5578,6 @@
           if (!coinBlocked && !offline && state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         }
 
-        // ✅ 의심도 검사는 1초마다 별도로 유지
-        auditCheck();
 
         renderPlanets();
         if (window.__PLAY_ALLOWED) {
@@ -5919,7 +5710,7 @@
       if (code === 'auth/user-disabled') {
         security.banned = true;
         securityDirty = true;
-        showAuthStatus('⛔ 이용약관 위반으로 계정이 정지되었습니다. 오탐으로 의심되면 appeals@siustudio.me 로 메일을 보내 주세요.', true);
+        showAuthStatus('⛔ 이용이 제한되었습니다. 문제가 있으면 support@siustudio.me 로 문의해 주세요.', true);
         try { saveSupportCtx({ banned: true }); } catch {}
         return true;
       }
@@ -6441,7 +6232,7 @@
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
 
-        security = { suspicion:0, banned:false, tosAccepted:false, tosViolated:false, fairSeconds:0, lastWarnAt:0 };
+        security = { tosAccepted:false };
         securityDirty = false;
         renderSecurityBadge();
 
