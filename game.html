@@ -426,7 +426,6 @@
     }
     #buff-btn:hover{ background: rgba(0,212,255,0.25); }
 
-
     /* 본문 */
     .page-shell{
       display:grid;
@@ -3245,11 +3244,17 @@
       localLastWrite = now;
       lastSaveAt = now;
       try { localStorage.setItem(`lastWrite_${uid}`, String(now)); } catch {}
-      update(dataRef, { ...state })
-        .then(() => sessionLogger?.log?.('실시간 데이터 저장 완료'))
+      secureSaveGameData({ ...state })
+        .then(() => {
+          try { auditResetCycle(); } catch {}
+          sessionLogger?.log?.('서버 검증 저장 완료');
+        })
         .catch(err => {
-          console.error('저장 에러:', err);
-          sessionLogger?.log?.(`저장 에러: ${err?.message || err}`);
+          console.error('검증 저장 에러:', err);
+          sessionLogger?.log?.(`검증 저장 에러: ${err?.message || err}`);
+          if (String(err?.message || '').includes('secureSaveEndpoint')) {
+            showAuthStatus('서버 검증 저장 주소가 설정되지 않았습니다. 관리자에게 문의해 주세요.', true);
+          }
         });
       recoveryManager?.safeCreate?.('sync-save');
     }
@@ -4253,9 +4258,21 @@
     }
 
     /* ===========================
-       ⚠️ 보안/약관
+       🔒 보안/약관/서버 검증
+       - 의심도 UI/점수 제거
+       - 매크로 클릭 속도 제한 없음
+       - 비정상 재화 저장은 Cloud Function에서 검증/차단
+       - 반복 또는 치명 위반 시 Auth 계정 disabled 처리
        =========================== */
-    let security = { tosAccepted:false };
+    let security = {
+      banned:false,
+      tosAccepted:false,
+      tosViolated:false,
+      violationCount:0,
+      lastBlockAt:0,
+      lastBlockReason:'',
+      disabledReason:''
+    };
     let securityDirty = false;
 
     const TOS_ACCEPT_PREFIX = 'siu_tos_ok_';
@@ -4269,10 +4286,16 @@
       catch { return false; }
     }
 
-
+    function renderSecurityBadge(){
+      // 의심도 UI는 완전 제거. 이 함수는 기존 호출 호환용 더미.
+    }
     function showTosOverlay(show=true){
       const ov = document.getElementById('tos-overlay');
       if (ov){ ov.classList.toggle('show', !!show); ov.setAttribute('aria-hidden', show?'false':'true'); }
+    }
+    function markTosViolationFlag(){
+      const vio = !!security.banned;
+      if (security.tosViolated !== vio){ security.tosViolated = vio; securityDirty = true; }
     }
     async function loadSecurity(){
       try {
@@ -4297,6 +4320,12 @@
       if (!uid || !userBasePath) return;
       if (!securityDirty) return;
       try {
+        // 클라이언트는 약관 동의/로컬 표시용 상태만 저장한다.
+        // banned/disabled/violationCount는 Cloud Function(Admin SDK)에서만 확정한다.
+        await update(ref(db), {
+          [`${userBasePath}/security/tosAccepted`]: !!security.tosAccepted,
+          [`${userBasePath}/security/tosViolated`]: !!security.tosViolated
+        });
       } catch {}
       securityDirty = false;
     }
@@ -4306,6 +4335,8 @@
       const ctx = {
         basePath: userBasePath || null,
         uid: uid || null,
+        banned: !!(security && security.banned),
+        disabledReason: security?.disabledReason || security?.lastBlockReason || null,
         ts: Date.now(),
         ...extra
       };
@@ -4345,6 +4376,7 @@
     }
 
     // === 합법 증감 장부 ===
+    // 이 장부는 UX/보조 로그용이다. 최종 판정은 Cloud Function이 기존 서버값과 비교해서 한다.
     let audit = {
       last: null,
       recGain:  { res:0, coin:0, eco:0 },
@@ -4384,7 +4416,7 @@
       audit.lastAt   = Date.now();
     }
 
-    // 의도 허용 창
+    // 의도 허용 창: 이벤트/슬롯처럼 정상적으로 큰 보상이 생길 수 있는 순간 보조 로그로 같이 보낸다.
     let auditIntent = { res:0, coin:0, eco:0, until:0 };
     function registerAuditIntent(kind, amount, windowMs=6000){
       const now = Date.now();
@@ -4394,28 +4426,88 @@
       auditIntent.until = Math.max(auditIntent.until, now + windowMs);
     }
 
-
-    function expectedResGain(dtSec){
-      const resBuff = activeBuffFactor('res');
-      const workerGain = (state.workerCount * getWorkerPower()) * resBuff * dtSec;
-      const clickGain  = (state.clickPower || 1) * HUMAN_MAX_CPS * resBuff * dtSec;
-      return workerGain + clickGain + 0.5;
-    }
-    function expectedCoinGain(dtSec){
-      const coinBuff = activeBuffFactor('coin');
-      const convGain = (state.conversionCount || 0) * coinBuff * dtSec;
-      return convGain + 2;
+    let __SECURE_SAVE_ENDPOINT = null;
+    async function __getSecureSaveEndpoint() {
+      if (__SECURE_SAVE_ENDPOINT) return __SECURE_SAVE_ENDPOINT;
+      try {
+        const snap = await get(ref(db, 'meta/secureSaveEndpoint'));
+        if (snap.exists()) __SECURE_SAVE_ENDPOINT = String(snap.val());
+      } catch {}
+      return __SECURE_SAVE_ENDPOINT;
     }
 
+    async function secureSaveGameData(proposedState){
+      const url = await __getSecureSaveEndpoint();
+      if (!url) {
+        throw new Error('secureSaveEndpoint가 Firebase meta/secureSaveEndpoint에 설정되어 있지 않습니다.');
+      }
+      if (!auth?.currentUser) throw new Error('로그인이 필요합니다.');
+      const idToken = await auth.currentUser.getIdToken(true);
+      const payload = {
+        idToken,
+        state: proposedState,
+        clientAudit: {
+          last: audit.last,
+          recGain: audit.recGain,
+          recSpend: audit.recSpend,
+          intent: auditIntent,
+          lastAt: audit.lastAt,
+          clientNow: Date.now()
+        }
+      };
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      let json = null;
+      try { json = await resp.json(); } catch {}
+      if (resp.status === 423 || json?.banned) {
+        security.banned = true;
+        security.disabledReason = json?.reason || 'abnormal-save';
+        securityDirty = true;
+        saveSupportCtx({ banned:true, disabledReason: security.disabledReason });
+        showAuthStatus('⛔ 비정상 저장 요청이 반복되어 계정이 정지되었습니다. 오탐이면 appeals@siustudio.me 로 문의해 주세요.', true);
+        try { await auth.signOut(); } catch {}
+        throw new Error('account-disabled');
+      }
+      if (!resp.ok || !json?.ok) {
+        const reason = json?.reason || json?.error || `HTTP ${resp.status}`;
+        throw new Error(reason);
+      }
+      if (json.state && typeof json.state === 'object') {
+        state = withAutoConvertDefaults(json.state);
+      }
+      return json;
+    }
+
+    async function requestAccountDisable(reason = 'manual-admin-disable') {
+      // 기존 호출 호환용. 실제 계정 disabled는 functions/index.js의 adminSetAccountDisabled 또는 secureSaveGameData가 처리한다.
+      try {
+        security.banned = true;
+        security.disabledReason = reason;
+        securityDirty = true;
+        saveSupportCtx({ banned:true, disabledReason: reason });
+        await saveSecurity();
+      } catch {}
+    }
+
+    function auditCheck(){
+      // 매크로성 클릭 제한은 하지 않는다.
+      // 클라에서는 장부만 주기적으로 정리하고, 저장 시 Cloud Function이 최종 검증한다.
+      if (!audit.last) auditInit();
+    }
 
     function buildSupportInfoText(){
       const persisted = readSupportCtx();
       const path   = userBasePath  || persisted?.basePath || '(알 수 없음)';
       const nowKST = kstDate().toLocaleString('ko-KR');
       const uidStr = uid || persisted?.uid || '(미로그인)';
+      const reason = security?.disabledReason || security?.lastBlockReason || persisted?.disabledReason || '(없음)';
       return [
         `저장 경로: ${path}`,
         `UID: ${uidStr}`,
+        `정지/차단 사유: ${reason}`,
         `발생 시각(KST): ${nowKST}`
       ].join('\n');
     }
@@ -4423,7 +4515,7 @@
       const persisted = readSupportCtx();
       const uidStr = uid || persisted?.uid || 'unknown';
       const subject = `[Support] 문의 - ${uidStr}`;
-      const header  = '안녕하세요, 문의드립니다.\n';
+      const header  = '안녕하세요, 계정 정지/차단 검토를 요청드립니다.\n';
       const info    = buildSupportInfoText();
       const footer  = '\n\n상세 상황:\n(여기에 상황을 자세히 적어주세요)\n';
       const body    = `${header}\n${info}${footer}`;
@@ -5029,6 +5121,7 @@
       if (!uid && !guestMode) { showAuthStatus('로그인 후 이용하세요.'); return false; }
       if (!guestMode && isInitialSync) { showAuthStatus('데이터 로딩 중입니다. 잠시만 기다려주세요.'); return false; }
       if (!guestMode && !security.tosAccepted){ showTosOverlay(true); showAuthStatus('이용약관 동의가 필요합니다.', true); return false; }
+      if (!guestMode && security.banned){ showAuthStatus('이용약관 위반 의심(계정 정지)으로 플레이가 제한되었습니다.', true); return false; }
       showAuthStatus(''); return true;
     }
 
@@ -5549,7 +5642,7 @@
       window.__gameTimer = setInterval(() => {
         if (!guestMode && (!uid || isInitialSync)) return;
 
-        if (window.__PLAY_ALLOWED) {
+        if (window.__PLAY_ALLOWED && !security.banned) {
           const offline = isOffline();
           const coinBlocked = !!window.__CHRISTMAS_BLOCK_COINS;
           pruneExpiredBuffs();
@@ -5578,6 +5671,8 @@
           if (!coinBlocked && !offline && state.autoConvertBought && state.autoConvertEnabled) convertResources(null, 'auto');
         }
 
+        // 서버 검증용 장부 상태만 유지한다. 매크로 클릭 속도 제한은 하지 않는다.
+        auditCheck();
 
         renderPlanets();
         if (window.__PLAY_ALLOWED) {
@@ -5710,7 +5805,7 @@
       if (code === 'auth/user-disabled') {
         security.banned = true;
         securityDirty = true;
-        showAuthStatus('⛔ 이용이 제한되었습니다. 문제가 있으면 support@siustudio.me 로 문의해 주세요.', true);
+        showAuthStatus('⛔ 계정이 정지되었습니다. 오탐이면 appeals@siustudio.me 로 메일을 보내 주세요.', true);
         try { saveSupportCtx({ banned: true }); } catch {}
         return true;
       }
@@ -6232,7 +6327,7 @@
         ensureFx(); window.fx.buffs = [];
         renderBuffStatus();
 
-        security = { tosAccepted:false };
+        security = { banned:false, tosAccepted:false, tosViolated:false, violationCount:0, lastBlockAt:0, lastBlockReason:'', disabledReason:'' };
         securityDirty = false;
         renderSecurityBadge();
 
