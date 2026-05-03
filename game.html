@@ -8817,5 +8817,126 @@ button.general:disabled{ filter:saturate(.35); }
 })();
 </script>
 
+
+
+<!-- UX SIMPLE HOME PATCH v2: 첫 화면 단순화 -->
+<style>
+/* 첫 화면을 복잡하게 만들던 미션/스탯 대시보드는 숨기고, 클릭 중심 화면으로 정리 */
+#ux-dashboard,
+.ux-dashboard,
+.ux-tip-card{
+  display:none !important;
+}
+
+#container h1{
+  font-size:clamp(20px, 2.8vw, 28px) !important;
+  margin:0 auto 8px !important;
+  max-width:860px;
+}
+
+#main-content.active{
+  min-height:420px !important;
+  justify-content:flex-start !important;
+  padding-top:18px;
+  gap:12px !important;
+}
+
+#ore-container{
+  width:min(300px, 72vw) !important;
+  margin-top:4px;
+}
+
+#ore{
+  width:min(205px, 52vw) !important;
+}
+
+.ore-feedback{
+  margin-top:0 !important;
+  min-height:0 !important;
+}
+
+.ore-feedback .crit-text{
+  display:none !important;
+}
+
+.ore-feedback .combo-badge{
+  font-size:12px !important;
+  padding:6px 10px !important;
+  opacity:.86;
+}
+
+#main-content > div:last-child{
+  width:min(560px, 100%);
+  margin:8px auto 0 !important;
+  display:grid !important;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:10px !important;
+}
+
+#main-content > div:last-child button.general{
+  width:100% !important;
+  max-width:none !important;
+  min-height:58px;
+  margin:0 !important;
+}
+
+#container{
+  padding-top:18px !important;
+}
+
+.page-shell{
+  margin-top:78px !important;
+}
+
+/* 우주 배경 효과는 유지하되 첫 화면에서는 과한 정보 카드 없이 여백을 확보 */
+body.ux-simple-home #main-content.active::before{
+  content:'광석을 눌러 자원을 모으세요';
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 2px;
+  padding:7px 12px;
+  border-radius:999px;
+  border:1px solid rgba(143,218,255,.20);
+  background:rgba(5,14,30,.46);
+  color:#cfefff;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:-.2px;
+}
+
+@media (max-width:560px){
+  .page-shell{ margin-top:118px !important; }
+  #container h1{ font-size:21px !important; line-height:1.25; }
+  #main-content.active{ min-height:390px !important; padding-top:10px; }
+  #ore-container{ width:min(278px, 84vw) !important; }
+  #main-content > div:last-child{ grid-template-columns:1fr; max-width:360px; }
+  #main-content > div:last-child button.general{ min-height:52px; }
+}
+</style>
+<script>
+(() => {
+  function applySimpleHome(){
+    document.body.classList.add('ux-simple-home');
+    const dash = document.getElementById('ux-dashboard');
+    if (dash) dash.setAttribute('aria-hidden', 'true');
+    document.querySelectorAll('.ux-tip-card').forEach(el => el.setAttribute('aria-hidden', 'true'));
+    const title = document.querySelector('#container h1');
+    if (title && !title.dataset.simpleTitle) {
+      title.dataset.simpleTitle = '1';
+      title.textContent = '🌌 태양계 정복';
+    }
+    const convert = document.getElementById('convert-button');
+    if (convert) convert.textContent = '10자원 → 1코인';
+    const auto = document.getElementById('auto-convert-buy');
+    if (auto) auto.textContent = '자동 변환 구매';
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applySimpleHome);
+  else applySimpleHome();
+  window.setTimeout(applySimpleHome, 100);
+  window.setTimeout(applySimpleHome, 800);
+})();
+</script>
+
 </body>
 </html>
