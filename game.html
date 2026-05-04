@@ -529,6 +529,22 @@
     .event-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     .event-actions button{ flex:1 1 150px; }
     .event-hint{ margin:10px 0 0; font-size:12px; color:#ffdede; opacity:0.92; }
+    .christmas-launch{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    #christmas-start{ flex: 0 0 auto; }
+    #christmas-launch-hint{ font-size:13px; color:#cfe6ff; opacity:0.9; }
+    #christmas-overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,0.78); backdrop-filter:blur(10px); z-index:2000; }
+    #christmas-overlay.show{ display:flex; }
+    .christmas-modal{ position:relative; width:min(1600px, 98vw); height:min(98vh, 1100px); padding:0; background:rgba(2,6,12,0.60); border-radius:18px; border:1px solid rgba(255,255,255,0.10); box-shadow:0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06); display:flex; flex-direction:column; overflow:hidden; }
+    #christmas-overlay iframe{ flex:1; width:100%; min-height:0; border:none; border-radius:16px; background:#000; box-shadow:0 16px 40px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.05); }
+    #christmas-close{ position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:50%; border:1px solid rgba(255,255,255,0.28); background:rgba(0,0,0,0.55); color:#e6f7ff; font-size:18px; cursor:pointer; box-shadow:0 12px 26px rgba(0,0,0,0.35); backdrop-filter:blur(8px); z-index:5; display:flex; align-items:center; justify-content:center; }
+    #christmas-close:hover{ background:rgba(255,255,255,0.18); }
+    .tree-status{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .tree-figure{ width:120px; height:120px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(0,0,0,0.25); object-fit:contain; }
+    .tree-rewards{ margin:10px 0; padding:10px; border-radius:10px; background:rgba(0,0,0,0.25); border:1px dashed rgba(255,255,255,0.14); font-size:13px; line-height:1.5; }
+    .tree-rewards strong{ color:#ffe08a; }
+    .pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.08); font-size:13px; }
+    .pill img{ width:18px; height:18px; }
+    #permanent-buffs{ margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); font-size:13px; color:#cfe6ff; line-height:1.45; }
 
     #container{ padding-bottom: var(--bottom-stack-space); }
     #planets-content{ padding-bottom: var(--bottom-stack-space); }
@@ -1216,10 +1232,540 @@
     #tos-body{ max-height:40vh; overflow:auto; padding:10px; border:1px solid rgba(255,255,255,0.10);
       border-radius:10px; background: rgba(0,0,0,0.2); font-size:13px; color:#cfe6ff; }
     #tos-accept[disabled]{ opacity:.6; cursor:not-allowed; }
+
+
+/* =========================================================
+   UX DESIGN REFRESH PATCH v1
+   - 기존 게임 로직은 유지하고, UI/피드백/목표 표시만 강화
+   ========================================================= */
+:root{
+  --ux-bg0:#050816;
+  --ux-bg1:#081226;
+  --ux-card:rgba(9,16,34,.70);
+  --ux-card-2:rgba(13,24,48,.78);
+  --ux-line:rgba(156,221,255,.18);
+  --ux-line-strong:rgba(97,216,255,.42);
+  --ux-text:#edf9ff;
+  --ux-sub:#a9c8ea;
+  --ux-cyan:#53e7ff;
+  --ux-blue:#5b8cff;
+  --ux-gold:#ffd66b;
+  --ux-green:#7cf7b3;
+  --ux-danger:#ff8aa6;
+  --bottom-stack-space: calc(250px + env(safe-area-inset-bottom, 0px));
+}
+
+html{ scroll-behavior:smooth; }
+body{
+  background:
+    radial-gradient(circle at 18% 12%, rgba(64,118,255,.32), transparent 32%),
+    radial-gradient(circle at 82% 18%, rgba(0,230,255,.24), transparent 28%),
+    radial-gradient(circle at 50% 90%, rgba(176,75,255,.20), transparent 36%),
+    linear-gradient(180deg, var(--ux-bg0), var(--ux-bg1) 56%, #040711) !important;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-2;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.72) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(83,231,255,.55) 0 1px, transparent 1.7px);
+  background-size:74px 74px, 132px 132px;
+  background-position:0 0, 28px 36px;
+  opacity:.38;
+  animation:uxStarDrift 38s linear infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:-20%;
+  pointer-events:none;
+  z-index:-1;
+  background:conic-gradient(from 170deg at 50% 50%, transparent, rgba(83,231,255,.08), transparent, rgba(139,92,246,.10), transparent);
+  filter:blur(18px);
+  opacity:.75;
+  animation:uxNebula 28s linear infinite;
+}
+@keyframes uxStarDrift{ to{ background-position: 180px 260px, -160px 210px; } }
+@keyframes uxNebula{ to{ transform:rotate(360deg); } }
+
+#top-bar{
+  top:10px !important;
+  left:50% !important;
+  right:auto !important;
+  width:min(1180px, calc(100vw - 24px));
+  transform:translateX(-50%);
+  padding:9px 12px !important;
+  border-radius:18px !important;
+  background:linear-gradient(180deg, rgba(12,22,44,.82), rgba(7,12,24,.66)) !important;
+  border:1px solid var(--ux-line-strong) !important;
+  box-shadow:0 18px 50px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(18px) saturate(1.35) !important;
+}
+#top-bar .bar-group{ gap:8px !important; }
+#top-bar .bar-group:first-child span{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:5px 9px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.055);
+  color:#f3fbff;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+#top-bar .bar-group img{
+  width:20px !important;
+  height:20px !important;
+  filter:drop-shadow(0 0 8px rgba(83,231,255,.28));
+}
+#buff-btn,#settings-btn,#guest-login-btn{
+  min-height:32px;
+  border-radius:999px !important;
+  border:1px solid rgba(83,231,255,.28) !important;
+  background:linear-gradient(180deg, rgba(83,231,255,.18), rgba(91,140,255,.12)) !important;
+  color:#ecfbff !important;
+  box-shadow:0 10px 24px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+#settings-btn:hover,#buff-btn:hover,#guest-login-btn:hover{ transform:translateY(-1px); }
+
+.page-shell{
+  width:min(1180px, 96vw) !important;
+  margin-top:84px !important;
+  gap:16px !important;
+}
+#container{
+  position:relative;
+  overflow:hidden;
+  border-radius:24px !important;
+  padding:20px 22px var(--bottom-stack-space) !important;
+  background:linear-gradient(180deg, rgba(11,20,42,.78), rgba(5,9,20,.62)) !important;
+  border:1px solid rgba(143,218,255,.20) !important;
+  box-shadow:0 30px 90px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter:blur(16px) saturate(1.2);
+}
+#container::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  pointer-events:none;
+  border-radius:24px;
+  background:linear-gradient(120deg, rgba(83,231,255,.18), transparent 28%, rgba(255,214,107,.10) 58%, transparent 78%);
+  opacity:.8;
+  mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  padding:1px;
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+}
+#container h1{
+  margin:2px auto 14px !important;
+  font-size:clamp(22px, 3.6vw, 34px) !important;
+  line-height:1.18;
+  letter-spacing:-.4px;
+  color:transparent !important;
+  background:linear-gradient(90deg, #fff, var(--ux-cyan), var(--ux-gold));
+  -webkit-background-clip:text;
+  background-clip:text;
+  text-shadow:0 0 28px rgba(83,231,255,.18);
+}
+
+.ux-dashboard{
+  display:grid;
+  grid-template-columns:minmax(0, 1.4fr) minmax(230px, .8fr);
+  gap:12px;
+  margin:0 0 18px;
+  text-align:left;
+}
+.ux-mission-card,.ux-stats-card,.ux-tip-card{
+  border:1px solid var(--ux-line);
+  border-radius:18px;
+  background:linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
+  box-shadow:0 16px 40px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.07);
+  padding:14px;
+}
+.ux-mission-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+.ux-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--ux-cyan);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.ux-goal-text{
+  margin:0;
+  color:#f6fbff;
+  font-size:15px;
+  font-weight:900;
+  line-height:1.45;
+}
+.ux-goal-sub{
+  margin:6px 0 0;
+  color:var(--ux-sub);
+  font-size:12px;
+  line-height:1.45;
+}
+.ux-progress{
+  position:relative;
+  height:12px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.075);
+  border:1px solid rgba(255,255,255,.08);
+}
+.ux-progress > span{
+  display:block;
+  height:100%;
+  width:0%;
+  border-radius:inherit;
+  background:linear-gradient(90deg, var(--ux-cyan), var(--ux-blue), var(--ux-gold));
+  box-shadow:0 0 18px rgba(83,231,255,.52);
+  transition:width .38s ease;
+}
+.ux-stat-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:8px;
+}
+.ux-stat{
+  min-height:56px;
+  border-radius:14px;
+  padding:10px;
+  background:rgba(0,0,0,.18);
+  border:1px solid rgba(255,255,255,.08);
+}
+.ux-stat b{
+  display:block;
+  color:#fff;
+  font-size:16px;
+  font-variant-numeric:tabular-nums;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ux-stat small{ color:var(--ux-sub); font-size:11px; }
+.ux-tip-card{
+  margin:-6px 0 16px;
+  color:#dff6ff;
+  font-size:13px;
+  line-height:1.55;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.ux-tip-card .ux-tip-icon{
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(83,231,255,.12);
+  border:1px solid rgba(83,231,255,.25);
+  flex:0 0 auto;
+}
+
+.tab-content.active{ animation:uxTabIn .22s ease-out; }
+@keyframes uxTabIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+
+#main-content.active{
+  min-height:330px;
+  display:flex !important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+#ore-container{
+  width:min(330px, 76vw);
+  aspect-ratio:1/1;
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(83,231,255,.20), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.08), transparent 56%);
+  border:1px solid rgba(83,231,255,.16);
+  box-shadow:inset 0 0 58px rgba(83,231,255,.09), 0 24px 70px rgba(0,0,0,.30);
+}
+#ore-container::before,#ore-container::after{
+  content:"";
+  position:absolute;
+  inset:8%;
+  border-radius:50%;
+  border:1px dashed rgba(83,231,255,.34);
+  pointer-events:none;
+  animation:uxOrbit 16s linear infinite;
+}
+#ore-container::after{
+  inset:18%;
+  border-style:solid;
+  border-color:rgba(255,214,107,.20);
+  animation-duration:23s;
+  animation-direction:reverse;
+}
+@keyframes uxOrbit{ to{ transform:rotate(360deg); } }
+#ore{
+  width:min(220px, 54vw) !important;
+  transition:transform .10s ease, filter .18s ease;
+  filter:drop-shadow(0 18px 32px rgba(0,0,0,.48)) drop-shadow(0 0 22px rgba(83,231,255,.28));
+  animation:uxOreFloat 3.6s ease-in-out infinite;
+  touch-action:manipulation;
+}
+#ore:hover{ transform:translateY(-3px) scale(1.035); filter:drop-shadow(0 20px 36px rgba(0,0,0,.50)) drop-shadow(0 0 30px rgba(83,231,255,.42)); }
+#ore.ux-hit{ animation:uxOreHit .22s ease-out; }
+@keyframes uxOreFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+@keyframes uxOreHit{ 0%{ transform:scale(1); } 45%{ transform:scale(.92) rotate(-2deg); } 100%{ transform:scale(1.04); } }
+.ux-float-number{
+  position:fixed;
+  z-index:4100;
+  left:0;
+  top:0;
+  pointer-events:none;
+  font-weight:1000;
+  font-size:18px;
+  color:#fff5bd;
+  text-shadow:0 0 14px rgba(255,214,107,.55), 0 2px 10px rgba(0,0,0,.45);
+  animation:uxFloatUp .82s ease-out forwards;
+}
+@keyframes uxFloatUp{
+  from{ opacity:0; transform:translate(-50%, 0) scale(.76); }
+  18%{ opacity:1; }
+  to{ opacity:0; transform:translate(calc(-50% + var(--ux-x, 0px)), -78px) scale(1.12); }
+}
+.ore-feedback{
+  margin-top:4px !important;
+  gap:10px !important;
+  flex-wrap:wrap;
+}
+.ore-feedback .combo-badge,.ore-feedback .crit-text{
+  border-radius:999px;
+  border:1px solid rgba(83,231,255,.22);
+  background:rgba(5,14,30,.62);
+  padding:7px 11px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+button.general,
+#mail-actions button,
+#mail-compose-send,
+#migrate-start,
+.spinbtn,
+.tbtn,
+.qtab,
+.side-item,
+.ship-ec-tab,
+#planets-content .planet-subtab{
+  transition:transform .14s ease, filter .18s ease, box-shadow .18s ease, border-color .18s ease !important;
+}
+button.general{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(135deg, rgba(83,231,255,.95), rgba(91,140,255,.92)) !important;
+  color:#03111d !important;
+  border:1px solid rgba(255,255,255,.20) !important;
+  border-radius:14px !important;
+  font-weight:1000 !important;
+  letter-spacing:-.1px;
+  box-shadow:0 13px 28px rgba(45,151,255,.22), inset 0 1px 0 rgba(255,255,255,.28) !important;
+  background-size:auto !important;
+  white-space:normal !important;
+}
+button.general::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg, transparent 0 30%, rgba(255,255,255,.32) 44%, transparent 58% 100%);
+  transform:translateX(-130%);
+  transition:transform .42s ease;
+}
+button.general:hover:not(:disabled){ transform:translateY(-2px); filter:brightness(1.06); box-shadow:0 18px 34px rgba(45,151,255,.30), inset 0 1px 0 rgba(255,255,255,.30) !important; }
+button.general:hover:not(:disabled)::after{ transform:translateX(130%); }
+button.general:active:not(:disabled){ transform:translateY(0) scale(.985); }
+button.general:disabled{ filter:saturate(.35); }
+
+#main-content > div:last-child,
+.upgrade-actions,
+.event-actions,
+#planets-content .planet-card .planet-actions{
+  gap:10px !important;
+  flex-wrap:wrap;
+}
+#workers-content.active,#upgrades-content.active,#planets-content.active,#christmas-content.active{
+  text-align:left;
+}
+#workers-content.active,#upgrades-content.active{
+  max-width:760px;
+  margin-left:auto;
+  margin-right:auto;
+}
+#workers-content p,#upgrades-content p{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  color:#dcefff;
+  font-weight:800;
+}
+#workers-content p span,#upgrades-content p span{
+  color:var(--ux-gold);
+  font-size:18px;
+  font-weight:1000;
+  font-variant-numeric:tabular-nums;
+}
+#workers-content button.general,#upgrades-content button.general{ display:block; }
+
+.ship-panel,.event-card,#planets-content .planet-card,#planets-content .planet-info-box,.coupang-card,#daily-card,#quest-card,#mail-card,#shop-overlay .shop-card,#buff-card{
+  border-radius:20px !important;
+  border-color:rgba(143,218,255,.20) !important;
+  background:linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)) !important;
+  box-shadow:0 18px 46px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+.ship-panel{ max-width:460px !important; }
+#ship-img{ width:160px !important; animation:uxShipIdle 4.4s ease-in-out infinite; }
+@keyframes uxShipIdle{ 0%,100%{ transform:translateY(0) rotate(-1deg); } 50%{ transform:translateY(-8px) rotate(1deg); } }
+.ship-status,#ship-success-rate,#tree-level,#tree-cost{ color:var(--ux-gold) !important; }
+.ship-ec-tabs,.planet-tabbar,.tabbar,.quest-tabbar{
+  padding:4px;
+  border-radius:16px;
+  background:rgba(0,0,0,.20);
+  border:1px solid rgba(255,255,255,.08);
+}
+.ship-ec-tab.active,#planets-content .planet-subtab.active,.tbtn.active,.qtab.active{
+  color:#03111d !important;
+  background:linear-gradient(135deg, var(--ux-cyan), var(--ux-gold)) !important;
+  box-shadow:0 12px 26px rgba(83,231,255,.20) !important;
+}
+
+#bottom-nav{
+  bottom:calc(22px + env(safe-area-inset-bottom, 12px)) !important;
+  border-radius:22px !important;
+  padding:9px !important;
+  background:rgba(6,12,26,.74) !important;
+  border:1px solid rgba(143,218,255,.22) !important;
+  box-shadow:0 22px 60px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter:blur(18px) saturate(1.35) !important;
+}
+#bottom-nav .tab{
+  min-height:48px;
+  border-radius:16px !important;
+  flex-direction:column;
+  gap:3px !important;
+  padding:8px 9px !important;
+  color:#cae1ff !important;
+}
+#bottom-nav .tab .t-icon{ font-size:18px; line-height:1; }
+#bottom-nav .tab .t-label{ font-size:11px; font-weight:900; }
+#bottom-nav .tab.active{
+  color:#03111d !important;
+  background:linear-gradient(135deg, var(--ux-cyan), #ffffff 42%, var(--ux-gold)) !important;
+  box-shadow:0 12px 30px rgba(83,231,255,.30) !important;
+}
+#bottom-nav .tab:hover{ transform:translateY(-3px) !important; }
+
+#side-menu-toggle{
+  border-radius:16px !important;
+  background:rgba(6,12,26,.78) !important;
+  border-color:rgba(143,218,255,.24) !important;
+}
+#side-menu{
+  background:rgba(7,13,28,.82) !important;
+  border-right-color:rgba(143,218,255,.18) !important;
+}
+.side-header{ color:#fff !important; }
+.side-item{ border-radius:16px !important; }
+.count-badge{
+  background:linear-gradient(135deg, #ff7aa9, #ffd66b) !important;
+  color:#19040b !important;
+}
+
+#toast{
+  bottom:calc(92px + env(safe-area-inset-bottom, 12px)) !important;
+  border-radius:16px !important;
+  background:rgba(8,16,32,.92) !important;
+  border-color:rgba(83,231,255,.25) !important;
+}
+
+.ad-area{ opacity:.82; transition:opacity .2s ease, transform .2s ease; }
+.ad-area:hover{ opacity:1; transform:translateY(-2px); }
+.coupang-card{ overflow:hidden; }
+.coupang-label{
+  border-radius:999px;
+  padding:3px 7px;
+  background:rgba(255,214,107,.16);
+  border:1px solid rgba(255,214,107,.24);
+}
+
+@media (max-width:900px){
+  .ux-dashboard{ grid-template-columns:1fr; }
+  .page-shell{ margin-top:76px !important; }
+  #container{ padding-left:14px !important; padding-right:14px !important; }
+}
+@media (max-width:560px){
+  :root{ --bottom-stack-space: calc(235px + env(safe-area-inset-bottom, 0px)); }
+  #top-bar{
+    top:8px !important;
+    width:calc(100vw - 16px);
+    border-radius:16px !important;
+    white-space:normal !important;
+  }
+  #top-bar .bar-group:first-child{ flex:1 1 100%; justify-content:center; flex-wrap:wrap; }
+  #top-bar .bar-group:last-child{ flex:1 1 100%; justify-content:center; }
+  #top-bar .bar-group:first-child span{ font-size:11px; min-height:22px; padding:4px 7px; }
+  .page-shell{ margin-top:122px !important; width:calc(100vw - 12px) !important; }
+  #container h1{ font-size:24px !important; }
+  .ux-stat-grid{ grid-template-columns:1fr 1fr; }
+  #ore-container{ width:min(300px, 86vw); }
+  #main-content > div:last-child{ flex-direction:column; width:100%; }
+  #main-content > div:last-child button.general{ width:100% !important; max-width:none !important; }
+  #bottom-nav{
+    left:8px !important;
+    right:8px !important;
+    width:auto !important;
+    transform:none !important;
+    gap:5px !important;
+    padding:6px !important;
+  }
+  #bottom-nav .tab{ min-height:44px; padding:7px 4px !important; }
+  #bottom-nav .tab .t-icon{ font-size:16px; }
+  #bottom-nav .tab .t-label{ font-size:10px; }
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; }
+}
+
 </style>
 
   <script src="language.js"></script>
   <script src="https://cdn.gtranslate.net/widgets/latest/popup.js" defer></script>
+
+  <style>
+    /* 계절 이벤트/눈·별 움직임 제거 */
+    #snow-layer, .snowflake, #christmas-content, #christmas-overlay,
+    #bottom-nav .tab[data-tab="christmas"]{ display:none !important; }
+    body::before, body::after{ content:none !important; display:none !important; animation:none !important; }
+  </style>
+
 </head>
 <body>
   <div class="gtranslate_wrapper" aria-hidden="true"></div>
@@ -1481,6 +2027,8 @@
       <div id="planet-purchase-panel" class="planet-panel" role="tabpanel" aria-label="행성 구매 목록"></div>
     </div>
 
+    <!-- 크리스마스 이벤트 영역 제거됨 -->
+
     <!-- 바텀 내비 -->
     <nav id="bottom-nav" aria-label="게임 탭 내비게이션">
       <div class="tab active" data-tab="main"     role="button" tabindex="0"><span class="t-icon">🪨</span><span class="t-label">메인</span></div>
@@ -1533,7 +2081,7 @@
         <span class="count-badge hidden" id="quest-badge">!</span>
       </div>
       <div class="menu-item" data-action="attendance">
-        <span>🎰 무료 룰렛</span>
+        <span>📅 출석 보상</span>
         <span id="attendance-left">-</span>
     </div>
   </div>
@@ -1558,7 +2106,7 @@
         <span class="side-right" id="quest-status-side">-</span>
       </button>
       <button class="side-item" data-action="attendance">
-        <span><span class="icon">🎰</span>무료 룰렛</span>
+        <span><span class="icon">📅</span>출석 보상</span>
         <span class="side-right" id="attendance-left-side">-</span>
       </button>
     </nav>
@@ -1642,12 +2190,12 @@
   <div id="daily-overlay" aria-hidden="true">
     <div id="daily-card" role="dialog" aria-modal="true" aria-labelledby="daily-title">
       <div id="daily-title">
-        <span>🎰 룰렛 & 보상</span>
+        <span>📅 오늘의 보상 & 슬롯</span>
         <button id="prob-toggle" title="확률/보상 정보">i</button>
       </div>
 
       <div class="tabbar">
-        <button class="tbtn active" data-mode="daily">무료 룰렛(100코인 해제)</button>
+        <button class="tbtn active" data-mode="daily">출석 슬롯(무료/일1회)</button>
         <button class="tbtn" data-mode="premium">프리미엄 슬롯(일일 퀘스트)</button>
         <button class="tbtn" data-mode="ecoin">이벤트코인 슬롯(주간 퀘스트)</button>
       </div>
@@ -1662,7 +2210,7 @@
       </div>
 
       <div id="mode-row">
-        <button id="spin-daily"   class="spinbtn spin-free">무료 룰렛 돌리기</button>
+        <button id="spin-daily"   class="spinbtn spin-free">일일 룰렛 돌리기</button>
         <button id="spin-premium" class="spinbtn spin-prem">프리미엄 돌리기(일일 퀘스트)</button>
         <button id="spin-ecoin"   class="spinbtn spin-ecoin">이벤트코인 돌리기(주간 퀘스트)</button>
       </div>
@@ -1747,6 +2295,7 @@
     <div id="buff-card" role="dialog" aria-modal="true" aria-labelledby="buff-title">
       <h3 id="buff-title">현재 적용 중인 버프</h3>
       <div id="buff-list">적용 중인 버프가 없습니다.</div>
+      <div id="permanent-buffs"></div>
       <div class="overlay-actions">
         <button id="buff-close" class="spinbtn">닫기</button>
       </div>
@@ -1792,6 +2341,21 @@
     const db   = getDatabase(app);
 
       const AUTH_BASE_URL = 'https://applogin-chi.vercel.app';
+
+      // 🎄 크리스마스 이벤트 탭 노출 토글
+      const eventopen = false;
+
+      function applyEventVisibility() {
+        const christmasTab = document.querySelector('#bottom-nav .tab[data-tab="christmas"]');
+        const christmasContent = document.getElementById('christmas-content');
+        if (!eventopen) {
+          christmasTab?.remove();
+          christmasContent?.remove();
+        }
+      }
+
+      applyEventVisibility();
+
       let currentCode = null;
       let pollTimer = null;
 
@@ -2229,6 +2793,35 @@
       persistBuffs();
       renderBuffStatus();
     }
+
+    // 👉 여기서부터: 버튼/오버레이용 버프 렌더
+    function unlockedTreeBuffs(){
+      const lv = Math.max(0, Math.min(christmasTreeRewards.length, state.christmasTreeLevel || 0));
+      return christmasTreeRewards.slice(0, lv).map((r, idx) => `Lv.${idx + 1}: ${r.reward}`);
+    }
+
+    function renderPermanentBuffs(){
+      const perm = document.getElementById('permanent-buffs');
+      if (!perm) return;
+      const buffs = unlockedTreeBuffs();
+      const ecoMult = aggregateTreeMultiplier('event');
+      const resMult = aggregateTreeMultiplier('res');
+      const coinMult = aggregateTreeMultiplier('coin');
+      const clickMult = aggregateTreeMultiplier('click');
+      const workerMult = aggregateTreeMultiplier('worker');
+      const multTexts = [];
+      if (ecoMult > 1) multTexts.push(`이벤트코인 획득 x${ecoMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (resMult > 1) multTexts.push(`자원 생산 x${resMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (coinMult > 1) multTexts.push(`코인 생산 x${coinMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (clickMult > 1) multTexts.push(`클릭 채굴 x${clickMult.toFixed(2).replace(/\.00$/, '')}`);
+      if (workerMult > 1) multTexts.push(`알바 효율 x${workerMult.toFixed(2).replace(/\.00$/, '')}`);
+      const list = buffs.map(b => `<li>${escapeHTML(b)}</li>`).join('');
+      const multInfo = multTexts.length ? `<div style="margin-top:6px;">적용 배율: ${multTexts.map(escapeHTML).join(' · ')}</div>` : '';
+      perm.innerHTML = buffs.length
+        ? `<div style="font-weight:700; margin-bottom:4px;">🎁 영구 버프</div><ul style="margin:0 0 6px 18px; padding:0;">${list}</ul>${multInfo}`
+        : '<div style="font-weight:700; margin-bottom:4px;">🎁 영구 버프</div><div>활성화된 영구 버프가 없습니다.</div>';
+    }
+
     function renderBuffStatus(){
       const btn = document.getElementById('buff-btn');
       const listEl = document.getElementById('buff-list');
@@ -2254,6 +2847,7 @@
           }).join('');
         }
       }
+      renderPermanentBuffs();
     }
 
     /* ========= 숫자 한국식 단위 ========= */
@@ -2741,6 +3335,9 @@
       resources:0, coins:0, eventCoins:0,
       clickPower:1, shipLevel:1, shipUpgradeCost:20, clickUpgradeCost:15,
       workerCount:0, conversionCount:0, autoConvertBought:false, autoConvertEnabled:false, ownedPlanets:[], discoveredPlanets:[], planetExploration:null,
+      // 코인 100개를 한 번이라도 모으면 일일 룰렛이 영구 해제됩니다.
+      rouletteUnlocked:false,
+      santaPieces:0, santaCoins:0, christmasTreeLevel:0,
       quests: { daily:{}, weekly:{} },
       _lastUpdated: 0
     };
@@ -2820,11 +3417,22 @@
         statusEl.dataset.tone = tone;
       }
     }
+
+    const christmasTreeRewards = [
+      { cost: 5, reward: '2025 크리스마스 이벤트코인 획득 x2 영구 적용', effects: { event: 2 } },
+      { cost: 10, reward: '자원 생산 x2 영구', effects: { res: 2 } },
+      { cost: 25, reward: '코인 생산 x2 영구', effects: { coin: 2 } },
+      { cost: 60, reward: '클릭 채굴 x2 영구', effects: { click: 2 } },
+      { cost: 120, reward: '알바 효율 x1.5 영구', effects: { worker: 1.5 } },
+      { cost: 200, reward: '2025 크리스마스 이벤트코인 추가 배율 & 전 생산 x2 영구', effects: { res: 2, coin: 2, event: 2 } }
+    ];
     function withAutoConvertDefaults(rawState) {
       const merged = { ...defaultData, ...(rawState || {}) };
       if (typeof merged.autoConvertEnabled !== 'boolean') {
         merged.autoConvertEnabled = !!merged.autoConvertBought;
       }
+      // 레거시 저장값/서버 daily 값과 별개로, 게임 데이터에도 영구 해제 플래그를 보관합니다.
+      merged.rouletteUnlocked = !!(merged.rouletteUnlocked || merged.dailyRouletteUnlocked || merged.attendanceUnlocked);
       return merged;
     }
     function writeGuestProfile(profile) {
@@ -2858,6 +3466,7 @@
       const profile = readGuestProfile();
       applyGuestProfile(profile || {});
     }
+    const ROULETTE_UNLOCK_COINS = 100;
     const initialWorkerCost=10, workerCostGrowth=1.2;
     const initialWorkerPower=1, workerPowerGrowth=1.05;
     const initialConversionCost=50, conversionCostGrowth=1.3;
@@ -2909,6 +3518,7 @@
 
     // 🔄 변환(증가/지출 장부 반영)
     function convertResources(maxCount = null, source = 'manual') {
+      if (window.__CHRISTMAS_BLOCK_COINS) return false;
       if (isOffline()) return false;
       const possible = Math.floor(state.resources / 10);
       const count = maxCount === null ? possible : Math.min(possible, maxCount);
@@ -2918,7 +3528,7 @@
       state.resources -= resOut;
       auditSpend('res', resOut);
 
-      const coinMul = activeBuffFactor('coin') * aggregatePermanentMultiplier('coin');
+      const coinMul = activeBuffFactor('coin') * aggregateTreeMultiplier('coin');
       const perkCoinMul = perkState.coinMult || 1;
       const inc = count * coinMul * perkCoinMul;
       state.coins += inc;
@@ -2928,14 +3538,25 @@
       return true;
     }
 
-    function aggregatePermanentMultiplier(kind) {
-      return 1;
+    function aggregateTreeMultiplier(kind) {
+      const lv = Math.max(0, Math.min(christmasTreeRewards.length, state.christmasTreeLevel || 0));
+      let mult = 1;
+      for (let i = 0; i < lv; i++) {
+        const eff = christmasTreeRewards[i]?.effects || {};
+        if (eff.all) mult *= eff.all;
+        if (kind === 'res' && eff.res) mult *= eff.res;
+        if (kind === 'coin' && eff.coin) mult *= eff.coin;
+        if (kind === 'click' && eff.click) mult *= eff.click;
+        if (kind === 'worker' && eff.worker) mult *= eff.worker;
+        if (kind === 'event' && eff.event) mult *= eff.event;
+      }
+      return mult;
     }
 
     function addEventCoins(amount, source = 'reward') {
       const base = Math.max(0, Math.floor(amount || 0));
       if (!base) return 0;
-      const mult = aggregatePermanentMultiplier('event');
+      const mult = aggregateTreeMultiplier('event');
       const finalAmt = Math.max(0, Math.floor(base * mult));
       state.eventCoins = (state.eventCoins || 0) + finalAmt;
       auditGain('eco', finalAmt, source);
@@ -3676,8 +4297,7 @@
       const weeklyText = weeklyReady ? '이벤트코인 슬롯 사용 가능 (주간 퀘스트 완료)'
         : weeklyDone && weeklyUsed ? '이벤트코인 슬롯 이번 주 사용 완료'
         : '이벤트코인 슬롯: 주간 퀘스트 완료 필요';
-      const freeText = dailyUnlocked ? '무료 룰렛: 100코인 해제 완료 · 하루 1회 이용 가능' : '무료 룰렛: 100코인 달성 시 영구 해제';
-      slotAccessInfo.innerHTML = `${freeText}<br>${dailyText}<br>${weeklyText}`;
+      slotAccessInfo.innerHTML = `${dailyText}<br>${weeklyText}`;
     }
 
     function renderQuestUI(){
@@ -3759,7 +4379,7 @@
     function buildProbPanel(items, mode){
       const total=items.reduce((a,b)=>a+b.w,0)||1;
       const rows=items.map(it=>`<tr><td>${it.icon||''} ${it.label||it.key}</td><td style="text-align:right">${((it.w/total)*100).toFixed(2)}%</td></tr>`).join('');
-      const header = mode==='daily' ? '무료 룰렛 확률'
+      const header = mode==='daily' ? '일일 룰렛 확률'
                   : mode==='premium' ? '프리미엄 슬롯 확률(일일 퀘스트 보상)'
                   : '이벤트코인 슬롯 확률(주간 퀘스트 보상)';
       probPanel.innerHTML = `<div style="margin-bottom:6px; color:#9fdcff;">${header}</div><table>${rows}</table>`;
@@ -3767,25 +4387,28 @@
     function buildRewardList(items){
       rewardList.innerHTML = '🎰 보상 목록: ' + items.map(it=>`${it.icon||''} ${it.label||it.key}`).join(' · ');
     }
+    function isRouletteUnlocked(){
+      return !!(dailyUnlocked || state?.rouletteUnlocked || dailyCache?.unlocked);
+    }
     function canClaimToday(){
       const today = kstDayKey();
-      return !!dailyUnlocked && dailyCache?.lastKey !== today;
+      return dailyCache?.lastKey !== today;
     }
     function refreshDailyInfo(canClaim){
       const today = kstDayKey();
-      const streak = Number(dailyCache?.streak || 0);
-      const resetLeft = Math.max(0, nextResetKST() - kstDate());
-      const leftText = canClaim ? '지금 가능' : `다음 무료 룰렛까지 ${fmtLeft(resetLeft)}`;
+      const streak = dailyCache?.streak || 0;
+      const resetLeft = Math.max(0, nextResetKST()-kstDate());
+      const leftText = canClaim ? '지금 가능' : `다음 출석까지 ${fmtLeft(resetLeft)}`;
 
-      if (!dailyUnlocked){
-        const need = Math.max(0, 100 - (state.coins||0));
-        dailyInfo.innerHTML = `🔒 무료 룰렛은 <b>100코인</b>을 한 번 모으면 영구 해제!<br>해제 후에는 <b>하루 1회</b> 돌릴 수 있어요.<br>남은 코인: <b>${formatKR(need)}</b>`;
+      if (!isRouletteUnlocked()){
+        const need = Math.max(0, ROULETTE_UNLOCK_COINS - (state.coins||0));
+        dailyInfo.innerHTML = `🔒 일일 룰렛은 <b>${formatKR(ROULETTE_UNLOCK_COINS)}코인</b>을 한 번이라도 모으면 영구 해제!<br>남은 코인: <b>${formatKR(need)}</b>`;
         spinDailyBtn.disabled = true;
         return;
       }
       dailyInfo.innerHTML = canClaim
-        ? `🔓 무료 룰렛 해제 완료! 오늘(${today}) <b>${leftText}</b><br>연속 출석 ${streak}일`
-        : `오늘(${today}) 무료 룰렛은 이미 사용했어요.<br><b>${leftText}</b> · 현재 연속 ${streak}일`;
+        ? `오늘(${today}) 일일 룰렛 가능! <b>${leftText}</b><br>연속 ${streak}일 · 영구 해제됨`
+        : `오늘(${today})은 이미 완료. <b>${leftText}</b><br>현재 연속 ${streak}일 · 영구 해제됨`;
       spinDailyBtn.disabled = !canClaim;
     }
 
@@ -3816,7 +4439,7 @@
     /* 🔁 버튼 상태(잠금 포함) */
     function updateSpinButtons(){
       const locked = isEventLocked();
-      const canDaily   = canClaimToday() && !isSpinning;
+      const canDaily   = isRouletteUnlocked() && canClaimToday() && !isSpinning;
       const canPremium = questRewardAvailable('daily')  && !isSpinning;
       const canEcoin   = questRewardAvailable('weekly') && !isSpinning;
 
@@ -3832,13 +4455,18 @@
     }
 
     async function tryUnlockDaily(){
-      if (!uid || dailyUnlocked) return;
-      if ((state.coins || 0) >= 100){
+      if (isRouletteUnlocked()) return;
+      if ((state.coins || 0) >= ROULETTE_UNLOCK_COINS){
         dailyUnlocked = true;
+        state.rouletteUnlocked = true;
+        dailyCache = { ...(dailyCache || {}), unlocked: true };
         try {
-          await update(ref(db), { [`${userBasePath}/daily/unlocked`]: true });
+          if (uid && userBasePath) {
+            await update(ref(db), { [`${userBasePath}/daily/unlocked`]: true });
+          }
         } catch(e){ console.warn('unlock save error', e); }
-        showToast('🔓 무료 룰렛 잠금 해제!', '지금 열기', () => {
+        save(true);
+        showToast('🔓 일일 룰렛 영구 잠금 해제!', '지금 돌리기', () => {
           setMode('daily'); openDailyOverlay();
         });
         refreshDailyInfo(canClaimToday());
@@ -3858,12 +4486,7 @@
         return;
       }
 
-      if (mode==='daily' && !dailyUnlocked) { refreshDailyInfo(false); return; }
-      if (mode==='daily' && !canClaimToday()) {
-        refreshDailyInfo(false);
-        renderSlotAccess();
-        return;
-      }
+      if (mode==='daily' && !isRouletteUnlocked()) { refreshDailyInfo(false); return; }
       if (mode==='premium' && !questRewardAvailable('daily')) {
         dailyInfo.innerHTML='프리미엄 슬롯은 일일 퀘스트 완료 후 하루 1회만 사용할 수 있습니다.';
         renderSlotAccess();
@@ -3890,16 +4513,12 @@
         if (mode==='daily'){
           const today = kstDayKey(); const yesterday = kstDayKey(new Date(kstDate().getTime()-86400000));
           let streak = Number(dailyCache?.streak||0);
-          if (dailyCache?.lastKey === yesterday) streak += 1;
-          else streak = 1;
-          const totalSpinCount = Number(dailyCache?.totalSpinCount || 0) + 1;
-          const nextDailyCache = { ...(dailyCache||{}), unlocked: true, lastKey: today, streak, todaySpinCount: 1, totalSpinCount, lastClaimAt: Date.now(), lastPrize: picked.key };
+          if (dailyCache?.lastKey === yesterday) streak+=1; else streak=1;
           await update(ref(db), {
-            [`${userBasePath}/daily`]: nextDailyCache
+            [`${userBasePath}/daily`]: { ...(dailyCache||{}), unlocked: true, lastKey: today, streak, lastClaimAt: Date.now(), lastPrize: picked.key }
           });
-          dailyCache = nextDailyCache;
-          const left = Math.max(0, nextResetKST() - kstDate());
-          dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>오늘 무료 룰렛 사용 완료 · 다음까지 ${fmtLeft(left)}`;
+          dailyCache = { ...(dailyCache||{}), lastKey: today, streak, unlocked:true };
+          dailyInfo.innerHTML = `🎉 당첨: <b>${picked.label}</b><br>연속 ${streak}일`;
         } else {
           if (mode==='premium'){
             state.quests.daily.premiumUsed = true;
@@ -3924,28 +4543,33 @@
     document.getElementById('spin-ecoin').onclick   = ()=>handleSpin('ecoin');
 
     async function fetchDaily(){
-      if (!uid) return;
       try{
-        const snap = await get(ref(db, `${userBasePath}/daily`));
-        const v = snap.exists() ? snap.val() : { lastKey:null, streak:0, unlocked:false };
-        dailyCache = v;
-        dailyUnlocked = v?.unlocked ? true : false;
+        let v = { lastKey:null, streak:0, unlocked:false };
+        if (uid && userBasePath) {
+          const snap = await get(ref(db, `${userBasePath}/daily`));
+          v = snap.exists() ? snap.val() : v;
+        }
+        const unlocked = !!(v?.unlocked || state?.rouletteUnlocked);
+        dailyCache = { ...(v || {}), unlocked };
+        dailyUnlocked = unlocked;
       }catch{
-        dailyCache = { lastKey:null, streak:0, unlocked:false }; dailyUnlocked = false;
+        const unlocked = !!state?.rouletteUnlocked;
+        dailyCache = { lastKey:null, streak:0, unlocked };
+        dailyUnlocked = unlocked;
       }
     }
     async function checkDailyAndMaybeShow(){
       await fetchDaily();
       refreshDailyInfo(canClaimToday());
       setMode('daily');
-      // 자동 팝업은 띄우지 않고, 메뉴에서 하루 1회 무료 룰렛을 열 수 있게 유지.
+      if (isRouletteUnlocked() && canClaimToday()) openDailyOverlay();
     }
 
     const attMenuRight = document.getElementById('attendance-left');
     const attSideRight = document.getElementById('attendance-left-side');
     function updateAttendanceLabels(){
       if (!uid){ attMenuRight.textContent='-'; attSideRight.textContent='-'; return; }
-      if (!dailyUnlocked){ attMenuRight.textContent='잠금'; attSideRight.textContent='잠금'; return; }
+      if (!isRouletteUnlocked()){ attMenuRight.textContent='잠금'; attSideRight.textContent='잠금'; return; }
       const today = kstDayKey();
       const can = (dailyCache?.lastKey !== today);
       if (can){ attMenuRight.textContent='지금 가능'; attSideRight.textContent='지금 가능'; }
@@ -4367,6 +4991,40 @@
       ? cb => requestAnimationFrame(cb)
       : cb => setTimeout(cb, 16);
 
+    function renderChristmasUI() {
+      const piecesEl = document.getElementById('santa-pieces');
+      const coinsEl = document.getElementById('santa-coins');
+      const eventInline = document.getElementById('event-coins-inline');
+      if (piecesEl) piecesEl.innerText = formatKR(Math.floor(state.santaPieces || 0));
+      if (coinsEl) coinsEl.innerText = formatKR(Math.floor(state.santaCoins || 0));
+      if (eventInline) eventInline.innerText = formatKR(state.eventCoins || 0);
+
+      const treeLv = Math.max(0, state.christmasTreeLevel || 0);
+      const treeMax = christmasTreeRewards.length;
+      const treeLevelEl = document.getElementById('tree-level');
+      if (treeLevelEl) treeLevelEl.innerText = treeLv.toString();
+
+      const nextReward = christmasTreeRewards[treeLv];
+      const costEl = document.getElementById('tree-cost');
+      if (costEl) costEl.innerText = nextReward ? `${nextReward.cost}` : 'MAX';
+
+      const treeImg = document.getElementById('tree-image');
+      if (treeImg) {
+        const imgLv = Math.max(1, Math.min(treeMax, treeLv || 1));
+        treeImg.src = `/images/tree${imgLv}.png`;
+        treeImg.alt = `크리스마스 트리 레벨 ${imgLv}`;
+      }
+
+      const unlockedBuffs = christmasTreeRewards.slice(0, treeLv).map((r, idx) => `<li>Lv.${idx + 1}: ${escapeHTML(r.reward)}</li>`);
+      const rewardBox = document.getElementById('tree-rewards');
+      if (rewardBox) {
+        const upcoming = nextReward ? `<div style="margin-top:6px;">다음 보상: <strong>${escapeHTML(nextReward.reward)}</strong></div>` : '<div style="margin-top:6px;">모든 보상을 획득했습니다!</div>';
+        rewardBox.innerHTML = `<div style="font-weight:700; margin-bottom:6px;">해제된 보상</div>${unlockedBuffs.length ? `<ul style="margin:0 0 6px 18px; padding:0;">${unlockedBuffs.join('')}</ul>` : '<div>아직 해제된 보상이 없어요.</div>'}${upcoming}`;
+      }
+
+      renderPermanentBuffs();
+    }
+
     function renderUIContents() {
       pruneExpiredBuffs();
       syncQuestPeriods();
@@ -4433,7 +5091,7 @@
       if (hireWorkEc) {
         hireWorkEc.disabled = !canSpendEC(1);
       }
-      const resPerSec = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregatePermanentMultiplier('res') * aggregatePermanentMultiplier('worker');
+      const resPerSec = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregateTreeMultiplier('res') * aggregateTreeMultiplier('worker');
       document.getElementById('resource-per-sec').innerText = resPerSec.toFixed(1);
 
       const hireConv = document.getElementById('hire-conversion');
@@ -4443,8 +5101,10 @@
       if (hireConvEc) {
         hireConvEc.disabled = !canSpendEC(1);
       }
-      const coinPerSec = state.conversionCount * activeBuffFactor('coin') * aggregatePermanentMultiplier('coin') * aggregatePermanentMultiplier('worker');
+      const coinPerSec = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
       document.getElementById('coin-per-sec').innerText = coinPerSec.toFixed(1);
+
+      renderChristmasUI();
 
       renderSecurityBadge();
       tryUnlockDaily();
@@ -4969,8 +5629,8 @@
         const now = Date.now();
         const rect = e.target.getBoundingClientRect();
         spawnParticles(e.clientX - rect.left, e.clientY - rect.top);
-        const resMul = activeBuffFactor('res') * aggregatePermanentMultiplier('res');
-        const clickMul = aggregatePermanentMultiplier('click');
+        const resMul = activeBuffFactor('res') * aggregateTreeMultiplier('res');
+        const clickMul = aggregateTreeMultiplier('click');
         const perkResMul = perkState.resourceMult || 1;
         const comboMul = registerClickCombo(now);
         const weakSpotHit = Math.random() < weakSpotChance;
@@ -5001,6 +5661,109 @@
         } else {
           state.autoConvertEnabled = !state.autoConvertEnabled;
         }
+        save(); updateUI();
+      });
+
+      const christmasOverlay = document.getElementById('christmas-overlay');
+      const christmasFrame = document.getElementById('christmas-frame');
+      const christmasStartBtn = document.getElementById('christmas-start');
+      const christmasCloseBtn = document.getElementById('christmas-close');
+      let christmasGameBlockSnapshot = null;
+
+      function setChristmasGameBlock(active) {
+        if (active) {
+          if (christmasGameBlockSnapshot) return;
+          const hadHardBlock = document.body.classList.contains('game-hard-blocked');
+          const prevCoinBlock = !!window.__CHRISTMAS_BLOCK_COINS;
+          christmasGameBlockSnapshot = { hadHardBlock, prevCoinBlock };
+          try { window.__PLAY_BLOCKED_BY_CHRISTMAS = true; } catch {}
+          try { window.__CHRISTMAS_BLOCK_COINS = true; } catch {}
+          try { document.body.classList.add('christmas-focus'); } catch {}
+          if (hadHardBlock) return;
+          try { document.body.classList.remove('game-hard-blocked'); } catch {}
+          return;
+        }
+
+        if (!christmasGameBlockSnapshot) return;
+        const { hadHardBlock, prevCoinBlock } = christmasGameBlockSnapshot;
+        christmasGameBlockSnapshot = null;
+        try { window.__PLAY_BLOCKED_BY_CHRISTMAS = false; } catch {}
+        try { window.__CHRISTMAS_BLOCK_COINS = prevCoinBlock; } catch {}
+        try { document.body.classList.remove('christmas-focus'); } catch {}
+        if (hadHardBlock) return;
+        try { document.body.classList.remove('game-hard-blocked'); } catch {}
+      }
+
+      function openChristmasOverlay() {
+        if (!christmasOverlay || !christmasFrame) return;
+        const src = christmasFrame.dataset.src;
+        if (src && (!christmasFrame.src || christmasFrame.src === 'about:blank')) {
+          christmasFrame.src = src;
+        }
+        christmasOverlay.classList.add('show');
+        christmasOverlay.setAttribute('aria-hidden', 'false');
+        setChristmasGameBlock(true);
+        try { christmasOverlay.scrollIntoView({ behavior:'smooth', block:'center' }); } catch {}
+      }
+
+      function closeChristmasOverlay() {
+        if (!christmasOverlay || !christmasFrame) return;
+        christmasOverlay.classList.remove('show');
+        christmasOverlay.setAttribute('aria-hidden', 'true');
+        christmasFrame.src = 'about:blank';
+        setChristmasGameBlock(false);
+      }
+
+      christmasStartBtn?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        openChristmasOverlay();
+      });
+
+      christmasCloseBtn?.addEventListener('click', () => {
+        closeChristmasOverlay();
+      });
+
+      document.getElementById('craft-santa-coin')?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        if ((state.santaPieces || 0) < 10) {
+          showToast('산타 조각이 부족합니다. 리듬게임을 플레이해 보세요!', null, null, 2600);
+          return;
+        }
+        state.santaPieces -= 10;
+        state.santaCoins = (state.santaCoins || 0) + 1;
+        showToast('🎅 산타 이벤트코인 1개를 제작했습니다!', null, null, 2400);
+        save(); updateUI();
+      });
+
+      document.getElementById('convert-ecoin-to-santacoin')?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        if (!canSpendEC(3)) {
+          showToast('이벤트코인이 부족합니다.', null, null, 2400);
+          return;
+        }
+        state.eventCoins -= 3;
+        state.santaCoins = (state.santaCoins || 0) + 1;
+        auditSpend('eco', 3);
+        showToast('이벤트코인 3개를 산타 이벤트코인 1개로 교환했어요.', null, null, 2400);
+        save(); updateUI();
+      });
+
+      document.getElementById('christmas-upgrade')?.addEventListener('click', () => {
+        if (!ensureReady()) return;
+        const lv = Math.max(0, state.christmasTreeLevel || 0);
+        const next = christmasTreeRewards[lv];
+        if (!next) {
+          showToast('최대 트리 레벨입니다!', null, null, 2200);
+          return;
+        }
+        if ((state.santaCoins || 0) < next.cost) {
+          showToast('산타 이벤트코인이 부족해요.', null, null, 2400);
+          return;
+        }
+        state.santaCoins -= next.cost;
+        state.christmasTreeLevel = lv + 1;
+        showToast(`트리 Lv.${lv + 1} 달성! ${next.reward}`, null, null, 3200);
+        renderBuffStatus();
         save(); updateUI();
       });
       attachHoldRepeat('hire-worker', () => {
@@ -5337,7 +6100,7 @@
 
         if (window.__PLAY_ALLOWED && !security.banned) {
           const offline = isOffline();
-          const coinBlocked = false;
+          const coinBlocked = !!window.__CHRISTMAS_BLOCK_COINS;
           pruneExpiredBuffs();
 
           // 자원 알바
@@ -5345,7 +6108,7 @@
           const perkResMul = perkState.resourceMult || 1;
           const perkCoinMul = perkState.coinMult || 1;
 
-          let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregatePermanentMultiplier('res') * aggregatePermanentMultiplier('worker');
+          let workerGain = state.workerCount * getWorkerPower() * activeBuffFactor('res') * aggregateTreeMultiplier('res') * aggregateTreeMultiplier('worker');
           if (!coinBlocked && state.workerCount > 0) {
             const finalWorkerGain = workerGain * prodMul * perkResMul;
             state.resources += finalWorkerGain;
@@ -5353,7 +6116,7 @@
           }
 
           // 코인 알바
-          let convGain = state.conversionCount * activeBuffFactor('coin') * aggregatePermanentMultiplier('coin') * aggregatePermanentMultiplier('worker');
+          let convGain = state.conversionCount * activeBuffFactor('coin') * aggregateTreeMultiplier('coin') * aggregateTreeMultiplier('worker');
           if (!coinBlocked && !offline && state.conversionCount > 0) {
             const finalConvGain = convGain * prodMul * perkCoinMul;
             state.coins += finalConvGain;
@@ -5382,6 +6145,19 @@
         }
       }, 5000);
     }
+
+    window.addEventListener('message', (event) => {
+      if (event.origin && event.origin !== window.location.origin) return;
+      const data = event.data || {};
+      if (data.type === 'christmas-clear' && data.pieces) {
+        const gain = Math.max(0, Math.floor(data.pieces));
+        state.santaPieces = (state.santaPieces || 0) + gain;
+        renderBuffStatus();
+        save(); updateUI();
+        showToast(`🎅 산타 조각 ${gain}개 획득! 산타코인은 직접 제작해 주세요.`, null, null, 3200);
+      }
+    });
+
     /* ======================
        인증/부팅 흐름
        ====================== */
@@ -7746,6 +8522,9 @@
       });
     })();
   </script>
+
+  <!-- 눈 내리는 효과 제거됨 -->
+
   <!-- 📎 정책(inframe) 오버레이 열기/닫기 -->
   <script>
     (function () {
@@ -7798,6 +8577,321 @@
       closeBtn  && closeBtn.addEventListener('click', closePolicy);
       overlay   && overlay.addEventListener('click', (e) => { if (e.target === overlay) closePolicy(); });
       window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePolicy(); });
+    })();
+  </script>
+
+
+<!-- UX DESIGN REFRESH PATCH v1: 목표 패널/클릭 피드백/가독성 보강 -->
+<script>
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const byId = (id) => document.getElementById(id);
+  const textNum = (id) => {
+    const el = byId(id);
+    if (!el) return 0;
+    const raw = (el.textContent || '').replace(/,/g, '');
+    const m = raw.match(/-?\d+(?:\.\d+)?/);
+    return m ? Number(m[0]) : 0;
+  };
+  const fmt = (n) => {
+    if (!Number.isFinite(n)) return '0';
+    if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(2).replace(/\.00$/, '') + 'T';
+    if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2).replace(/\.00$/, '') + 'B';
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
+    return Math.floor(n).toLocaleString('ko-KR');
+  };
+
+  function injectDashboard() {
+    const container = byId('container');
+    const title = container?.querySelector('h1');
+    if (!container || !title || byId('ux-dashboard')) return;
+    const dash = document.createElement('section');
+    dash.id = 'ux-dashboard';
+    dash.className = 'ux-dashboard';
+    dash.setAttribute('aria-label', '플레이 목표와 핵심 상태');
+    dash.innerHTML = `
+      <article class="ux-mission-card">
+        <div class="ux-mission-head">
+          <span class="ux-kicker">🚀 NEXT MISSION</span>
+          <span id="ux-goal-percent" class="ux-kicker">0%</span>
+        </div>
+        <p id="ux-goal-text" class="ux-goal-text">첫 자원을 캐서 우주 정복을 시작하세요.</p>
+        <p id="ux-goal-sub" class="ux-goal-sub">클릭 → 코인 변환 → 업그레이드 순서로 성장하면 훨씬 빨라져요.</p>
+        <div class="ux-progress" aria-hidden="true"><span id="ux-goal-bar"></span></div>
+      </article>
+      <article class="ux-stats-card">
+        <div class="ux-stat-grid">
+          <div class="ux-stat"><b id="ux-stat-click">1</b><small>클릭 파워</small></div>
+          <div class="ux-stat"><b id="ux-stat-rps">0</b><small>초당 자원</small></div>
+          <div class="ux-stat"><b id="ux-stat-cps">0</b><small>초당 코인</small></div>
+          <div class="ux-stat"><b id="ux-stat-ship">1</b><small>우주선 레벨</small></div>
+        </div>
+      </article>`;
+    title.insertAdjacentElement('afterend', dash);
+
+    const tip = document.createElement('div');
+    tip.className = 'ux-tip-card';
+    tip.innerHTML = `<span class="ux-tip-icon">💡</span><span id="ux-tip-text">초반엔 클릭 업그레이드와 알바를 번갈아 올리면 체감 성장이 좋아요.</span>`;
+    dash.insertAdjacentElement('afterend', tip);
+  }
+
+  function currentGoal() {
+    const resource = textNum('score');
+    const coins = textNum('coins');
+    const ecoins = textNum('ecoins');
+    const clickPower = textNum('click-power') || 1;
+    const rps = textNum('resource-per-sec');
+    const cps = textNum('coin-per-sec');
+    const shipLevel = textNum('ship-level') || 1;
+    if (resource < 10) {
+      return { label:'자원 10개를 모아서 첫 코인으로 바꾸기', sub:'광석을 눌러 자원을 모으고, 10자원 → 1코인 버튼을 눌러 시작 자금을 만들어요.', value:resource, target:10 };
+    }
+    if (coins < 15 && clickPower <= 1) {
+      return { label:'코인 15개로 클릭 업그레이드 하기', sub:'클릭 파워가 올라가면 손맛이 바로 좋아져요.', value:coins, target:15 };
+    }
+    if (coins < 20 && shipLevel <= 1) {
+      return { label:'코인 20개로 우주선 첫 업그레이드 준비', sub:'우주선 레벨이 오르면 행성 탐사 흐름이 더 재미있어져요.', value:coins, target:20 };
+    }
+    if (rps < 5) {
+      return { label:'초당 자원 생산 5 달성하기', sub:'우주인 고용으로 방치 성장 맛을 만들 차례예요.', value:rps, target:5 };
+    }
+    if (cps < 1) {
+      return { label:'초당 코인 생산 1 달성하기', sub:'코인 알바를 키우면 업그레이드 루프가 훨씬 부드러워져요.', value:cps, target:1 };
+    }
+    if (ecoins < 1) {
+      return { label:'이벤트코인 1개 모아서 특별 강화 노리기', sub:'출석/퀘스트/이벤트를 확인하면 성장 속도가 확 뛰어요.', value:ecoins, target:1 };
+    }
+    return { label:'행성 탐사와 우주선 강화를 번갈아 진행하기', sub:'막히면 우주인·클릭·코인 알바를 한 번씩 올려 성장 균형을 맞춰요.', value:Math.min(shipLevel, 10), target:10 };
+  }
+
+  const tips = [
+    '초반엔 클릭 업그레이드와 알바를 번갈아 올리면 체감 성장이 좋아요.',
+    '버프가 켜져 있으면 짧은 시간 집중 클릭으로 효율을 크게 뽑을 수 있어요.',
+    '우주선 강화가 막힐 땐 코인 생산부터 올리는 게 안정적이에요.',
+    '출석/슬롯/퀘스트 보상은 접속 동기를 만들어주는 핵심 루프예요.',
+    '행성 탭은 목표가 흐려질 때 다음 콘텐츠를 확인하기 좋아요.'
+  ];
+  let tipIndex = 0;
+
+  function refreshDashboard() {
+    if (!byId('ux-dashboard')) injectDashboard();
+    const g = currentGoal();
+    const pct = g.target > 0 ? Math.max(0, Math.min(100, (g.value / g.target) * 100)) : 0;
+    const goalText = byId('ux-goal-text');
+    const goalSub = byId('ux-goal-sub');
+    const goalPct = byId('ux-goal-percent');
+    const goalBar = byId('ux-goal-bar');
+    if (goalText) goalText.textContent = g.label;
+    if (goalSub) goalSub.textContent = `${g.sub}  (${fmt(g.value)} / ${fmt(g.target)})`;
+    if (goalPct) goalPct.textContent = `${Math.round(pct)}%`;
+    if (goalBar) goalBar.style.width = `${pct}%`;
+    const set = (id, value) => { const el = byId(id); if (el) el.textContent = value; };
+    set('ux-stat-click', fmt(textNum('click-power') || 1));
+    set('ux-stat-rps', fmt(textNum('resource-per-sec')));
+    set('ux-stat-cps', fmt(textNum('coin-per-sec')));
+    set('ux-stat-ship', fmt(textNum('ship-level') || 1));
+  }
+
+  function addClickFeedback() {
+    const ore = byId('ore');
+    if (!ore || ore.dataset.uxFeedback === '1') return;
+    ore.dataset.uxFeedback = '1';
+    ore.addEventListener('pointerdown', (e) => {
+      ore.classList.remove('ux-hit');
+      void ore.offsetWidth;
+      ore.classList.add('ux-hit');
+      const n = document.createElement('span');
+      n.className = 'ux-float-number';
+      const cp = textNum('click-power') || 1;
+      n.textContent = `+${fmt(cp)}`;
+      n.style.left = `${e.clientX}px`;
+      n.style.top = `${e.clientY}px`;
+      n.style.setProperty('--ux-x', `${Math.round((Math.random() - .5) * 52)}px`);
+      document.body.appendChild(n);
+      window.setTimeout(() => n.remove(), 900);
+    }, { passive:true });
+    ore.addEventListener('animationend', () => ore.classList.remove('ux-hit'));
+  }
+
+  function polishLabels() {
+    const map = [
+      ['convert-button', '10자원 → 1코인\n즉시 변환'],
+      ['auto-convert-buy', '자동 변환 구매\n100코인'],
+      ['hire-worker', null],
+      ['hire-conversion', null],
+      ['upgrade-ship', '우주선 업그레이드\n코인 사용'],
+      ['upgrade-ship-ec', '우주선 확정 강화\n이벤트코인 사용'],
+      ['upgrade-ship-ec-risk', '이벤트코인 1개 도전\n확률 강화'],
+      ['click-upgrade', '클릭 업그레이드\n15코인'],
+      ['click-upgrade-ec', '클릭 +10레벨\n1 이벤트코인']
+    ];
+    for (const [id, label] of map) {
+      const el = byId(id);
+      if (!el || el.dataset.uxPolished === '1') continue;
+      el.dataset.uxPolished = '1';
+      if (label) el.textContent = label;
+    }
+  }
+
+  function rotateTip() {
+    const tip = byId('ux-tip-text');
+    if (!tip) return;
+    tipIndex = (tipIndex + 1) % tips.length;
+    tip.textContent = tips[tipIndex];
+  }
+
+  function boot() {
+    injectDashboard();
+    addClickFeedback();
+    polishLabels();
+    refreshDashboard();
+    window.setInterval(refreshDashboard, 700);
+    window.setInterval(rotateTip, 5200);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+
+
+<!-- UX SIMPLE HOME PATCH v2: 첫 화면 단순화 -->
+<style>
+/* 첫 화면을 복잡하게 만들던 미션/스탯 대시보드는 숨기고, 클릭 중심 화면으로 정리 */
+#ux-dashboard,
+.ux-dashboard,
+.ux-tip-card{
+  display:none !important;
+}
+
+#container h1{
+  font-size:clamp(20px, 2.8vw, 28px) !important;
+  margin:0 auto 8px !important;
+  max-width:860px;
+}
+
+#main-content.active{
+  min-height:420px !important;
+  justify-content:flex-start !important;
+  padding-top:18px;
+  gap:12px !important;
+}
+
+#ore-container{
+  width:min(300px, 72vw) !important;
+  margin-top:4px;
+}
+
+#ore{
+  width:min(205px, 52vw) !important;
+}
+
+.ore-feedback{
+  margin-top:0 !important;
+  min-height:0 !important;
+}
+
+.ore-feedback .crit-text{
+  display:none !important;
+}
+
+.ore-feedback .combo-badge{
+  font-size:12px !important;
+  padding:6px 10px !important;
+  opacity:.86;
+}
+
+#main-content > div:last-child{
+  width:min(560px, 100%);
+  margin:8px auto 0 !important;
+  display:grid !important;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:10px !important;
+}
+
+#main-content > div:last-child button.general{
+  width:100% !important;
+  max-width:none !important;
+  min-height:58px;
+  margin:0 !important;
+}
+
+#container{
+  padding-top:18px !important;
+}
+
+.page-shell{
+  margin-top:78px !important;
+}
+
+/* 우주 배경 효과는 유지하되 첫 화면에서는 과한 정보 카드 없이 여백을 확보 */
+body.ux-simple-home #main-content.active::before{
+  content:'광석을 눌러 자원을 모으세요';
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 2px;
+  padding:7px 12px;
+  border-radius:999px;
+  border:1px solid rgba(143,218,255,.20);
+  background:rgba(5,14,30,.46);
+  color:#cfefff;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:-.2px;
+}
+
+@media (max-width:560px){
+  .page-shell{ margin-top:118px !important; }
+  #container h1{ font-size:21px !important; line-height:1.25; }
+  #main-content.active{ min-height:390px !important; padding-top:10px; }
+  #ore-container{ width:min(278px, 84vw) !important; }
+  #main-content > div:last-child{ grid-template-columns:1fr; max-width:360px; }
+  #main-content > div:last-child button.general{ min-height:52px; }
+}
+</style>
+<script>
+(() => {
+  function applySimpleHome(){
+    document.body.classList.add('ux-simple-home');
+    const dash = document.getElementById('ux-dashboard');
+    if (dash) dash.setAttribute('aria-hidden', 'true');
+    document.querySelectorAll('.ux-tip-card').forEach(el => el.setAttribute('aria-hidden', 'true'));
+    const title = document.querySelector('#container h1');
+    if (title && !title.dataset.simpleTitle) {
+      title.dataset.simpleTitle = '1';
+      title.textContent = '🌌 태양계 정복';
+    }
+    const convert = document.getElementById('convert-button');
+    if (convert) convert.textContent = '10자원 → 1코인';
+    const auto = document.getElementById('auto-convert-buy');
+    if (auto) auto.textContent = '자동 변환 구매';
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applySimpleHome);
+  else applySimpleHome();
+  window.setTimeout(applySimpleHome, 100);
+  window.setTimeout(applySimpleHome, 800);
+})();
+</script>
+
+
+  <!-- 크리스마스/눈 효과 제거 패치 -->
+  <script>
+    (() => {
+      function removeSeasonalContent(){
+        document.getElementById('snow-layer')?.remove();
+        document.getElementById('christmas-content')?.remove();
+        document.getElementById('christmas-overlay')?.remove();
+        document.querySelector('#bottom-nav .tab[data-tab="christmas"]')?.remove();
+        document.querySelectorAll('.snowflake').forEach(el => el.remove());
+      }
+      removeSeasonalContent();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', removeSeasonalContent, { once:true });
+      } else {
+        removeSeasonalContent();
+      }
     })();
   </script>
 
